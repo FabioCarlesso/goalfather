@@ -24,9 +24,11 @@ data class MatchSetup(
 /**
  * Engine de simulação — pura sobre `MatchSetup` + RNG.
  *
- * - **Aleatoriedade injetada**: `Random` por construtor. Testes passam
- *   `Random(seed)` para resultados determinísticos. Sem isso, seria
- *   impossível ter testes confiáveis sobre fluxo aleatório.
+ * - **Aleatoriedade injetada por CHAMADA**: `simulate(setup, rng)` recebe
+ *   `Random` por parâmetro (default `Random.Default`). Permite reuso da
+ *   mesma instância de `MatchSimulator` para várias partidas com seeds
+ *   diferentes (ex.: `PlayRoundService` usa `matchId` como seed por
+ *   partida para determinismo).
  * - **Sem timing**: retorna `Flow<MatchEvent>` SEM `delay()`. O timing
  *   de stream (80ms/minuto, etc.) é responsabilidade do adapter
  *   WebSocket — não do domínio. Mantém a engine fast em testes e
@@ -37,9 +39,9 @@ data class MatchSetup(
  * `frontend/src/mocks/engine.ts`. Esta é a fonte de verdade — a do
  * frontend será descartada quando os adapters Spring estiverem prontos.
  */
-class MatchSimulator(private val rng: Random = Random.Default) {
+class MatchSimulator {
 
-    fun simulate(setup: MatchSetup): Flow<MatchEvent> = flow {
+    fun simulate(setup: MatchSetup, rng: Random = Random.Default): Flow<MatchEvent> = flow {
         val homeStrength = setup.home.teamStrength()
         val awayStrength = setup.away.teamStrength()
 

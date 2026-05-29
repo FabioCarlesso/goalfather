@@ -67,8 +67,7 @@ class MatchSimulatorTest {
 
     @Test
     fun `primeiro evento sempre eh KickOff com metadata dos times`() = runTest {
-        val sim = MatchSimulator(Random(42))
-        val events = sim.simulate(setup).toList()
+        val events = MatchSimulator().simulate(setup, Random(42)).toList()
 
         val first = events.first()
         assertIs<MatchEvent.KickOff>(first)
@@ -82,8 +81,7 @@ class MatchSimulatorTest {
 
     @Test
     fun `ultimo evento sempre eh FullTime no minuto 90`() = runTest {
-        val sim = MatchSimulator(Random(42))
-        val events = sim.simulate(setup).toList()
+        val events = MatchSimulator().simulate(setup, Random(42)).toList()
 
         val last = events.last()
         assertIs<MatchEvent.FullTime>(last)
@@ -92,8 +90,7 @@ class MatchSimulatorTest {
 
     @Test
     fun `total de gols casa com placar do FullTime`() = runTest {
-        val sim = MatchSimulator(Random(42))
-        val events = sim.simulate(setup).toList()
+        val events = MatchSimulator().simulate(setup, Random(42)).toList()
 
         val homeGoals = events.filterIsInstance<MatchEvent.Goal>().count { it.home }
         val awayGoals = events.filterIsInstance<MatchEvent.Goal>().count { !it.home }
@@ -105,21 +102,22 @@ class MatchSimulatorTest {
 
     @Test
     fun `mesma seed produz mesma sequencia (determinismo)`() = runTest {
-        val events1 = MatchSimulator(Random(42)).simulate(setup).toList()
-        val events2 = MatchSimulator(Random(42)).simulate(setup).toList()
+        val events1 = MatchSimulator().simulate(setup, Random(42)).toList()
+        val events2 = MatchSimulator().simulate(setup, Random(42)).toList()
         assertEquals(events1, events2)
     }
 
     @Test
     fun `seeds diferentes geram sequencias diferentes`() = runTest {
-        val events1 = MatchSimulator(Random(1)).simulate(setup).toList()
-        val events2 = MatchSimulator(Random(99)).simulate(setup).toList()
+        val sim = MatchSimulator()
+        val events1 = sim.simulate(setup, Random(1)).toList()
+        val events2 = sim.simulate(setup, Random(99)).toList()
         assertNotEquals(events1, events2)
     }
 
     @Test
     fun `minutos sao monotonicamente nao-decrescentes`() = runTest {
-        val events = MatchSimulator(Random(42)).simulate(setup).toList()
+        val events = MatchSimulator().simulate(setup, Random(42)).toList()
 
         for (i in 1 until events.size) {
             assertTrue(
@@ -131,7 +129,7 @@ class MatchSimulatorTest {
 
     @Test
     fun `minutos ficam em 0 a 90`() = runTest {
-        val events = MatchSimulator(Random(42)).simulate(setup).toList()
+        val events = MatchSimulator().simulate(setup, Random(42)).toList()
         for (event in events) {
             assertTrue(event.minute in 0..90, "Minuto fora do range: ${event.minute}")
         }
@@ -143,7 +141,7 @@ class MatchSimulatorTest {
         // nova variante for adicionada ao sealed interface MatchEvent, o
         // when abaixo deixa de compilar sem `else`. Esse eh exatamente o
         // ponto do sealed: o compilador forca cobertura.
-        val events = MatchSimulator(Random(42)).simulate(setup).toList()
+        val events = MatchSimulator().simulate(setup, Random(42)).toList()
 
         for (event in events) {
             val label: String = when (event) {
@@ -160,7 +158,7 @@ class MatchSimulatorTest {
 
     @Test
     fun `gols sao atribuidos a jogadores dos squads corretos`() = runTest {
-        val events = MatchSimulator(Random(42)).simulate(setup).toList()
+        val events = MatchSimulator().simulate(setup, Random(42)).toList()
         val homeIds = homeLineup.players.map { it.id }.toSet()
         val awayIds = awayLineup.players.map { it.id }.toSet()
 
@@ -191,7 +189,7 @@ class MatchSimulatorTest {
         var totalHomeGoals = 0
         var totalAwayGoals = 0
         for (seed in 1..50) {
-            val events = MatchSimulator(Random(seed.toLong())).simulate(strongHome).toList()
+            val events = MatchSimulator().simulate(strongHome, Random(seed.toLong())).toList()
             val ft = events.filterIsInstance<MatchEvent.FullTime>().single()
             totalHomeGoals += ft.homeGoals
             totalAwayGoals += ft.awayGoals
