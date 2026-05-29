@@ -1,5 +1,12 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
 plugins {
     kotlin("jvm") version "2.1.0"
+    kotlin("plugin.spring") version "2.1.0"
+    kotlin("plugin.jpa") version "2.1.0"
+    kotlin("plugin.serialization") version "2.1.0"
+    id("org.springframework.boot") version "3.4.1"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 group = "com.carlesso"
@@ -17,21 +24,52 @@ kotlin {
 }
 
 dependencies {
-    // ── Domain depende SOMENTE de coroutines (para Flow). Zero Spring, zero JPA.
+    // ── Domain compila com kotlinx coroutines + serialization (annotations).
+    //    Spring NÃO é importado em domain/ por convencao — verificado em CI no futuro.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // ── Spring Boot 3.4 (Spring Framework 6.2, Servlet 6, JVM 21)
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+
+    // Kotlin support no Spring
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    // Persistencia: H2 (dev/test) + PostgreSQL (profile prod)
+    implementation("org.flywaydb:flyway-core")
+    runtimeOnly("com.h2database:h2")
+    runtimeOnly("org.postgresql:postgresql")
 
     // ── Testes ───────────────────────────────────────────────────────────
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        // mockito-core conflita com mockk em algumas configs; excluido por enquanto
+        exclude(module = "mockito-core")
+    }
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.mockk:mockk:1.13.13")
 }
+
+// Plugin JPA precisa de no-arg constructors para entities — o kotlin-jpa plugin
+// aplica isso automaticamente. Para @Embeddable/value classes ainda precisamos
+// abrir as classes (kotlin-spring já cobre @Service/@Component).
 
 tasks.test {
     useJUnitPlatform()
     testLogging {
         events("passed", "failed", "skipped")
-        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        exceptionFormat = TestExceptionFormat.FULL
     }
+}
+
+// Spring Boot 3.4 + Servlet container embarcado (Tomcat) por padrao
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    archiveFileName.set("goalfather.jar")
+    mainClass.set("com.carlesso.goalfather.GoalfatherApplicationKt")
 }

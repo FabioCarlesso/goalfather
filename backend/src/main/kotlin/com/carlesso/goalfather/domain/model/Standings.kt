@@ -1,8 +1,8 @@
 package com.carlesso.goalfather.domain.model
 
-/**
- * Linha da tabela — estatísticas acumuladas de um clube na temporada.
- */
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class StandingRow(
     val position: Int,
     val clubId: ClubId,
@@ -17,10 +17,7 @@ data class StandingRow(
     val points: Int = 0,
 )
 
-/**
- * Tabela de classificação da temporada após `round` rodadas.
- * `rows` já vem ordenada (posição = índice + 1).
- */
+@Serializable
 data class Standings(
     val season: Int,
     val round: Int,

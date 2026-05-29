@@ -1,13 +1,19 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.serialization.PlayerIdSerializer
+import kotlinx.serialization.Serializable
+
 /**
  * Identificador tipado de jogador.
  *
  * `value class` (inline) — zero overhead em runtime, mas o compilador
  * impede passar Long cru onde um PlayerId é esperado. Substitui o
  * "primitive obsession" do mundo Java.
+ *
+ * No JSON, sai como número simples (via `PlayerIdSerializer`).
  */
 @JvmInline
+@Serializable(with = PlayerIdSerializer::class)
 value class PlayerId(val value: Long)
 
 /**
@@ -18,6 +24,7 @@ value class PlayerId(val value: Long)
  * sob demanda. Idioma Kotlin: comportamento perto do dado, sem getter
  * verboso à la Java.
  */
+@Serializable
 data class Player(
     val id: PlayerId,
     val name: String,
@@ -33,7 +40,7 @@ data class Player(
     val goals: Int = 0,
     val injured: Boolean = false,
 ) {
-    val isStar: Boolean get() = overall >= 82
+    val star: Boolean get() = overall >= 82
 
     init {
         require(overall in 0..99) { "overall fora de 0..99: $overall" }

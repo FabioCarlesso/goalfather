@@ -1,11 +1,14 @@
 package com.carlesso.goalfather.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Escalação de até 11 jogadores numa formação.
  *
  * Validação via `init { require(...) }` — falha rápido na construção,
  * não permite estado inválido. `copy()` herda a validação.
  */
+@Serializable
 data class Lineup(
     val players: List<Player>,
     val formation: Formation,

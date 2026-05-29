@@ -1,15 +1,11 @@
 package com.carlesso.goalfather.domain.model
 
-/**
- * Estado de uma rodada ou de uma partida individual.
- * Espelha `RoundStatus` no contrato OpenAPI.
- */
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class RoundStatus { Scheduled, InProgress, Finished }
 
-/**
- * Pareamento dentro de uma rodada. Carrega `matchId` próprio (chave
- * estável para WS multiplexado em `/ws/round/{n}`).
- */
+@Serializable
 data class RoundMatch(
     val matchId: Long,
     val homeClubId: ClubId,
@@ -22,9 +18,7 @@ data class RoundMatch(
     val minute: Int = 0,
 )
 
-/**
- * Rodada — coleção de partidas + numeração temporal.
- */
+@Serializable
 data class Round(
     val number: Int,
     val season: Int,

@@ -1,8 +1,8 @@
 package com.carlesso.goalfather.domain.model
 
-/**
- * Jogador disponível no mercado, com preço em centavos.
- */
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class MarketEntry(
     val player: Player,
     val price: Long,

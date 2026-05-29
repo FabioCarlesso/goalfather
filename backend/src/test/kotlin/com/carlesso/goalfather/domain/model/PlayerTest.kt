@@ -22,15 +22,15 @@ class PlayerTest {
     )
 
     @Test
-    fun `isStar e true quando overall maior ou igual a 82`() {
-        assertTrue(makePlayer(82).isStar)
-        assertTrue(makePlayer(95).isStar)
+    fun `star e true quando overall maior ou igual a 82`() {
+        assertTrue(makePlayer(82).star)
+        assertTrue(makePlayer(95).star)
     }
 
     @Test
-    fun `isStar e false quando overall abaixo de 82`() {
-        assertFalse(makePlayer(81).isStar)
-        assertFalse(makePlayer(0).isStar)
+    fun `star e false quando overall abaixo de 82`() {
+        assertFalse(makePlayer(81).star)
+        assertFalse(makePlayer(0).star)
     }
 
     @Test

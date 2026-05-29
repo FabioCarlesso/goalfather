@@ -284,28 +284,28 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 
 ## 8. Roadmap em fases
 
-### Fase 1 — Fundação do domínio (sem Spring)
-- [ ] Setup do projeto Gradle Kotlin DSL (`build.gradle.kts`)
-- [ ] Modelo de domínio: `Player`, `Club`, `Lineup`, `Formation`, `League`
-- [ ] `MatchEvent` sealed + `StrengthCalculator`
-- [ ] `MatchSimulator` com `Random` injetável
-- [ ] Testes unitários com seed fixa (JUnit 5 + `kotlin.test`)
+### Fase 1 — Fundação do domínio (sem Spring) ✅
+- [x] Setup do projeto Gradle Kotlin DSL (`build.gradle.kts`)
+- [x] Modelo de domínio: `Player`, `Club`, `Lineup`, `Formation`, `League`
+- [x] `MatchEvent` sealed + `StrengthCalculator`
+- [x] `MatchSimulator` com `Random` injetável (passou para parâmetro de chamada)
+- [x] Testes unitários com seed fixa (JUnit 5 + `kotlin.test`)
 - **Foco de estudo:** data/sealed classes, enums com propriedades, null-safety
 
-### Fase 2 — Casos de uso + persistência
-- [ ] Ports (in/out) e use cases (`PlayMatch`, `BuyPlayer`, `ManageSquad`)
-- [ ] JPA entities + PersistenceAdapters + Flyway
-- [ ] Caffeine cache na tabela/mercado
-- **Foco de estudo:** coroutines em use cases, `Result`/sealed para erros
+### Fase 2 — Casos de uso + persistência ✅
+- [x] Ports (in/out) e use cases (`PlayRound`, `BuyPlayer`, `SellPlayer`, `SaveLineup`)
+- [x] JPA entities + PersistenceAdapters + Flyway (V1__init.sql)
+- [ ] Caffeine cache na tabela/mercado — *adiado*, frontend não percebe diferença
+- **Foco de estudo:** coroutines em use cases, `sealed Result` para erros
 
-### Fase 3 — API REST + frontend (mock-first)
-- [ ] Definir `contract/openapi.yaml` cobrindo os 9 endpoints (compartilhado com frontend)
-- [ ] Controllers REST + DTOs (springdoc valida implementação contra o contrato)
-- [ ] Configurar kotlinx.serialization com `@JsonClassDiscriminator("type")` para `sealed MatchEvent` (mapeia para `oneOf` + `discriminator` do OpenAPI)
-- [ ] WebSocket `/ws/matches/{id}` para partida ao vivo (stream de `Flow` → cliente)
-- [ ] Frontend Vite+TS+MSW consumindo o mesmo contrato (ver [`FRONTEND.md`](FRONTEND.md))
-- [ ] Swap incremental: cada endpoint pronto desliga seu handler MSW; E2E continua passando
-- **Foco de estudo:** `Flow` → SSE/WebSocket, serialização (kotlinx.serialization), contrato OpenAPI bidirecional
+### Fase 3 — API REST + frontend (mock-first) ✅
+- [x] Definir `contract/openapi.yaml` cobrindo os 9 endpoints (compartilhado com frontend)
+- [x] Controllers REST + DTOs de request (responses reusam domínio @Serializable)
+- [x] kotlinx.serialization com `@JsonClassDiscriminator("type")` para todos os `sealed` (MatchEvent, RoundEvent, TransferResult, LineupResult)
+- [x] WebSocket `/ws/round/{n}` multiplexado para rodada ao vivo (stream de `Flow<RoundEvent>` → cliente)
+- [x] Frontend Vite+TS+MSW consumindo o mesmo contrato (ver [`FRONTEND.md`](FRONTEND.md))
+- [x] Swap incremental: cada endpoint pronto desliga seu handler MSW; **E2E Playwright `npm run e2e:real` passa contra o backend Spring**
+- **Foco de estudo:** `Flow` → WebSocket, serialização (kotlinx.serialization), contrato OpenAPI bidirecional
 
 ### Fase 4 — DSL + polimento single-player
 - [ ] DSL de seed de ligas/clubes (`@DslMarker`)

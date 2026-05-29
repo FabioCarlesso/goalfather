@@ -6,6 +6,8 @@ build/
 !**/src/test/**/build/
 *.class
 out/
+!**/src/main/**/adapter/out/
+!**/src/main/**/adapter/out/**
 bin/
 
 # ─── Spring Boot ───

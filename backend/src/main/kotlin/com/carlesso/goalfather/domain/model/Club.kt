@@ -1,10 +1,14 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.serialization.ClubIdSerializer
+import kotlinx.serialization.Serializable
+
 /**
  * Identificador tipado de clube. `@JvmInline value class` — zero
  * overhead em runtime, type-safety em tempo de compilação.
  */
 @JvmInline
+@Serializable(with = ClubIdSerializer::class)
 value class ClubId(val value: Long)
 
 /**
@@ -16,6 +20,7 @@ value class ClubId(val value: Long)
  * `ownerId == null` significa controlado pela IA (preparado para
  * multiplayer da Fase 5).
  */
+@Serializable
 data class Club(
     val id: ClubId,
     val name: String,

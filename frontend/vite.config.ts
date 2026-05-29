@@ -9,6 +9,13 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // REST: quando MSW esta desligado (VITE_USE_MOCKS=false), proxy
+      // forward para o backend Spring em :8080. Com MSW ligado, MSW
+      // intercepta antes do proxy ver.
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       // WebSocket de partida ao vivo: proxy direto para o backend Spring.
       // MSW intercepta no nivel do construtor do WebSocket em DEV; quando
       // MSW estiver desligado (VITE_USE_MOCKS=false), este proxy assume.

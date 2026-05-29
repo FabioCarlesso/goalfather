@@ -1,0 +1,37 @@
+package com.carlesso.goalfather.adapter.out.persistence.entity
+
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
+
+/**
+ * Entidade JPA do clube. Separada do `Club` de domínio — a regra
+ * de ouro de CLAUDE.md: nada em domain conhece JPA.
+ *
+ * `lineupJson`: serialização da escalação salva (formação + ordem dos
+ * 11 IDs). Persistir como TEXT funciona em qualquer DB (H2/Postgres).
+ * Conversão domínio↔JSON é feita no mapper.
+ */
+@Entity
+@Table(name = "clubs")
+class ClubEntity(
+    @Id
+    @Column(name = "id")
+    var id: Long = 0,
+
+    @Column(name = "name", nullable = false)
+    var name: String = "",
+
+    @Column(name = "cash", nullable = false)
+    var cash: Long = 0,
+
+    @Column(name = "stadium_capacity", nullable = false)
+    var stadiumCapacity: Int = 0,
+
+    @Column(name = "lineup_json", columnDefinition = "TEXT")
+    var lineupJson: String? = null,
+
+    @Column(name = "owner_id")
+    var ownerId: Long? = null,
+)
