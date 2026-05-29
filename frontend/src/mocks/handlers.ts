@@ -3,12 +3,14 @@
 // Quando o backend Spring tiver o controller correspondente pronto, basta
 // remover/comentar o handler aqui e o app passa a falar com o backend real.
 
-import { http, HttpResponse, delay } from 'msw'
+import { http, HttpResponse, delay, ws } from 'msw'
 import { state } from './seed'
+import { simulateMatch, averageOverall } from './engine'
 import type {
   TransferResult,
   Club,
   ErrorResponse,
+  MatchEvent,
 } from '../domain/types'
 import type { components } from '../api/generated'
 
@@ -16,6 +18,16 @@ type BuyPlayerRequest      = components['schemas']['BuyPlayerRequest']
 type SellPlayerRequest     = components['schemas']['SellPlayerRequest']
 type LineupRequest         = components['schemas']['LineupRequest']
 type ExpandStadiumRequest  = components['schemas']['ExpandStadiumRequest']
+
+// ─── WebSocket de partida ao vivo ─────────────────────────────────────────
+// MSW intercepta o construtor global de WebSocket. Quando MatchPage abrir
+// `ws://host/ws/matches/${id}`, este handler responde.
+const wsProtocol = typeof window !== 'undefined' && window.location.protocol === 'https:'
+  ? 'wss:' : 'ws:'
+const wsHost = typeof window !== 'undefined' ? window.location.host : 'localhost:5173'
+const matchStream = ws.link(`${wsProtocol}//${wsHost}/ws/matches/:id`)
+
+const MS_PER_MINUTE = 80   // 90 minutos simulados em ~7s reais
 
 // Latência simulada para parecer com rede real (descomente em testes determinísticos)
 const SIMULATED_LATENCY_MS = 120
@@ -190,5 +202,41 @@ export const handlers = [
   http.get('/api/league/standings', async () => {
     await delay(SIMULATED_LATENCY_MS)
     return HttpResponse.json(state.standings)
+  }),
+
+  // ─── streamMatch (WebSocket) ──────────────────────────────────────────
+  // Mapeia para o endpoint Spring `/ws/matches/{id}` que emitirá o mesmo
+  // schema MatchEvent via Flow → WebSocketSession (Fase 3 do backend).
+  matchStream.addEventListener('connection', ({ client, params }) => {
+    const matchId = Number(params.id)
+    const myClub = state.clubs[1]
+    if (!myClub) {
+      client.close(1011, 'Clube do usuário não encontrado')
+      return
+    }
+
+    const setup = {
+      matchId,
+      homeStrength: averageOverall(myClub.squad),
+      awayStrength: 75, // adversário mock fixo enquanto não há liga completa
+      homeSquad:    myClub.squad.map((p) => p.id),
+      awaySquad:    [1001, 1002, 1003, 1004, 1005],
+    }
+
+    let cancelled = false
+    client.addEventListener('close', () => { cancelled = true })
+
+    void (async () => {
+      let lastMinute = 0
+      for (const event of simulateMatch(setup)) {
+        if (cancelled) return
+        const wait = Math.max(0, (event.minute - lastMinute) * MS_PER_MINUTE)
+        if (wait > 0) await delay(wait)
+        if (cancelled) return
+        client.send(JSON.stringify(event satisfies MatchEvent))
+        lastMinute = event.minute
+      }
+      client.close(1000, 'Partida encerrada')
+    })()
   }),
 ]

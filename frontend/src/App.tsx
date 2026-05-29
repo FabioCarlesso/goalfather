@@ -2,9 +2,11 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-do
 import { DashboardPage } from './pages/DashboardPage'
 import { StandingsPage } from './pages/StandingsPage'
 import { MarketPage } from './pages/MarketPage'
+import { MatchPage } from './pages/MatchPage'
 
 const nav = [
   { to: '/dashboard', label: 'Clube' },
+  { to: '/match',     label: 'Partida' },
   { to: '/market',    label: 'Mercado' },
   { to: '/standings', label: 'Tabela' },
 ] as const
@@ -43,6 +45,7 @@ export function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/match"     element={<MatchPage />} />
             <Route path="/market"    element={<MarketPage />} />
             <Route path="/standings" element={<StandingsPage />} />
           </Routes>
