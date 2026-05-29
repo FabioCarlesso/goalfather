@@ -1,0 +1,347 @@
+# ⚽ GoalFather — Plano de Arquitetura
+
+> Manager de futebol estilo Elifoot. Backend em **Kotlin + Spring Boot**, frontend web em React.
+> Projeto pessoal de Fabio Carlesso para estudar Kotlin no backend. Sigla: **GF**.
+
+**Stack escolhida:** Spring Boot + Kotlin · Single-player agora, multiplayer depois
+**Prioridades de aprendizado:** (1) Idiomas Kotlin · (2) Arquitetura limpa/DDD · (3) Engine de simulação · (4) DevOps
+
+---
+
+## 1. Visão geral
+
+GoalFather é um jogo de gerenciamento de futebol onde o usuário acumula os papéis de técnico e presidente de um clube: escala o time, define táticas, compra e vende jogadores, administra finanças e estádio, e disputa um campeonato simulado rodada a rodada.
+
+A arquitetura é desenhada para **começar single-player** (1 técnico vs. IA), mas com as fronteiras de domínio já preparadas para multiplayer (várias pessoas na mesma liga) sem reescrita estrutural — apenas adicionando contexto de identidade/sessão e concorrência.
+
+### Princípio norteador
+
+O coração do sistema é o **domínio de simulação**, e ele deve ser independente de framework. Spring Boot, JPA e REST são detalhes de infraestrutura na borda. Essa separação é exatamente o que torna o projeto bom para estudar arquitetura limpa — e o que permite que a engine seja testada sem subir contexto Spring.
+
+---
+
+## 2. Por que Kotlin brilha neste domínio
+
+Um manager de futebol é um caso de uso quase ideal para exercitar os recursos que diferenciam Kotlin de Java. Abaixo, o mapeamento entre conceito de domínio e idioma da linguagem:
+
+| Conceito do jogo | Recurso Kotlin | Por quê |
+|---|---|---|
+| Atributos imutáveis de jogador | `data class` + `val` | Igualdade estrutural e `copy()` de graça |
+| Eventos de partida (gol, cartão, lesão) | `sealed class` / `sealed interface` | `when` exaustivo sem `else`, modelagem fechada |
+| Posições, formações, status | `enum class` com propriedades | Comportamento junto do valor |
+| Resultado de operações (compra, escalação) | `sealed class Result` ou `kotlin.Result` | Erros como valores, sem exceptions de controle de fluxo |
+| Simulação assíncrona de várias partidas | `coroutines` + `Flow` | Concorrência estruturada, streaming de eventos |
+| Configuração de squad / liga | type-safe builders (**DSL**) | Construção legível e validada de cenários |
+| Ausência de jogador / valor opcional | null-safety (`?`, `?:`, `?.let`) | Elimina classe inteira de NPEs |
+| Cálculos de força/atributo | extension functions | `lineup.teamStrength()` lê como linguagem natural |
+
+> **Nota de transição (vindo de Java/Spring):** você vai reconhecer 80% imediatamente. Os 20% que valem estudo são: `sealed` + `when` exaustivo, coroutines vs. `@Async`/`CompletableFuture`, e DSLs com lambdas-with-receiver. Foque tempo de estudo aí.
+
+---
+
+## 3. Arquitetura em camadas (Clean / Hexagonal)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ADAPTERS (infra de entrada/saída)                            │
+│  ├─ web/        REST controllers, DTOs, WebSocket             │
+│  ├─ persistence/  JPA entities, repositórios Spring Data      │
+│  └─ config/     Spring beans, segurança, OpenAPI              │
+├─────────────────────────────────────────────────────────────┤
+│  APPLICATION (casos de uso / orquestração)                    │
+│  ├─ services/   PlayMatchUseCase, BuyPlayerUseCase, ...        │
+│  └─ ports/      interfaces (ClubRepository, MatchEngine)       │
+├─────────────────────────────────────────────────────────────┤
+│  DOMAIN (núcleo puro — ZERO Spring, ZERO JPA)                 │
+│  ├─ model/      Club, Player, Lineup, Formation, League        │
+│  ├─ event/      MatchEvent (sealed), TransferEvent             │
+│  ├─ engine/     MatchSimulator, StrengthCalculator             │
+│  └─ rules/      regras de negócio puras e testáveis            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Regra de dependência:** as setas apontam sempre para dentro. `domain` não conhece `application`; `application` não conhece `adapters`. A inversão acontece via *ports* (interfaces declaradas em `application`, implementadas em `adapters`).
+
+### Estrutura de pacotes sugerida
+
+```
+com.carlesso.goalfather
+├── domain
+│   ├── model         // Club, Player, Lineup, Formation, Stadium, League, Standing
+│   ├── event         // sealed MatchEvent, sealed TransferResult
+│   ├── engine        // MatchSimulator, StrengthCalculator (puro)
+│   └── rules         // TransferRules, LineupRules
+├── application
+│   ├── port
+│   │   ├── in         // PlayMatchUseCase, ManageSquadUseCase (interfaces)
+│   │   └── out        // ClubRepository, LeagueRepository (interfaces)
+│   └── service        // implementações dos use cases
+├── adapter
+│   ├── in.web         // controllers, DTO, mappers, WebSocket handlers
+│   └── out.persistence // *Entity (JPA), *JpaRepository, *PersistenceAdapter
+└── config             // SpringConfig, SecurityConfig, OpenApiConfig
+```
+
+---
+
+## 4. Modelo de domínio (Kotlin)
+
+Esboço das principais classes. Tudo imutável por padrão; mutações produzem novas instâncias via `copy()`.
+
+```kotlin
+// ---- Value types ----
+enum class Position(val abbr: String) { GK("GL"), CB("ZG"), MF("MC"), FW("AT") }
+
+enum class Formation(val slots: List<Position>) {
+    F_4_4_2(listOf(GK, CB, CB, CB, CB, MF, MF, MF, MF, FW, FW)),
+    F_4_3_3(listOf(GK, CB, CB, CB, CB, MF, MF, MF, FW, FW, FW)),
+    F_3_5_2(listOf(GK, CB, CB, CB, MF, MF, MF, MF, MF, FW, FW));
+}
+
+@JvmInline
+value class PlayerId(val value: Long)          // value class: zero overhead
+
+// ---- Entities ----
+data class Player(
+    val id: PlayerId,
+    val name: String,
+    val position: Position,
+    val overall: Int,
+    val pace: Int, val shooting: Int, val passing: Int, val defending: Int,
+    val stamina: Int = 100,
+    val salary: Int,
+    val age: Int,
+    val goals: Int = 0,
+    val injured: Boolean = false,
+) {
+    val isStar: Boolean get() = overall >= 82
+}
+
+data class Lineup(val players: List<Player>, val formation: Formation) {
+    init { require(players.size <= 11) { "Escalação não pode ter mais que 11 jogadores" } }
+    val isComplete: Boolean get() = players.size == 11
+}
+
+data class Club(
+    val id: Long,
+    val name: String,
+    val cash: Long,
+    val stadiumCapacity: Int,
+    val squad: List<Player>,
+    val ownerId: UserId? = null,   // null = controlado pela IA (preparado p/ multiplayer)
+)
+```
+
+### Eventos de partida como `sealed` (o destaque Kotlin)
+
+```kotlin
+sealed interface MatchEvent {
+    val minute: Int
+
+    data class KickOff(override val minute: Int = 0) : MatchEvent
+    data class Goal(override val minute: Int, val scorer: PlayerId, val home: Boolean) : MatchEvent
+    data class Card(override val minute: Int, val player: PlayerId, val red: Boolean) : MatchEvent
+    data class Injury(override val minute: Int, val player: PlayerId) : MatchEvent
+    data class Save(override val minute: Int) : MatchEvent
+    data class FullTime(override val minute: Int = 90, val homeGoals: Int, val awayGoals: Int) : MatchEvent
+}
+
+// consumo com when exaustivo — sem else, o compilador garante cobertura
+fun describe(e: MatchEvent): String = when (e) {
+    is MatchEvent.KickOff  -> "⚡ Bola rolando!"
+    is MatchEvent.Goal     -> "⚽ GOL no minuto ${e.minute}!"
+    is MatchEvent.Card     -> if (e.red) "🟥 Vermelho!" else "🟨 Amarelo"
+    is MatchEvent.Injury   -> "🚑 Lesão no minuto ${e.minute}"
+    is MatchEvent.Save     -> "🧤 Defesa difícil"
+    is MatchEvent.FullTime -> "🏁 Fim: ${e.homeGoals} × ${e.awayGoals}"
+}
+```
+
+### Resultados de operação sem exceptions
+
+```kotlin
+sealed interface TransferResult {
+    data class Success(val club: Club, val player: Player) : TransferResult
+    data object InsufficientFunds : TransferResult
+    data object SquadFull : TransferResult
+}
+```
+
+---
+
+## 5. Engine de simulação
+
+A engine é uma função pura: recebe duas escalações + uma semente de aleatoriedade e devolve um fluxo de eventos. Nada de I/O, nada de Spring — 100% testável com `runTest`.
+
+```kotlin
+class MatchSimulator(private val rng: Random = Random.Default) {
+
+    fun simulate(home: Lineup, away: Lineup): Flow<MatchEvent> = flow {
+        emit(MatchEvent.KickOff())
+        var hg = 0; var ag = 0
+        val homeStr = home.teamStrength()    // extension function
+        val awayStr = away.teamStrength()
+
+        for (minute in 1..90) {
+            if (rng.nextDouble() < CHANCE_RATE) {
+                val event = resolveChance(minute, homeStr, awayStr, home, away)
+                if (event is MatchEvent.Goal) { if (event.home) hg++ else ag++ }
+                emit(event)
+            }
+            if (minute == 45) emit(/* meio-tempo */ MatchEvent.Save(45))
+            delay(STREAM_DELAY) // p/ streaming em tempo real via WebSocket; remova em testes
+        }
+        emit(MatchEvent.FullTime(homeGoals = hg, awayGoals = ag))
+    }
+
+    companion object {
+        const val CHANCE_RATE = 0.12
+        val STREAM_DELAY = 280.milliseconds
+    }
+}
+
+// extension function — lê como domínio
+fun Lineup.teamStrength(): Double =
+    if (players.isEmpty()) 60.0 else players.sumOf { it.overall } / players.size.toDouble()
+```
+
+> **Conceitos exercitados aqui:** `Flow` (cold stream), coroutines (`delay`, `suspend`), extension functions, `companion object`, e injeção de `Random` para testes determinísticos (passe uma seed fixa).
+
+### DSL para montar cenários de teste/seed
+
+```kotlin
+// type-safe builder — lambda-with-receiver
+val time = club("Meu Time") {
+    cash = 800_000
+    stadium = 15_000
+    player("Renato Silva")   { position = FW; overall = 88; salary = 55_000 }
+    player("Felipe Costa")   { position = MF; overall = 80; salary = 28_000 }
+    player("Marcos Figueiredo") { position = GK; overall = 78; salary = 25_000 }
+}
+```
+
+Implementar essa DSL é um dos exercícios Kotlin mais ricos do projeto (escopo via `@DslMarker`, builders mutáveis que produzem objetos imutáveis).
+
+---
+
+## 6. Camada de aplicação (use cases)
+
+Cada caso de uso é uma classe com responsabilidade única, dependendo apenas de *ports* (interfaces).
+
+```kotlin
+interface PlayMatchUseCase {
+    suspend fun execute(clubId: Long, round: Int): MatchSummary
+}
+
+class PlayMatchService(
+    private val clubRepo: ClubRepository,       // port out
+    private val leagueRepo: LeagueRepository,    // port out
+    private val simulator: MatchSimulator,       // domínio
+) : PlayMatchUseCase {
+
+    override suspend fun execute(clubId: Long, round: Int): MatchSummary {
+        val club = clubRepo.findById(clubId) ?: error("Clube não encontrado")
+        val opponent = leagueRepo.opponentFor(clubId, round)
+        val events = simulator.simulate(club.startingLineup(), opponent.lineup()).toList()
+        // aplica resultado: gols, stamina, finanças, tabela...
+        return MatchSummary.from(events)
+    }
+}
+```
+
+---
+
+## 7. Adapters
+
+### Web (REST + WebSocket)
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/clubs/{id}` | Estado do clube |
+| `POST` | `/api/clubs/{id}/lineup` | Salvar escalação e formação |
+| `POST` | `/api/clubs/{id}/matches?round=N` | Jogar partida (retorna resumo) |
+| `GET` | `/ws/matches/{id}` | **WebSocket**: stream de eventos ao vivo |
+| `GET` | `/api/market` | Jogadores disponíveis |
+| `POST` | `/api/market/buy` | Contratar jogador |
+| `POST` | `/api/market/sell` | Vender jogador |
+| `POST` | `/api/clubs/{id}/stadium/expand` | Ampliar estádio |
+| `GET` | `/api/league/standings` | Tabela de classificação |
+
+DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar o modelo interno na API e desacopla versionamento do contrato REST.
+
+### Persistência
+
+- **Banco:** PostgreSQL
+- **ORM:** Spring Data JPA (entidades `@Entity` distintas das `data class` de domínio; `PersistenceAdapter` faz a tradução)
+- **Cache:** Caffeine para tabela de classificação e lista de mercado (você já usou no projeto Cartola — mesma abordagem)
+- **Migrations:** Flyway
+
+> Padrão recomendado: **não** anote as `data class` de domínio com `@Entity`. Mantê-las puras custa um mapper a mais, mas preserva a regra de dependência e deixa o domínio testável sem JPA no classpath.
+
+---
+
+## 8. Roadmap em fases
+
+### Fase 1 — Fundação do domínio (sem Spring)
+- [ ] Setup do projeto Gradle Kotlin DSL (`build.gradle.kts`)
+- [ ] Modelo de domínio: `Player`, `Club`, `Lineup`, `Formation`, `League`
+- [ ] `MatchEvent` sealed + `StrengthCalculator`
+- [ ] `MatchSimulator` com `Random` injetável
+- [ ] Testes unitários com seed fixa (JUnit 5 + `kotlin.test`)
+- **Foco de estudo:** data/sealed classes, enums com propriedades, null-safety
+
+### Fase 2 — Casos de uso + persistência
+- [ ] Ports (in/out) e use cases (`PlayMatch`, `BuyPlayer`, `ManageSquad`)
+- [ ] JPA entities + PersistenceAdapters + Flyway
+- [ ] Caffeine cache na tabela/mercado
+- **Foco de estudo:** coroutines em use cases, `Result`/sealed para erros
+
+### Fase 3 — API REST + frontend
+- [ ] Controllers REST + DTOs + OpenAPI (springdoc)
+- [ ] Integração com o protótipo React existente
+- [ ] WebSocket para partida ao vivo (stream de `Flow` → cliente)
+- **Foco de estudo:** `Flow` → SSE/WebSocket, serialização (kotlinx.serialization)
+
+### Fase 4 — DSL + polimento single-player
+- [ ] DSL de seed de ligas/clubes (`@DslMarker`)
+- [ ] Temporadas, promoção/rebaixamento, mercado dinâmico
+- [ ] Suíte de testes ampla (estilo dos ~110 cenários do Cartola)
+
+### Fase 5 — Multiplayer (futuro)
+- [ ] `UserId` / autenticação (Spring Security + JWT)
+- [ ] Liga compartilhada, concorrência de mercado (locks otimistas)
+- [ ] Sincronização de rodadas entre técnicos humanos
+- **Foco de estudo:** coroutines + concorrência, `Mutex`, transações otimistas
+
+---
+
+## 9. Stack consolidada
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | Kotlin 2.x (JVM 21) |
+| Framework | Spring Boot 3.4.x |
+| Build | Gradle (Kotlin DSL) |
+| Persistência | Spring Data JPA + PostgreSQL |
+| Migrations | Flyway |
+| Cache | Caffeine |
+| Async/Stream | Kotlin Coroutines + Flow |
+| Serialização | kotlinx.serialization |
+| Docs API | springdoc-openapi (Swagger) |
+| Testes | JUnit 5, kotlin.test, MockK, `kotlinx-coroutines-test` |
+| Frontend | React (protótipo existente) |
+| Empacotamento | Docker multi-stage (como no Cartola) |
+
+> **MockK** em vez de Mockito: feito para Kotlin, lida com `final` por padrão e tem sintaxe idiomática. Vale o tempo de aprender.
+
+---
+
+## 10. Primeiros passos práticos
+
+1. **`start.spring.io`** → Gradle Kotlin DSL, JVM 21, deps: Web, Data JPA, PostgreSQL Driver, Validation, Actuator. Adicione coroutines, MockK e springdoc manualmente.
+2. Crie **primeiro o módulo `domain`** e escreva a engine + testes **antes** de qualquer controller. Isso força a separação e dá retorno rápido de aprendizado.
+3. Só depois suba a camada Spring ao redor do domínio já testado.
+
+---
+
+*Documento de planejamento — GoalFather · v1.0*
