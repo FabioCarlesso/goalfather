@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
 import { standingsKey } from '../api/queries/useStandings'
-import type { RoundEvent, RoundMatch, Standings } from '../domain/types'
+import { MatchEventFeed } from '../components/MatchEventFeed'
+import type { MatchEvent, RoundEvent, RoundMatch, Standings } from '../domain/types'
 
 const MY_CLUB_ID = 1
 
@@ -71,6 +72,23 @@ export function RoundPage() {
   }, [matchStates])
 
   const allFinished = round != null && Array.from(matchStates.values()).every((s) => s.status === 'Finished')
+
+  // ─── Partida do usuário + feed filtrado ──────────────────────────────
+  const myMatch = useMemo<RoundMatch | undefined>(
+    () => round?.matches.find((m) => m.homeClubId === MY_CLUB_ID || m.awayClubId === MY_CLUB_ID),
+    [round],
+  )
+
+  const myMatchEvents = useMemo<MatchEvent[]>(() => {
+    if (!myMatch) return []
+    const out: MatchEvent[] = []
+    for (const evt of events) {
+      if (evt.type === 'MatchUpdate' && evt.matchId === myMatch.matchId) {
+        out.push(evt.event)
+      }
+    }
+    return out
+  }, [events, myMatch])
 
   // ─── Ciclo de vida do WebSocket ──────────────────────────────────────
   const startRound = useCallback(async () => {
@@ -171,6 +189,19 @@ export function RoundPage() {
           />
         ))}
       </div>
+
+      {myMatch && (
+        <div className="space-y-2">
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">
+            Detalhes da sua partida — {myMatch.homeClubName} × {myMatch.awayClubName}
+          </h2>
+          <MatchEventFeed
+            events={myMatchEvents}
+            emptyLabel={status === 'idle' ? 'Clique em "Jogar rodada" para começar.' : 'Aguardando início…'}
+            className="h-72"
+          />
+        </div>
+      )}
 
       {finalStandings && status === 'finished' && (
         <FinalBanner standings={finalStandings} round={round.number} />
