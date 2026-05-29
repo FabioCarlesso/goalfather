@@ -28,6 +28,8 @@ export class MulberryRng {
 
 export interface MatchSetup {
   matchId: number
+  homeName: string
+  awayName: string
   homeStrength: number   // média de overall (0–99)
   awayStrength: number
   homeSquad: number[]    // IDs dos jogadores para escolher autor de gol/cartão/lesão
@@ -49,7 +51,14 @@ export function* simulateMatch(
   setup: MatchSetup,
   rng: MulberryRng = new MulberryRng(setup.matchId),
 ): Generator<MatchEvent> {
-  yield { type: 'KickOff', minute: 0 }
+  yield {
+    type: 'KickOff',
+    minute: 0,
+    homeClubName: setup.homeName,
+    awayClubName: setup.awayName,
+    homeStrength: setup.homeStrength,
+    awayStrength: setup.awayStrength,
+  }
 
   let homeGoals = 0
   let awayGoals = 0

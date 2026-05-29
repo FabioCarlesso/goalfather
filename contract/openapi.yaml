@@ -498,12 +498,20 @@ components:
         minute: { type: integer, minimum: 0, maximum: 120 }
 
     KickOffEvent:
+      description: |
+        Primeiro evento do stream. Carrega metadados da partida (nome e
+        força agregada dos times) para que o cliente possa renderizar o
+        placar antes que outros eventos cheguem.
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
         - type: object
-          required: [type]
+          required: [type, homeClubName, awayClubName, homeStrength, awayStrength]
           properties:
-            type: { type: string, enum: [KickOff] }
+            type:         { type: string, enum: [KickOff] }
+            homeClubName: { type: string }
+            awayClubName: { type: string }
+            homeStrength: { type: number, minimum: 0, maximum: 99 }
+            awayStrength: { type: number, minimum: 0, maximum: 99 }
 
     GoalEvent:
       allOf:

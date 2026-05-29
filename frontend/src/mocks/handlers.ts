@@ -217,8 +217,10 @@ export const handlers = [
 
     const setup = {
       matchId,
+      homeName:     myClub.name,
+      awayName:     'Atlético Bonsucesso', // adversário mock enquanto não há liga completa
       homeStrength: averageOverall(myClub.squad),
-      awayStrength: 75, // adversário mock fixo enquanto não há liga completa
+      awayStrength: 75,
       homeSquad:    myClub.squad.map((p) => p.id),
       awaySquad:    [1001, 1002, 1003, 1004, 1005],
     }
