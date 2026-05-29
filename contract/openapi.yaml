@@ -1,0 +1,642 @@
+openapi: 3.1.0
+info:
+  title: GoalFather API
+  version: 0.1.0
+  description: |
+    Contrato compartilhado entre o backend (Kotlin + Spring Boot) e o frontend
+    (Vite + React + TypeScript). Esta é a fonte de verdade dos tipos da API.
+
+    - **Backend:** springdoc-openapi valida que a implementação Spring bate com
+      este spec. `sealed interface MatchEvent` em Kotlin é serializado com
+      `@JsonClassDiscriminator("type")` (kotlinx.serialization), mapeando
+      diretamente para `oneOf + discriminator` aqui.
+    - **Frontend:** `openapi-typescript` gera `src/api/generated.d.ts` a partir
+      deste arquivo. Mocks MSW e cliente HTTP usam esses tipos.
+
+    Mudanças no contrato são feitas aqui PRIMEIRO; backend e frontend ajustam
+    suas implementações para acompanhar.
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: Fabio Carlesso
+    email: fabio.carlesso@gmail.com
+
+servers:
+  - url: http://localhost:8080
+    description: Backend Spring Boot local (bootRun)
+  - url: http://localhost:5173
+    description: Frontend Vite com MSW interceptando (dev mock)
+
+tags:
+  - name: Club
+    description: Estado e gestão do clube do usuário
+  - name: Match
+    description: Disputa e streaming de partidas
+  - name: Market
+    description: Mercado de transferências
+  - name: Stadium
+    description: Infraestrutura do clube
+  - name: League
+    description: Tabela e calendário do campeonato
+
+paths:
+  /api/clubs/{id}:
+    get:
+      tags: [Club]
+      operationId: getClub
+      summary: Estado completo do clube
+      description: Retorna clube com elenco, caixa, estádio e escalação atual.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      responses:
+        '200':
+          description: Clube encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Club' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/clubs/{id}/lineup:
+    post:
+      tags: [Club]
+      operationId: saveLineup
+      summary: Salvar escalação e formação
+      description: |
+        Define os 11 titulares e a formação tática. A ordem do array `playerIds`
+        deve corresponder aos slots da formação escolhida (ver `Formation`).
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LineupRequest' }
+      responses:
+        '204':
+          description: Escalação salva
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/clubs/{id}/matches:
+    post:
+      tags: [Match]
+      operationId: playMatch
+      summary: Jogar uma partida da rodada
+      description: |
+        Dispara a simulação síncrona da partida desta rodada e retorna o resumo.
+        Para acompanhar evento a evento em tempo real, conecte-se ao WebSocket
+        `/ws/matches/{id}` (ver `x-websocket` abaixo).
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+        - name: round
+          in: query
+          required: true
+          description: Número da rodada (1..N)
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Partida concluída
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MatchSummary' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Partida da rodada já disputada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/clubs/{id}/stadium/expand:
+    post:
+      tags: [Stadium]
+      operationId: expandStadium
+      summary: Ampliar capacidade do estádio
+      description: |
+        Investe caixa do clube para aumentar a capacidade do estádio.
+        Falha com `INSUFFICIENT_FUNDS` se o caixa for insuficiente.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExpandStadiumRequest' }
+      responses:
+        '200':
+          description: Estádio ampliado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Club' }
+        '402':
+          description: Caixa insuficiente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/market:
+    get:
+      tags: [Market]
+      operationId: listMarket
+      summary: Jogadores disponíveis no mercado
+      parameters:
+        - name: position
+          in: query
+          required: false
+          description: Filtra por posição
+          schema: { $ref: '#/components/schemas/Position' }
+        - name: maxPrice
+          in: query
+          required: false
+          description: Preço máximo de compra
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Lista de jogadores disponíveis
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MarketEntry' }
+
+  /api/market/buy:
+    post:
+      tags: [Market]
+      operationId: buyPlayer
+      summary: Contratar jogador do mercado
+      description: |
+        Devolve um `TransferResult` como union — `Success` traz o clube
+        atualizado e o jogador contratado; variantes de erro indicam o motivo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BuyPlayerRequest' }
+      responses:
+        '200':
+          description: Resultado da operação (sucesso ou erro de negócio)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferResult' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/market/sell:
+    post:
+      tags: [Market]
+      operationId: sellPlayer
+      summary: Vender jogador do elenco
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SellPlayerRequest' }
+      responses:
+        '200':
+          description: Resultado da operação
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferResult' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/league/standings:
+    get:
+      tags: [League]
+      operationId: getStandings
+      summary: Tabela de classificação do campeonato
+      responses:
+        '200':
+          description: Tabela ordenada por pontos, saldo, gols pró
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Standings' }
+
+  /ws/matches/{id}:
+    get:
+      tags: [Match]
+      operationId: streamMatch
+      summary: '[WebSocket] Stream de eventos da partida ao vivo'
+      description: |
+        **ATENÇÃO: endpoint WebSocket**, não HTTP. OpenAPI 3.1 não modela WS
+        oficialmente, então documentamos aqui apenas o formato das mensagens
+        para que o frontend tenha tipos gerados e o backend tenha referência.
+
+        - **URL real:** `ws://host:8080/ws/matches/{id}`
+        - **Direção:** servidor → cliente (read-only)
+        - **Formato:** uma mensagem JSON por evento, com o schema `MatchEvent`
+        - **Encerramento:** servidor fecha após enviar `FullTime`
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da partida em andamento
+          schema: { type: integer, format: int64 }
+      responses:
+        '101':
+          description: Switching Protocols — conexão WebSocket estabelecida
+        '200':
+          description: |
+            Não é uma resposta real; documentado apenas para que
+            `openapi-typescript` gere o tipo `MatchEvent` consumido no cliente.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MatchEvent' }
+      x-websocket:
+        protocol: ws
+        messages:
+          serverToClient:
+            schema: { $ref: '#/components/schemas/MatchEvent' }
+
+components:
+
+  parameters:
+    ClubIdPath:
+      name: id
+      in: path
+      required: true
+      description: ID do clube
+      schema: { type: integer, format: int64 }
+
+  responses:
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ValidationError:
+      description: Payload inválido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+
+    # ─── Enums ─────────────────────────────────────────────────────────────
+    Position:
+      type: string
+      description: Posição do jogador no campo
+      enum: [GK, CB, MF, FW]
+      x-labels:
+        GK: GL
+        CB: ZG
+        MF: MC
+        FW: AT
+
+    Formation:
+      type: string
+      description: Esquema tático (define ordem das posições nos slots)
+      enum: ['4-4-2', '4-3-3', '3-5-2', '5-3-2']
+
+    # ─── Player & Club ────────────────────────────────────────────────────
+    Player:
+      type: object
+      required:
+        - id
+        - name
+        - position
+        - overall
+        - pace
+        - shooting
+        - passing
+        - defending
+        - stamina
+        - salary
+        - age
+        - goals
+        - injured
+      properties:
+        id:         { type: integer, format: int64 }
+        name:       { type: string }
+        position:   { $ref: '#/components/schemas/Position' }
+        overall:    { type: integer, minimum: 0, maximum: 99 }
+        pace:       { type: integer, minimum: 0, maximum: 99 }
+        shooting:   { type: integer, minimum: 0, maximum: 99 }
+        passing:    { type: integer, minimum: 0, maximum: 99 }
+        defending:  { type: integer, minimum: 0, maximum: 99 }
+        stamina:    { type: integer, minimum: 0, maximum: 100 }
+        salary:     { type: integer, minimum: 0, description: Salário mensal }
+        age:        { type: integer, minimum: 15, maximum: 50 }
+        goals:      { type: integer, minimum: 0, description: Gols na temporada }
+        injured:    { type: boolean }
+        star:
+          type: boolean
+          description: Derivado de `overall >= 82` (computado pelo backend)
+
+    Lineup:
+      type: object
+      required: [formation, playerIds]
+      properties:
+        formation:
+          $ref: '#/components/schemas/Formation'
+        playerIds:
+          type: array
+          minItems: 0
+          maxItems: 11
+          items: { type: integer, format: int64 }
+          description: |
+            IDs dos titulares em ordem correspondente aos slots da formação.
+
+    Club:
+      type: object
+      required:
+        - id
+        - name
+        - cash
+        - stadiumCapacity
+        - squad
+      properties:
+        id:               { type: integer, format: int64 }
+        name:             { type: string }
+        cash:             { type: integer, format: int64, description: Caixa em centavos }
+        stadiumCapacity:  { type: integer, minimum: 0 }
+        squad:
+          type: array
+          items: { $ref: '#/components/schemas/Player' }
+        lineup:
+          $ref: '#/components/schemas/Lineup'
+          description: Escalação salva (pode estar incompleta)
+        ownerId:
+          type: integer
+          format: int64
+          nullable: true
+          description: |
+            Dono humano do clube; `null` significa controlado pela IA.
+            Preparado para multiplayer (Fase 5).
+
+    # ─── Requests ─────────────────────────────────────────────────────────
+    LineupRequest:
+      type: object
+      required: [formation, playerIds]
+      properties:
+        formation: { $ref: '#/components/schemas/Formation' }
+        playerIds:
+          type: array
+          minItems: 11
+          maxItems: 11
+          items: { type: integer, format: int64 }
+
+    ExpandStadiumRequest:
+      type: object
+      required: [additionalSeats]
+      properties:
+        additionalSeats:
+          type: integer
+          minimum: 1000
+          description: Quantidade de novos assentos a adicionar
+
+    BuyPlayerRequest:
+      type: object
+      required: [clubId, playerId]
+      properties:
+        clubId:   { type: integer, format: int64 }
+        playerId: { type: integer, format: int64 }
+
+    SellPlayerRequest:
+      type: object
+      required: [clubId, playerId]
+      properties:
+        clubId:   { type: integer, format: int64 }
+        playerId: { type: integer, format: int64 }
+
+    # ─── Market ───────────────────────────────────────────────────────────
+    MarketEntry:
+      type: object
+      required: [player, price]
+      properties:
+        player: { $ref: '#/components/schemas/Player' }
+        price:
+          type: integer
+          format: int64
+          description: Preço de compra (em centavos)
+
+    TransferResult:
+      description: |
+        Mapeia `sealed interface TransferResult` no domínio Kotlin.
+        Discriminado por `type` — frontend usa `switch (result.type)` exaustivo.
+      oneOf:
+        - $ref: '#/components/schemas/TransferSuccess'
+        - $ref: '#/components/schemas/InsufficientFunds'
+        - $ref: '#/components/schemas/SquadFull'
+        - $ref: '#/components/schemas/PlayerNotAvailable'
+      discriminator:
+        propertyName: type
+        mapping:
+          Success:            '#/components/schemas/TransferSuccess'
+          InsufficientFunds:  '#/components/schemas/InsufficientFunds'
+          SquadFull:          '#/components/schemas/SquadFull'
+          PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
+
+    TransferSuccess:
+      type: object
+      required: [type, club, player]
+      properties:
+        type:   { type: string, enum: [Success] }
+        club:   { $ref: '#/components/schemas/Club' }
+        player: { $ref: '#/components/schemas/Player' }
+
+    InsufficientFunds:
+      type: object
+      required: [type, available, required]
+      properties:
+        type:      { type: string, enum: [InsufficientFunds] }
+        available: { type: integer, format: int64 }
+        required:  { type: integer, format: int64 }
+
+    SquadFull:
+      type: object
+      required: [type, maxSize]
+      properties:
+        type:    { type: string, enum: [SquadFull] }
+        maxSize: { type: integer }
+
+    PlayerNotAvailable:
+      type: object
+      required: [type, playerId]
+      properties:
+        type:     { type: string, enum: [PlayerNotAvailable] }
+        playerId: { type: integer, format: int64 }
+
+    # ─── Match (sealed MatchEvent + summary) ─────────────────────────────
+    MatchEvent:
+      description: |
+        Mapeia `sealed interface MatchEvent` no domínio Kotlin. Cada mensagem
+        do WebSocket `/ws/matches/{id}` é um `MatchEvent` serializado.
+
+        Discriminado por `type` — frontend usa `switch (event.type)` exaustivo
+        (TS infere o tipo correto em cada branch).
+      oneOf:
+        - $ref: '#/components/schemas/KickOffEvent'
+        - $ref: '#/components/schemas/GoalEvent'
+        - $ref: '#/components/schemas/CardEvent'
+        - $ref: '#/components/schemas/InjuryEvent'
+        - $ref: '#/components/schemas/SaveEvent'
+        - $ref: '#/components/schemas/FullTimeEvent'
+      discriminator:
+        propertyName: type
+        mapping:
+          KickOff:  '#/components/schemas/KickOffEvent'
+          Goal:     '#/components/schemas/GoalEvent'
+          Card:     '#/components/schemas/CardEvent'
+          Injury:   '#/components/schemas/InjuryEvent'
+          Save:     '#/components/schemas/SaveEvent'
+          FullTime: '#/components/schemas/FullTimeEvent'
+
+    MatchEventBase:
+      type: object
+      required: [type, minute]
+      properties:
+        type:   { type: string }
+        minute: { type: integer, minimum: 0, maximum: 120 }
+
+    KickOffEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type]
+          properties:
+            type: { type: string, enum: [KickOff] }
+
+    GoalEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type, scorerId, home]
+          properties:
+            type:     { type: string, enum: [Goal] }
+            scorerId: { type: integer, format: int64 }
+            home:
+              type: boolean
+              description: true = gol do mandante; false = visitante
+
+    CardEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type, playerId, red]
+          properties:
+            type:     { type: string, enum: [Card] }
+            playerId: { type: integer, format: int64 }
+            red:      { type: boolean, description: true = vermelho; false = amarelo }
+
+    InjuryEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type, playerId]
+          properties:
+            type:     { type: string, enum: [Injury] }
+            playerId: { type: integer, format: int64 }
+
+    SaveEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type]
+          properties:
+            type: { type: string, enum: [Save] }
+
+    FullTimeEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type, homeGoals, awayGoals]
+          properties:
+            type:      { type: string, enum: [FullTime] }
+            homeGoals: { type: integer, minimum: 0 }
+            awayGoals: { type: integer, minimum: 0 }
+
+    MatchSummary:
+      type: object
+      required:
+        - matchId
+        - round
+        - homeClubId
+        - awayClubId
+        - homeGoals
+        - awayGoals
+        - events
+        - attendance
+        - ticketRevenue
+      properties:
+        matchId:       { type: integer, format: int64 }
+        round:         { type: integer, minimum: 1 }
+        homeClubId:    { type: integer, format: int64 }
+        awayClubId:    { type: integer, format: int64 }
+        homeGoals:     { type: integer, minimum: 0 }
+        awayGoals:     { type: integer, minimum: 0 }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/MatchEvent' }
+        attendance:
+          type: integer
+          minimum: 0
+          description: Público pagante
+        ticketRevenue:
+          type: integer
+          format: int64
+          description: Receita de bilheteria (em centavos)
+
+    # ─── League ───────────────────────────────────────────────────────────
+    StandingRow:
+      type: object
+      required:
+        - position
+        - clubId
+        - clubName
+        - played
+        - wins
+        - draws
+        - losses
+        - goalsFor
+        - goalsAgainst
+        - goalDifference
+        - points
+      properties:
+        position:        { type: integer, minimum: 1 }
+        clubId:          { type: integer, format: int64 }
+        clubName:        { type: string }
+        played:          { type: integer, minimum: 0 }
+        wins:            { type: integer, minimum: 0 }
+        draws:           { type: integer, minimum: 0 }
+        losses:          { type: integer, minimum: 0 }
+        goalsFor:        { type: integer, minimum: 0 }
+        goalsAgainst:    { type: integer, minimum: 0 }
+        goalDifference:  { type: integer }
+        points:          { type: integer, minimum: 0 }
+
+    Standings:
+      type: object
+      required: [season, round, rows]
+      properties:
+        season: { type: integer, description: Ano da temporada }
+        round:  { type: integer, minimum: 0, description: Rodada atual concluída }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/StandingRow' }
+
+    # ─── Error ────────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: |
+            Código estável para o cliente discriminar (não a mensagem).
+            Ex.: `CLUB_NOT_FOUND`, `INVALID_LINEUP`, `INSUFFICIENT_FUNDS`.
+        message:
+          type: string
+          description: Mensagem humana (pode ser exibida ao usuário)
+        details:
+          type: object
+          additionalProperties: true
+          description: Dados extras dependentes do código de erro
