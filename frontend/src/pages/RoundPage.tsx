@@ -1,0 +1,278 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
+import { standingsKey } from '../api/queries/useStandings'
+import type { RoundEvent, RoundMatch, Standings } from '../domain/types'
+
+const MY_CLUB_ID = 1
+
+type Status = 'idle' | 'connecting' | 'live' | 'finished' | 'error'
+
+interface LiveMatchState {
+  homeGoals: number
+  awayGoals: number
+  minute: number
+  status: 'Scheduled' | 'InProgress' | 'Finished'
+}
+
+export function RoundPage() {
+  const qc = useQueryClient()
+  const { data: round, isLoading } = useCurrentRound()
+  const playRound = usePlayRound()
+
+  const [events, setEvents] = useState<RoundEvent[]>([])
+  const [status, setStatus] = useState<Status>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [finalStandings, setFinalStandings] = useState<Standings | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+
+  // ─── Estado por partida derivado dos eventos ─────────────────────────
+  const matchStates: Map<number, LiveMatchState> = useMemo(() => {
+    const init = new Map<number, LiveMatchState>()
+    if (round) {
+      for (const m of round.matches) {
+        init.set(m.matchId, {
+          homeGoals: m.homeGoals,
+          awayGoals: m.awayGoals,
+          minute: m.minute,
+          status: m.status,
+        })
+      }
+    }
+    for (const evt of events) {
+      if (evt.type !== 'MatchUpdate') continue
+      const cur = init.get(evt.matchId)
+      if (!cur) continue
+      const next: LiveMatchState = { ...cur, minute: evt.event.minute }
+      switch (evt.event.type) {
+        case 'KickOff':
+          next.status = 'InProgress'
+          break
+        case 'Goal':
+          if (evt.event.home) next.homeGoals++
+          else next.awayGoals++
+          break
+        case 'FullTime':
+          next.homeGoals = evt.event.homeGoals
+          next.awayGoals = evt.event.awayGoals
+          next.status = 'Finished'
+          break
+        // Card, Injury, Save não afetam placar/status
+      }
+      init.set(evt.matchId, next)
+    }
+    return init
+  }, [events, round])
+
+  const aggregateMinute = useMemo(() => {
+    const values = Array.from(matchStates.values())
+    if (values.length === 0) return 0
+    return Math.max(...values.map((s) => s.minute))
+  }, [matchStates])
+
+  const allFinished = round != null && Array.from(matchStates.values()).every((s) => s.status === 'Finished')
+
+  // ─── Ciclo de vida do WebSocket ──────────────────────────────────────
+  const startRound = useCallback(async () => {
+    if (!round) return
+    wsRef.current?.close()
+    setEvents([])
+    setError(null)
+    setFinalStandings(null)
+    setStatus('connecting')
+
+    try {
+      await playRound.mutateAsync()
+    } catch (e) {
+      setError(`Falha ao iniciar rodada: ${String(e)}`)
+      setStatus('error')
+      return
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const socket = new WebSocket(`${protocol}//${window.location.host}/ws/round/${round.number}`)
+    wsRef.current = socket
+
+    socket.onopen = () => setStatus('live')
+    socket.onmessage = (e) => {
+      try {
+        const event = JSON.parse(e.data as string) as RoundEvent
+        setEvents((prev) => [...prev, event])
+        if (event.type === 'RoundFinished') {
+          setFinalStandings(event.standings)
+          // Empurra a nova tabela direto no cache (sem refetch desnecessário)
+          qc.setQueryData(standingsKey, event.standings)
+          // Próxima rodada já está pronta no backend mock — invalida para buscar
+          qc.invalidateQueries({ queryKey: currentRoundKey })
+        }
+      } catch (err) {
+        console.error('Falha ao parsear RoundEvent', err)
+      }
+    }
+    socket.onerror = () => {
+      setError('Erro de conexão com o servidor de rodada')
+      setStatus('error')
+    }
+    socket.onclose = (e) => {
+      setStatus((prev) => (prev === 'error' ? 'error' : 'finished'))
+      if (e.code !== 1000 && e.code !== 1005 && e.reason) setError(e.reason)
+    }
+  }, [round, playRound, qc])
+
+  useEffect(() => {
+    return () => wsRef.current?.close()
+  }, [])
+
+  if (isLoading || !round) return <p className="text-slate-400">Carregando rodada…</p>
+
+  const busy = status === 'connecting' || status === 'live'
+  const buttonLabel =
+    status === 'idle'       ? 'Jogar rodada' :
+    status === 'connecting' ? 'Iniciando…' :
+    status === 'live'       ? 'Rodada em andamento…' :
+    status === 'finished'   ? 'Próxima rodada' :
+                              'Tentar novamente'
+
+  return (
+    <section className="space-y-4">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-100">Rodada {round.number}</h1>
+          <p className="text-sm text-slate-400">Temporada {round.season} · {round.matches.length} partidas</p>
+        </div>
+        <button
+          onClick={startRound}
+          disabled={busy}
+          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
+        >
+          {buttonLabel}
+        </button>
+      </header>
+
+      {error && (
+        <div className="rounded-lg border border-red-700/50 bg-red-900/20 p-3 text-sm text-red-300">
+          {error}
+        </div>
+      )}
+
+      <RoundProgress
+        minute={aggregateMinute}
+        status={status}
+        allFinished={allFinished && status === 'finished'}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {round.matches.map((m) => (
+          <MatchCard
+            key={m.matchId}
+            match={m}
+            state={matchStates.get(m.matchId)}
+            highlight={m.homeClubId === MY_CLUB_ID || m.awayClubId === MY_CLUB_ID}
+          />
+        ))}
+      </div>
+
+      {finalStandings && status === 'finished' && (
+        <FinalBanner standings={finalStandings} round={round.number} />
+      )}
+    </section>
+  )
+}
+
+// ─── Componentes auxiliares ────────────────────────────────────────────
+
+function RoundProgress({
+  minute,
+  status,
+  allFinished,
+}: { minute: number; status: Status; allFinished: boolean }) {
+  const pct = Math.min(100, (minute / 90) * 100)
+  const remaining = Math.max(0, 90 - minute)
+  const label =
+    allFinished                ? 'Rodada encerrada — avaliando pontuações' :
+    status === 'live' && remaining <= 10 ? `⏱ Faltam ${remaining}′` :
+    status === 'live'          ? `Minuto ${minute}′` :
+                                 'Aguardando início'
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+      <div className="flex items-center justify-between mb-2 text-xs font-mono">
+        <span className={status === 'live' ? 'text-emerald-400' : 'text-slate-400'}>
+          {status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
+          {label}
+        </span>
+        <span className="text-slate-500 tabular-nums">{minute}/90′</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div
+          className={`h-full transition-all duration-300 ${
+            allFinished ? 'bg-slate-500' :
+            remaining <= 10 && status === 'live' ? 'bg-amber-400' :
+            'bg-emerald-500'
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function MatchCard({
+  match,
+  state,
+  highlight,
+}: { match: RoundMatch; state: LiveMatchState | undefined; highlight: boolean }) {
+  const s = state ?? {
+    homeGoals: match.homeGoals,
+    awayGoals: match.awayGoals,
+    minute: match.minute,
+    status: match.status,
+  }
+
+  const minuteLabel = s.status === 'Finished' ? 'FIM' : s.status === 'InProgress' ? `${s.minute}'` : '—'
+  const minuteColor = s.status === 'InProgress' ? 'text-emerald-400' : 'text-slate-500'
+
+  return (
+    <div className={`rounded-lg border p-4 transition-colors ${
+      highlight
+        ? 'border-emerald-700/50 bg-emerald-900/10'
+        : 'border-slate-800 bg-slate-900/40'
+    }`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className={`text-xs font-mono tracking-wider ${minuteColor}`}>
+          {s.status === 'InProgress' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
+          {minuteLabel}
+        </span>
+        {highlight && <span className="text-xs text-emerald-400 font-semibold">SEU JOGO</span>}
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className="text-right">
+          <div className="text-sm font-medium text-slate-100 truncate">{match.homeClubName}</div>
+        </div>
+        <div className="text-2xl font-bold font-mono tabular-nums text-slate-100 px-2">
+          {s.homeGoals} <span className="text-slate-600">×</span> {s.awayGoals}
+        </div>
+        <div className="text-left">
+          <div className="text-sm font-medium text-slate-100 truncate">{match.awayClubName}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FinalBanner({ standings, round }: { standings: Standings; round: number }) {
+  const top3 = standings.rows.slice(0, 3)
+  return (
+    <div className="rounded-lg border border-emerald-700/50 bg-emerald-900/20 p-4">
+      <div className="font-semibold text-emerald-200">Pontuações atualizadas após a rodada {round}</div>
+      <ul className="mt-2 text-sm space-y-1">
+        {top3.map((r) => (
+          <li key={r.clubId} className="flex justify-between text-slate-200">
+            <span>{r.position}. {r.clubName}</span>
+            <span className="font-mono">{r.points} pts · SG {r.goalDifference >= 0 ? '+' : ''}{r.goalDifference}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

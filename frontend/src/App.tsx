@@ -4,10 +4,12 @@ import { StandingsPage } from './pages/StandingsPage'
 import { MarketPage } from './pages/MarketPage'
 import { MatchPage } from './pages/MatchPage'
 import { LineupPage } from './pages/LineupPage'
+import { RoundPage } from './pages/RoundPage'
 
 const nav = [
   { to: '/dashboard', label: 'Clube' },
   { to: '/lineup',    label: 'Escalação' },
+  { to: '/round',     label: 'Rodada' },
   { to: '/match',     label: 'Partida' },
   { to: '/market',    label: 'Mercado' },
   { to: '/standings', label: 'Tabela' },
@@ -48,6 +50,7 @@ export function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/lineup"    element={<LineupPage />} />
+            <Route path="/round"     element={<RoundPage />} />
             <Route path="/match"     element={<MatchPage />} />
             <Route path="/market"    element={<MarketPage />} />
             <Route path="/standings" element={<StandingsPage />} />

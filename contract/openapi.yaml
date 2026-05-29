@@ -220,6 +220,81 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Standings' }
 
+  /api/league/round/current:
+    get:
+      tags: [League]
+      operationId: getCurrentRound
+      summary: Estado atual da rodada
+      description: |
+        Retorna os pareamentos da rodada corrente. Cada partida tem seu
+        próprio `matchId`. Para acompanhar ao vivo, conecte-se em
+        `/ws/round/{number}` após chamar `playRound`.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Round' }
+
+  /api/league/round/play:
+    post:
+      tags: [League]
+      operationId: playRound
+      summary: Iniciar simulação da rodada
+      description: |
+        Marca a rodada corrente como `InProgress` e devolve o número
+        para o cliente conectar no WebSocket. Operação idempotente
+        enquanto a rodada não termina.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [roundNumber]
+                properties:
+                  roundNumber: { type: integer, minimum: 1 }
+        '409':
+          description: Rodada já encerrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /ws/round/{number}:
+    get:
+      tags: [League]
+      operationId: streamRound
+      summary: '[WebSocket] Stream de eventos da rodada'
+      description: |
+        **ATENÇÃO: endpoint WebSocket.** Multiplexa eventos de TODAS as
+        partidas da rodada em um único canal. Cada mensagem é um
+        `RoundEvent` (`MatchUpdate` carregando um `MatchEvent` + matchId,
+        ou `RoundFinished` no encerramento com a tabela atualizada).
+
+        Esta escolha de design (um WS por rodada em vez de N WS por
+        partida) facilita a coordenação no backend Kotlin: um único
+        `Flow<RoundEvent>` orquestra todas as simulações em paralelo.
+      parameters:
+        - name: number
+          in: path
+          required: true
+          description: Número da rodada
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '101':
+          description: Switching Protocols — WebSocket estabelecido
+        '200':
+          description: |
+            Não é uma resposta real; documentado para que o cliente
+            tenha o tipo `RoundEvent` gerado pelo `openapi-typescript`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoundEvent' }
+      x-websocket:
+        protocol: ws
+        messages:
+          serverToClient:
+            schema: { $ref: '#/components/schemas/RoundEvent' }
+
   /ws/matches/{id}:
     get:
       tags: [Match]
@@ -630,6 +705,78 @@ components:
         rows:
           type: array
           items: { $ref: '#/components/schemas/StandingRow' }
+
+    RoundStatus:
+      type: string
+      description: Estado da rodada ou de uma partida da rodada
+      enum: [Scheduled, InProgress, Finished]
+
+    RoundMatch:
+      description: Estado de uma partida individual dentro de uma rodada.
+      type: object
+      required:
+        - matchId
+        - homeClubId
+        - awayClubId
+        - homeClubName
+        - awayClubName
+        - status
+        - homeGoals
+        - awayGoals
+        - minute
+      properties:
+        matchId:       { type: integer, format: int64 }
+        homeClubId:    { type: integer, format: int64 }
+        awayClubId:    { type: integer, format: int64 }
+        homeClubName:  { type: string }
+        awayClubName:  { type: string }
+        status:        { $ref: '#/components/schemas/RoundStatus' }
+        homeGoals:     { type: integer, minimum: 0 }
+        awayGoals:     { type: integer, minimum: 0 }
+        minute:        { type: integer, minimum: 0, maximum: 120 }
+
+    Round:
+      type: object
+      required: [number, season, status, matches]
+      properties:
+        number:  { type: integer, minimum: 1 }
+        season:  { type: integer }
+        status:  { $ref: '#/components/schemas/RoundStatus' }
+        matches:
+          type: array
+          items: { $ref: '#/components/schemas/RoundMatch' }
+
+    RoundEvent:
+      description: |
+        Mensagem do WebSocket `/ws/round/{number}`. Multiplexa eventos
+        de várias partidas + sinal de fim de rodada.
+
+        Discriminado por `type` — TS exige `switch` exaustivo sobre
+        ambas as variantes (espelha o `when` exaustivo do `sealed
+        interface RoundEvent` que o backend Kotlin terá).
+      oneOf:
+        - $ref: '#/components/schemas/MatchUpdateEvent'
+        - $ref: '#/components/schemas/RoundFinishedEvent'
+      discriminator:
+        propertyName: type
+        mapping:
+          MatchUpdate:    '#/components/schemas/MatchUpdateEvent'
+          RoundFinished:  '#/components/schemas/RoundFinishedEvent'
+
+    MatchUpdateEvent:
+      type: object
+      required: [type, matchId, event]
+      properties:
+        type:    { type: string, enum: [MatchUpdate] }
+        matchId: { type: integer, format: int64 }
+        event:   { $ref: '#/components/schemas/MatchEvent' }
+
+    RoundFinishedEvent:
+      type: object
+      required: [type, standings]
+      properties:
+        type:      { type: string, enum: [RoundFinished] }
+        standings: { $ref: '#/components/schemas/Standings' }
 
     # ─── Error ────────────────────────────────────────────────────────────
     ErrorResponse:
