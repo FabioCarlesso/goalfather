@@ -2,7 +2,7 @@
 
 > *"I'm gonna make him a transfer he can't refuse."*
 
-Manager de futebol estilo Elifoot. Backend em **Kotlin + Spring Boot**, frontend web em React. Projeto pessoal para estudar **Kotlin no backend** partindo de uma base sólida de Java/Spring Boot.
+Manager de futebol estilo Elifoot. Backend em **Kotlin + Spring Boot**, frontend em **React + TypeScript + Vite** (mock-first com MSW). Projeto pessoal para estudar **Kotlin no backend** partindo de uma base sólida de Java/Spring Boot.
 
 ---
 
@@ -32,13 +32,18 @@ Este é um projeto de estudo. As prioridades, em ordem:
 goalfather/
 ├── README.md              ← você está aqui
 ├── CLAUDE.md              ← instruções para o Claude Code
+├── LICENSE                ← MIT
 ├── .gitignore
 ├── docs/
-│   └── ARQUITETURA.md     ← plano de arquitetura completo (LEIA PRIMEIRO)
+│   ├── ARQUITETURA.md     ← plano de arquitetura do backend (LEIA PRIMEIRO)
+│   └── FRONTEND.md        ← plano do frontend (mock-first com OpenAPI)
+├── contract/              ← contrato compartilhado FE ↔ BE (a ser criado)
+│   └── openapi.yaml       ← fonte de verdade dos endpoints e schemas
 ├── prototype/
 │   ├── goalfather-web.jsx ← protótipo React jogável (referência de UX/regras)
 │   └── README.md          ← como rodar o protótipo
-└── backend/               ← código Kotlin/Spring Boot (a ser criado)
+├── backend/               ← código Kotlin/Spring Boot (a ser criado)
+└── frontend/              ← Vite + React + TS + MSW (a ser criado)
 ```
 
 ---
@@ -46,21 +51,29 @@ goalfather/
 ## 🚀 Começando o desenvolvimento
 
 ### 1. Leia a arquitetura
-Comece por [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md). Ele define camadas, modelo de domínio, engine, roadmap em 5 fases e a stack.
+Comece por [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) (backend) e [`docs/FRONTEND.md`](docs/FRONTEND.md) (frontend). Juntos definem camadas, domínio, engine, contrato OpenAPI, estratégia mock-first e o roadmap.
 
 ### 2. Explore o protótipo
-O [protótipo web](prototype/) é a **fonte de verdade das regras de jogo e da UX**: formações, atributos de jogador, cálculo de força, eventos de partida, fluxo de mercado e tabela. Use-o como especificação executável ao construir o backend.
+O [protótipo web](prototype/) é a **fonte de verdade das regras de jogo e da UX**: formações, atributos de jogador, cálculo de força, eventos de partida, fluxo de mercado e tabela. Use-o como especificação executável — tanto o backend Kotlin quanto o frontend novo se inspiram dele, mas nenhum dos dois é uma "promoção" do protótipo.
 
-### 3. Construa o backend (Fase 1 primeiro)
-A regra de ouro: **escreva o domínio puro e seus testes ANTES de qualquer controller Spring.** Isso força a separação de camadas e dá retorno rápido de aprendizado.
+### 3. Construa em paralelo, ligados pelo contrato
+
+**Backend — regra de ouro:** escreva o domínio puro e seus testes ANTES de qualquer controller Spring.
+**Frontend — regra de ouro:** o `contract/openapi.yaml` é a fonte de verdade; tudo no `src/` deriva dele (tipos gerados, mocks MSW, cliente HTTP).
 
 ```bash
-# scaffold inicial (a fazer)
+# Backend (a fazer)
 cd backend
-./gradlew build
 ./gradlew test       # a engine deve ser testável SEM subir contexto Spring
-./gradlew bootRun
+./gradlew bootRun    # API em :8080
+
+# Frontend (a fazer)
+cd frontend
+npm run dev          # Vite + MSW em :5173 (sem precisar do backend)
+npm run gen:api      # regera tipos TS a partir do contrato
 ```
+
+Critério de "endpoint pronto": desliga o handler MSW correspondente e o E2E continua passando contra `localhost:8080`.
 
 ---
 
@@ -68,17 +81,19 @@ cd backend
 
 | Fase | Entrega | Foco de estudo |
 |---|---|---|
-| **1** | Domínio puro + engine + testes (sem Spring) | data/sealed classes, enums, null-safety |
-| **2** | Use cases + persistência (JPA, Flyway, Caffeine) | coroutines, `Result`/sealed para erros |
-| **3** | API REST + WebSocket + integração com React | `Flow` → WebSocket, serialização |
-| **4** | DSL de seed + temporadas + suíte de testes ampla | `@DslMarker`, builders |
-| **5** | Multiplayer (auth, liga compartilhada, concorrência) | `Mutex`, locks otimistas |
+| **1** | Domínio puro + engine + testes (sem Spring) · Frontend setup + contrato OpenAPI | data/sealed classes, enums, null-safety |
+| **2** | Use cases + persistência (JPA, Flyway, Caffeine) · Telas contra mocks MSW | coroutines, `Result`/sealed para erros |
+| **3** | API REST + WebSocket · Swap incremental mock → endpoint real | `Flow` → WebSocket, serialização, OpenAPI bidirecional |
+| **4** | DSL de seed + temporadas + suíte de testes ampla · Polimento de UI | `@DslMarker`, builders |
+| **5** | Multiplayer (auth, liga compartilhada, concorrência) · Lobby/seleção de clube | `Mutex`, locks otimistas |
 
 Detalhes de cada fase em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#8-roadmap-em-fases).
 
 ---
 
 ## 🛠️ Stack
+
+**Backend**
 
 | Camada | Tecnologia |
 |---|---|
@@ -89,16 +104,35 @@ Detalhes de cada fase em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#8-roadmap-e
 | Cache | Caffeine |
 | Async | Kotlin Coroutines + Flow |
 | Serialização | kotlinx.serialization |
-| Docs API | springdoc-openapi |
+| Docs API | springdoc-openapi (valida contrato) |
 | Testes | JUnit 5, kotlin.test, MockK, kotlinx-coroutines-test |
-| Frontend | React |
+
+**Frontend**
+
+| Camada | Tecnologia |
+|---|---|
+| Build / dev server | Vite |
+| Linguagem | TypeScript (strict) |
+| UI | React 18 + Tailwind CSS |
+| Roteamento | React Router v6 |
+| Estado de servidor | TanStack Query v5 |
+| Cliente HTTP | `fetch` + tipos gerados do OpenAPI |
+| Mocks | MSW (Mock Service Worker) |
+| Tipos gerados | `openapi-typescript` |
+| Testes | Vitest + React Testing Library + Playwright (E2E) |
+
+**Compartilhado**
+
+| Item | Tecnologia |
+|---|---|
+| Contrato | OpenAPI 3.1 (`contract/openapi.yaml`) |
 | Empacotamento | Docker multi-stage |
 
 ---
 
 ## 📜 Licença
 
-Projeto pessoal de estudo. Sem licença pública por enquanto.
+MIT — ver [`LICENSE`](LICENSE).
 
 ---
 

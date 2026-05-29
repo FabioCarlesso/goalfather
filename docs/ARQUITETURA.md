@@ -1,10 +1,12 @@
 # ⚽ GoalFather — Plano de Arquitetura
 
-> Manager de futebol estilo Elifoot. Backend em **Kotlin + Spring Boot**, frontend web em React.
+> Manager de futebol estilo Elifoot. Backend em **Kotlin + Spring Boot**, frontend em **React + TypeScript** (Vite).
 > Projeto pessoal de Fabio Carlesso para estudar Kotlin no backend. Sigla: **GF**.
 
-**Stack escolhida:** Spring Boot + Kotlin · Single-player agora, multiplayer depois
+**Stack escolhida:** Spring Boot + Kotlin · Frontend React/TS mock-first · Single-player agora, multiplayer depois
 **Prioridades de aprendizado:** (1) Idiomas Kotlin · (2) Arquitetura limpa/DDD · (3) Engine de simulação · (4) DevOps
+
+> **Frontend:** o plano detalhado vive em [`FRONTEND.md`](FRONTEND.md). Estratégia mock-first com OpenAPI como contrato compartilhado — frontend evolui contra MSW enquanto o backend Kotlin é construído.
 
 ---
 
@@ -296,11 +298,14 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [ ] Caffeine cache na tabela/mercado
 - **Foco de estudo:** coroutines em use cases, `Result`/sealed para erros
 
-### Fase 3 — API REST + frontend
-- [ ] Controllers REST + DTOs + OpenAPI (springdoc)
-- [ ] Integração com o protótipo React existente
-- [ ] WebSocket para partida ao vivo (stream de `Flow` → cliente)
-- **Foco de estudo:** `Flow` → SSE/WebSocket, serialização (kotlinx.serialization)
+### Fase 3 — API REST + frontend (mock-first)
+- [ ] Definir `contract/openapi.yaml` cobrindo os 9 endpoints (compartilhado com frontend)
+- [ ] Controllers REST + DTOs (springdoc valida implementação contra o contrato)
+- [ ] Configurar kotlinx.serialization com `@JsonClassDiscriminator("type")` para `sealed MatchEvent` (mapeia para `oneOf` + `discriminator` do OpenAPI)
+- [ ] WebSocket `/ws/matches/{id}` para partida ao vivo (stream de `Flow` → cliente)
+- [ ] Frontend Vite+TS+MSW consumindo o mesmo contrato (ver [`FRONTEND.md`](FRONTEND.md))
+- [ ] Swap incremental: cada endpoint pronto desliga seu handler MSW; E2E continua passando
+- **Foco de estudo:** `Flow` → SSE/WebSocket, serialização (kotlinx.serialization), contrato OpenAPI bidirecional
 
 ### Fase 4 — DSL + polimento single-player
 - [ ] DSL de seed de ligas/clubes (`@DslMarker`)
@@ -328,8 +333,14 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 | Async/Stream | Kotlin Coroutines + Flow |
 | Serialização | kotlinx.serialization |
 | Docs API | springdoc-openapi (Swagger) |
-| Testes | JUnit 5, kotlin.test, MockK, `kotlinx-coroutines-test` |
-| Frontend | React (protótipo existente) |
+| Testes (backend) | JUnit 5, kotlin.test, MockK, `kotlinx-coroutines-test` |
+| Frontend | Vite + React 18 + TypeScript (strict) |
+| Estilo | Tailwind CSS |
+| Estado de servidor (FE) | TanStack Query v5 |
+| Mocks (FE) | MSW (Mock Service Worker) |
+| Contrato API | OpenAPI 3.1 em `contract/openapi.yaml` (compartilhado FE ↔ BE) |
+| Tipos gerados (FE) | `openapi-typescript` → `.d.ts` |
+| Testes (FE) | Vitest, React Testing Library, Playwright (E2E) |
 | Empacotamento | Docker multi-stage (como no Cartola) |
 
 > **MockK** em vez de Mockito: feito para Kotlin, lida com `final` por padrão e tem sintaxe idiomática. Vale o tempo de aprender.
@@ -338,9 +349,17 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 
 ## 10. Primeiros passos práticos
 
+**Backend (em série):**
 1. **`start.spring.io`** → Gradle Kotlin DSL, JVM 21, deps: Web, Data JPA, PostgreSQL Driver, Validation, Actuator. Adicione coroutines, MockK e springdoc manualmente.
 2. Crie **primeiro o módulo `domain`** e escreva a engine + testes **antes** de qualquer controller. Isso força a separação e dá retorno rápido de aprendizado.
 3. Só depois suba a camada Spring ao redor do domínio já testado.
+
+**Frontend (em paralelo a partir do passo 2 do backend):**
+1. Escrever `contract/openapi.yaml` com os 9 endpoints (não precisa de implementação).
+2. `npm create vite@latest frontend -- --template react-ts` e instalar Tailwind, TanStack Query, MSW, React Router, `openapi-typescript`.
+3. Construir todas as telas contra mocks MSW; trocar mock por endpoint real conforme o backend libera cada controller.
+
+Detalhes do frontend em [`FRONTEND.md`](FRONTEND.md).
 
 ---
 

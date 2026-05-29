@@ -1,6 +1,8 @@
 # Protótipo web — GoalFather
 
-Protótipo React **jogável** que serve como especificação executável das regras de jogo e referência de UX para o backend Kotlin.
+Protótipo React **jogável** que serve como especificação executável das regras de jogo e referência de UX.
+
+> ⚠️ **Não é a base do frontend de produção.** O frontend real vive em `../frontend/` (Vite + TS + MSW, mock-first contra `../contract/openapi.yaml`). Este protótipo é referência viva: a UX e as regras saem daqui, o código não. Ver [`../docs/FRONTEND.md`](../docs/FRONTEND.md) para a estratégia completa.
 
 ## O que ele define
 
@@ -25,7 +27,7 @@ O arquivo `goalfather-web.jsx` é um componente React único, sem dependências 
 
 ## Uso como especificação
 
-Ao implementar o backend (ver `../docs/ARQUITETURA.md`), replique as regras encontradas aqui no domínio Kotlin:
+**Backend** (ver `../docs/ARQUITETURA.md`) — replique as regras no domínio Kotlin:
 
 | Protótipo (JS) | Backend (Kotlin) |
 |---|---|
@@ -34,3 +36,12 @@ Ao implementar o backend (ver `../docs/ARQUITETURA.md`), replique as regras enco
 | `simulateMatch(...)` | `MatchSimulator.simulate(): Flow<MatchEvent>` |
 | eventos `{type: "goal"...}` | `sealed interface MatchEvent` |
 | `calcTeamStrength(...)` | `fun Lineup.teamStrength()` |
+
+**Frontend** (ver `../docs/FRONTEND.md`) — extraia UX e formato dos eventos, mas reescreva com separação clara:
+
+| Protótipo (tudo num `.jsx`) | Frontend real (`../frontend/src/`) |
+|---|---|
+| `useState` com tudo dentro | TanStack Query + props |
+| `simulateMatch` inline | `src/mocks/engine.ts` (descartado quando backend ficar pronto) |
+| Componente único monolítico | `pages/` + `components/` separados |
+| Sem tipos | TypeScript strict + tipos gerados do OpenAPI |

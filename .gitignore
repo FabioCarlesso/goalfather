@@ -22,11 +22,18 @@ application-local.properties
 # ─── VS Code ───
 .vscode/
 
-# ─── Node (protótipo) ───
+# ─── Node / Vite / Frontend ───
 node_modules/
 dist/
+dist-ssr/
 .npm/
 *.local
+.vite/
+coverage/
+playwright-report/
+test-results/
+# tipos gerados a partir do contract/openapi.yaml (rodar `npm run gen:api`)
+frontend/src/api/generated.d.ts
 
 # ─── Sistema operacional ───
 .DS_Store
