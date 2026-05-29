@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -9,13 +10,28 @@ export default defineConfig({
     port: 5173,
     proxy: {
       // WebSocket de partida ao vivo: proxy direto para o backend Spring.
-      // MSW não intercepta WS, então o handler real é configurado no backend
-      // ou num mock server custom durante desenvolvimento (ver src/mocks/ws.ts).
+      // MSW intercepta no nivel do construtor do WebSocket em DEV; quando
+      // MSW estiver desligado (VITE_USE_MOCKS=false), este proxy assume.
       '/ws': {
         target: 'ws://localhost:8080',
         ws: true,
         rewriteWsOrigin: true,
       },
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: false,
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+    // Vitest fica em src/. E2E (Playwright) vive em e2e/ e é executado
+    // por outro runner — exclui aqui para não dar pickup conflitante.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      exclude: ['src/api/generated.d.ts', 'src/mocks/**', 'src/test/**'],
     },
   },
 })

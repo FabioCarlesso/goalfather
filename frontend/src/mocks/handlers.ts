@@ -332,6 +332,10 @@ export const handlers = [
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
       state.standings = applyRoundToStandings(state.currentRound, state.standings)
 
+      // Pequeno gap antes do RoundFinished para o cliente processar os
+      // ultimos FullTime (MSW WS pode entregar fora de ordem se close vier
+      // colado nos sends).
+      await delay(50)
       if (cancelled) return
       const finished: RoundEvent = { type: 'RoundFinished', standings: state.standings }
       client.send(JSON.stringify(finished))
@@ -339,6 +343,8 @@ export const handlers = [
       // Avança para a próxima rodada (cliente busca via getCurrentRound depois)
       state.currentRound = state.nextRound()
 
+      // Gap para o cliente processar RoundFinished antes do close
+      await delay(50)
       client.close(1000, 'Rodada encerrada')
     })()
   }),

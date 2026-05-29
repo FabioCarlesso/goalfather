@@ -259,16 +259,28 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 
 ## 9. Testes
 
-| Tipo | Ferramenta | Escopo |
-|---|---|---|
-| Unidade | Vitest | Helpers, formatters, lógica de hooks isolada |
-| Componente | RTL + Vitest | Render de componente com props, interações |
-| Integração de tela | RTL + MSW | Página inteira contra mocks (sem rede real) |
-| E2E | Playwright | Fluxos críticos: escalar → jogar → ver tabela |
+| Tipo | Ferramenta | Localização | Comando |
+|---|---|---|---|
+| Unidade | Vitest | `src/**/*.test.ts` | `npm test` |
+| Componente | RTL + Vitest + jsdom | `src/pages/*.test.tsx` | `npm test` |
+| Integração HTTP | MSW node (`setupServer`) | reusa `src/mocks/handlers` | `npm test` |
+| E2E | Playwright | `e2e/*.spec.ts` | `npm run e2e` |
 
-A suíte E2E roda em dois modos:
-- `npm run e2e` → MSW ligado (rápido, determinístico, roda no CI sem backend)
-- `npm run e2e:real` → MSW desligado, exige backend em `localhost:8080` (validação de contrato real)
+**Setup compartilhado:**
+- `src/test/setup.ts` — wire de `@testing-library/jest-dom/vitest` + ciclo de vida do `setupServer` MSW.
+- `src/test/render.tsx` — `renderWithProviders` envolvendo componente em `QueryClientProvider` + `MemoryRouter`.
+- `playwright.config.ts` — `webServer` sobe `npm run dev` automaticamente; `baseURL = http://localhost:5173`.
+
+**Suíte E2E em dois modos** (critério "endpoint pronto" do roadmap):
+- `npm run e2e` → MSW ligado. Rápido, determinístico, roda no CI sem backend.
+- `npm run e2e:real` → `VITE_USE_MOCKS=false`. Exige backend em `localhost:8080`. Mesmas specs.
+
+**Decisão registrada:** WS handlers do MSW são no-op em `setupServer` (`msw/node`). Para validar o stream de partida ao vivo, usa-se Playwright (browser real) com MSW interceptando o `new WebSocket()`.
+
+**Outras decisões:**
+- TS strict permanece habilitado nos arquivos de teste — `tsconfig.app.json` os exclui só para evitar contagem no `build`.
+- Sem libs extra de assertions (jest-dom já dá `toBeInTheDocument`, `toBeEnabled`, etc.).
+- E2E rastreia com `trace: 'retain-on-failure'` + screenshot. Reports em `playwright-report/` (gitignored).
 
 ---
 
