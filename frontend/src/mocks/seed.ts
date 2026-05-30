@@ -28,6 +28,8 @@ const player = (
   stamina: 100,
   salary,
   goals: 0,
+  yellowCards: 0,
+  redCards: 0,
   injured: false,
   star: ovr >= 82,
 })

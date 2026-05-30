@@ -332,6 +332,37 @@ export const handlers = [
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
       state.standings = applyRoundToStandings(state.currentRound, state.standings)
 
+      // Acumula estatísticas dos jogadores do clube do usuário a partir dos
+      // eventos da rodada — espelha o PlayRoundService do backend (issue #2),
+      // mantendo a parity mock ↔ real.
+      const myClub = state.clubs[1]
+      if (myClub) {
+        const goals = new Map<number, number>()
+        const yellow = new Map<number, number>()
+        const red = new Map<number, number>()
+        const injured = new Set<number>()
+        for (const { event } of allEvents) {
+          if (event.type === 'Goal') {
+            goals.set(event.scorerId, (goals.get(event.scorerId) ?? 0) + 1)
+          } else if (event.type === 'Card') {
+            const target = event.red ? red : yellow
+            target.set(event.playerId, (target.get(event.playerId) ?? 0) + 1)
+          } else if (event.type === 'Injury') {
+            injured.add(event.playerId)
+          }
+        }
+        state.clubs[1] = {
+          ...myClub,
+          squad: myClub.squad.map((p) => ({
+            ...p,
+            goals: p.goals + (goals.get(p.id) ?? 0),
+            yellowCards: p.yellowCards + (yellow.get(p.id) ?? 0),
+            redCards: p.redCards + (red.get(p.id) ?? 0),
+            injured: p.injured || injured.has(p.id),
+          })),
+        }
+      }
+
       // Pequeno gap antes do RoundFinished para o cliente processar os
       // ultimos FullTime (MSW WS pode entregar fora de ordem se close vier
       // colado nos sends).

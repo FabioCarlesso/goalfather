@@ -48,8 +48,17 @@ export function DashboardPage() {
               <div className="min-w-0">
                 <span className="font-medium text-slate-100">{p.name}</span>
                 <span className="ml-2 text-xs text-slate-500">{p.position} · {p.age}a</span>
+                {p.injured && (
+                  <span
+                    className="ml-2 rounded bg-orange-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300"
+                    title="Lesionado — indisponível para escalação"
+                  >
+                    🚑 LESIONADO
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
+                <PlayerStats player={p} />
                 {p.star && <span className="text-yellow-400" title="Estrela">★</span>}
                 <span className="text-slate-300 font-mono w-8 text-right">{p.overall}</span>
                 <button
@@ -65,6 +74,17 @@ export function DashboardPage() {
         </ul>
       </div>
     </section>
+  )
+}
+
+/** Estatísticas acumuladas do jogador (gols/cartões) ao lado da linha do elenco. */
+function PlayerStats({ player }: { player: import('../domain/types').Player }) {
+  return (
+    <span className="flex items-center gap-2 text-xs font-mono text-slate-400">
+      {player.goals > 0 && <span className="text-emerald-400" title="Gols">⚽ {player.goals}</span>}
+      {player.yellowCards > 0 && <span className="text-yellow-300" title="Cartões amarelos">🟨 {player.yellowCards}</span>}
+      {player.redCards > 0 && <span className="text-red-400" title="Cartões vermelhos">🟥 {player.redCards}</span>}
+    </span>
   )
 }
 

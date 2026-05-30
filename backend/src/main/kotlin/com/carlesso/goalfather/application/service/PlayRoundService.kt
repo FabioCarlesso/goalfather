@@ -7,6 +7,7 @@ import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
+import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -47,10 +48,15 @@ class PlayRoundService(
         // eventos cabe folgado.)
         val tagged = mutableListOf<Pair<Long, MatchEvent>>()
         val finalScores = mutableMapOf<Long, Pair<Int, Int>>()
+        // Clubes que entraram em campo nesta rodada — guardados para
+        // persistir as estatísticas dos jogadores ao final (issue #2).
+        val involvedClubs = mutableMapOf<Long, Club>()
 
         for (match in round.matches) {
             val home = clubRepo.findById(match.homeClubId)
             val away = clubRepo.findById(match.awayClubId)
+            home?.let { involvedClubs[it.id.value] = it }
+            away?.let { involvedClubs[it.id.value] = it }
 
             val setup = MatchSetup(
                 home = home?.startingLineup() ?: emptyLineup(),
@@ -74,6 +80,10 @@ class PlayRoundService(
             emit(RoundEvent.MatchUpdate(matchId, event))
         }
 
+        // Acumula estatísticas dos jogadores a partir dos eventos da rodada
+        // e persiste nos clubes envolvidos (issue #2).
+        persistPlayerStats(tagged.map { it.second }, involvedClubs.values)
+
         // Atualiza estado pós-rodada e dispara RoundFinished.
         val finishedMatches = round.matches.map { m -> m.finish(finalScores[m.matchId]) }
         val finishedRound = round.copy(matches = finishedMatches, status = RoundStatus.Finished)
@@ -92,6 +102,56 @@ class PlayRoundService(
         }
 
         emit(RoundEvent.RoundFinished(newStandings))
+    }
+
+    /**
+     * Agrega os eventos da rodada por jogador e persiste o incremento de
+     * gols/cartões/lesão em cada clube que jogou.
+     *
+     * A atribuição é por `playerId`: cada clube só atualiza os jogadores do
+     * próprio elenco (ids são únicos por jogador), então não há ambiguidade
+     * entre mandante e visitante. Clubes sem nenhuma alteração não são
+     * salvos (evita escrita desnecessária).
+     */
+    private suspend fun persistPlayerStats(events: List<MatchEvent>, clubs: Collection<Club>) {
+        val goals = mutableMapOf<Long, Int>()
+        val yellow = mutableMapOf<Long, Int>()
+        val red = mutableMapOf<Long, Int>()
+        val injured = mutableSetOf<Long>()
+
+        for (event in events) {
+            when (event) {
+                is MatchEvent.Goal -> goals.merge(event.scorerId.value, 1, Int::plus)
+                is MatchEvent.Card ->
+                    if (event.red) red.merge(event.playerId.value, 1, Int::plus)
+                    else yellow.merge(event.playerId.value, 1, Int::plus)
+                is MatchEvent.Injury -> injured.add(event.playerId.value)
+                is MatchEvent.KickOff, is MatchEvent.Save, is MatchEvent.FullTime -> Unit
+            }
+        }
+
+        for (club in clubs) {
+            val updatedSquad = club.squad.map { p ->
+                val id = p.id.value
+                val g = goals[id] ?: 0
+                val y = yellow[id] ?: 0
+                val r = red[id] ?: 0
+                val hurt = id in injured
+                if (g == 0 && y == 0 && r == 0 && !hurt) {
+                    p
+                } else {
+                    p.copy(
+                        goals = p.goals + g,
+                        yellowCards = p.yellowCards + y,
+                        redCards = p.redCards + r,
+                        injured = p.injured || hurt,
+                    )
+                }
+            }
+            if (updatedSquad != club.squad) {
+                clubRepo.save(club.copy(squad = updatedSquad))
+            }
+        }
     }
 
     private fun RoundMatch.finish(score: Pair<Int, Int>?): RoundMatch =
