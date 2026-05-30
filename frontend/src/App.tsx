@@ -5,6 +5,7 @@ import { StandingsPage } from './pages/StandingsPage'
 import { MarketPage } from './pages/MarketPage'
 import { LineupPage } from './pages/LineupPage'
 import { RoundPage } from './pages/RoundPage'
+import { WelcomePage, isOnboarded } from './pages/WelcomePage'
 
 const nav = [
   { to: '/dashboard', label: 'Clube' },
@@ -12,6 +13,7 @@ const nav = [
   { to: '/round',     label: 'Rodada' },
   { to: '/market',    label: 'Mercado' },
   { to: '/standings', label: 'Tabela' },
+  { to: '/welcome',   label: 'Tutorial' },
 ] as const
 
 export function App() {
@@ -54,7 +56,11 @@ export function App() {
 
         <main className="mx-auto max-w-5xl px-6 py-8">
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/"
+              element={<Navigate to={isOnboarded() ? '/dashboard' : '/welcome'} replace />}
+            />
+            <Route path="/welcome"   element={<WelcomePage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/lineup"    element={<LineupPage />} />
             <Route path="/round"     element={<RoundPage />} />
