@@ -2,9 +2,14 @@ spring:
   application:
     name: goalfather
 
-  # ─── DataSource (H2 in-memory por padrao, PostgreSQL via profile prod) ────
+  # ─── DataSource (H2 file-based por padrao, PostgreSQL via profile prod) ────
+  # File-based: o estado (compras, rodadas, ampliacoes) sobrevive a reinicios
+  # do backend. Para resetar: `rm -rf backend/data/`.
+  # AUTO_SERVER=TRUE permite multiplas conexoes ao mesmo arquivo; MODE=PostgreSQL
+  # mantem coerencia com o profile prod. Testes usam H2 in-memory
+  # (src/test/resources/application.yml), entao nao tocam neste arquivo.
   datasource:
-    url: jdbc:h2:mem:goalfather;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:file:./data/goalfather;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE
     username: sa
     password:
     driver-class-name: org.h2.Driver
