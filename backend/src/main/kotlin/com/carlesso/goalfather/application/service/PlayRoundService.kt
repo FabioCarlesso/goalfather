@@ -10,10 +10,15 @@ import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.generateRound
+import com.carlesso.goalfather.domain.rules.isSalaryRound
+import com.carlesso.goalfather.domain.rules.ticketRevenue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -80,9 +85,13 @@ class PlayRoundService(
             emit(RoundEvent.MatchUpdate(matchId, event))
         }
 
-        // Acumula estatísticas dos jogadores a partir dos eventos da rodada
-        // e persiste nos clubes envolvidos (issue #2).
-        persistPlayerStats(tagged.map { it.second }, involvedClubs.values)
+        // Calcula o balanço financeiro da rodada — bilheteria (mandante) e
+        // folha salarial em rodadas de "mês" (issue #4).
+        val finances = computeFinances(round, involvedClubs.values)
+
+        // Acumula estatísticas dos jogadores (issue #2) e aplica o caixa
+        // (issue #4) em uma única gravação por clube.
+        persistRoundEffects(tagged.map { it.second }, involvedClubs.values, finances)
 
         // Atualiza estado pós-rodada e dispara RoundFinished.
         val finishedMatches = round.matches.map { m -> m.finish(finalScores[m.matchId]) }
@@ -101,19 +110,43 @@ class PlayRoundService(
             leagueRepo.saveRound(nextRound)
         }
 
-        emit(RoundEvent.RoundFinished(newStandings))
+        emit(RoundEvent.RoundFinished(newStandings, finances))
     }
 
     /**
-     * Agrega os eventos da rodada por jogador e persiste o incremento de
-     * gols/cartões/lesão em cada clube que jogou.
-     *
-     * A atribuição é por `playerId`: cada clube só atualiza os jogadores do
-     * próprio elenco (ids são únicos por jogador), então não há ambiguidade
-     * entre mandante e visitante. Clubes sem nenhuma alteração não são
-     * salvos (evita escrita desnecessária).
+     * Calcula o balanço financeiro de cada clube na rodada: bilheteria (só
+     * o mandante, em função da capacidade e da força do time) e folha
+     * salarial (a cada N rodadas). Função sem efeitos colaterais — a
+     * gravação fica em [persistRoundEffects].
      */
-    private suspend fun persistPlayerStats(events: List<MatchEvent>, clubs: Collection<Club>) {
+    private fun computeFinances(round: Round, clubs: Collection<Club>): List<RoundFinance> {
+        val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
+        val salaryRound = isSalaryRound(round.number)
+        return clubs.map { club ->
+            val revenue =
+                if (club.id.value in homeClubIds)
+                    ticketRevenue(club.stadiumCapacity, club.startingLineup().teamStrength())
+                else 0L
+            val salaries = if (salaryRound) club.squad.sumOf { it.salary.toLong() } else 0L
+            RoundFinance(club.id, ticketRevenue = revenue, salariesPaid = salaries)
+        }
+    }
+
+    /**
+     * Aplica, numa ÚNICA gravação por clube, o incremento de estatísticas
+     * dos jogadores (gols/cartões/lesão — issue #2) e a variação de caixa
+     * da rodada (bilheteria − salários — issue #4).
+     *
+     * A atribuição de estatísticas é por `playerId`: cada clube só atualiza
+     * jogadores do próprio elenco (ids únicos), sem ambiguidade entre
+     * mandante e visitante. O caixa nunca fica negativo (`coerceAtLeast(0)`).
+     * Clubes sem nenhuma mudança não são salvos.
+     */
+    private suspend fun persistRoundEffects(
+        events: List<MatchEvent>,
+        clubs: Collection<Club>,
+        finances: List<RoundFinance>,
+    ) {
         val goals = mutableMapOf<Long, Int>()
         val yellow = mutableMapOf<Long, Int>()
         val red = mutableMapOf<Long, Int>()
@@ -129,6 +162,8 @@ class PlayRoundService(
                 is MatchEvent.KickOff, is MatchEvent.Save, is MatchEvent.FullTime -> Unit
             }
         }
+
+        val financeByClub = finances.associateBy { it.clubId.value }
 
         for (club in clubs) {
             val updatedSquad = club.squad.map { p ->
@@ -148,8 +183,13 @@ class PlayRoundService(
                     )
                 }
             }
-            if (updatedSquad != club.squad) {
-                clubRepo.save(club.copy(squad = updatedSquad))
+
+            val finance = financeByClub[club.id.value]
+            val newCash = if (finance == null) club.cash
+                else (club.cash + finance.ticketRevenue - finance.salariesPaid).coerceAtLeast(0)
+
+            if (updatedSquad != club.squad || newCash != club.cash) {
+                clubRepo.save(club.copy(squad = updatedSquad, cash = newCash))
             }
         }
     }

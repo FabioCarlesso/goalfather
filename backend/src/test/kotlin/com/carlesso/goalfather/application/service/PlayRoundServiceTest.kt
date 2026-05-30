@@ -167,6 +167,34 @@ class PlayRoundServiceTest {
     }
 
     @Test
+    fun `RoundFinished carrega financas e o caixa do mandante sobe com a bilheteria`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<com.carlesso.goalfather.domain.model.Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        val events = service.stream(1).toList()
+        val finished = events.last()
+        assertIs<RoundEvent.RoundFinished>(finished)
+
+        // Rodada 1 é ímpar → sem folha salarial; mandante (id 1) tem bilheteria > 0.
+        val homeFinance = finished.finances.first { it.clubId == ClubId(1) }
+        assertTrue(homeFinance.ticketRevenue > 0, "Mandante deveria ter bilheteria")
+        assertEquals(0L, homeFinance.salariesPaid, "Rodada ímpar não cobra salários")
+        val awayFinance = finished.finances.first { it.clubId == ClubId(2) }
+        assertEquals(0L, awayFinance.ticketRevenue, "Visitante não tem bilheteria")
+
+        // O caixa do mandante salvo reflete o caixa inicial + bilheteria.
+        val savedHome = savedClubs.last { it.id == ClubId(1) }
+        assertEquals(homeClub.cash + homeFinance.ticketRevenue, savedHome.cash)
+    }
+
+    @Test
     fun `rodada inexistente lanca IllegalArgumentException`() = runTest {
         coEvery { leagueRepo.findRound(999) } returns null
 

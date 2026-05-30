@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
 import { standingsKey } from '../api/queries/useStandings'
 import { MatchEventFeed } from '../components/MatchEventFeed'
-import type { MatchEvent, RoundEvent, RoundMatch, Standings } from '../domain/types'
+import { formatMoney } from '../domain/formatters'
+import type { MatchEvent, RoundEvent, RoundFinance, RoundMatch, Standings } from '../domain/types'
 
 const MY_CLUB_ID = 1
 
@@ -25,6 +26,7 @@ export function RoundPage() {
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [finalStandings, setFinalStandings] = useState<Standings | null>(null)
+  const [finalFinance, setFinalFinance] = useState<RoundFinance | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
 
   // ─── Estado por partida derivado dos eventos ─────────────────────────
@@ -97,6 +99,7 @@ export function RoundPage() {
     setEvents([])
     setError(null)
     setFinalStandings(null)
+    setFinalFinance(null)
     setStatus('connecting')
 
     try {
@@ -118,6 +121,7 @@ export function RoundPage() {
         setEvents((prev) => [...prev, event])
         if (event.type === 'RoundFinished') {
           setFinalStandings(event.standings)
+          setFinalFinance(event.finances.find((f) => f.clubId === MY_CLUB_ID) ?? null)
           // Empurra a nova tabela direto no cache (sem refetch desnecessário)
           qc.setQueryData(standingsKey, event.standings)
           // Próxima rodada já está pronta no backend mock — invalida para buscar
@@ -204,7 +208,7 @@ export function RoundPage() {
       )}
 
       {finalStandings && status === 'finished' && (
-        <FinalBanner standings={finalStandings} round={round.number} />
+        <FinalBanner standings={finalStandings} round={round.number} finance={finalFinance} />
       )}
     </section>
   )
@@ -291,11 +295,25 @@ function MatchCard({
   )
 }
 
-function FinalBanner({ standings, round }: { standings: Standings; round: number }) {
+function FinalBanner({
+  standings,
+  round,
+  finance,
+}: { standings: Standings; round: number; finance: RoundFinance | null }) {
   const top3 = standings.rows.slice(0, 3)
   return (
     <div className="rounded-lg border border-emerald-700/50 bg-emerald-900/20 p-4">
       <div className="font-semibold text-emerald-200">Pontuações atualizadas após a rodada {round}</div>
+      {finance && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-mono">
+          <span className="text-emerald-300">+{formatMoney(finance.ticketRevenue)} bilheteria</span>
+          <span className="text-red-300">−{formatMoney(finance.salariesPaid)} salários</span>
+          <span className="text-slate-200">
+            saldo {finance.ticketRevenue - finance.salariesPaid >= 0 ? '+' : '−'}
+            {formatMoney(Math.abs(finance.ticketRevenue - finance.salariesPaid))}
+          </span>
+        </div>
+      )}
       <ul className="mt-2 text-sm space-y-1">
         {top3.map((r) => (
           <li key={r.clubId} className="flex justify-between text-slate-200">
