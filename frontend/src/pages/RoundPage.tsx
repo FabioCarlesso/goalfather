@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
+import { useClub } from '../api/queries/useClub'
 import { standingsKey } from '../api/queries/useStandings'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { formatMoney } from '../domain/formatters'
@@ -20,7 +21,16 @@ interface LiveMatchState {
 export function RoundPage() {
   const qc = useQueryClient()
   const { data: round, isLoading } = useCurrentRound()
+  const { data: myClub } = useClub(MY_CLUB_ID)
   const playRound = usePlayRound()
+
+  // Lookup id → nome a partir do elenco do usuário, para o feed mostrar
+  // nomes em vez de "#N" (issue #7). Só resolve a partida do usuário; os
+  // jogadores dos outros clubes seguem como "#N" (fora de escopo).
+  const playerLookup = useMemo(
+    () => new Map<number, string>(myClub?.squad.map((p) => [p.id, p.name]) ?? []),
+    [myClub],
+  )
 
   const [events, setEvents] = useState<RoundEvent[]>([])
   const [status, setStatus] = useState<Status>('idle')
@@ -201,6 +211,7 @@ export function RoundPage() {
           </h2>
           <MatchEventFeed
             events={myMatchEvents}
+            playerLookup={playerLookup}
             emptyLabel={status === 'idle' ? 'Clique em "Jogar rodada" para começar.' : 'Aguardando início…'}
             className="h-72"
           />
