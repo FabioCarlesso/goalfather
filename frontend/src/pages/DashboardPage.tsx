@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useClub } from '../api/queries/useClub'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
+import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
+import { ApiError } from '../api/client'
 import { formatMoney, formatSeats } from '../domain/formatters'
-import type { TransferResult } from '../domain/types'
+import type { Club, TransferResult } from '../domain/types'
 
 const MY_CLUB_ID = 1
 
@@ -40,6 +42,8 @@ export function DashboardPage() {
         <SaleFeedback result={lastResult} onDismiss={() => setLastResult(null)} />
       )}
 
+      <StadiumExpandPanel club={club} />
+
       <div>
         <h2 className="text-xl font-semibold text-slate-100 mb-3">Elenco</h2>
         <ul className="divide-y divide-slate-800 rounded-lg border border-slate-800">
@@ -74,6 +78,56 @@ export function DashboardPage() {
         </ul>
       </div>
     </section>
+  )
+}
+
+/** Painel de ampliação de estádio (issue #5). */
+function StadiumExpandPanel({ club }: { club: Club }) {
+  const expand = useExpandStadium(club.id)
+  const [seats, setSeats] = useState(1000)
+
+  const valid = Number.isInteger(seats) && seats >= 1000
+  const cost = seats * COST_PER_SEAT_CENTS
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-100">Ampliar estádio</h2>
+        <span className="text-xs text-slate-500">{formatMoney(COST_PER_SEAT_CENTS)} / assento</span>
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="text-sm text-slate-400">
+          Novos assentos
+          <input
+            type="number"
+            min={1000}
+            step={1000}
+            value={seats}
+            onChange={(e) => setSeats(Math.floor(Number(e.target.value)))}
+            className="mt-1 block w-32 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+          />
+        </label>
+        <div className="text-sm text-slate-400">
+          Custo total: <span className="font-mono text-slate-200">{formatMoney(cost)}</span>
+        </div>
+        <button
+          onClick={() => valid && expand.mutate({ additionalSeats: seats })}
+          disabled={!valid || expand.isPending}
+          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
+        >
+          {expand.isPending ? 'Ampliando…' : 'Ampliar'}
+        </button>
+      </div>
+      {!valid && <p className="text-xs text-amber-300">Informe um número inteiro de pelo menos 1000 assentos.</p>}
+      {expand.isError && (
+        <p className="text-sm text-red-400">
+          {expand.error instanceof ApiError && expand.error.status === 402
+            ? `Caixa insuficiente — custo ${formatMoney(cost)}, disponível ${formatMoney(club.cash)}.`
+            : `Erro ao ampliar: ${String(expand.error)}`}
+        </p>
+      )}
+      {expand.isSuccess && <p className="text-sm text-emerald-400">Capacidade ampliada ✓</p>}
+    </div>
   )
 }
 
