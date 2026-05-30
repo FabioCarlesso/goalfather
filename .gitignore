@@ -8,6 +8,10 @@ build/
 out/
 !**/src/main/**/adapter/out/
 !**/src/main/**/adapter/out/**
+# `out/` (acima) também capturava os ports de saída da camada application —
+# reincluímos explicitamente para que o pacote port/out seja versionado.
+!**/src/main/**/port/out/
+!**/src/main/**/port/out/**
 bin/
 
 # ─── Spring Boot ───

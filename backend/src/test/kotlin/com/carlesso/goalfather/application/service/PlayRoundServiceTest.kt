@@ -64,6 +64,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
@@ -84,6 +85,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
@@ -103,17 +105,19 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.findRound(1) } returns round
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(any()) } returns homeClub
-        val savedRound = slot<Round>()
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        val savedRounds = mutableListOf<Round>()
         val savedStandings = slot<Standings>()
-        coEvery { leagueRepo.saveRound(capture(savedRound)) } just Runs
+        coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
         coEvery { leagueRepo.saveStandings(capture(savedStandings)) } just Runs
 
         service.stream(1).toList()
 
-        assertTrue(savedRound.isCaptured)
         assertTrue(savedStandings.isCaptured)
-        assertEquals(RoundStatus.Finished, savedRound.captured.status)
-        assertNotNull(savedRound.captured.matches.find { it.status == RoundStatus.Finished })
+        // A rodada atual finalizada é salva (primeiro saveRound).
+        val finished = savedRounds.first()
+        assertEquals(RoundStatus.Finished, finished.status)
+        assertNotNull(finished.matches.find { it.status == RoundStatus.Finished })
     }
 
     @Test
@@ -122,6 +126,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
@@ -134,6 +139,26 @@ class PlayRoundServiceTest {
         val updates1 = events1.filterIsInstance<RoundEvent.MatchUpdate>()
         val updates2 = events2.filterIsInstance<RoundEvent.MatchUpdate>()
         assertEquals(updates1, updates2)
+    }
+
+    @Test
+    fun `gera a proxima rodada Scheduled apos finalizar a atual`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        val savedRounds = mutableListOf<Round>()
+        coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        service.stream(1).toList()
+
+        // Dois saveRound: a rodada 1 finalizada + a rodada 2 agendada.
+        assertEquals(2, savedRounds.size)
+        val next = savedRounds.last()
+        assertEquals(2, next.number)
+        assertEquals(RoundStatus.Scheduled, next.status)
+        assertEquals(1, next.matches.size) // 2 clubes → 1 partida por rodada
     }
 
     @Test
@@ -161,6 +186,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.findRound(1) } returns twoMatchRound
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 

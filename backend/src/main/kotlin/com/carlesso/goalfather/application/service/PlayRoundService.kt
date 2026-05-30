@@ -12,6 +12,7 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
+import com.carlesso.goalfather.domain.rules.generateRound
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -80,6 +81,15 @@ class PlayRoundService(
 
         leagueRepo.saveRound(finishedRound)
         leagueRepo.saveStandings(newStandings)
+
+        // Gera a PRÓXIMA rodada (Berger) antes de sinalizar RoundFinished, para
+        // que `getCurrentRound` já encontre uma rodada Scheduled e o usuário
+        // possa jogar N rodadas em sequência sem intervenção.
+        val clubs = clubRepo.findAll()
+        if (clubs.size >= 2 && clubs.size % 2 == 0) {
+            val nextRound = generateRound(round.number + 1, round.season, clubs)
+            leagueRepo.saveRound(nextRound)
+        }
 
         emit(RoundEvent.RoundFinished(newStandings))
     }

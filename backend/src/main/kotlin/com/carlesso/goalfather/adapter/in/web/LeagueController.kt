@@ -22,17 +22,10 @@ class LeagueController(
 
     @GetMapping("/round/current")
     fun getCurrentRound(): ResponseEntity<Any> = runBlocking {
-        // Encontra a rodada mais recente nao terminada, ou a maior numerada.
-        // Implementacao simples: findRound(1) ate falhar. Para escalar,
-        // adicionar findLatest no port.
-        var n = 1
-        var current: com.carlesso.goalfather.domain.model.Round? = null
-        while (true) {
-            val r = leagueRepo.findRound(n) ?: break
-            current = r
-            if (r.status != RoundStatus.Finished) break
-            n++
-        }
+        // A rodada "atual" é sempre a de maior número: após cada RoundFinished
+        // o PlayRoundService já cria a próxima (Scheduled), então a mais recente
+        // é a que está em aberto.
+        val current = leagueRepo.findLatest()
         if (current == null) {
             ResponseEntity.status(404).body(
                 ErrorResponse(code = "ROUND_NOT_FOUND", message = "Nenhuma rodada disponivel"),
@@ -44,14 +37,7 @@ class LeagueController(
 
     @PostMapping("/round/play")
     fun playRound(): ResponseEntity<Any> = runBlocking {
-        var n = 1
-        var current: com.carlesso.goalfather.domain.model.Round? = null
-        while (true) {
-            val r = leagueRepo.findRound(n) ?: break
-            current = r
-            if (r.status != RoundStatus.Finished) break
-            n++
-        }
+        val current = leagueRepo.findLatest()
         if (current == null) {
             ResponseEntity.status(404).body(
                 ErrorResponse(code = "ROUND_NOT_FOUND", message = "Nenhuma rodada disponivel"),

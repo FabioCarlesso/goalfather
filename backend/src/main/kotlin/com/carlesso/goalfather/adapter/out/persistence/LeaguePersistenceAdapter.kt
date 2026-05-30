@@ -24,6 +24,10 @@ class LeaguePersistenceAdapter(
         roundRepo.findById(number).orElse(null)?.toDomain(json)
     }
 
+    override suspend fun findLatest(): Round? = withContext(Dispatchers.IO) {
+        roundRepo.findTopByOrderByNumberDesc()?.toDomain(json)
+    }
+
     override suspend fun currentStandings(): Standings = withContext(Dispatchers.IO) {
         // Pega a unica linha (1 standings por temporada). Em multi-season
         // (futuro), filtrar por season ativa.
