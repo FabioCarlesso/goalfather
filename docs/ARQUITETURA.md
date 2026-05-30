@@ -307,6 +307,17 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [x] Swap incremental: cada endpoint pronto desliga seu handler MSW; **E2E Playwright `npm run e2e:real` passa contra o backend Spring**
 - **Foco de estudo:** `Flow` → WebSocket, serialização (kotlinx.serialization), contrato OpenAPI bidirecional
 
+#### Fase 3.5 / 3.6 — jogabilidade e polimento ✅
+- [x] **3.5.1** Geração automática da próxima rodada (Berger) após `RoundFinished` — joga N rodadas em sequência
+- [x] **3.5.2** Estatísticas de jogador persistidas entre partidas (gols, cartões, lesão)
+- [x] **3.5.3** H2 file-based (`./data/`) — estado sobrevive a reinícios; testes seguem in-memory
+- [x] **3.5.4** Bilheteria do mandante + folha salarial aplicadas ao caixa (`RoundFinance` no `RoundFinished`)
+- [x] **3.6.1** UI de ampliação de estádio na Dashboard
+- [x] **3.6.2** Tratamento global de erros via toast (react-hot-toast)
+- [x] **3.6.3** Nome do jogador no feed da partida (lookup do elenco do usuário)
+- [x] **3.6.4** Tela de onboarding/primeiro acesso (`/welcome` + flag localStorage)
+- [x] **3.6.5** Drill-down de partidas via WebSocket `/ws/matches/{id}`
+
 ### Fase 4 — DSL + polimento single-player
 - [ ] DSL de seed de ligas/clubes (`@DslMarker`)
 - [ ] Temporadas, promoção/rebaixamento, mercado dinâmico
