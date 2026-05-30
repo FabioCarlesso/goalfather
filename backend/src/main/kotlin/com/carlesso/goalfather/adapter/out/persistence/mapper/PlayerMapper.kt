@@ -19,6 +19,8 @@ fun PlayerEntity.toDomain(): Player = Player(
     salary = salary,
     age = age,
     goals = goals,
+    yellowCards = yellowCards,
+    redCards = redCards,
     injured = injured,
 )
 
@@ -36,6 +38,8 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     salary = salary,
     age = age,
     goals = goals,
+    yellowCards = yellowCards,
+    redCards = redCards,
     injured = injured,
 )
 

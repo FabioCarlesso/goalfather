@@ -12,6 +12,7 @@ import type {
   ErrorResponse,
   MatchEvent,
   RoundEvent,
+  RoundFinance,
   RoundMatch,
 } from '../domain/types'
 import type { components } from '../api/generated'
@@ -31,6 +32,16 @@ const matchStream = ws.link(`${wsProtocol}//${wsHost}/ws/matches/:id`)
 const roundStream = ws.link(`${wsProtocol}//${wsHost}/ws/round/:number`)
 
 const MS_PER_MINUTE = 80   // 90 minutos simulados em ~7s reais
+
+// ─── Regras financeiras (espelham domain/rules/FinanceRules.kt) ───────────
+const TICKET_PRICE_CENTS = 50_00
+const SALARY_EVERY_N_ROUNDS = 2
+const AI_DEFAULT_CAPACITY = 12_000   // seed dos clubes da IA
+const AI_SALARY_PER_PLAYER = 10_000_00
+const attendanceRate = (strength: number) =>
+  Math.min(1, Math.max(0.5, 0.5 + 0.5 * ((strength - 60) / 40)))
+const ticketRevenueOf = (capacity: number, strength: number) =>
+  Math.floor(capacity * attendanceRate(strength)) * TICKET_PRICE_CENTS
 
 // Latência simulada para parecer com rede real (descomente em testes determinísticos)
 const SIMULATED_LATENCY_MS = 120
@@ -332,12 +343,65 @@ export const handlers = [
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
       state.standings = applyRoundToStandings(state.currentRound, state.standings)
 
+      // Balanço financeiro da rodada (issue #4) — espelha computeFinances do
+      // backend. Bilheteria só para mandantes; folha salarial a cada N rodadas.
+      const isSalaryRound = round.number % SALARY_EVERY_N_ROUNDS === 0
+      const homeIds = new Set(round.matches.map((m) => m.homeClubId))
+      const finances: RoundFinance[] = round.matches
+        .flatMap((m) => [m.homeClubId, m.awayClubId])
+        .map((clubId) => {
+          const capacity = clubId === 1 ? (state.clubs[1]?.stadiumCapacity ?? AI_DEFAULT_CAPACITY) : AI_DEFAULT_CAPACITY
+          const strength = clubId === 1 ? averageOverall(state.clubs[1]!.squad) : (clubMeta[clubId]?.strength ?? 70)
+          const salaries = isSalaryRound
+            ? (clubId === 1 ? state.clubs[1]!.squad.reduce((s, p) => s + p.salary, 0) : 11 * AI_SALARY_PER_PLAYER)
+            : 0
+          return {
+            clubId,
+            ticketRevenue: homeIds.has(clubId) ? ticketRevenueOf(capacity, strength) : 0,
+            salariesPaid: salaries,
+          }
+        })
+
+      // Acumula estatísticas dos jogadores do clube do usuário a partir dos
+      // eventos da rodada — espelha o PlayRoundService do backend (issue #2),
+      // mantendo a parity mock ↔ real. Aplica também o caixa (issue #4).
+      const myClub = state.clubs[1]
+      if (myClub) {
+        const goals = new Map<number, number>()
+        const yellow = new Map<number, number>()
+        const red = new Map<number, number>()
+        const injured = new Set<number>()
+        for (const { event } of allEvents) {
+          if (event.type === 'Goal') {
+            goals.set(event.scorerId, (goals.get(event.scorerId) ?? 0) + 1)
+          } else if (event.type === 'Card') {
+            const target = event.red ? red : yellow
+            target.set(event.playerId, (target.get(event.playerId) ?? 0) + 1)
+          } else if (event.type === 'Injury') {
+            injured.add(event.playerId)
+          }
+        }
+        const myFinance = finances.find((f) => f.clubId === 1)
+        const cashDelta = myFinance ? myFinance.ticketRevenue - myFinance.salariesPaid : 0
+        state.clubs[1] = {
+          ...myClub,
+          cash: Math.max(0, myClub.cash + cashDelta),
+          squad: myClub.squad.map((p) => ({
+            ...p,
+            goals: p.goals + (goals.get(p.id) ?? 0),
+            yellowCards: p.yellowCards + (yellow.get(p.id) ?? 0),
+            redCards: p.redCards + (red.get(p.id) ?? 0),
+            injured: p.injured || injured.has(p.id),
+          })),
+        }
+      }
+
       // Pequeno gap antes do RoundFinished para o cliente processar os
       // ultimos FullTime (MSW WS pode entregar fora de ordem se close vier
       // colado nos sends).
       await delay(50)
       if (cancelled) return
-      const finished: RoundEvent = { type: 'RoundFinished', standings: state.standings }
+      const finished: RoundEvent = { type: 'RoundFinished', standings: state.standings, finances }
       client.send(JSON.stringify(finished))
 
       // Avança para a próxima rodada (cliente busca via getCurrentRound depois)

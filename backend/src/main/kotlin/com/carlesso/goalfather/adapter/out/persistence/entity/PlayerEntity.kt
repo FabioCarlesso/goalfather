@@ -51,6 +51,12 @@ class PlayerEntity(
     @Column(name = "goals", nullable = false)
     var goals: Int = 0,
 
+    @Column(name = "yellow_cards", nullable = false)
+    var yellowCards: Int = 0,
+
+    @Column(name = "red_cards", nullable = false)
+    var redCards: Int = 0,
+
     @Column(name = "injured", nullable = false)
     var injured: Boolean = false,
 )

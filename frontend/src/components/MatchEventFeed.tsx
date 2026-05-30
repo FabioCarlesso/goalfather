@@ -5,15 +5,28 @@ interface Props {
   events: MatchEvent[]
   emptyLabel?: string
   className?: string
+  /**
+   * Resolve `playerId` → nome do jogador. Quando ausente (ou sem a entrada),
+   * o feed cai no fallback `#N`. Construído pela página a partir do elenco
+   * visível (ex.: clube do usuário).
+   */
+  playerLookup?: Map<number, string>
 }
 
-export function MatchEventFeed({ events, emptyLabel = 'Sem eventos ainda.', className = '' }: Props) {
+export function MatchEventFeed({
+  events,
+  emptyLabel = 'Sem eventos ainda.',
+  className = '',
+  playerLookup,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = ref.current
     if (el) el.scrollTop = el.scrollHeight
   }, [events])
+
+  const nameOf = (id: number) => playerLookup?.get(id) ?? `#${id}`
 
   return (
     <div
@@ -23,7 +36,7 @@ export function MatchEventFeed({ events, emptyLabel = 'Sem eventos ainda.', clas
       {events.length === 0 ? (
         <p className="text-slate-600 italic">{emptyLabel}</p>
       ) : (
-        events.map((event, i) => <EventLine key={i} event={event} />)
+        events.map((event, i) => <EventLine key={i} event={event} nameOf={nameOf} />)
       )}
     </div>
   )
@@ -31,7 +44,7 @@ export function MatchEventFeed({ events, emptyLabel = 'Sem eventos ainda.', clas
 
 // Switch exaustivo sobre o discriminated union MatchEvent.
 // Espelha o `when` exaustivo do `sealed interface MatchEvent` do Kotlin.
-function EventLine({ event }: { event: MatchEvent }) {
+function EventLine({ event, nameOf }: { event: MatchEvent; nameOf: (id: number) => string }) {
   switch (event.type) {
     case 'KickOff':
       return (
@@ -42,17 +55,17 @@ function EventLine({ event }: { event: MatchEvent }) {
     case 'Goal':
       return (
         <Line minute={event.minute} color="text-emerald-400 font-bold">
-          ⚽ GOL! ({event.home ? 'mandante' : 'visitante'}) — jogador #{event.scorerId}
+          ⚽ GOL! {nameOf(event.scorerId)} ({event.home ? 'mandante' : 'visitante'})
         </Line>
       )
     case 'Card':
       return (
         <Line minute={event.minute} color={event.red ? 'text-red-400' : 'text-yellow-300'}>
-          {event.red ? '🟥 Vermelho' : '🟨 Amarelo'} — jogador #{event.playerId}
+          {event.red ? '🟥 Vermelho' : '🟨 Amarelo'} — {nameOf(event.playerId)}
         </Line>
       )
     case 'Injury':
-      return <Line minute={event.minute} color="text-orange-300">🚑 Lesão — jogador #{event.playerId}</Line>
+      return <Line minute={event.minute} color="text-orange-300">🚑 Lesão — {nameOf(event.playerId)}</Line>
     case 'Save':
       return <Line minute={event.minute} color="text-slate-300">🧤 Defesa difícil</Line>
     case 'FullTime':

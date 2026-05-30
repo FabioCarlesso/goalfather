@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useClub } from '../api/queries/useClub'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
+import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
+import { ApiError } from '../api/client'
+import { errorMessage } from '../api/errorMessages'
 import { formatMoney, formatSeats } from '../domain/formatters'
-import type { TransferResult } from '../domain/types'
+import type { Club, TransferResult } from '../domain/types'
 
 const MY_CLUB_ID = 1
 
@@ -12,7 +15,7 @@ export function DashboardPage() {
   const [lastResult, setLastResult] = useState<TransferResult | null>(null)
 
   if (isLoading) return <p className="text-slate-400">Carregando clube…</p>
-  if (error)     return <p className="text-red-400">Erro: {String(error)}</p>
+  if (error)     return <p className="text-red-400">{errorMessage(error)}</p>
   if (!club)     return null
 
   const onSell = (playerId: number, name: string) => {
@@ -40,6 +43,8 @@ export function DashboardPage() {
         <SaleFeedback result={lastResult} onDismiss={() => setLastResult(null)} />
       )}
 
+      <StadiumExpandPanel club={club} />
+
       <div>
         <h2 className="text-xl font-semibold text-slate-100 mb-3">Elenco</h2>
         <ul className="divide-y divide-slate-800 rounded-lg border border-slate-800">
@@ -48,8 +53,17 @@ export function DashboardPage() {
               <div className="min-w-0">
                 <span className="font-medium text-slate-100">{p.name}</span>
                 <span className="ml-2 text-xs text-slate-500">{p.position} · {p.age}a</span>
+                {p.injured && (
+                  <span
+                    className="ml-2 rounded bg-orange-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300"
+                    title="Lesionado — indisponível para escalação"
+                  >
+                    🚑 LESIONADO
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
+                <PlayerStats player={p} />
                 {p.star && <span className="text-yellow-400" title="Estrela">★</span>}
                 <span className="text-slate-300 font-mono w-8 text-right">{p.overall}</span>
                 <button
@@ -65,6 +79,67 @@ export function DashboardPage() {
         </ul>
       </div>
     </section>
+  )
+}
+
+/** Painel de ampliação de estádio (issue #5). */
+function StadiumExpandPanel({ club }: { club: Club }) {
+  const expand = useExpandStadium(club.id)
+  const [seats, setSeats] = useState(1000)
+
+  const valid = Number.isInteger(seats) && seats >= 1000
+  const cost = seats * COST_PER_SEAT_CENTS
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-100">Ampliar estádio</h2>
+        <span className="text-xs text-slate-500">{formatMoney(COST_PER_SEAT_CENTS)} / assento</span>
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="text-sm text-slate-400">
+          Novos assentos
+          <input
+            type="number"
+            min={1000}
+            step={1000}
+            value={seats}
+            onChange={(e) => setSeats(Math.floor(Number(e.target.value)))}
+            className="mt-1 block w-32 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+          />
+        </label>
+        <div className="text-sm text-slate-400">
+          Custo total: <span className="font-mono text-slate-200">{formatMoney(cost)}</span>
+        </div>
+        <button
+          onClick={() => valid && expand.mutate({ additionalSeats: seats })}
+          disabled={!valid || expand.isPending}
+          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
+        >
+          {expand.isPending ? 'Ampliando…' : 'Ampliar'}
+        </button>
+      </div>
+      {!valid && <p className="text-xs text-amber-300">Informe um número inteiro de pelo menos 1000 assentos.</p>}
+      {expand.isError && (
+        <p className="text-sm text-red-400">
+          {expand.error instanceof ApiError && expand.error.status === 402
+            ? `Caixa insuficiente — custo ${formatMoney(cost)}, disponível ${formatMoney(club.cash)}.`
+            : `Erro ao ampliar: ${String(expand.error)}`}
+        </p>
+      )}
+      {expand.isSuccess && <p className="text-sm text-emerald-400">Capacidade ampliada ✓</p>}
+    </div>
+  )
+}
+
+/** Estatísticas acumuladas do jogador (gols/cartões) ao lado da linha do elenco. */
+function PlayerStats({ player }: { player: import('../domain/types').Player }) {
+  return (
+    <span className="flex items-center gap-2 text-xs font-mono text-slate-400">
+      {player.goals > 0 && <span className="text-emerald-400" title="Gols">⚽ {player.goals}</span>}
+      {player.yellowCards > 0 && <span className="text-yellow-300" title="Cartões amarelos">🟨 {player.yellowCards}</span>}
+      {player.redCards > 0 && <span className="text-red-400" title="Cartões vermelhos">🟥 {player.redCards}</span>}
+    </span>
   )
 }
 

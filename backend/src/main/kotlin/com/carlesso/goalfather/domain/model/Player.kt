@@ -38,6 +38,8 @@ data class Player(
     val salary: Int,
     val age: Int,
     val goals: Int = 0,
+    val yellowCards: Int = 0,
+    val redCards: Int = 0,
     val injured: Boolean = false,
 ) {
     val star: Boolean get() = overall >= 82

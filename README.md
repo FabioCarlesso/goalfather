@@ -65,7 +65,8 @@ O [protótipo web](prototype/) é a **fonte de verdade das regras de jogo e da U
 # Backend (a fazer)
 cd backend
 ./gradlew test       # a engine deve ser testável SEM subir contexto Spring
-./gradlew bootRun    # API em :8080
+./gradlew bootRun    # API em :8080 (H2 file-based: estado persiste entre reinícios)
+rm -rf backend/data/ # reseta o banco de desenvolvimento (recriado no próximo bootRun)
 
 # Frontend (a fazer)
 cd frontend

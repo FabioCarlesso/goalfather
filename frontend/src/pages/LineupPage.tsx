@@ -122,8 +122,9 @@ function SlotPicker({
   otherSelected: number[]
   onChange: (id: number | null) => void
 }) {
+  // Lesionados ficam indisponíveis para escalação (issue #2).
   const available = squad.filter(
-    (p) => p.position === position && !otherSelected.includes(p.id),
+    (p) => p.position === position && !otherSelected.includes(p.id) && !p.injured,
   )
 
   return (

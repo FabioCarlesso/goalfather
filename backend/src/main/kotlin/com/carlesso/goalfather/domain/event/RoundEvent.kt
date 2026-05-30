@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.event
 
+import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.Standings
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -26,5 +27,8 @@ sealed interface RoundEvent {
 
     @Serializable
     @SerialName("RoundFinished")
-    data class RoundFinished(val standings: Standings) : RoundEvent
+    data class RoundFinished(
+        val standings: Standings,
+        val finances: List<RoundFinance> = emptyList(),
+    ) : RoundEvent
 }

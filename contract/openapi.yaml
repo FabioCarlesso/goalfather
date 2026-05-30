@@ -387,6 +387,8 @@ components:
         - salary
         - age
         - goals
+        - yellowCards
+        - redCards
         - injured
       properties:
         id:         { type: integer, format: int64 }
@@ -401,6 +403,8 @@ components:
         salary:     { type: integer, minimum: 0, description: Salário mensal }
         age:        { type: integer, minimum: 15, maximum: 50 }
         goals:      { type: integer, minimum: 0, description: Gols na temporada }
+        yellowCards: { type: integer, minimum: 0, description: Cartões amarelos na temporada }
+        redCards:    { type: integer, minimum: 0, description: Cartões vermelhos na temporada }
         injured:    { type: boolean }
         star:
           type: boolean
@@ -773,10 +777,23 @@ components:
 
     RoundFinishedEvent:
       type: object
-      required: [type, standings]
+      required: [type, standings, finances]
       properties:
         type:      { type: string, enum: [RoundFinished] }
         standings: { $ref: '#/components/schemas/Standings' }
+        finances:
+          type: array
+          description: Balanço financeiro de cada clube na rodada (bilheteria − salários).
+          items: { $ref: '#/components/schemas/RoundFinance' }
+
+    RoundFinance:
+      description: Receita/despesa de um clube em uma rodada (valores em centavos).
+      type: object
+      required: [clubId, ticketRevenue, salariesPaid]
+      properties:
+        clubId:        { type: integer, format: int64 }
+        ticketRevenue: { type: integer, format: int64, description: Bilheteria do mandante (0 para visitante) }
+        salariesPaid:  { type: integer, format: int64, description: Folha salarial paga na rodada (0 fora do "mês") }
 
     # ─── Error ────────────────────────────────────────────────────────────
     ErrorResponse:

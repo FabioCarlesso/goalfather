@@ -1,0 +1,11 @@
+# Pasta de runtime do banco H2 file-based (perfil padrão / dev).
+#
+# O backend grava aqui `goalfather.mv.db` ao rodar `./gradlew bootRun`.
+# Os arquivos do banco são ignorados pelo git (.gitignore); só este
+# .gitkeep é versionado para manter a pasta no repositório.
+#
+# Para RESETAR o estado do jogo (compras, rodadas, ampliações de estádio):
+#
+#     rm -rf backend/data/
+#
+# A pasta e o banco são recriados (com o seed inicial) no próximo bootRun.

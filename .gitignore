@@ -8,10 +8,19 @@ build/
 out/
 !**/src/main/**/adapter/out/
 !**/src/main/**/adapter/out/**
+# `out/` (acima) também capturava os ports de saída da camada application —
+# reincluímos explicitamente para que o pacote port/out seja versionado.
+!**/src/main/**/port/out/
+!**/src/main/**/port/out/**
 bin/
 
 # ─── Spring Boot ───
 *.log
+
+# Banco H2 file-based de desenvolvimento (gerado em runtime pelo bootRun).
+# Mantemos a pasta (via .gitkeep) mas ignoramos os arquivos do banco.
+backend/data/*
+!backend/data/.gitkeep
 application-local.yml
 application-local.properties
 

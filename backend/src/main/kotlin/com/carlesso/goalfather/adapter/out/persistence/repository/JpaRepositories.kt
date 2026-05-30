@@ -24,6 +24,8 @@ interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {
 
 interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long>
 
-interface RoundJpaRepository : JpaRepository<RoundEntity, Int>
+interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
+    fun findTopByOrderByNumberDesc(): RoundEntity?
+}
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int>

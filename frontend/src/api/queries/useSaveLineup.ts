@@ -13,5 +13,6 @@ export function useSaveLineup(clubId: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: clubKey(clubId) })
     },
+    meta: { successMessage: 'Escalação salva!' },
   })
 }
