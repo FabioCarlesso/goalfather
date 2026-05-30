@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
 import { useClub } from '../api/queries/useClub'
@@ -279,11 +280,14 @@ function MatchCard({
   const minuteColor = s.status === 'InProgress' ? 'text-emerald-400' : 'text-slate-500'
 
   return (
-    <div className={`rounded-lg border p-4 transition-colors ${
-      highlight
-        ? 'border-emerald-700/50 bg-emerald-900/10'
-        : 'border-slate-800 bg-slate-900/40'
-    }`}>
+    <Link
+      to={`/round/match/${match.matchId}`}
+      className={`block rounded-lg border p-4 transition-colors hover:border-emerald-500/60 ${
+        highlight
+          ? 'border-emerald-700/50 bg-emerald-900/10'
+          : 'border-slate-800 bg-slate-900/40'
+      }`}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className={`text-xs font-mono tracking-wider ${minuteColor}`}>
           {s.status === 'InProgress' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
@@ -302,7 +306,7 @@ function MatchCard({
           <div className="text-sm font-medium text-slate-100 truncate">{match.awayClubName}</div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 

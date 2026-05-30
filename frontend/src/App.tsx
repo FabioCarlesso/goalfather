@@ -5,6 +5,7 @@ import { StandingsPage } from './pages/StandingsPage'
 import { MarketPage } from './pages/MarketPage'
 import { LineupPage } from './pages/LineupPage'
 import { RoundPage } from './pages/RoundPage'
+import { MatchPage } from './pages/MatchPage'
 import { WelcomePage, isOnboarded } from './pages/WelcomePage'
 
 const nav = [
@@ -64,6 +65,7 @@ export function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/lineup"    element={<LineupPage />} />
             <Route path="/round"     element={<RoundPage />} />
+            <Route path="/round/match/:matchId" element={<MatchPage />} />
             <Route path="/market"    element={<MarketPage />} />
             <Route path="/standings" element={<StandingsPage />} />
           </Routes>

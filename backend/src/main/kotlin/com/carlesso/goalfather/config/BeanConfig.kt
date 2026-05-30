@@ -4,10 +4,12 @@ import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
+import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.service.BuyPlayerService
+import com.carlesso.goalfather.application.service.PlayMatchService
 import com.carlesso.goalfather.application.service.PlayRoundService
 import com.carlesso.goalfather.application.service.SaveLineupService
 import com.carlesso.goalfather.application.service.SellPlayerService
@@ -53,4 +55,11 @@ class BeanConfig {
         leagueRepo: LeagueRepository,
         simulator: MatchSimulator,
     ): PlayRoundUseCase = PlayRoundService(clubRepo, leagueRepo, simulator)
+
+    @Bean
+    fun streamMatchUseCase(
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+        simulator: MatchSimulator,
+    ): StreamMatchUseCase = PlayMatchService(clubRepo, leagueRepo, simulator)
 }
