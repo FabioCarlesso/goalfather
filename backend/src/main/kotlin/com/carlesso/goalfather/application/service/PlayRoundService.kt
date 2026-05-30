@@ -85,6 +85,15 @@ class PlayRoundService(
             emit(RoundEvent.MatchUpdate(matchId, event))
         }
 
+        // Idempotência: se a rodada JÁ está finalizada, este stream é um replay
+        // (reconexão ao WS). Re-emitimos os eventos para visualização, mas NÃO
+        // re-aplicamos estatísticas/caixa nem geramos a próxima rodada — caso
+        // contrário gols, cartões e bilheteria seriam contados em dobro.
+        if (round.status == RoundStatus.Finished) {
+            emit(RoundEvent.RoundFinished(leagueRepo.currentStandings()))
+            return@flow
+        }
+
         // Calcula o balanço financeiro da rodada — bilheteria (mandante) e
         // folha salarial em rodadas de "mês" (issue #4).
         val finances = computeFinances(round, involvedClubs.values)

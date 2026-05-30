@@ -195,6 +195,27 @@ class PlayRoundServiceTest {
     }
 
     @Test
+    fun `rodada ja finalizada faz replay sem re-aplicar efeitos (idempotencia)`() = runTest {
+        val finishedRound = round.copy(status = RoundStatus.Finished)
+        coEvery { leagueRepo.findRound(1) } returns finishedRound
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+
+        val events = service.stream(1).toList()
+
+        // Ainda re-emite os eventos (replay para visualização) e termina com RoundFinished.
+        assertTrue(events.any { it is RoundEvent.MatchUpdate })
+        assertIs<RoundEvent.RoundFinished>(events.last())
+
+        // Nenhum efeito colateral: sem persistência de rodada/tabela/clube nem nova rodada.
+        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
+        coVerify(exactly = 0) { leagueRepo.saveStandings(any()) }
+        coVerify(exactly = 0) { clubRepo.save(any()) }
+        coVerify(exactly = 0) { clubRepo.findAll() }
+    }
+
+    @Test
     fun `rodada inexistente lanca IllegalArgumentException`() = runTest {
         coEvery { leagueRepo.findRound(999) } returns null
 
