@@ -3,6 +3,7 @@ import { useClub } from '../api/queries/useClub'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
 import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
 import { ApiError } from '../api/client'
+import { errorMessage } from '../api/errorMessages'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import type { Club, TransferResult } from '../domain/types'
 
@@ -14,7 +15,7 @@ export function DashboardPage() {
   const [lastResult, setLastResult] = useState<TransferResult | null>(null)
 
   if (isLoading) return <p className="text-slate-400">Carregando clube…</p>
-  if (error)     return <p className="text-red-400">Erro: {String(error)}</p>
+  if (error)     return <p className="text-red-400">{errorMessage(error)}</p>
   if (!club)     return null
 
   const onSell = (playerId: number, name: string) => {

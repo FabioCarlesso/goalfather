@@ -1,9 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import { App } from './App.tsx'
+import { errorMessage } from './api/errorMessages'
 import './index.css'
 
+// Tratamento global de erros/sucessos via toast (issue #6). Centralizado nos
+// caches do QueryClient — qualquer query/mutation que falhe dispara um toast
+// vermelho com mensagem amigável, sem cada componente repetir o handling.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -12,6 +17,19 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
+  queryCache: new QueryCache({
+    onError: (error) => toast.error(errorMessage(error)),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => toast.error(errorMessage(error)),
+    // Toast verde quando a mutation declara `meta.successMessage` (ex.:
+    // escalação, ampliação). Compra/venda tratam o sucesso no próprio hook,
+    // pois o resultado de negócio vive no payload (TransferResult).
+    onSuccess: (_data, _vars, _ctx, mutation) => {
+      const msg = mutation.meta?.successMessage
+      if (typeof msg === 'string') toast.success(msg)
+    },
+  }),
 })
 
 // Inicializa MSW antes de montar a árvore React.
