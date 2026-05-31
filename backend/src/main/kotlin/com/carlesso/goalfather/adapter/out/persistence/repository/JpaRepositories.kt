@@ -28,4 +28,7 @@ interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
     fun findTopByOrderByNumberDesc(): RoundEntity?
 }
 
-interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int>
+interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int> {
+    /** Tabela da temporada ativa = maior `season` (suporta histórico multi-temporada). */
+    fun findTopByOrderBySeasonDesc(): StandingsEntity?
+}

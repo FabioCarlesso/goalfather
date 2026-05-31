@@ -9,7 +9,12 @@ interface LeagueRepository {
     /** Rodada de maior número (a "atual" do calendário). `null` se não há rodadas. */
     suspend fun findLatest(): Round?
 
+    /** Tabela da temporada ativa (a de maior `season`). */
     suspend fun currentStandings(): Standings
+
+    /** Tabela de uma temporada específica (histórico); `null` se não existir. */
+    suspend fun findStandings(season: Int): Standings?
+
     suspend fun saveRound(round: Round)
     suspend fun saveStandings(standings: Standings)
 }

@@ -29,11 +29,15 @@ class LeaguePersistenceAdapter(
     }
 
     override suspend fun currentStandings(): Standings = withContext(Dispatchers.IO) {
-        // Pega a unica linha (1 standings por temporada). Em multi-season
-        // (futuro), filtrar por season ativa.
-        val entity = standingsRepo.findAll().firstOrNull()
+        // Temporada ativa = maior `season`. Ao virar o ano, a tabela anterior
+        // permanece no DB (PK por season) e esta passa a apontar para a nova.
+        val entity = standingsRepo.findTopByOrderBySeasonDesc()
             ?: throw IllegalStateException("Standings nao inicializada — seed faltando")
         entity.toDomain(json)
+    }
+
+    override suspend fun findStandings(season: Int): Standings? = withContext(Dispatchers.IO) {
+        standingsRepo.findById(season).orElse(null)?.toDomain(json)
     }
 
     @Transactional

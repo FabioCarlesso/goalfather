@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -18,7 +19,21 @@ class LeagueController(
 ) {
 
     @GetMapping("/standings")
-    fun getStandings() = runBlocking { leagueRepo.currentStandings() }
+    fun getStandings(@RequestParam(required = false) season: Int?): ResponseEntity<Any> = runBlocking {
+        if (season == null) {
+            ResponseEntity.ok(leagueRepo.currentStandings())
+        } else {
+            // Histórico: tabela final de uma temporada já encerrada (issue #11).
+            val standings = leagueRepo.findStandings(season)
+            if (standings == null) {
+                ResponseEntity.status(404).body(
+                    ErrorResponse(code = "STANDINGS_NOT_FOUND", message = "Temporada $season sem tabela"),
+                )
+            } else {
+                ResponseEntity.ok(standings)
+            }
+        }
+    }
 
     @GetMapping("/round/current")
     fun getCurrentRound(): ResponseEntity<Any> = runBlocking {

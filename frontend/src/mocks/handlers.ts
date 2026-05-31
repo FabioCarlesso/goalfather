@@ -4,7 +4,7 @@
 // remover/comentar o handler aqui e o app passa a falar com o backend real.
 
 import { http, HttpResponse, delay, ws } from 'msw'
-import { state, clubMeta, applyRoundToStandings } from './seed'
+import { state, clubMeta, applyRoundToStandings, SEASON_ROUNDS, startNewSeason } from './seed'
 import { simulateMatch, averageOverall } from './engine'
 import type {
   TransferResult,
@@ -396,16 +396,34 @@ export const handlers = [
         }
       }
 
+      // Tabela final desta temporada (capturada antes de eventual reset).
+      const finalStandings = state.standings
+      const seasonEnded = round.number >= SEASON_ROUNDS
+
       // Pequeno gap antes do RoundFinished para o cliente processar os
       // ultimos FullTime (MSW WS pode entregar fora de ordem se close vier
       // colado nos sends).
       await delay(50)
       if (cancelled) return
-      const finished: RoundEvent = { type: 'RoundFinished', standings: state.standings, finances }
-      client.send(JSON.stringify(finished))
 
-      // Avança para a próxima rodada (cliente busca via getCurrentRound depois)
-      state.currentRound = state.nextRound()
+      if (seasonEnded) {
+        // Fim de temporada (issue #11): emite SeasonFinished ANTES do
+        // RoundFinished (mesma ordem do backend) e abre a próxima temporada.
+        const seasonFin: RoundEvent = {
+          type: 'SeasonFinished',
+          season: round.season,
+          champion: finalStandings.rows[0]!,
+          standings: finalStandings,
+        }
+        client.send(JSON.stringify(seasonFin))
+        startNewSeason(round.season + 1)
+      } else {
+        // Avança para a próxima rodada (cliente busca via getCurrentRound depois)
+        state.currentRound = state.nextRound()
+      }
+
+      const finished: RoundEvent = { type: 'RoundFinished', standings: finalStandings, finances }
+      client.send(JSON.stringify(finished))
 
       // Gap para o cliente processar RoundFinished antes do close
       await delay(50)
