@@ -48,3 +48,41 @@ pelo `depends_on` do docker-compose).
 | `DB_USER` | `goalfather` | usuário do banco |
 | `DB_PASSWORD` | `goalfather` | senha do banco |
 | `JAVA_OPTS` | `-XX:MaxRAMPercentage=75` | flags da JVM |
+
+## Validação do profile `prod` (PostgreSQL)
+
+O profile `prod` aponta o JPA/Flyway para PostgreSQL. As migrations são
+**portáveis** entre H2 (dev/test, com `MODE=PostgreSQL`) e Postgres por
+construção:
+
+- Tipos usados — `BIGINT`, `INTEGER`, `VARCHAR(n)`, `TEXT`, `BOOLEAN` — existem
+  igualmente nos dois bancos.
+- **IDs são fornecidos manualmente** (não há `AUTO_INCREMENT`/`IDENTITY`), então
+  não existe a divergência clássica `BIGSERIAL` (Postgres) × `IDENTITY` (H2).
+- As colunas JSON (`lineup_json`, `matches_json`, `rows_json`) são `TEXT`
+  (serialização via kotlinx.serialization no mapper), não `jsonb` — portável.
+- `ddl-auto: validate`: o Hibernate só valida; quem cria o schema é o Flyway.
+
+### Runbook (ponta a ponta)
+
+```bash
+# 1. Subir só o Postgres (volume persistente)
+docker compose up -d postgres
+
+# 2. Rodar o backend contra ele
+SPRING_PROFILES_ACTIVE=prod \
+DB_URL=jdbc:postgresql://localhost:5432/goalfather \
+DB_USER=goalfather DB_PASSWORD=goalfather \
+./gradlew bootRun
+# Esperado: Flyway aplica V1+V2 sem erro; /actuator/health = 200.
+
+# 3. E2E contra o backend real (noutro terminal, em frontend/)
+cd ../frontend && npm run e2e:real
+
+# 4. Validar persistência: comprar/jogar rodada, reiniciar o backend, conferir
+#    que o estado sobreviveu (Postgres + volume).
+```
+
+> A execução ao vivo exige Docker e não foi rodada no ambiente de
+> desenvolvimento deste commit — o que foi garantido aqui é a **portabilidade
+> das migrations** (revisão acima) e o runbook reproduzível.

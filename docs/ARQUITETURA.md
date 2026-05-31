@@ -295,7 +295,7 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 ### Fase 2 — Casos de uso + persistência ✅
 - [x] Ports (in/out) e use cases (`PlayRound`, `BuyPlayer`, `SellPlayer`, `SaveLineup`)
 - [x] JPA entities + PersistenceAdapters + Flyway (V1__init.sql)
-- [ ] Caffeine cache na tabela/mercado — *adiado*, frontend não percebe diferença
+- [x] Caffeine cache na tabela/mercado — feito na Fase 4 (issue #13)
 - **Foco de estudo:** coroutines em use cases, `sealed Result` para erros
 
 ### Fase 3 — API REST + frontend (mock-first) ✅
@@ -318,10 +318,18 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [x] **3.6.4** Tela de onboarding/primeiro acesso (`/welcome` + flag localStorage)
 - [x] **3.6.5** Drill-down de partidas via WebSocket `/ws/matches/{id}`
 
-### Fase 4 — DSL + polimento single-player
-- [ ] DSL de seed de ligas/clubes (`@DslMarker`)
-- [ ] Temporadas, promoção/rebaixamento, mercado dinâmico
-- [ ] Suíte de testes ampla (estilo dos ~110 cenários do Cartola)
+### Fase 4 — DSL + polimento single-player ✅
+- [x] **4.1** DSL de seed de ligas/clubes (`@DslMarker`) — issue #10
+- [x] **4.2** Fim de temporada com campeão + virada automática de temporada — issue #11
+- [x] **4.3** Cobertura E2E ampliada (mercado, escalação) — issue #12
+- [x] **4.4** Caffeine cache em standings/mercado — issue #13
+- [ ] Promoção/rebaixamento, mercado dinâmico — *futuro* (depende de divisões)
+
+### Fase 4.5 — DevOps / empacotamento ✅
+- [x] **4.5.1** Dockerfile multi-stage do backend — issue #14
+- [x] **4.5.2** docker-compose (Postgres + backend + frontend nginx) — issue #15
+- [x] **4.5.3** Profile prod PostgreSQL — migrations portáveis + runbook — issue #16
+- [x] **4.5.4** GitHub Actions CI (backend + frontend unit + e2e mock) — issue #17
 
 ### Fase 5 — Multiplayer (futuro)
 - [ ] `UserId` / autenticação (Spring Security + JWT)
