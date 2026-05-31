@@ -25,8 +25,12 @@ test.describe('Market flow', () => {
   })
 
   test('vender um jogador remove do elenco', async ({ page }) => {
+    // A venda passa por um confirm() — Playwright descarta diálogos por padrão,
+    // então é preciso aceitar explicitamente, senão a venda vira no-op.
+    page.on('dialog', (dialog) => dialog.accept())
+
     await page.goto('/dashboard')
-    await expect(page.getByRole('heading', { name: /./ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Elenco' })).toBeVisible()
 
     const sellButtons = page.getByRole('button', { name: 'Vender' })
     const before = await sellButtons.count()
