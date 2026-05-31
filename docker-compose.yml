@@ -1,0 +1,48 @@
+# GoalFather — stack completo (PostgreSQL + backend Kotlin + frontend nginx).
+#
+#   docker compose up --build     # sobe tudo; UI em http://localhost:8080
+#   docker compose down           # para (mantém o volume do Postgres)
+#   docker compose down -v        # para E zera o estado (apaga o volume)
+#
+# O frontend (nginx) faz proxy de /api e /ws para o backend, então só a porta
+# 8080 precisa ser exposta ao host. O backend também é publicado em 8081 para
+# acesso direto/depuração.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: goalfather
+      POSTGRES_USER: goalfather
+      POSTGRES_PASSWORD: goalfather
+    volumes:
+      - goalfather-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goalfather -d goalfather"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/goalfather
+      DB_USER: goalfather
+      DB_PASSWORD: goalfather
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  goalfather-pgdata:
