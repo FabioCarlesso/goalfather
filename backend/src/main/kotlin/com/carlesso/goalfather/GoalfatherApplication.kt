@@ -2,6 +2,7 @@ package com.carlesso.goalfather
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.cache.annotation.EnableCaching
 
 /**
  * Bootstrap do Spring Boot.
@@ -15,6 +16,7 @@ import org.springframework.boot.runApplication
  * - config           — beans, CORS, WebSocket registry
  */
 @SpringBootApplication
+@EnableCaching
 class GoalfatherApplication
 
 fun main(args: Array<String>) {
