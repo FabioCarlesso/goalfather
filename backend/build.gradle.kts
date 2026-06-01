@@ -47,6 +47,9 @@ dependencies {
 
     // Persistencia: H2 (dev/test) + PostgreSQL (profile prod)
     implementation("org.flywaydb:flyway-core")
+    // Flyway 10 modularizou o suporte por banco: o core sozinho lanca
+    // "Unsupported Database: PostgreSQL" no profile prod. Modulo dedicado:
+    runtimeOnly("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql")
 

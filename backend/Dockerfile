@@ -9,7 +9,10 @@ WORKDIR /workspace
 
 COPY build.gradle.kts settings.gradle.kts ./
 COPY gradle ./gradle
-RUN gradle --no-daemon dependencies > /dev/null 2>&1 || true
+# Pré-resolve plugins (fase de configuração) + dependências para cachear este
+# layer. SEM "|| true": se a rede falhar aqui, o build deve quebrar AGORA em vez
+# de gravar um cache incompleto que faz o bootJar seguinte falhar sem explicação.
+RUN gradle --no-daemon dependencies
 
 COPY src ./src
 RUN gradle --no-daemon clean bootJar
