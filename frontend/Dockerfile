@@ -4,8 +4,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+# Copia lockfile + .npmrc e usa `npm ci`: instalação limpa e reproduzível.
+# O .npmrc carrega `legacy-peer-deps=true` (openapi-typescript@7 ainda pede
+# peer typescript@^5, mas o projeto usa TS 6); sem ele o npm aborta com ERESOLVE.
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci
 
 COPY . .
 
