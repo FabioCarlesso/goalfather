@@ -14,12 +14,15 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.StandingRow
+import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
 import com.carlesso.goalfather.domain.rules.ticketRevenue
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlin.random.Random
@@ -110,17 +113,68 @@ class PlayRoundService(
         leagueRepo.saveRound(finishedRound)
         leagueRepo.saveStandings(newStandings)
 
-        // Gera a PRÓXIMA rodada (Berger) antes de sinalizar RoundFinished, para
-        // que `getCurrentRound` já encontre uma rodada Scheduled e o usuário
-        // possa jogar N rodadas em sequência sem intervenção.
+        // Avança o calendário. Num turno único (Berger), a temporada tem
+        // N-1 rodadas para N clubes. Enquanto não chega à última, gera a
+        // próxima rodada da MESMA temporada (para jogar N seguidas). Ao
+        // encerrar a última, vira a temporada (issue #11).
         val clubs = clubRepo.findAll()
-        if (clubs.size >= 2 && clubs.size % 2 == 0) {
-            val nextRound = generateRound(round.number + 1, round.season, clubs)
-            leagueRepo.saveRound(nextRound)
+        val canSchedule = clubs.size >= 2 && clubs.size % 2 == 0
+        val seasonRounds = clubs.size - 1
+        val seasonEnded = canSchedule && round.number >= seasonRounds
+
+        if (seasonEnded) {
+            startNextSeason(round.season, newStandings, clubs)
+        } else if (canSchedule) {
+            // Gera a próxima rodada antes de sinalizar RoundFinished, para que
+            // `getCurrentRound` já encontre uma rodada Scheduled.
+            leagueRepo.saveRound(generateRound(round.number + 1, round.season, clubs))
         }
 
+        // RoundFinished é sempre o último evento do stream (sinal de "rodada
+        // encerrada"); SeasonFinished, quando há, vem logo antes dele.
         emit(RoundEvent.RoundFinished(newStandings, finances))
     }
+
+    /**
+     * Encerra a temporada e abre a seguinte: zera as estatísticas de
+     * temporada dos jogadores, gera a rodada 1 e uma tabela nova. A tabela
+     * encerrada NÃO é apagada (PK por `season`), continua consultável via
+     * `GET /api/league/standings?season=`.
+     */
+    private suspend fun FlowCollector<RoundEvent>.startNextSeason(
+        endedSeason: Int,
+        finalStandings: Standings,
+        clubs: List<Club>,
+    ) {
+        val champion = finalStandings.rows.first()
+        val nextSeason = endedSeason + 1
+
+        resetSeasonStats()
+        leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
+        leagueRepo.saveStandings(freshStandings(nextSeason, clubs))
+
+        emit(RoundEvent.SeasonFinished(season = endedSeason, champion = champion, standings = finalStandings))
+    }
+
+    /**
+     * Zera gols/cartões e cura lesões de todos os jogadores no início da
+     * nova temporada. Relê os clubes (já com o caixa pós-bilheteria) para
+     * não desfazer as finanças aplicadas na rodada.
+     */
+    private suspend fun resetSeasonStats() {
+        for (club in clubRepo.findAll()) {
+            val reset = club.squad.map { it.copy(goals = 0, yellowCards = 0, redCards = 0, injured = false) }
+            if (reset != club.squad) clubRepo.save(club.copy(squad = reset))
+        }
+    }
+
+    private fun freshStandings(season: Int, clubs: List<Club>): Standings = Standings(
+        season = season,
+        round = 0,
+        rows = clubs.sortedBy { it.id.value }.mapIndexed { i, club ->
+            StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
+        },
+    )
 
     /**
      * Calcula o balanço financeiro de cada clube na rodada: bilheteria (só

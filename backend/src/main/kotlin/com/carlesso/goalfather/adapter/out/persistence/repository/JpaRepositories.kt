@@ -6,6 +6,8 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**
@@ -22,10 +24,34 @@ interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {
     fun findAllByClubIdIsNull(): List<PlayerEntity>
 }
 
-interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long>
+/**
+ * O cache (issue #13) é aplicado na camada SÍNCRONA do Spring Data, não nos
+ * adapters suspend: o interceptor de cache do Spring não suporta funções
+ * `suspend` (lida com o parâmetro `Continuation`). Anotar o método bloqueante
+ * do repositório resolve sem gambiarra — o adapter só o envelopa em
+ * `withContext(Dispatchers.IO)`. `save`/`deleteById` são sobrescritos só para
+ * pendurar o `@CacheEvict`.
+ */
+interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long> {
+    @Cacheable("market")
+    override fun findAll(): List<MarketEntryEntity>
+
+    @CacheEvict("market", allEntries = true)
+    override fun <S : MarketEntryEntity> save(entity: S): S
+
+    @CacheEvict("market", allEntries = true)
+    override fun deleteById(id: Long)
+}
 
 interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
     fun findTopByOrderByNumberDesc(): RoundEntity?
 }
 
-interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int>
+interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int> {
+    /** Tabela da temporada ativa = maior `season` (suporta histórico multi-temporada). */
+    @Cacheable("standings")
+    fun findTopByOrderBySeasonDesc(): StandingsEntity?
+
+    @CacheEvict("standings", allEntries = true)
+    override fun <S : StandingsEntity> save(entity: S): S
+}

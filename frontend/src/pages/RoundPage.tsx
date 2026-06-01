@@ -6,9 +6,12 @@ import { useClub } from '../api/queries/useClub'
 import { standingsKey } from '../api/queries/useStandings'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { formatMoney } from '../domain/formatters'
-import type { MatchEvent, RoundEvent, RoundFinance, RoundMatch, Standings } from '../domain/types'
+import type { MatchEvent, RoundEvent, RoundFinance, RoundMatch, StandingRow, Standings } from '../domain/types'
 
 const MY_CLUB_ID = 1
+
+// Variante do union RoundEvent — fim de temporada (issue #11).
+type SeasonFinishedEvent = Extract<RoundEvent, { type: 'SeasonFinished' }>
 
 type Status = 'idle' | 'connecting' | 'live' | 'finished' | 'error'
 
@@ -38,6 +41,7 @@ export function RoundPage() {
   const [error, setError] = useState<string | null>(null)
   const [finalStandings, setFinalStandings] = useState<Standings | null>(null)
   const [finalFinance, setFinalFinance] = useState<RoundFinance | null>(null)
+  const [champion, setChampion] = useState<SeasonFinishedEvent | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
 
   // ─── Estado por partida derivado dos eventos ─────────────────────────
@@ -111,6 +115,7 @@ export function RoundPage() {
     setError(null)
     setFinalStandings(null)
     setFinalFinance(null)
+    setChampion(null)
     setStatus('connecting')
 
     try {
@@ -137,6 +142,13 @@ export function RoundPage() {
           qc.setQueryData(standingsKey, event.standings)
           // Próxima rodada já está pronta no backend mock — invalida para buscar
           qc.invalidateQueries({ queryKey: currentRoundKey })
+        } else if (event.type === 'SeasonFinished') {
+          // Fim de temporada (issue #11): celebra o campeão. O backend já
+          // abriu a próxima temporada; a invalidação do RoundFinished (que vem
+          // logo a seguir) faz a UI buscar a rodada 1 da nova temporada.
+          setChampion(event)
+          setFinalStandings(event.standings)
+          qc.setQueryData(standingsKey, event.standings)
         }
       } catch (err) {
         console.error('Falha ao parsear RoundEvent', err)
@@ -219,10 +231,29 @@ export function RoundPage() {
         </div>
       )}
 
+      {champion && status === 'finished' && (
+        <ChampionBanner season={champion.season} champion={champion.champion} />
+      )}
+
       {finalStandings && status === 'finished' && (
         <FinalBanner standings={finalStandings} round={round.number} finance={finalFinance} />
       )}
     </section>
+  )
+}
+
+function ChampionBanner({ season, champion }: { season: number; champion: StandingRow }) {
+  return (
+    <div className="rounded-lg border border-amber-500/60 bg-gradient-to-r from-amber-900/30 to-amber-700/20 p-5 text-center">
+      <div className="text-4xl mb-1">🏆</div>
+      <div className="text-xs uppercase tracking-widest text-amber-300/80">Fim da temporada {season}</div>
+      <div className="mt-1 text-2xl font-bold text-amber-100">{champion.clubName} é o campeão!</div>
+      <div className="mt-1 text-sm font-mono text-amber-200/90">
+        {champion.points} pts · {champion.wins}V {champion.draws}E {champion.losses}D · SG{' '}
+        {champion.goalDifference >= 0 ? '+' : ''}{champion.goalDifference}
+      </div>
+      <div className="mt-2 text-xs text-slate-400">Uma nova temporada começou — boa sorte!</div>
+    </div>
   )
 }
 

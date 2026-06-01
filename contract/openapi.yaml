@@ -213,12 +213,26 @@ paths:
       tags: [League]
       operationId: getStandings
       summary: Tabela de classificação do campeonato
+      description: |
+        Sem `season`, retorna a tabela da temporada ativa. Com `season`,
+        retorna a tabela final de uma temporada já encerrada (histórico).
+      parameters:
+        - name: season
+          in: query
+          required: false
+          description: Ano da temporada (omitido = temporada ativa)
+          schema: { type: integer }
       responses:
         '200':
           description: Tabela ordenada por pontos, saldo, gols pró
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Standings' }
+        '404':
+          description: Temporada inexistente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /api/league/round/current:
     get:
@@ -761,11 +775,13 @@ components:
       oneOf:
         - $ref: '#/components/schemas/MatchUpdateEvent'
         - $ref: '#/components/schemas/RoundFinishedEvent'
+        - $ref: '#/components/schemas/SeasonFinishedEvent'
       discriminator:
         propertyName: type
         mapping:
           MatchUpdate:    '#/components/schemas/MatchUpdateEvent'
           RoundFinished:  '#/components/schemas/RoundFinishedEvent'
+          SeasonFinished: '#/components/schemas/SeasonFinishedEvent'
 
     MatchUpdateEvent:
       type: object
@@ -785,6 +801,19 @@ components:
           type: array
           description: Balanço financeiro de cada clube na rodada (bilheteria − salários).
           items: { $ref: '#/components/schemas/RoundFinance' }
+
+    SeasonFinishedEvent:
+      description: |
+        Emitido quando a última rodada do turno encerra a temporada. Carrega
+        o campeão (líder da tabela final) e a tabela encerrada. O backend já
+        abriu a próxima temporada (rodada 1 + tabela zerada) antes de emitir.
+      type: object
+      required: [type, season, champion, standings]
+      properties:
+        type:      { type: string, enum: [SeasonFinished] }
+        season:    { type: integer, description: Ano da temporada encerrada }
+        champion:  { $ref: '#/components/schemas/StandingRow' }
+        standings: { $ref: '#/components/schemas/Standings' }
 
     RoundFinance:
       description: Receita/despesa de um clube em uma rodada (valores em centavos).

@@ -1,0 +1,14 @@
+# Artefatos de build e estado local — nunca entram no contexto da imagem.
+build/
+.gradle/
+data/
+*.log
+
+# Wrapper binário do Gradle não é usado na imagem (usamos o `gradle` da base).
+gradlew
+gradlew.bat
+
+# IDE / SO
+.idea/
+*.iml
+.DS_Store

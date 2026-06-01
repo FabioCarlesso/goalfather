@@ -146,7 +146,8 @@ class PlayRoundServiceTest {
     }
 
     @Test
-    fun `gera a proxima rodada Scheduled apos finalizar a atual`() = runTest {
+    fun `apos a ultima rodada da temporada abre a temporada seguinte`() = runTest {
+        // 2 clubes ⇒ turno único de 1 rodada ⇒ a rodada 1 é a última da temporada.
         coEvery { leagueRepo.findRound(1) } returns round
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(any()) } returns homeClub
@@ -158,12 +159,74 @@ class PlayRoundServiceTest {
 
         service.stream(1).toList()
 
-        // Dois saveRound: a rodada 1 finalizada + a rodada 2 agendada.
+        // saveRound: rodada 1/2026 finalizada + rodada 1/2027 agendada.
         assertEquals(2, savedRounds.size)
         val next = savedRounds.last()
-        assertEquals(2, next.number)
+        assertEquals(1, next.number)
+        assertEquals(2027, next.season)
         assertEquals(RoundStatus.Scheduled, next.status)
         assertEquals(1, next.matches.size) // 2 clubes → 1 partida por rodada
+    }
+
+    @Test
+    fun `emite SeasonFinished com o campeao ao fim da temporada`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        val savedStandings = mutableListOf<Standings>()
+        coEvery { leagueRepo.saveStandings(capture(savedStandings)) } just Runs
+
+        val events = service.stream(1).toList()
+
+        val seasonFinished = events.filterIsInstance<RoundEvent.SeasonFinished>().single()
+        assertEquals(2026, seasonFinished.season)
+        // Campeão = líder da tabela final.
+        assertEquals(seasonFinished.standings.rows.first().clubId, seasonFinished.champion.clubId)
+        // RoundFinished continua sendo o último evento do stream.
+        assertIs<RoundEvent.RoundFinished>(events.last())
+        // Tabela nova (2027) zerada também foi salva.
+        val fresh = savedStandings.last()
+        assertEquals(2027, fresh.season)
+        assertEquals(0, fresh.round)
+        assertTrue(fresh.rows.all { it.points == 0 })
+    }
+
+    @Test
+    fun `no meio da temporada gera a proxima rodada da mesma temporada`() = runTest {
+        val clubs = (1L..4L).map { makeClub(id = it, name = "C$it", squadSize = 11, overall = 75) }
+        val midRound = Round(
+            number = 1,
+            season = 2026,
+            matches = listOf(
+                RoundMatch(1001, ClubId(1), ClubId(4), "C1", "C4"),
+                RoundMatch(1002, ClubId(2), ClubId(3), "C2", "C3"),
+            ),
+        )
+        val standings4 = Standings(
+            season = 2026,
+            round = 0,
+            rows = clubs.mapIndexed { i, c -> StandingRow(i + 1, c.id, c.name) },
+        )
+        coEvery { leagueRepo.findRound(1) } returns midRound
+        coEvery { leagueRepo.currentStandings() } returns standings4
+        clubs.forEach { c -> coEvery { clubRepo.findById(c.id) } returns c }
+        coEvery { clubRepo.findAll() } returns clubs
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        val savedRounds = mutableListOf<Round>()
+        coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        val events = service.stream(1).toList()
+
+        // 4 clubes ⇒ 3 rodadas/temporada; a rodada 1 não encerra a temporada.
+        assertTrue(events.none { it is RoundEvent.SeasonFinished })
+        val next = savedRounds.last()
+        assertEquals(2, next.number)
+        assertEquals(2026, next.season)
+        assertEquals(2, next.matches.size) // 4 clubes → 2 partidas
     }
 
     @Test

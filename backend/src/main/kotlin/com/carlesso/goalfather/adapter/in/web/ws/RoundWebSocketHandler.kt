@@ -61,7 +61,10 @@ class RoundWebSocketHandler(
                             lastMinute = event.event.minute
                             gap.coerceAtLeast(0)
                         }
+                        // Sinais de encerramento (rodada/temporada): pequeno gap
+                        // para o cliente processar os últimos FullTime antes deles.
                         is RoundEvent.RoundFinished -> 50L
+                        is RoundEvent.SeasonFinished -> 50L
                     }
                     if (delayMs > 0) kotlinx.coroutines.delay(delayMs)
                     if (session.isOpen) {

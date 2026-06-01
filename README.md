@@ -1,5 +1,7 @@
 # ⚽ GoalFather (GF)
 
+[![CI](https://github.com/FabioCarlesso/goalfather/actions/workflows/ci.yml/badge.svg)](https://github.com/FabioCarlesso/goalfather/actions/workflows/ci.yml)
+
 > *"I'm gonna make him a transfer he can't refuse."*
 
 Manager de futebol estilo Elifoot. Backend em **Kotlin + Spring Boot**, frontend em **React + TypeScript + Vite** (mock-first com MSW). Projeto pessoal para estudar **Kotlin no backend** partindo de uma base sólida de Java/Spring Boot.

@@ -180,6 +180,9 @@ export function applyRoundToStandings(round: Round, current: Standings): Standin
   }
 }
 
+// Turno único (Berger): N-1 rodadas para N clubes. A última encerra a temporada.
+export const SEASON_ROUNDS = allClubIds.length - 1
+
 // Estado mutável — mocks alteram aqui para simular persistência durante a sessão.
 export const state = {
   clubs: { [myClub.id]: myClub } as Record<number, Club>,
@@ -187,4 +190,34 @@ export const state = {
   standings: { ...initialStandings, rows: [...initialStandings.rows] } as Standings,
   currentRound: generateRound(1, 2026) as Round,
   nextRound: () => generateRound(state.currentRound.number + 1, state.currentRound.season),
+}
+
+// Tabela zerada de uma temporada — espelha freshStandings do PlayRoundService.
+function freshStandings(season: number): Standings {
+  return {
+    season,
+    round: 0,
+    rows: allClubIds.map((id, i) => ({
+      position: i + 1,
+      clubId: id,
+      clubName: clubMeta[id]!.name,
+      played: 0, wins: 0, draws: 0, losses: 0,
+      goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+    })),
+  }
+}
+
+// Vira a temporada (issue #11): zera estatísticas do elenco do usuário, cria
+// tabela nova e gera a rodada 1 da próxima temporada. Espelha startNextSeason
+// do backend, mantendo a parity mock ↔ real.
+export function startNewSeason(season: number): void {
+  const my = state.clubs[1]
+  if (my) {
+    state.clubs[1] = {
+      ...my,
+      squad: my.squad.map((p) => ({ ...p, goals: 0, yellowCards: 0, redCards: 0, injured: false })),
+    }
+  }
+  state.standings = freshStandings(season)
+  state.currentRound = generateRound(1, season)
 }
