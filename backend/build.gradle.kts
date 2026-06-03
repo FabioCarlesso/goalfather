@@ -37,6 +37,14 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    // ── Auth (issue #18): Spring Security + JWT (jjwt) ────────────────────
+    //    BCrypt vem do starter-security. jjwt é dividido em api/impl/jackson:
+    //    só a api é compile-time; impl/jackson resolvem em runtime.
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+
     // Cache: abstração do Spring + Caffeine como provider (issue #13).
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("com.github.ben-manes.caffeine:caffeine")
@@ -61,6 +69,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("org.springframework.security:spring-security-test")
 }
 
 // Plugin JPA precisa de no-arg constructors para entities — o kotlin-jpa plugin

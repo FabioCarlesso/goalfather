@@ -4,6 +4,7 @@
 // trocamos mocks pelo backend Spring real.
 
 import type { ErrorResponse } from '../domain/types'
+import { getToken } from './token'
 
 const BASE = '' // mesma origem; MSW intercepta em dev, proxy/CORS em prod
 
@@ -24,9 +25,17 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
+  // Header montado dinamicamente: Content-Type só quando há corpo, e
+  // Authorization quando há token (issue #18). O backend exige JWT em /api/**
+  // (exceto /auth/register|login); MSW ignora o header nos mocks.
+  const headers: Record<string, string> = {}
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const token = getToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
   const res = await fetch(BASE + path, {
     method,
-    headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
 

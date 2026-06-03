@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers'
 
 // Fluxos de mercado (issue #12): comprar (em /market) e vender (em /dashboard).
 // Rodam contra MSW (`npm run e2e`) e contra o backend Spring (`npm run e2e:real`).

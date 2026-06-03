@@ -6,6 +6,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -16,7 +17,15 @@ import org.springframework.data.jpa.repository.JpaRepository
  * (Spring Data não suporta diretamente); a ponte para coroutines fica
  * nos PersistenceAdapter via `withContext(Dispatchers.IO)`.
  */
-interface ClubJpaRepository : JpaRepository<ClubEntity, Long>
+interface ClubJpaRepository : JpaRepository<ClubEntity, Long> {
+    /** Clubes ainda sem dono — base do fluxo de seleção (issue #19). */
+    fun findAllByOwnerIdIsNull(): List<ClubEntity>
+}
+
+interface UserJpaRepository : JpaRepository<UserEntity, Long> {
+    fun findByUsername(username: String): UserEntity?
+    fun existsByUsername(username: String): Boolean
+}
 
 interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {
     fun findAllByClubId(clubId: Long): List<PlayerEntity>

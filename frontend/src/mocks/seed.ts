@@ -192,6 +192,107 @@ export const state = {
   nextRound: () => generateRound(state.currentRound.number + 1, state.currentRound.season),
 }
 
+// ─── Auth + seleção de clube (issues #18/#19) ─────────────────────────────
+// Estado de auth do mock. O token é `mock-token-<userId>` — o handler de /me
+// extrai o id daí. `clubOwners` espelha o `ownerId` do backend (todos os 6
+// clubes começam sem dono). A engine de mock (round/standings) continua
+// centrada no clube 1; reivindicar outro clube materializa um elenco jogável
+// (limitação conhecida do mock, que é descartável — ver CLAUDE.md).
+export interface MockUser {
+  id: number
+  username: string
+  password: string
+  clubId: number | null
+}
+
+// Persistência do estado de auth do mock no localStorage: sobrevive ao reload
+// (que reinicia os módulos JS e zeraria `auth`/`clubOwners`). É o que permite
+// o E2E (Playwright) navegar para deep-links autenticado após um page.goto.
+const MOCK_AUTH_KEY = 'gf:mockauth'
+
+interface PersistedAuth {
+  users: MockUser[]
+  owners: Record<number, number | null>
+  nextId: number
+}
+
+function loadPersistedAuth(): PersistedAuth | null {
+  try {
+    const raw = localStorage.getItem(MOCK_AUTH_KEY)
+    return raw ? (JSON.parse(raw) as PersistedAuth) : null
+  } catch {
+    return null
+  }
+}
+
+export function persistMockAuth(): void {
+  try {
+    const snapshot: PersistedAuth = { users: auth.users, owners: clubOwners, nextId: auth.nextId }
+    localStorage.setItem(MOCK_AUTH_KEY, JSON.stringify(snapshot))
+  } catch {
+    /* ignora — sem persistência, o mock só perde estado em reloads */
+  }
+}
+
+const persistedAuth = loadPersistedAuth()
+
+export const auth = {
+  users: (persistedAuth?.users ?? []) as MockUser[],
+  nextId: persistedAuth?.nextId ?? 1,
+}
+
+export const clubOwners: Record<number, number | null> =
+  persistedAuth?.owners ?? Object.fromEntries(allClubIds.map((id) => [id, null]))
+
+export const TOKEN_PREFIX = 'mock-token-'
+
+export function userIdFromAuthHeader(header: string | null): number | null {
+  if (!header || !header.startsWith(`Bearer ${TOKEN_PREFIX}`)) return null
+  const id = Number(header.slice(`Bearer ${TOKEN_PREFIX}`.length))
+  return Number.isFinite(id) ? id : null
+}
+
+/** Resumo de um clube disponível (espelha AvailableClubDto do backend). */
+export function availableClubInfo(id: number) {
+  if (id === 1) {
+    const c = state.clubs[1]!
+    return {
+      id,
+      name: c.name,
+      cash: c.cash,
+      stadiumCapacity: c.stadiumCapacity,
+      averageOverall: Math.round(c.squad.reduce((s, p) => s + p.overall, 0) / c.squad.length),
+    }
+  }
+  const meta = clubMeta[id]!
+  return { id, name: meta.name, cash: 500_000_00, stadiumCapacity: 12_000, averageOverall: meta.strength }
+}
+
+/**
+ * Garante um Club jogável em `state.clubs[id]` (issue #19). Chamado ao
+ * reivindicar e também no getClub após reload (quando `clubOwners` foi
+ * restaurado mas `state.clubs` voltou ao seed). `ownerId` vem de `clubOwners`.
+ */
+export function materializeClub(id: number): void {
+  if (state.clubs[id]) {
+    state.clubs[id] = { ...state.clubs[id]!, ownerId: clubOwners[id] ?? state.clubs[id]!.ownerId ?? null }
+    return
+  }
+  const meta = clubMeta[id]
+  if (!meta) return
+  const positions: Player['position'][] = ['GK', 'CB', 'CB', 'CB', 'CB', 'MF', 'MF', 'MF', 'MF', 'FW', 'FW']
+  state.clubs[id] = {
+    id,
+    name: meta.name,
+    cash: 500_000_00,
+    stadiumCapacity: 12_000,
+    ownerId: clubOwners[id] ?? null,
+    squad: positions.map((pos, i) =>
+      player(id * 1000 + i + 1, `${meta.name} ${i + 1}`, pos, meta.strength, 10_000_00, 25),
+    ),
+  }
+}
+
 // Tabela zerada de uma temporada — espelha freshStandings do PlayRoundService.
 function freshStandings(season: number): Standings {
   return {

@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toDomain
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
@@ -7,6 +8,7 @@ import com.carlesso.goalfather.adapter.out.persistence.repository.PlayerJpaRepos
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Lineup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -44,9 +46,27 @@ class ClubPersistenceAdapter(
         }
     }
 
+    override suspend fun findAvailable(): List<Club> = withContext(Dispatchers.IO) {
+        clubRepo.findAllByOwnerIdIsNull().map { entity ->
+            val players = playerRepo.findAllByClubId(entity.id)
+            entity.toDomain(players, json)
+        }
+    }
+
     @Transactional
     override suspend fun save(club: Club): Club = withContext(Dispatchers.IO) {
-        val entity = club.toEntity(json)
+        // Carrega a entidade EXISTENTE e copia os campos do domínio nela, em vez
+        // de mapear para uma entidade nova. Isso preserva o @Version (lock
+        // otimista do claim, issue #19): mapear para uma instância destacada com
+        // version=0 faria o Hibernate ver um update obsoleto contra a versão do
+        // banco (≥1 após o claim) → StaleObjectStateException em todo save de
+        // clube (ampliar estádio, escalação, compra/venda).
+        val entity = clubRepo.findById(club.id.value).orElseGet { ClubEntity(id = club.id.value) }
+        entity.name = club.name
+        entity.cash = club.cash
+        entity.stadiumCapacity = club.stadiumCapacity
+        entity.lineupJson = club.lineup?.let { json.encodeToString(Lineup.serializer(), it) }
+        entity.ownerId = club.ownerId
         clubRepo.save(entity)
 
         // Sincroniza o elenco. Players que estavam no clube e nao estao

@@ -4,6 +4,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 
 /**
  * Entidade JPA do clube. Separada do `Club` de domínio — a regra
@@ -34,4 +35,14 @@ class ClubEntity(
 
     @Column(name = "owner_id")
     var ownerId: Long? = null,
+
+    /**
+     * Lock otimista (issue #19): o Hibernate incrementa `version` a cada
+     * update e rejeita o save se a versão lida não bate com a do banco. Dois
+     * `claim` simultâneos no mesmo clube → o segundo leva
+     * `OptimisticLockException` → traduzido em 409.
+     */
+    @Version
+    @Column(name = "version", nullable = false)
+    var version: Long = 0,
 )

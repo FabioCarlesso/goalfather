@@ -21,15 +21,17 @@ class SaveLineupServiceTest {
     private val clubRepo: ClubRepository = mockk()
     private val service = SaveLineupService(clubRepo)
 
+    private val owner = 7L
+
     @Test
     fun `salva escalacao valida e retorna Success com clube atualizado`() = runTest {
-        val club = makeClub(squadSize = 15)
+        val club = makeClub(squadSize = 15, ownerId = owner)
         val ids = club.squad.take(11).map { it.id }
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
         coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
 
-        val result = service.execute(ClubId(1), Formation.F_4_4_2, ids)
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, ids)
 
         assertIs<LineupResult.Success>(result)
         assertEquals(11, saved.captured.lineup?.players?.size)
@@ -42,7 +44,7 @@ class SaveLineupServiceTest {
     fun `clube inexistente retorna ClubNotFound`() = runTest {
         coEvery { clubRepo.findById(ClubId(999)) } returns null
 
-        val result = service.execute(ClubId(999), Formation.F_4_4_2, emptyList())
+        val result = service.execute(ClubId(999), owner, Formation.F_4_4_2, emptyList())
 
         assertIs<LineupResult.ClubNotFound>(result)
         assertEquals(ClubId(999), result.clubId)
@@ -50,11 +52,23 @@ class SaveLineupServiceTest {
     }
 
     @Test
-    fun `menos de 11 retorna IncompleteLineup`() = runTest {
-        val club = makeClub(squadSize = 15)
+    fun `solicitante que nao e dono retorna NotOwner sem persistir`() = runTest {
+        val club = makeClub(squadSize = 15, ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
 
-        val result = service.execute(ClubId(1), Formation.F_4_4_2, club.squad.take(5).map { it.id })
+        val result = service.execute(ClubId(1), owner + 1, Formation.F_4_4_2, club.squad.take(11).map { it.id })
+
+        assertIs<LineupResult.NotOwner>(result)
+        assertEquals(ClubId(1), result.clubId)
+        coVerify(exactly = 0) { clubRepo.save(any()) }
+    }
+
+    @Test
+    fun `menos de 11 retorna IncompleteLineup`() = runTest {
+        val club = makeClub(squadSize = 15, ownerId = owner)
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, club.squad.take(5).map { it.id })
 
         assertIs<LineupResult.IncompleteLineup>(result)
         assertEquals(11, result.expected)
@@ -63,11 +77,11 @@ class SaveLineupServiceTest {
 
     @Test
     fun `IDs fora do elenco retornam PlayersNotInSquad`() = runTest {
-        val club = makeClub(squadSize = 11)
+        val club = makeClub(squadSize = 11, ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
 
         val foreignIds = (100L..110L).map { PlayerId(it) }
-        val result = service.execute(ClubId(1), Formation.F_4_4_2, foreignIds)
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, foreignIds)
 
         assertIs<LineupResult.PlayersNotInSquad>(result)
         assertEquals((100L..110L).toList(), result.missingIds)
@@ -75,14 +89,14 @@ class SaveLineupServiceTest {
 
     @Test
     fun `mistura de IDs validos e invalidos retorna PlayersNotInSquad com apenas os invalidos`() = runTest {
-        val club = makeClub(squadSize = 11)
+        val club = makeClub(squadSize = 11, ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
 
         val valid = club.squad.take(10).map { it.id }
         val invalid = listOf(PlayerId(999))
         val mixed = valid + invalid
 
-        val result = service.execute(ClubId(1), Formation.F_4_4_2, mixed)
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, mixed)
 
         assertIs<LineupResult.PlayersNotInSquad>(result)
         assertEquals(listOf(999L), result.missingIds)

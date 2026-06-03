@@ -36,6 +36,7 @@ internal fun makeClub(
     squadSize: Int = 11,
     overall: Int = 75,
     lineup: Lineup? = null,
+    ownerId: Long? = null,
 ): Club = Club(
     id = ClubId(id),
     name = name,
@@ -43,4 +44,5 @@ internal fun makeClub(
     stadiumCapacity = 15_000,
     squad = (1L..squadSize.toLong()).map { makePlayer(it, overall = overall) },
     lineup = lineup,
+    ownerId = ownerId,
 )

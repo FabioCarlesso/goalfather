@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
 import { useClub } from '../api/queries/useClub'
+import { useMyClubId } from '../auth/useMyClubId'
 import { standingsKey } from '../api/queries/useStandings'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { formatMoney } from '../domain/formatters'
 import type { MatchEvent, RoundEvent, RoundFinance, RoundMatch, StandingRow, Standings } from '../domain/types'
-
-const MY_CLUB_ID = 1
 
 // Variante do union RoundEvent — fim de temporada (issue #11).
 type SeasonFinishedEvent = Extract<RoundEvent, { type: 'SeasonFinished' }>
@@ -24,8 +23,9 @@ interface LiveMatchState {
 
 export function RoundPage() {
   const qc = useQueryClient()
+  const myClubId = useMyClubId()
   const { data: round, isLoading } = useCurrentRound()
-  const { data: myClub } = useClub(MY_CLUB_ID)
+  const { data: myClub } = useClub(myClubId)
   const playRound = usePlayRound()
 
   // Lookup id → nome a partir do elenco do usuário, para o feed mostrar
@@ -92,8 +92,8 @@ export function RoundPage() {
 
   // ─── Partida do usuário + feed filtrado ──────────────────────────────
   const myMatch = useMemo<RoundMatch | undefined>(
-    () => round?.matches.find((m) => m.homeClubId === MY_CLUB_ID || m.awayClubId === MY_CLUB_ID),
-    [round],
+    () => round?.matches.find((m) => m.homeClubId === myClubId || m.awayClubId === myClubId),
+    [round, myClubId],
   )
 
   const myMatchEvents = useMemo<MatchEvent[]>(() => {
@@ -137,7 +137,7 @@ export function RoundPage() {
         setEvents((prev) => [...prev, event])
         if (event.type === 'RoundFinished') {
           setFinalStandings(event.standings)
-          setFinalFinance(event.finances.find((f) => f.clubId === MY_CLUB_ID) ?? null)
+          setFinalFinance(event.finances.find((f) => f.clubId === myClubId) ?? null)
           // Empurra a nova tabela direto no cache (sem refetch desnecessário)
           qc.setQueryData(standingsKey, event.standings)
           // Próxima rodada já está pronta no backend mock — invalida para buscar
@@ -162,7 +162,7 @@ export function RoundPage() {
       setStatus((prev) => (prev === 'error' ? 'error' : 'finished'))
       if (e.code !== 1000 && e.code !== 1005 && e.reason) setError(e.reason)
     }
-  }, [round, playRound, qc])
+  }, [round, playRound, qc, myClubId])
 
   useEffect(() => {
     return () => wsRef.current?.close()
@@ -212,7 +212,7 @@ export function RoundPage() {
             key={m.matchId}
             match={m}
             state={matchStates.get(m.matchId)}
-            highlight={m.homeClubId === MY_CLUB_ID || m.awayClubId === MY_CLUB_ID}
+            highlight={m.homeClubId === myClubId || m.awayClubId === myClubId}
           />
         ))}
       </div>

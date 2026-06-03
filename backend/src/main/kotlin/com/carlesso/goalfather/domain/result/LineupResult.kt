@@ -25,6 +25,11 @@ sealed interface LineupResult {
     @SerialName("ClubNotFound")
     data class ClubNotFound(val clubId: ClubId) : LineupResult
 
+    /** O solicitante não é o dono do clube (issue #18) — controller mapeia 403. */
+    @Serializable
+    @SerialName("NotOwner")
+    data class NotOwner(val clubId: ClubId) : LineupResult
+
     @Serializable
     @SerialName("IncompleteLineup")
     data class IncompleteLineup(val expected: Int, val actual: Int) : LineupResult

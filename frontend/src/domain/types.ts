@@ -21,3 +21,10 @@ export type RoundMatch    = components['schemas']['RoundMatch']
 export type RoundStatus   = components['schemas']['RoundStatus']
 export type RoundEvent    = components['schemas']['RoundEvent']
 export type RoundFinance  = components['schemas']['RoundFinance']
+
+// Auth (issue #18) + seleção de clube (issue #19)
+export type AuthUser        = components['schemas']['AuthUser']
+export type AuthResponse    = components['schemas']['AuthResponse']
+export type RegisterRequest = components['schemas']['RegisterRequest']
+export type LoginRequest    = components['schemas']['LoginRequest']
+export type AvailableClub   = components['schemas']['AvailableClub']

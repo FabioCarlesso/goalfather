@@ -1,28 +1,21 @@
 import { expect, test } from '@playwright/test'
+import { authenticate } from './helpers'
 
-// Onboarding (FRONTEND.md / issue #8): a primeira visita a "/" cai em
-// /welcome; depois de concluir, visitas seguintes vão direto à dashboard.
-// Cada teste do Playwright roda em contexto isolado, então o localStorage
-// começa vazio — simulando o "primeiro acesso".
+// Auth + onboarding (issues #18/#19): sem sessão, qualquer rota cai no /login.
+// Após cadastrar e escolher um clube, o usuário chega à dashboard; o tutorial
+// (/welcome) continua acessível pelo item de menu. Cada teste do Playwright
+// roda em contexto isolado, então o localStorage começa vazio (primeiro acesso).
 
-test.describe('Onboarding', () => {
-  test('primeira visita mostra /welcome; segunda vai direto à dashboard', async ({ page }) => {
+test.describe('Auth + onboarding', () => {
+  test('sem sessão, a raiz redireciona para o login', async ({ page }) => {
     await page.goto('/')
-    await expect(page).toHaveURL(/\/welcome$/)
-    await expect(page.getByRole('heading', { name: /Bem-vindo ao GoalFather/i })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Começar' }).click()
-    await expect(page).toHaveURL(/\/dashboard$/)
-
-    // Segunda visita à raiz: já onboarded → dashboard sem passar pelo welcome.
-    await page.goto('/')
-    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page).toHaveURL(/\/login$/)
+    await expect(page.getByRole('heading', { name: /GoalFather/i })).toBeVisible()
   })
 
-  test('item Tutorial reabre o welcome mesmo após onboarded', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Pular' }).click()
-    await expect(page).toHaveURL(/\/dashboard$/)
+  test('cadastrar e escolher clube leva à dashboard; Tutorial reabre o welcome', async ({ page }) => {
+    await authenticate(page)
+    await expect(page.getByRole('heading', { name: 'Goal Father FC' })).toBeVisible()
 
     await page.getByRole('link', { name: 'Tutorial' }).click()
     await expect(page).toHaveURL(/\/welcome$/)

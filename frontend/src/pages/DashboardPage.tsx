@@ -4,13 +4,13 @@ import { useSellPlayer } from '../api/queries/useSellPlayer'
 import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
 import { ApiError } from '../api/client'
 import { errorMessage } from '../api/errorMessages'
+import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import type { Club, TransferResult } from '../domain/types'
 
-const MY_CLUB_ID = 1
-
 export function DashboardPage() {
-  const { data: club, isLoading, error } = useClub(MY_CLUB_ID)
+  const myClubId = useMyClubId()
+  const { data: club, isLoading, error } = useClub(myClubId)
   const sell = useSellPlayer()
   const [lastResult, setLastResult] = useState<TransferResult | null>(null)
 
@@ -21,7 +21,7 @@ export function DashboardPage() {
   const onSell = (playerId: number, name: string) => {
     if (!confirm(`Vender ${name}?`)) return
     sell.mutate(
-      { clubId: MY_CLUB_ID, playerId },
+      { clubId: myClubId, playerId },
       { onSuccess: (result) => setLastResult(result) },
     )
   }

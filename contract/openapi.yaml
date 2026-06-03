@@ -29,6 +29,8 @@ servers:
     description: Frontend Vite com MSW interceptando (dev mock)
 
 tags:
+  - name: Auth
+    description: Cadastro, login e identidade do usuário (JWT)
   - name: Club
     description: Estado e gestão do clube do usuário
   - name: Match
@@ -41,6 +43,127 @@ tags:
     description: Tabela e calendário do campeonato
 
 paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Cadastrar novo usuário
+      description: |
+        Cria um usuário com senha (hash BCrypt no backend) e devolve um JWT
+        já autenticado. O usuário nasce sem clube (`clubId = null`) — o
+        próximo passo é reivindicar um clube em `/api/clubs/{id}/claim`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Usuário criado e autenticado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Username já em uso (`USERNAME_TAKEN`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Autenticar usuário existente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Autenticado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401':
+          description: Credenciais inválidas (`INVALID_CREDENTIALS`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentUser
+      summary: Identidade do usuário autenticado
+      description: |
+        Recupera o usuário a partir do JWT no header `Authorization`.
+        Usado pelo frontend para restaurar a sessão após refresh e decidir
+        se redireciona para `/select-club` (quando `clubId == null`).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Usuário autenticado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthUser' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/clubs/available:
+    get:
+      tags: [Club]
+      operationId: listAvailableClubs
+      summary: Clubes sem dono (disponíveis para reivindicar)
+      description: |
+        Lista os clubes com `ownerId == null`, com metadados para o card de
+        seleção (caixa, capacidade do estádio, força média do elenco).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Clubes disponíveis
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AvailableClub' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/clubs/{id}/claim:
+    post:
+      tags: [Club]
+      operationId: claimClub
+      summary: Reivindicar um clube para o usuário autenticado
+      description: |
+        Marca o clube como pertencente ao usuário autenticado e grava o
+        `clubId` no usuário. Transacional com lock otimista: se dois usuários
+        tentarem reivindicar o mesmo clube simultaneamente, o segundo recebe
+        `409 CLUB_ALREADY_CLAIMED`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      responses:
+        '200':
+          description: Clube reivindicado — devolve o usuário atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthUser' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Clube já reivindicado (`CLUB_ALREADY_CLAIMED`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /api/clubs/{id}:
     get:
       tags: [Club]
@@ -347,6 +470,16 @@ paths:
 
 components:
 
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT emitido por `/api/auth/register` ou `/api/auth/login`. Enviado em
+        `Authorization: Bearer <token>`. Todos os `/api/**` exigem o token,
+        exceto `/api/auth/register` e `/api/auth/login`.
+
   parameters:
     ClubIdPath:
       name: id
@@ -366,8 +499,70 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Token ausente ou inválido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   schemas:
+
+    # ─── Auth ──────────────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+
+    AuthUser:
+      type: object
+      required: [id, username]
+      properties:
+        id:       { type: integer, format: int64 }
+        username: { type: string }
+        clubId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Clube reivindicado pelo usuário; `null` antes da seleção.
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          description: 'JWT para o header Authorization: Bearer <token>.'
+        user: { $ref: '#/components/schemas/AuthUser' }
+
+    AvailableClub:
+      description: Resumo de um clube sem dono, para o card de seleção.
+      type: object
+      required: [id, name, cash, stadiumCapacity, averageOverall]
+      properties:
+        id:              { type: integer, format: int64 }
+        name:            { type: string }
+        cash:            { type: integer, format: int64, description: Caixa em centavos }
+        stadiumCapacity: { type: integer, minimum: 0 }
+        averageOverall:
+          type: integer
+          minimum: 0
+          maximum: 99
+          description: Força média do elenco (média dos `overall`).
 
     # ─── Enums ─────────────────────────────────────────────────────────────
     Position:
