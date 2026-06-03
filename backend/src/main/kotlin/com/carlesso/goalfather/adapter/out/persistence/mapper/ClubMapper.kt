@@ -17,11 +17,7 @@ fun ClubEntity.toDomain(squadEntities: List<PlayerEntity>, json: Json): Club = C
     ownerId = ownerId,
 )
 
-fun Club.toEntity(json: Json): ClubEntity = ClubEntity(
-    id = id.value,
-    name = name,
-    cash = cash,
-    stadiumCapacity = stadiumCapacity,
-    lineupJson = lineup?.let { json.encodeToString(Lineup.serializer(), it) },
-    ownerId = ownerId,
-)
+// NOTA: NÃO existe `Club.toEntity` de propósito. Persistir um clube deve
+// CARREGAR a entidade gerenciada e copiar os campos (ver ClubPersistenceAdapter),
+// preservando o @Version do lock otimista. Mapear para uma entidade nova
+// (version=0) causa StaleObjectStateException após o claim (issue #19).

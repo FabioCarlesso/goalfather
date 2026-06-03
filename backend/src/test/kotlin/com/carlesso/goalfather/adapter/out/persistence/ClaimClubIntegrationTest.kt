@@ -72,6 +72,21 @@ class ClaimClubIntegrationTest {
     }
 
     @Test
+    fun `apos claim, salvar o clube nao quebra por lock otimista (regressao ampliar estadio)`() = runBlocking {
+        // O claim incrementa o @Version do clube. Salvar o clube depois (ampliar
+        // estádio, escalação, compra/venda) precisa preservar essa versão, senão
+        // o Hibernate lança StaleObjectStateException → 500.
+        val user = newUser("save-${System.nanoTime()}")
+        val clubId = anyAvailableClubId()
+        assertIs<ClaimResult.Success>(claimRepo.claim(clubId, user.id))
+
+        val club = clubRepo.findById(clubId)!!
+        clubRepo.save(club.copy(stadiumCapacity = club.stadiumCapacity + 1000))
+
+        assertEquals(club.stadiumCapacity + 1000, clubRepo.findById(clubId)!!.stadiumCapacity)
+    }
+
+    @Test
     fun `dois claims simultaneos no mesmo clube - exatamente um vence`() {
         val a = newUser("race-a-${System.nanoTime()}")
         val b = newUser("race-b-${System.nanoTime()}")
