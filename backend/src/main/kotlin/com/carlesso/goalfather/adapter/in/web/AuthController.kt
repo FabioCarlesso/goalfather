@@ -34,7 +34,7 @@ class AuthController(
     @PostMapping("/register")
     fun register(@RequestBody req: RegisterRequest): ResponseEntity<Any> = runBlocking {
         validate(req.username, req.password)?.let { return@runBlocking it }
-        when (val result = register.execute(req.username.trim(), req.password)) {
+        when (val result = register.execute(normalize(req.username), req.password)) {
             is RegisterResult.Success -> ResponseEntity.status(201).body(authResponse(result.user))
             is RegisterResult.UsernameTaken -> ResponseEntity.status(409).body(
                 ErrorResponse(code = "USERNAME_TAKEN", message = "Username '${result.username}' já está em uso"),
@@ -44,7 +44,7 @@ class AuthController(
 
     @PostMapping("/login")
     fun login(@RequestBody req: LoginRequest): ResponseEntity<Any> = runBlocking {
-        when (val result = login.execute(req.username.trim(), req.password)) {
+        when (val result = login.execute(normalize(req.username), req.password)) {
             is LoginResult.Success -> ResponseEntity.ok(authResponse(result.user))
             is LoginResult.InvalidCredentials -> ResponseEntity.status(401).body(
                 ErrorResponse(code = "INVALID_CREDENTIALS", message = "Usuário ou senha inválidos"),
@@ -65,6 +65,13 @@ class AuthController(
             )
         ResponseEntity.ok(user.toDto())
     }
+
+    /**
+     * Normaliza o username: `trim` + `lowercase` para que `Fabio`, `fabio ` e
+     * `FABIO` sejam a MESMA conta — register e login usam a mesma forma, então
+     * a unicidade e o lookup batem (issue: L2 da review da PR #26).
+     */
+    private fun normalize(username: String): String = username.trim().lowercase()
 
     /** Validação mínima espelhando o contrato (username >= 3, senha >= 6). */
     private fun validate(username: String, password: String): ResponseEntity<Any>? {

@@ -25,11 +25,19 @@ class SaveLineupService(
 
     override suspend fun execute(
         clubId: ClubId,
+        requesterId: Long,
         formation: Formation,
         playerIds: List<PlayerId>,
     ): LineupResult {
+        // Carrega UMA vez: a checagem de posse (issue #18) e a validação da
+        // escalação reusam o mesmo clube — sem o duplo fetch que existia quando
+        // o controller pré-buscava o clube só para conferir o dono.
         val club = clubRepo.findById(clubId)
             ?: return LineupResult.ClubNotFound(clubId)
+
+        if (club.ownerId != requesterId) {
+            return LineupResult.NotOwner(clubId)
+        }
 
         if (playerIds.size != EXPECTED_SIZE) {
             return LineupResult.IncompleteLineup(

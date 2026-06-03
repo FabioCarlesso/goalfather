@@ -76,11 +76,14 @@ class ClubController(
         @RequestBody req: LineupRequest,
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> = runBlocking {
-        requireOwnership(ClubId(id), userId)?.let { return@runBlocking it }
-        when (val result = saveLineup.execute(ClubId(id), req.formation, req.playerIds)) {
+        // Posse é verificada dentro do use case (fetch único) — issue #18/#19.
+        when (val result = saveLineup.execute(ClubId(id), userId, req.formation, req.playerIds)) {
             is LineupResult.Success -> ResponseEntity.noContent().build()
             is LineupResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube ${result.clubId.value} não encontrado"),
+            )
+            is LineupResult.NotOwner -> ResponseEntity.status(403).body(
+                ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
             )
             is LineupResult.IncompleteLineup -> ResponseEntity.badRequest().body(
                 ErrorResponse(
@@ -128,16 +131,9 @@ class ClubController(
     /**
      * Garante que o usuário autenticado é dono do clube (issue #18: A não
      * altera dados do clube de B). Devolve a resposta de erro a propagar, ou
-     * `null` se está tudo certo.
+     * `null` se está tudo certo. Usado pelo endpoint de estádio (que já carrega
+     * o clube); o de escalação faz a checagem dentro do use case.
      */
-    private suspend fun requireOwnership(clubId: ClubId, userId: Long): ResponseEntity<Any>? {
-        val club = clubRepo.findById(clubId)
-            ?: return ResponseEntity.status(404).body(
-                ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube ${clubId.value} não encontrado"),
-            )
-        return ownershipError(club, userId)
-    }
-
     private fun ownershipError(club: Club, userId: Long): ResponseEntity<Any>? =
         if (club.ownerId != userId) {
             ResponseEntity.status(403).body(

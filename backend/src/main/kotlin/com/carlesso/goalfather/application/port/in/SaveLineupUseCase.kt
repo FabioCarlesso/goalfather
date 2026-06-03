@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.result.LineupResult
 interface SaveLineupUseCase {
     suspend fun execute(
         clubId: ClubId,
+        requesterId: Long,
         formation: Formation,
         playerIds: List<PlayerId>,
     ): LineupResult
