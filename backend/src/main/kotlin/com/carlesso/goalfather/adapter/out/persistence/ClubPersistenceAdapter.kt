@@ -44,6 +44,13 @@ class ClubPersistenceAdapter(
         }
     }
 
+    override suspend fun findAvailable(): List<Club> = withContext(Dispatchers.IO) {
+        clubRepo.findAllByOwnerIdIsNull().map { entity ->
+            val players = playerRepo.findAllByClubId(entity.id)
+            entity.toDomain(players, json)
+        }
+    }
+
     @Transactional
     override suspend fun save(club: Club): Club = withContext(Dispatchers.IO) {
         val entity = club.toEntity(json)

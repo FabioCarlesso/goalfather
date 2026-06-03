@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useClub } from '../api/queries/useClub'
 import { useSaveLineup } from '../api/queries/useSaveLineup'
+import { useMyClubId } from '../auth/useMyClubId'
 import {
   FORMATIONS,
   FORMATION_SLOTS,
@@ -9,11 +10,10 @@ import {
 } from '../domain/formations'
 import type { Formation, Player } from '../domain/types'
 
-const MY_CLUB_ID = 1
-
 export function LineupPage() {
-  const { data: club, isLoading } = useClub(MY_CLUB_ID)
-  const save = useSaveLineup(MY_CLUB_ID)
+  const myClubId = useMyClubId()
+  const { data: club, isLoading } = useClub(myClubId)
+  const save = useSaveLineup(myClubId)
 
   const [formation, setFormation] = useState<Formation>('4-4-2')
   const [slots, setSlots] = useState<(number | null)[]>(Array(11).fill(null))

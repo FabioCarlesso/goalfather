@@ -4,7 +4,20 @@
 // remover/comentar o handler aqui e o app passa a falar com o backend real.
 
 import { http, HttpResponse, delay, ws } from 'msw'
-import { state, clubMeta, applyRoundToStandings, SEASON_ROUNDS, startNewSeason } from './seed'
+import {
+  state,
+  clubMeta,
+  applyRoundToStandings,
+  SEASON_ROUNDS,
+  startNewSeason,
+  auth,
+  clubOwners,
+  userIdFromAuthHeader,
+  availableClubInfo,
+  materializeClub,
+  persistMockAuth,
+  TOKEN_PREFIX,
+} from './seed'
 import { simulateMatch, averageOverall } from './engine'
 import type {
   TransferResult,
@@ -14,6 +27,9 @@ import type {
   RoundEvent,
   RoundFinance,
   RoundMatch,
+  AuthResponse,
+  AuthUser,
+  AvailableClub,
 } from '../domain/types'
 import type { components } from '../api/generated'
 
@@ -51,12 +67,109 @@ const notFound = (msg: string): ErrorResponse => ({
   message: msg,
 })
 
+type AuthBody = components['schemas']['RegisterRequest']
+
+const toAuthUser = (u: { id: number; username: string; clubId: number | null }): AuthUser => ({
+  id: u.id,
+  username: u.username,
+  clubId: u.clubId,
+})
+
 export const handlers = [
+
+  // ─── register (issue #18) ─────────────────────────────────────────────
+  http.post('/api/auth/register', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const { username, password } = (await request.json()) as AuthBody
+    if (auth.users.some((u) => u.username === username)) {
+      return HttpResponse.json(
+        { code: 'USERNAME_TAKEN', message: `Username '${username}' já está em uso` } satisfies ErrorResponse,
+        { status: 409 },
+      )
+    }
+    const user = { id: auth.nextId++, username, password, clubId: null as number | null }
+    auth.users.push(user)
+    persistMockAuth()
+    const body: AuthResponse = { token: TOKEN_PREFIX + user.id, user: toAuthUser(user) }
+    return HttpResponse.json(body, { status: 201 })
+  }),
+
+  // ─── login ────────────────────────────────────────────────────────────
+  http.post('/api/auth/login', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const { username, password } = (await request.json()) as AuthBody
+    const user = auth.users.find((u) => u.username === username && u.password === password)
+    if (!user) {
+      return HttpResponse.json(
+        { code: 'INVALID_CREDENTIALS', message: 'Usuário ou senha inválidos' } satisfies ErrorResponse,
+        { status: 401 },
+      )
+    }
+    const body: AuthResponse = { token: TOKEN_PREFIX + user.id, user: toAuthUser(user) }
+    return HttpResponse.json(body)
+  }),
+
+  // ─── me (restaura sessão) ─────────────────────────────────────────────
+  http.get('/api/auth/me', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const userId = userIdFromAuthHeader(request.headers.get('Authorization'))
+    const user = userId != null ? auth.users.find((u) => u.id === userId) : undefined
+    if (!user) {
+      return HttpResponse.json(
+        { code: 'UNAUTHORIZED', message: 'Autenticação necessária' } satisfies ErrorResponse,
+        { status: 401 },
+      )
+    }
+    return HttpResponse.json(toAuthUser(user))
+  }),
+
+  // ─── listAvailableClubs (issue #19) ───────────────────────────────────
+  // Registrado ANTES de `/api/clubs/:id` para `available` não cair no :id.
+  http.get('/api/clubs/available', async () => {
+    await delay(SIMULATED_LATENCY_MS)
+    const available: AvailableClub[] = Object.entries(clubOwners)
+      .filter(([, owner]) => owner == null)
+      .map(([id]) => availableClubInfo(Number(id)))
+    return HttpResponse.json(available)
+  }),
+
+  // ─── claimClub (issue #19) ────────────────────────────────────────────
+  http.post('/api/clubs/:id/claim', async ({ params, request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const userId = userIdFromAuthHeader(request.headers.get('Authorization'))
+    const user = userId != null ? auth.users.find((u) => u.id === userId) : undefined
+    if (!user) {
+      return HttpResponse.json(
+        { code: 'UNAUTHORIZED', message: 'Autenticação necessária' } satisfies ErrorResponse,
+        { status: 401 },
+      )
+    }
+    const clubId = Number(params.id)
+    if (!(clubId in clubOwners)) {
+      return HttpResponse.json(notFound(`Clube ${clubId} não encontrado`), { status: 404 })
+    }
+    if (clubOwners[clubId] != null) {
+      return HttpResponse.json(
+        { code: 'CLUB_ALREADY_CLAIMED', message: `Clube ${clubId} já foi reivindicado` } satisfies ErrorResponse,
+        { status: 409 },
+      )
+    }
+    clubOwners[clubId] = user.id
+    materializeClub(clubId)
+    state.clubs[clubId] = { ...state.clubs[clubId]!, ownerId: user.id }
+    user.clubId = clubId
+    persistMockAuth()
+    return HttpResponse.json(toAuthUser(user))
+  }),
 
   // ─── getClub ──────────────────────────────────────────────────────────
   http.get('/api/clubs/:id', async ({ params }) => {
     await delay(SIMULATED_LATENCY_MS)
-    const club = state.clubs[Number(params.id)]
+    const id = Number(params.id)
+    // Após reload, `state.clubs` volta ao seed mas a posse foi restaurada de
+    // `clubOwners` — rematerializa o clube reivindicado sob demanda (issue #19).
+    if (!state.clubs[id] && clubOwners[id] != null) materializeClub(id)
+    const club = state.clubs[id]
     return club
       ? HttpResponse.json(club)
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })

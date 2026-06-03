@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useMarket } from '../api/queries/useMarket'
 import { useBuyPlayer } from '../api/queries/useBuyPlayer'
+import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney } from '../domain/formatters'
 import type { TransferResult } from '../domain/types'
 
-const MY_CLUB_ID = 1
-
 export function MarketPage() {
+  const myClubId = useMyClubId()
   const { data, isLoading, error } = useMarket()
   const buy = useBuyPlayer()
   const [lastResult, setLastResult] = useState<TransferResult | null>(null)
@@ -17,7 +17,7 @@ export function MarketPage() {
 
   const onBuy = (playerId: number) => {
     buy.mutate(
-      { clubId: MY_CLUB_ID, playerId },
+      { clubId: myClubId, playerId },
       { onSuccess: (result) => setLastResult(result) },
     )
   }

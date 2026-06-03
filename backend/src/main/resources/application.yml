@@ -38,6 +38,12 @@ server:
 app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080}
+  # ─── Auth / JWT (issue #18) ───────────────────────────────────────────────
+  # Segredo HMAC-SHA256: precisa de >= 32 bytes. O default abaixo é só para
+  # dev — em produção defina JWT_SECRET (ex.: `openssl rand -base64 48`).
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-change-me-please-0123456789-abcdefghijklmnop}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}   # 24h
 
 logging:
   level:

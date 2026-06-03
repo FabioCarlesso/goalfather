@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers'
 
 // Drill-down de partida (issue #9): clicar num card da rodada abre a página
 // da partida, que conecta em /ws/matches/{id} e mostra o feed ao vivo.

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers'
 
 // Fluxo critico do FRONTEND.md: abrir /round, jogar a rodada, ver o feed
 // da partida do usuario chegar ao FullTime, e validar que a tabela foi

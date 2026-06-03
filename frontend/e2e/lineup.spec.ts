@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers'
 
 // Escalação (issue #12): preencher os 11 titulares, salvar e validar que a
 // escalação persiste no servidor. Roda contra MSW e contra o backend real.

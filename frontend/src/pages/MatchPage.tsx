@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
+import { useMyClubId } from '../auth/useMyClubId'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import type { MatchEvent } from '../domain/types'
-
-const MY_CLUB_ID = 1
 
 type Status = 'connecting' | 'live' | 'finished' | 'error'
 
@@ -22,7 +21,8 @@ interface Teams {
  */
 export function MatchPage() {
   const { matchId } = useParams<{ matchId: string }>()
-  const { data: myClub } = useClub(MY_CLUB_ID)
+  const myClubId = useMyClubId()
+  const { data: myClub } = useClub(myClubId)
 
   const [events, setEvents] = useState<MatchEvent[]>([])
   const [status, setStatus] = useState<Status>('connecting')

@@ -17,5 +17,8 @@ interface ClubRepository {
     /** Todos os clubes da liga — usado para montar o calendário (round-robin). */
     suspend fun findAll(): List<Club>
 
+    /** Clubes ainda sem dono (`ownerId == null`) — fluxo de seleção (issue #19). */
+    suspend fun findAvailable(): List<Club>
+
     suspend fun save(club: Club): Club
 }

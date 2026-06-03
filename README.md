@@ -78,6 +78,24 @@ npm run gen:api      # regera tipos TS a partir do contrato
 
 Critério de "endpoint pronto": desliga o handler MSW correspondente e o E2E continua passando contra `localhost:8080`.
 
+### 4. Autenticação (Fase 5)
+
+A partir da Fase 5 a API exige **JWT** em `/api/**` (exceto `/api/auth/register` e `/api/auth/login`). O fluxo do usuário é: **cadastrar/entrar → escolher um clube sem dono (`/select-club`) → dashboard**.
+
+Variáveis de ambiente do backend:
+
+| Variável | Default (dev) | Descrição |
+|---|---|---|
+| `JWT_SECRET` | segredo de dev embutido | Chave HMAC-SHA256 (≥ 32 bytes). **Defina em produção.** |
+| `JWT_EXPIRATION_MS` | `86400000` (24h) | Validade do token em milissegundos. |
+
+```bash
+# Gere um segredo forte para produção:
+export JWT_SECRET="$(openssl rand -base64 48)"
+```
+
+No frontend (MSW) o fluxo funciona sem backend: o mock implementa register/login/me/available/claim e persiste a sessão no `localStorage`.
+
 ---
 
 ## 🗺️ Roadmap
@@ -105,6 +123,7 @@ Detalhes de cada fase em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#8-roadmap-e
 | Build | Gradle (Kotlin DSL) |
 | Persistência | Spring Data JPA + PostgreSQL + Flyway |
 | Cache | Caffeine |
+| Segurança | Spring Security + JWT (jjwt) |
 | Async | Kotlin Coroutines + Flow |
 | Serialização | kotlinx.serialization |
 | Docs API | springdoc-openapi (valida contrato) |

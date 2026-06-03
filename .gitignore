@@ -12,6 +12,9 @@ out/
 # reincluímos explicitamente para que o pacote port/out seja versionado.
 !**/src/main/**/port/out/
 !**/src/main/**/port/out/**
+# Idem para os testes do pacote adapter/out (ex.: ClaimClubIntegrationTest).
+!**/src/test/**/adapter/out/
+!**/src/test/**/adapter/out/**
 bin/
 
 # ─── Spring Boot ───
