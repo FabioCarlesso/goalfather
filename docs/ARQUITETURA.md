@@ -268,6 +268,9 @@ class PlayMatchService(
 | `POST` | `/api/market/sell` | Vender jogador |
 | `POST` | `/api/clubs/{id}/stadium/expand` | Ampliar estádio |
 | `GET` | `/api/league/standings` | Tabela de classificação |
+| `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
+| `POST` | `/api/league/round/ready` | Técnico sinaliza "estou pronto" — issue #20 |
+| `POST` | `/api/league/round/play` | Inicia a rodada (409 `ROUND_NOT_READY` se faltar técnico) |
 
 DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar o modelo interno na API e desacopla versionamento do contrato REST.
 
@@ -332,9 +335,11 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [x] **4.5.4** GitHub Actions CI (backend + frontend unit + e2e mock) — issue #17
 
 ### Fase 5 — Multiplayer (futuro)
-- [ ] `UserId` / autenticação (Spring Security + JWT)
+- [x] `UserId` / autenticação (Spring Security + JWT) — issues #18/#19
 - [ ] Liga compartilhada, concorrência de mercado (locks otimistas)
-- [ ] Sincronização de rodadas entre técnicos humanos
+- [x] Sincronização de rodadas entre técnicos humanos — issue #20
+  (`round_readiness` + gate "todos prontos → joga", `Mutex` no `PlayRoundService`
+  para a simulação não rodar 2× sob WS concorrentes)
 - **Foco de estudo:** coroutines + concorrência, `Mutex`, transações otimistas
 
 ---

@@ -15,5 +15,8 @@ interface UserRepository {
 
     suspend fun existsByUsername(username: String): Boolean
 
+    /** Técnicos humanos — usuários que já reivindicaram um clube (issue #20). */
+    suspend fun findManagers(): List<User>
+
     suspend fun save(user: User): User
 }

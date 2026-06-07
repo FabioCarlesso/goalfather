@@ -5,6 +5,8 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
@@ -25,6 +27,9 @@ interface ClubJpaRepository : JpaRepository<ClubEntity, Long> {
 interface UserJpaRepository : JpaRepository<UserEntity, Long> {
     fun findByUsername(username: String): UserEntity?
     fun existsByUsername(username: String): Boolean
+
+    /** Donos de clube = técnicos humanos da liga (issue #20). */
+    fun findAllByClubIdIsNotNull(): List<UserEntity>
 }
 
 interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {
@@ -54,6 +59,10 @@ interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long> {
 
 interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
     fun findTopByOrderByNumberDesc(): RoundEntity?
+}
+
+interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, RoundReadinessId> {
+    fun findAllByIdRoundNumber(roundNumber: Int): List<RoundReadinessEntity>
 }
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int> {

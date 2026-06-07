@@ -372,6 +372,35 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Round' }
 
+  /api/league/round/readiness:
+    get:
+      tags: [League]
+      operationId: getRoundReadiness
+      summary: Prontidão da rodada (lobby)
+      description: |
+        Estado de "todos prontos → joga rodada" da liga compartilhada
+        (issue #20). Alimenta o card de lobby; o cliente refaz a busca após
+        sinalizar pronto (ou recebe push via WS de lobby, opcional).
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadinessStatus' }
+
+  /api/league/round/ready:
+    post:
+      tags: [League]
+      operationId: markRoundReady
+      summary: Sinalizar que o técnico está pronto
+      description: |
+        O técnico autenticado declara estar pronto para a rodada corrente
+        (issue #20). Idempotente. Devolve o estado de prontidão atualizado.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadinessStatus' }
+
   /api/league/round/play:
     post:
       tags: [League]
@@ -379,8 +408,10 @@ paths:
       summary: Iniciar simulação da rodada
       description: |
         Marca a rodada corrente como `InProgress` e devolve o número
-        para o cliente conectar no WebSocket. Operação idempotente
-        enquanto a rodada não termina.
+        para o cliente conectar no WebSocket. Em liga compartilhada só
+        destrava quando TODOS os técnicos humanos sinalizaram prontos
+        (issue #20); caso contrário retorna 409 `ROUND_NOT_READY`.
+        Idempotente enquanto a rodada não termina.
       responses:
         '200':
           content:
@@ -391,7 +422,10 @@ paths:
                 properties:
                   roundNumber: { type: integer, minimum: 1 }
         '409':
-          description: Rodada já encerrada
+          description: |
+            Rodada já encerrada (`ROUND_ALREADY_FINISHED`) ou ainda
+            aguardando técnicos (`ROUND_NOT_READY` — `details` traz
+            `ready`, `total` e `pending`).
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -1018,6 +1052,23 @@ components:
         clubId:        { type: integer, format: int64 }
         ticketRevenue: { type: integer, format: int64, description: Bilheteria do mandante (0 para visitante) }
         salariesPaid:  { type: integer, format: int64, description: Folha salarial paga na rodada (0 fora do "mês") }
+
+    ReadinessStatus:
+      description: |
+        Prontidão da rodada em liga compartilhada (issue #20). A simulação só
+        destrava quando `readyCount == totalCount` (todos os técnicos humanos
+        sinalizaram). O cliente sabe se é a sua vez verificando se o próprio
+        username está em `pendingUsernames`.
+      type: object
+      required: [roundNumber, readyCount, totalCount, pendingUsernames]
+      properties:
+        roundNumber:      { type: integer, minimum: 0, description: Rodada à qual a prontidão se refere }
+        readyCount:       { type: integer, minimum: 0, description: Técnicos que já sinalizaram pronto }
+        totalCount:       { type: integer, minimum: 0, description: Total de técnicos humanos (donos de clube) }
+        pendingUsernames:
+          type: array
+          description: Usernames que ainda não sinalizaram
+          items: { type: string }
 
     # ─── Error ────────────────────────────────────────────────────────────
     ErrorResponse:

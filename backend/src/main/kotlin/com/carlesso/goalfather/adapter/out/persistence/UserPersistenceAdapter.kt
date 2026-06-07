@@ -31,6 +31,10 @@ class UserPersistenceAdapter(
         userRepo.existsByUsername(username)
     }
 
+    override suspend fun findManagers(): List<User> = withContext(Dispatchers.IO) {
+        userRepo.findAllByClubIdIsNotNull().map { it.toDomain() }
+    }
+
     override suspend fun save(user: User): User = withContext(Dispatchers.IO) {
         userRepo.save(user.toEntity()).toDomain()
     }

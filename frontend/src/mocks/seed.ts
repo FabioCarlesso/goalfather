@@ -246,6 +246,37 @@ export const clubOwners: Record<number, number | null> =
 
 export const TOKEN_PREFIX = 'mock-token-'
 
+// ─── Prontidão de rodada (issue #20) ──────────────────────────────────────
+// Espelha a tabela `round_readiness`: ids de usuário prontos por número de
+// rodada. Estado de sessão (não persistido) — o mock é descartável.
+export const roundReadiness: Record<number, Set<number>> = {}
+
+/** Técnicos humanos = usuários do mock que já reivindicaram um clube. */
+export function managers(): MockUser[] {
+  return auth.users.filter((u) => u.clubId != null)
+}
+
+/** Status de prontidão de uma rodada (espelha ReadinessStatus do backend). */
+export function readinessStatus(roundNumber: number) {
+  const ready = roundReadiness[roundNumber] ?? new Set<number>()
+  const mgrs = managers()
+  const pending = mgrs.filter((u) => !ready.has(u.id))
+  return {
+    roundNumber,
+    readyCount: mgrs.length - pending.length,
+    totalCount: mgrs.length,
+    pendingUsernames: pending.map((u) => u.username),
+  }
+}
+
+export function markRoundReady(roundNumber: number, userId: number): void {
+  ;(roundReadiness[roundNumber] ??= new Set<number>()).add(userId)
+}
+
+export function resetRoundReadiness(roundNumber: number): void {
+  delete roundReadiness[roundNumber]
+}
+
 export function userIdFromAuthHeader(header: string | null): number | null {
   if (!header || !header.startsWith(`Bearer ${TOKEN_PREFIX}`)) return null
   const id = Number(header.slice(`Bearer ${TOKEN_PREFIX}`.length))

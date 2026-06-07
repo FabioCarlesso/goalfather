@@ -16,21 +16,21 @@ test.describe('Round flow', () => {
     await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
     await expect(page.getByText('SEU JOGO')).toBeVisible()
 
+    // Liga compartilhada (issue #20): sinalizar "pronto" destrava o jogo.
     const startBtn = page.getByRole('button', { name: 'Jogar rodada' })
+    await expect(startBtn).toBeDisabled()
+    await page.getByRole('button', { name: 'Estou pronto' }).click()
+
     await expect(startBtn).toBeEnabled()
     await startBtn.click()
 
     // Evento KickOff chega quase imediato
     await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
 
-    // Esperar todas as partidas finalizarem (~7-10s reais) — botao volta
-    // a ficar habilitado como "Proxima rodada"
-    await expect(page.getByRole('button', { name: 'Próxima rodada' })).toBeEnabled({
+    // Banner de pontuacoes atualizadas (sinal de rodada encerrada) e top-3
+    await expect(page.getByText(/Pontuações atualizadas após a rodada/i)).toBeVisible({
       timeout: 30_000,
     })
-
-    // Banner de pontuacoes atualizadas e top-3
-    await expect(page.getByText(/Pontuações atualizadas após a rodada/i)).toBeVisible()
 
     // Tabela tem que refletir 1 jogo jogado para todos os 6 clubes
     await page.getByRole('link', { name: 'Tabela' }).click()

@@ -17,6 +17,9 @@ import {
   materializeClub,
   persistMockAuth,
   TOKEN_PREFIX,
+  readinessStatus,
+  markRoundReady,
+  resetRoundReadiness,
 } from './seed'
 import { simulateMatch, averageOverall } from './engine'
 import type {
@@ -375,6 +378,26 @@ export const handlers = [
     return HttpResponse.json(state.currentRound)
   }),
 
+  // ─── getRoundReadiness (issue #20) ────────────────────────────────────
+  http.get('/api/league/round/readiness', async () => {
+    await delay(SIMULATED_LATENCY_MS)
+    return HttpResponse.json(readinessStatus(state.currentRound.number))
+  }),
+
+  // ─── markRoundReady (issue #20) ───────────────────────────────────────
+  http.post('/api/league/round/ready', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const userId = userIdFromAuthHeader(request.headers.get('Authorization'))
+    if (userId == null) {
+      return HttpResponse.json(
+        { code: 'UNAUTHORIZED', message: 'Autenticação necessária' } satisfies ErrorResponse,
+        { status: 401 },
+      )
+    }
+    markRoundReady(state.currentRound.number, userId)
+    return HttpResponse.json(readinessStatus(state.currentRound.number))
+  }),
+
   // ─── playRound ────────────────────────────────────────────────────────
   http.post('/api/league/round/play', async () => {
     await delay(SIMULATED_LATENCY_MS)
@@ -382,6 +405,21 @@ export const handlers = [
       const err: ErrorResponse = {
         code: 'ROUND_ALREADY_FINISHED',
         message: 'Rodada já encerrada — atualize para a próxima.',
+      }
+      return HttpResponse.json(err, { status: 409 })
+    }
+    // Gate de liga compartilhada (issue #20): só destrava com todos prontos.
+    const status = readinessStatus(state.currentRound.number)
+    const allReady = status.totalCount > 0 && status.readyCount >= status.totalCount
+    if (!allReady) {
+      const err: ErrorResponse = {
+        code: 'ROUND_NOT_READY',
+        message: `Aguardando técnicos: ${status.pendingUsernames.join(', ')}`,
+        details: {
+          ready: String(status.readyCount),
+          total: String(status.totalCount),
+          pending: status.pendingUsernames.join(','),
+        },
       }
       return HttpResponse.json(err, { status: 409 })
     }
@@ -455,6 +493,9 @@ export const handlers = [
       })
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
       state.standings = applyRoundToStandings(state.currentRound, state.standings)
+
+      // Rodada consumida: zera a prontidão para a próxima começar limpa (issue #20).
+      resetRoundReadiness(round.number)
 
       // Balanço financeiro da rodada (issue #4) — espelha computeFinances do
       // backend. Bilheteria só para mandantes; folha salarial a cada N rodadas.
