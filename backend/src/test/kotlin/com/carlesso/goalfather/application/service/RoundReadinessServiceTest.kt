@@ -14,6 +14,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -130,5 +132,37 @@ class RoundReadinessServiceTest {
         val result = service.start()
 
         assertIs<StartRoundResult.NotReady>(result)
+    }
+
+    @Test
+    fun `markReady ignora quem nao e tecnico (sem clube) - ponto 6`() = runTest {
+        coEvery { leagueRepo.findLatest() } returns scheduled
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        coEvery { readinessRepo.readyUserIds(5) } returns emptySet()
+
+        // UserId(99) não está entre os técnicos: não deve gerar linha de prontidão.
+        service.markReady(UserId(99))
+
+        coVerify(exactly = 0) { readinessRepo.markReady(any(), any()) }
+    }
+
+    @Test
+    fun `dois start concorrentes destravam a rodada uma unica vez - ponto 3`() = runTest {
+        // O `startMutex` serializa a transição Scheduled→InProgress: mesmo com
+        // dois cliques simultâneos, só uma corrotina grava a rodada. Mock com
+        // estado: após o primeiro saveRound, findLatest passa a devolver InProgress.
+        var current = scheduled
+        coEvery { leagueRepo.findLatest() } answers { current }
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1), UserId(2))
+        coEvery { leagueRepo.saveRound(any()) } answers { current = firstArg() }
+
+        val a = async { service.start() }
+        val b = async { service.start() }
+        val results = awaitAll(a, b)
+
+        // Ambos confirmam Started, mas a gravação InProgress acontece UMA vez.
+        assertTrue(results.all { it is StartRoundResult.Started })
+        coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.InProgress }) }
     }
 }

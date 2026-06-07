@@ -9,12 +9,15 @@ export const roundReadinessKey = ['round', 'readiness'] as const
  * o estado muda quando OUTROS sinalizam — por isso refazemos a busca em
  * intervalo enquanto a página está aberta (refetch é suficiente; o WS de
  * lobby é opcional no escopo da issue).
+ *
+ * `paused` desliga o polling quando o card não está visível (ex.: durante a
+ * partida ao vivo), evitando requisições ociosas a cada 3s (ponto #7).
  */
-export function useRoundReadiness() {
+export function useRoundReadiness(options?: { paused?: boolean }) {
   return useQuery({
     queryKey: roundReadinessKey,
     queryFn: () => api.get<ReadinessStatus>('/api/league/round/readiness'),
-    refetchInterval: 3000,
+    refetchInterval: options?.paused ? false : 3000,
   })
 }
 

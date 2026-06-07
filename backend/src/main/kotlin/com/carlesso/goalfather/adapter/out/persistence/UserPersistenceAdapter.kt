@@ -32,7 +32,7 @@ class UserPersistenceAdapter(
     }
 
     override suspend fun findManagers(): List<User> = withContext(Dispatchers.IO) {
-        userRepo.findAllByClubIdIsNotNull().map { it.toDomain() }
+        userRepo.findAllByClubIdIsNotNullOrderById().map { it.toDomain() }
     }
 
     override suspend fun save(user: User): User = withContext(Dispatchers.IO) {

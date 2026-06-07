@@ -30,15 +30,7 @@ export function RoundPage() {
   const { user } = useAuth()
   const { data: round, isLoading } = useCurrentRound()
   const { data: myClub } = useClub(myClubId)
-  const { data: readiness } = useRoundReadiness()
-  const markReady = useMarkReady()
   const playRound = usePlayRound()
-
-  // Prontidão da liga compartilhada (issue #20). Sou eu pronto = meu username
-  // não está na lista de pendentes. `allReady` destrava o "Jogar rodada".
-  const amIReady = readiness != null && !readiness.pendingUsernames.includes(user?.username ?? '')
-  const allReady =
-    readiness != null && readiness.totalCount > 0 && readiness.readyCount >= readiness.totalCount
 
   // Lookup id → nome a partir do elenco do usuário, para o feed mostrar
   // nomes em vez de "#N" (issue #7). Só resolve a partida do usuário; os
@@ -54,6 +46,25 @@ export function RoundPage() {
   const [finalStandings, setFinalStandings] = useState<Standings | null>(null)
   const [finalFinance, setFinalFinance] = useState<RoundFinance | null>(null)
   const [champion, setChampion] = useState<SeasonFinishedEvent | null>(null)
+
+  // Prontidão da liga compartilhada (issue #20). Durante a partida ao vivo o
+  // card some, então pausamos o polling de prontidão para não gerar tráfego
+  // ocioso (issue #20, ponto #7) — só volta a buscar quando sai do "live".
+  const live = status === 'live' || status === 'connecting'
+  const { data: readiness } = useRoundReadiness({ paused: live })
+  const markReady = useMarkReady()
+
+  // Sou eu pronto = meu username NÃO está na lista de pendentes. Exige `user`
+  // já carregado: sem o guard `user?.username != null`, um username vazio
+  // ficaria fora de `pendingUsernames` e marcaria `amIReady` como `true`
+  // incorretamente enquanto a auth ainda não resolveu (issue #20, ponto #4).
+  const amIReady =
+    readiness != null &&
+    user?.username != null &&
+    !readiness.pendingUsernames.includes(user.username)
+  const allReady =
+    readiness != null && readiness.totalCount > 0 && readiness.readyCount >= readiness.totalCount
+
   const wsRef = useRef<WebSocket | null>(null)
 
   // ─── Estado por partida derivado dos eventos ─────────────────────────

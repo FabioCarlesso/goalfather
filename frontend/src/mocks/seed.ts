@@ -270,6 +270,9 @@ export function readinessStatus(roundNumber: number) {
 }
 
 export function markRoundReady(roundNumber: number, userId: number): void {
+  // Só técnicos (donos de clube) sinalizam prontidão — parity com o guard do
+  // backend (issue #20, ponto #6); evita marcar usuário sem clube.
+  if (!managers().some((u) => u.id === userId)) return
   ;(roundReadiness[roundNumber] ??= new Set<number>()).add(userId)
 }
 

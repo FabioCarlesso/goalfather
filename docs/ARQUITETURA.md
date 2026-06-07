@@ -340,6 +340,12 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [x] Sincronização de rodadas entre técnicos humanos — issue #20
   (`round_readiness` + gate "todos prontos → joga", `Mutex` no `PlayRoundService`
   para a simulação não rodar 2× sob WS concorrentes)
+- [ ] **Escape hatch para técnico ausente** (follow-up #20): hoje um único dono
+  de clube offline trava a rodada para todos. Faltam timeout/force-start ou
+  "expulsar técnico inativo".
+- [ ] **Atomicidade multi-instância** (follow-up #20): os `Mutex` de readiness/finish
+  são in-JVM (premissa de instância única). Para escalar horizontalmente, trocar
+  por `@Version` na rodada (optimistic lock) ou lock distribuído.
 - **Foco de estudo:** coroutines + concorrência, `Mutex`, transações otimistas
 
 ---

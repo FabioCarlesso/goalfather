@@ -28,8 +28,12 @@ interface UserJpaRepository : JpaRepository<UserEntity, Long> {
     fun findByUsername(username: String): UserEntity?
     fun existsByUsername(username: String): Boolean
 
-    /** Donos de clube = técnicos humanos da liga (issue #20). */
-    fun findAllByClubIdIsNotNull(): List<UserEntity>
+    /**
+     * Donos de clube = técnicos humanos da liga (issue #20). `OrderById`
+     * garante ordem determinística — `pendingUsernames` no 409/UI fica estável
+     * entre chamadas (sem `ORDER BY` a ordem das linhas é indefinida).
+     */
+    fun findAllByClubIdIsNotNullOrderById(): List<UserEntity>
 }
 
 interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {

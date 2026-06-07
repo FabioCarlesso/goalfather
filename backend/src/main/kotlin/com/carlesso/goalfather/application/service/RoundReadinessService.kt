@@ -22,6 +22,11 @@ import kotlinx.coroutines.sync.withLock
  * transição `Scheduled → InProgress`, então apenas uma corrotina dispara a
  * simulação — idioma Kotlin (coroutine-aware) no lugar de `synchronized`, que
  * bloquearia a thread.
+ *
+ * PREMISSA: instância única. O [startMutex] é in-JVM — serializa concorrência
+ * dentro de UM processo. Num deploy multi-instância seria preciso lock
+ * distribuído ou `@Version` (optimistic locking) na rodada para a transição ser
+ * atômica entre nós. Aceitável no escopo de estudo (#20 foca em coroutines).
  */
 class RoundReadinessService(
     private val leagueRepo: LeagueRepository,
@@ -36,7 +41,12 @@ class RoundReadinessService(
 
     override suspend fun markReady(userId: UserId): ReadinessStatus {
         val round = leagueRepo.findLatest() ?: return buildStatus(0)
-        readinessRepo.markReady(round.number, userId)
+        // Só técnicos (donos de clube) sinalizam prontidão. Sem o guard, um
+        // usuário autenticado sem clube criaria linha órfã em `round_readiness`
+        // (ignorada na contagem, mas lixo persistido) — issue #20, ponto #6.
+        if (userRepo.findManagers().any { it.id == userId }) {
+            readinessRepo.markReady(round.number, userId)
+        }
         return buildStatus(round.number)
     }
 

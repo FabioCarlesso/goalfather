@@ -54,6 +54,12 @@ class PlayRoundService(
     // dois clientes podem abrir o WS da mesma rodada simultaneamente. O Mutex +
     // re-leitura do status garantem que os efeitos (caixa, estatísticas, tabela,
     // próxima rodada) sejam aplicados UMA vez só.
+    //
+    // PREMISSA: instância única. Este Mutex é in-JVM — protege concorrência
+    // dentro de UM processo. Em deploy multi-instância há janela TOCTOU (dois
+    // nós leem `status != Finished` e aplicam efeitos em dobro); fechá-la
+    // exigiria `@Version` na rodada (saveRound vira o ponto de serialização) ou
+    // lock distribuído. Fora do escopo de estudo da #20.
     private val finishMutex = Mutex()
 
     override fun stream(roundNumber: Int): Flow<RoundEvent> = flow {

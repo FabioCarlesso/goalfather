@@ -386,6 +386,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ReadinessStatus' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /api/league/round/ready:
     post:
@@ -400,6 +402,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ReadinessStatus' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /api/league/round/play:
     post:
@@ -429,6 +433,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /ws/round/{number}:
     get:
