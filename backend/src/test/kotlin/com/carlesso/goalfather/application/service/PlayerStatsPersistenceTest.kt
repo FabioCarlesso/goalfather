@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Club
@@ -30,7 +31,8 @@ class PlayerStatsPersistenceTest {
 
     private val clubRepo: ClubRepository = mockk()
     private val leagueRepo: LeagueRepository = mockk()
-    private val service = PlayRoundService(clubRepo, leagueRepo)
+    private val readinessRepo: RoundReadinessRepository = mockk(relaxed = true)
+    private val service = PlayRoundService(clubRepo, leagueRepo, readinessRepo)
 
     private val home = makeClub(id = 1, name = "Home FC")
         .copy(squad = (1L..11L).map { makePlayer(it, overall = 85) })

@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
+import { useRoundReadiness, useMarkReady, roundReadinessKey } from '../api/queries/useRoundReadiness'
 import { useClub } from '../api/queries/useClub'
 import { useMyClubId } from '../auth/useMyClubId'
+import { useAuth } from '../auth/AuthContext'
 import { standingsKey } from '../api/queries/useStandings'
 import { MatchEventFeed } from '../components/MatchEventFeed'
+import { ReadinessCard } from '../components/ReadinessCard'
 import { formatMoney } from '../domain/formatters'
 import type { MatchEvent, RoundEvent, RoundFinance, RoundMatch, StandingRow, Standings } from '../domain/types'
 
@@ -24,6 +27,7 @@ interface LiveMatchState {
 export function RoundPage() {
   const qc = useQueryClient()
   const myClubId = useMyClubId()
+  const { user } = useAuth()
   const { data: round, isLoading } = useCurrentRound()
   const { data: myClub } = useClub(myClubId)
   const playRound = usePlayRound()
@@ -42,6 +46,25 @@ export function RoundPage() {
   const [finalStandings, setFinalStandings] = useState<Standings | null>(null)
   const [finalFinance, setFinalFinance] = useState<RoundFinance | null>(null)
   const [champion, setChampion] = useState<SeasonFinishedEvent | null>(null)
+
+  // Prontidão da liga compartilhada (issue #20). Durante a partida ao vivo o
+  // card some, então pausamos o polling de prontidão para não gerar tráfego
+  // ocioso (issue #20, ponto #7) — só volta a buscar quando sai do "live".
+  const live = status === 'live' || status === 'connecting'
+  const { data: readiness } = useRoundReadiness({ paused: live })
+  const markReady = useMarkReady()
+
+  // Sou eu pronto = meu username NÃO está na lista de pendentes. Exige `user`
+  // já carregado: sem o guard `user?.username != null`, um username vazio
+  // ficaria fora de `pendingUsernames` e marcaria `amIReady` como `true`
+  // incorretamente enquanto a auth ainda não resolveu (issue #20, ponto #4).
+  const amIReady =
+    readiness != null &&
+    user?.username != null &&
+    !readiness.pendingUsernames.includes(user.username)
+  const allReady =
+    readiness != null && readiness.totalCount > 0 && readiness.readyCount >= readiness.totalCount
+
   const wsRef = useRef<WebSocket | null>(null)
 
   // ─── Estado por partida derivado dos eventos ─────────────────────────
@@ -142,6 +165,8 @@ export function RoundPage() {
           qc.setQueryData(standingsKey, event.standings)
           // Próxima rodada já está pronta no backend mock — invalida para buscar
           qc.invalidateQueries({ queryKey: currentRoundKey })
+          // A prontidão foi resetada no servidor — rebusca para a próxima rodada (issue #20)
+          qc.invalidateQueries({ queryKey: roundReadinessKey })
         } else if (event.type === 'SeasonFinished') {
           // Fim de temporada (issue #11): celebra o campeão. O backend já
           // abriu a próxima temporada; a invalidação do RoundFinished (que vem
@@ -187,12 +212,25 @@ export function RoundPage() {
         </div>
         <button
           onClick={startRound}
-          disabled={busy}
+          disabled={busy || !allReady}
+          title={!allReady ? 'Aguardando todos os técnicos sinalizarem prontos' : undefined}
           className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
         >
           {buttonLabel}
         </button>
       </header>
+
+      {/* Lobby da rodada compartilhada (issue #20): todos prontos → libera jogar. */}
+      {readiness && status !== 'live' && status !== 'connecting' && (
+        <ReadinessCard
+          readyCount={readiness.readyCount}
+          totalCount={readiness.totalCount}
+          pendingUsernames={readiness.pendingUsernames}
+          amIReady={amIReady}
+          onReady={() => markReady.mutate()}
+          marking={markReady.isPending}
+        />
+      )}
 
       {error && (
         <div className="rounded-lg border border-red-700/50 bg-red-900/20 p-3 text-sm text-red-300">

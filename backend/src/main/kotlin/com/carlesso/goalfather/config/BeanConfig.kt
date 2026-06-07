@@ -5,6 +5,7 @@ import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.LoginUseCase
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
+import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
@@ -13,6 +14,7 @@ import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PasswordHasher
+import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BuyPlayerService
 import com.carlesso.goalfather.application.service.ClaimClubService
@@ -20,6 +22,7 @@ import com.carlesso.goalfather.application.service.LoginService
 import com.carlesso.goalfather.application.service.PlayMatchService
 import com.carlesso.goalfather.application.service.PlayRoundService
 import com.carlesso.goalfather.application.service.RegisterUserService
+import com.carlesso.goalfather.application.service.RoundReadinessService
 import com.carlesso.goalfather.application.service.SaveLineupService
 import com.carlesso.goalfather.application.service.SellPlayerService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
@@ -62,8 +65,16 @@ class BeanConfig {
     fun playRoundUseCase(
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
+        readinessRepo: RoundReadinessRepository,
         simulator: MatchSimulator,
-    ): PlayRoundUseCase = PlayRoundService(clubRepo, leagueRepo, simulator)
+    ): PlayRoundUseCase = PlayRoundService(clubRepo, leagueRepo, readinessRepo, simulator)
+
+    @Bean
+    fun roundReadinessUseCase(
+        leagueRepo: LeagueRepository,
+        userRepo: UserRepository,
+        readinessRepo: RoundReadinessRepository,
+    ): RoundReadinessUseCase = RoundReadinessService(leagueRepo, userRepo, readinessRepo)
 
     @Bean
     fun streamMatchUseCase(

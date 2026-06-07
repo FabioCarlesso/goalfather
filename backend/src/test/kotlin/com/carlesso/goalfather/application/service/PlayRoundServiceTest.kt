@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.ClubId
@@ -17,6 +18,8 @@ import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.assertThrows
@@ -30,7 +33,10 @@ class PlayRoundServiceTest {
 
     private val clubRepo: ClubRepository = mockk()
     private val leagueRepo: LeagueRepository = mockk()
-    private val service = PlayRoundService(clubRepo, leagueRepo)
+    // relaxed: o reset de prontidão (issue #20) é efeito colateral; só alguns
+    // testes o verificam explicitamente, os demais ignoram.
+    private val readinessRepo: RoundReadinessRepository = mockk(relaxed = true)
+    private val service = PlayRoundService(clubRepo, leagueRepo, readinessRepo)
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
@@ -276,6 +282,56 @@ class PlayRoundServiceTest {
         coVerify(exactly = 0) { leagueRepo.saveStandings(any()) }
         coVerify(exactly = 0) { clubRepo.save(any()) }
         coVerify(exactly = 0) { clubRepo.findAll() }
+        // Replay não pode zerar a prontidão — a rodada já foi consumida (issue #20).
+        coVerify(exactly = 0) { readinessRepo.reset(any()) }
+    }
+
+    @Test
+    fun `ao finalizar a rodada a prontidao e resetada para a proxima (issue 20)`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        service.stream(1).toList()
+
+        // Prontidão da rodada 1 é zerada exatamente uma vez.
+        coVerify(exactly = 1) { readinessRepo.reset(1) }
+    }
+
+    @Test
+    fun `dois streams concorrentes da mesma rodada aplicam os efeitos uma unica vez (issue 20)`() = runTest {
+        // Guard do `finishMutex` + re-leitura do status: em liga compartilhada
+        // dois clientes abrem o WS da mesma rodada ao mesmo tempo. O re-read sob
+        // o lock deve enxergar a rodada já finalizada pelo concorrente — modelamos
+        // isso com um mock com estado: `findRound` passa a devolver Finished assim
+        // que o primeiro stream grava a rodada encerrada.
+        var current = round
+        coEvery { leagueRepo.findRound(1) } answers { current }
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } answers {
+            val saved = firstArg<Round>()
+            if (saved.status == RoundStatus.Finished) current = saved
+        }
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        val a = async { service.stream(1).toList() }
+        val b = async { service.stream(1).toList() }
+        awaitAll(a, b)
+
+        // Apesar dos dois streams, a rodada é encerrada e a prontidão é zerada
+        // UMA vez só — o concorrente faz apenas replay. (Não asserimos sobre
+        // saveStandings: esta liga de 2 clubes vira a temporada na rodada 1, o
+        // que grava a tabela 2× num único encerramento — fora do escopo do guard.)
+        coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.Finished }) }
+        coVerify(exactly = 1) { readinessRepo.reset(1) }
     }
 
     @Test
