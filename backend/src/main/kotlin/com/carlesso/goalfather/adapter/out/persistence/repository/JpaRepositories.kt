@@ -59,6 +59,17 @@ interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long> {
 
     @CacheEvict("market", allEntries = true)
     override fun deleteById(id: Long)
+
+    /**
+     * Delete de uma entidade JÁ carregada — usado no claim (issue #21). Ao
+     * contrário de `deleteById` (que faz `findById` interno e vira no-op se a
+     * linha sumiu), apagar a instância gerenciada faz o Hibernate emitir
+     * `DELETE ... WHERE player_id = ? AND version = ?`; se a linha já foi
+     * removida por outro comprador, 0 linhas afetadas → `OptimisticLock...`.
+     * Mesmo `@CacheEvict` do `deleteById` para não deixar mercado obsoleto.
+     */
+    @CacheEvict("market", allEntries = true)
+    override fun delete(entity: MarketEntryEntity)
 }
 
 interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {

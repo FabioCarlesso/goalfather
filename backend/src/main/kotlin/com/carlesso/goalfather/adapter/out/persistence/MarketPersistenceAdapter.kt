@@ -11,6 +11,8 @@ import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional
 class MarketPersistenceAdapter(
     private val marketRepo: MarketEntryJpaRepository,
     private val playerRepo: PlayerJpaRepository,
+    private val claimTx: MarketClaimTransaction,
 ) : MarketRepository {
 
     override suspend fun findAll(position: Position?, maxPrice: Long?): List<MarketEntry> =
@@ -52,11 +55,41 @@ class MarketPersistenceAdapter(
         }
     }
 
-    @Transactional
-    override suspend fun remove(playerId: PlayerId) {
-        withContext(Dispatchers.IO) {
-            marketRepo.deleteById(playerId.value)
+    /**
+     * Compra concorrente resolvida por lock otimista (issue #21). A unidade
+     * transacional roda em [MarketClaimTransaction] (método **não-suspend**):
+     * `@Transactional` sobre função `suspend` é frágil — o `withContext` troca
+     * de thread e a transação é thread-bound. Manter a transação síncrona faz
+     * o lock disparar de verdade no commit (mesmo padrão do claim de clube).
+     *
+     * A falha de lock ([OptimisticLockingFailureException], lançada no commit)
+     * é capturada e vira `false` — o perdedor da corrida recebe
+     * `PlayerNotAvailable` no use case, sem mexer no clube.
+     */
+    override suspend fun claim(playerId: PlayerId): Boolean = withContext(Dispatchers.IO) {
+        try {
+            claimTx.claim(playerId.value)
+        } catch (_: OptimisticLockingFailureException) {
+            false
         }
+    }
+}
+
+/**
+ * Transação síncrona do claim de mercado (issue #21). Bean separado para que
+ * `@Transactional` passe pelo proxy do Spring — self-invocation não passaria.
+ */
+@Component
+class MarketClaimTransaction(
+    private val marketRepo: MarketEntryJpaRepository,
+) {
+    @Transactional
+    fun claim(playerId: Long): Boolean {
+        // A linha já carregada é apagada com checagem de versão; se outro
+        // comprador já venceu (linha sumiu), `findById` devolve vazio → false.
+        val entry = marketRepo.findById(playerId).orElse(null) ?: return false
+        marketRepo.delete(entry) // @Version: conflito vira OptimisticLock... no commit
+        return true
     }
 }
 

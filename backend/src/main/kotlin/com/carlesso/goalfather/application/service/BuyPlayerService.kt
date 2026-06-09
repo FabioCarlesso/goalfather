@@ -38,12 +38,19 @@ class BuyPlayerService(
             return TransferResult.SquadFull(maxSize = squadMaxSize)
         }
 
+        // Claim é o passo decisivo e disputado (issue #21): removê-lo do mercado
+        // sob lock otimista. Fazemos ANTES de mexer no clube, então o perdedor
+        // da corrida nunca debita caixa nem ganha o jogador — só o vencedor
+        // segue para o `save`. O outro recebe `PlayerNotAvailable` graciosamente.
+        if (!marketRepo.claim(playerId)) {
+            return TransferResult.PlayerNotAvailable(playerId)
+        }
+
         val updatedClub = club.copy(
             cash = club.cash - entry.price,
             squad = club.squad + entry.player,
         )
         clubRepo.save(updatedClub)
-        marketRepo.remove(playerId)
 
         return TransferResult.Success(club = updatedClub, player = entry.player)
     }
