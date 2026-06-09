@@ -9,10 +9,8 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
@@ -34,9 +32,9 @@ class BuyPlayerServiceTest {
 
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns entry
+        coEvery { marketRepo.claim(PlayerId(99)) } returns true
         val savedClub = slot<com.carlesso.goalfather.domain.model.Club>()
         coEvery { clubRepo.save(capture(savedClub)) } answers { savedClub.captured }
-        coEvery { marketRepo.remove(PlayerId(99)) } just Runs
 
         val result = service.execute(ClubId(1), PlayerId(99))
 
@@ -46,7 +44,24 @@ class BuyPlayerServiceTest {
         assertEquals(target, result.player)
 
         coVerify(exactly = 1) { clubRepo.save(any()) }
-        coVerify(exactly = 1) { marketRepo.remove(PlayerId(99)) }
+        coVerify(exactly = 1) { marketRepo.claim(PlayerId(99)) }
+    }
+
+    @Test
+    fun `claim perdido na corrida retorna PlayerNotAvailable e nao mexe no clube`() = runTest {
+        // Lock otimista (issue #21): outro comprador venceu a corrida, então
+        // `claim` devolve false. O perdedor não pode debitar caixa nem salvar.
+        val club = makeClub(cash = 1_000_000_00, squadSize = 11)
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+        coEvery { marketRepo.findEntry(PlayerId(99)) } returns
+            MarketEntry(player = makePlayer(99), price = 400_000_00)
+        coEvery { marketRepo.claim(PlayerId(99)) } returns false
+
+        val result = service.execute(ClubId(1), PlayerId(99))
+
+        assertIs<TransferResult.PlayerNotAvailable>(result)
+        assertEquals(PlayerId(99), result.playerId)
+        coVerify(exactly = 0) { clubRepo.save(any()) }
     }
 
     @Test
@@ -63,7 +78,7 @@ class BuyPlayerServiceTest {
         assertEquals(500_000_00, result.required)
 
         coVerify(exactly = 0) { clubRepo.save(any()) }
-        coVerify(exactly = 0) { marketRepo.remove(any()) }
+        coVerify(exactly = 0) { marketRepo.claim(any()) }
     }
 
     @Test

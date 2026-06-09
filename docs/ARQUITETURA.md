@@ -336,7 +336,11 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 
 ### Fase 5 — Multiplayer (futuro)
 - [x] `UserId` / autenticação (Spring Security + JWT) — issues #18/#19
-- [ ] Liga compartilhada, concorrência de mercado (locks otimistas)
+- [x] Liga compartilhada, concorrência de mercado (lock otimista) — issue #21
+  (`@Version` em `market_entries`; o `claim` da entrada é o passo decisivo da
+  compra, feito ANTES de mexer no clube, então o perdedor da corrida recebe
+  `PlayerNotAvailable` sem debitar caixa. Decisão **otimista vs. pessimista**
+  abaixo.)
 - [x] Sincronização de rodadas entre técnicos humanos — issue #20
   (`round_readiness` + gate "todos prontos → joga", `Mutex` no `PlayRoundService`
   para a simulação não rodar 2× sob WS concorrentes)
@@ -347,6 +351,26 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   são in-JVM (premissa de instância única). Para escalar horizontalmente, trocar
   por `@Version` na rodada (optimistic lock) ou lock distribuído.
 - **Foco de estudo:** coroutines + concorrência, `Mutex`, transações otimistas
+
+#### Decisão: lock otimista vs. pessimista no mercado (issue #21)
+
+Dois compradores podem disputar o mesmo jogador. Escolhemos **lock otimista**
+(`@Version`), mesma estratégia do claim de clube (#19):
+
+- **Otimista (escolhido):** nenhuma trava no banco no caminho feliz; o conflito
+  só "custa" quando há corrida real (raro). O `DELETE ... WHERE player_id = ?
+  AND version = ?` afeta 0 linhas para o segundo a commitar → `OptimisticLock...`,
+  traduzido em `PlayerNotAvailable` no `MarketPersistenceAdapter`. **Mais
+  escalável** (sem locks segurados), idiomático em JPA e coerente com o resto do
+  projeto.
+- **Pessimista (alternativa):** `SELECT ... FOR UPDATE`
+  (`@Lock(PESSIMISTIC_WRITE)`) serializa os compradores no banco. **Mais simples**
+  de raciocinar (sem retry/tradução de exceção), mas segura locks e não escala
+  bem sob contenção alta. Preterido.
+
+A unidade transacional vive num bean **não-suspend** (`MarketClaimTransaction`),
+porque `@Transactional` sobre função `suspend` é frágil — o `withContext` troca
+de thread e a transação é thread-bound (vide nota no claim de clube).
 
 ---
 
