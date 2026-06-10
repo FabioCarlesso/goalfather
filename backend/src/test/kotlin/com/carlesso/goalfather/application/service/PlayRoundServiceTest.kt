@@ -264,6 +264,44 @@ class PlayRoundServiceTest {
     }
 
     @Test
+    fun `folha sem cobertura registra deficit em RoundFinance (issue 23)`() = runTest {
+        // Rodada 2 (par) cobra salários. O visitante (sem bilheteria) com caixa
+        // zerado não cobre a folha → deficit > 0, sinalizando "no vermelho".
+        // Antes esse rombo era truncado em zero e perdido silenciosamente.
+        val poorAway = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70, cash = 0)
+        val salaryRound = Round(
+            number = 2,
+            season = 2026,
+            matches = listOf(
+                RoundMatch(2001, ClubId(1), ClubId(2), "Home FC", "Away FC"),
+            ),
+        )
+        coEvery { leagueRepo.findRound(2) } returns salaryRound
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns poorAway
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, poorAway)
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        val finished = service.stream(2).toList().last()
+        assertIs<RoundEvent.RoundFinished>(finished)
+
+        val awayFinance = finished.finances.first { it.clubId == ClubId(2) }
+        assertTrue(awayFinance.salariesPaid > 0, "Rodada par deve cobrar salários")
+        assertEquals(
+            awayFinance.salariesPaid,
+            awayFinance.deficit,
+            "Caixa zero e sem bilheteria → folha inteira vira rombo",
+        )
+
+        // O mandante cobre a folha com caixa+bilheteria → sem deficit.
+        val homeFinance = finished.finances.first { it.clubId == ClubId(1) }
+        assertEquals(0L, homeFinance.deficit, "Mandante com caixa folgado não fica no vermelho")
+    }
+
+    @Test
     fun `rodada ja finalizada faz replay sem re-aplicar efeitos (idempotencia)`() = runTest {
         val finishedRound = round.copy(status = RoundStatus.Finished)
         coEvery { leagueRepo.findRound(1) } returns finishedRound

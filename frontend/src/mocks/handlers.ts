@@ -509,10 +509,15 @@ export const handlers = [
           const salaries = isSalaryRound
             ? (clubId === 1 ? state.clubs[1]!.squad.reduce((s, p) => s + p.salary, 0) : 11 * AI_SALARY_PER_PLAYER)
             : 0
+          const revenue = homeIds.has(clubId) ? ticketRevenueOf(capacity, strength) : 0
+          const cash = clubId === 1 ? (state.clubs[1]?.cash ?? 0) : Number.MAX_SAFE_INTEGER
+          // Rombo da folha não coberto pelo caixa+bilheteria (issue #23). Só o
+          // clube do usuário tem caixa rastreado; a IA nunca fica no vermelho.
           return {
             clubId,
-            ticketRevenue: homeIds.has(clubId) ? ticketRevenueOf(capacity, strength) : 0,
+            ticketRevenue: revenue,
             salariesPaid: salaries,
+            deficit: Math.max(0, salaries - revenue - cash),
           }
         })
 
