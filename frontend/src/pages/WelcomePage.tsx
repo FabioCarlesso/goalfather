@@ -1,23 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-
-const ONBOARDED_KEY = 'gf:onboarded'
-
-/** O usuário já passou pelo onboarding? Lido no redirect da rota "/". */
-export const isOnboarded = (): boolean => {
-  try {
-    return localStorage.getItem(ONBOARDED_KEY) === 'true'
-  } catch {
-    return false // ambientes sem localStorage (SSR/testes) caem no onboarding
-  }
-}
-
-const markOnboarded = () => {
-  try {
-    localStorage.setItem(ONBOARDED_KEY, 'true')
-  } catch {
-    /* ignora — onboarding apenas reaparece na próxima visita */
-  }
-}
+import { markOnboarded } from '../lib/onboarding'
 
 const cards = [
   { to: '/lineup', icon: '📋', title: 'Escalação', desc: 'Monte os 11 titulares e a formação tática.' },

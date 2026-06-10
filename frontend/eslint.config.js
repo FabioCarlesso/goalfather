@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // `mockServiceWorker.js` é gerado pelo MSW e já traz `/* eslint-disable */`;
+  // ignoramos o arquivo inteiro para não acusar a diretiva ociosa.
+  globalIgnores(['dist', 'public/mockServiceWorker.js']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
