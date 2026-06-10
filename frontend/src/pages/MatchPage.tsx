@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
 import { useMyClubId } from '../auth/useMyClubId'
@@ -36,7 +36,6 @@ function MatchView({ matchId }: { matchId: string }) {
   const [events, setEvents] = useState<MatchEvent[]>([])
   const [status, setStatus] = useState<Status>('connecting')
   const [error, setError] = useState<string | null>(null)
-  const wsRef = useRef<WebSocket | null>(null)
 
   const playerLookup = useMemo(
     () => new Map<number, string>(myClub?.squad.map((p) => [p.id, p.name]) ?? []),
@@ -48,7 +47,6 @@ function MatchView({ matchId }: { matchId: string }) {
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const socket = new WebSocket(`${protocol}//${window.location.host}/ws/matches/${matchId}`)
-    wsRef.current = socket
 
     socket.onopen = () => setStatus('live')
     socket.onmessage = (e) => {
