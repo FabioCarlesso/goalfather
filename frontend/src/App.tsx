@@ -10,6 +10,7 @@ import { MatchPage } from './pages/MatchPage'
 import { WelcomePage } from './pages/WelcomePage'
 import { LoginPage } from './pages/LoginPage'
 import { SelectClubPage } from './pages/SelectClubPage'
+import { isOnboarded } from './lib/onboarding'
 
 const nav = [
   { to: '/dashboard', label: 'Clube' },
@@ -33,6 +34,11 @@ function RequireClub() {
   const { user } = useAuth()
   if (user?.clubId == null) return <Navigate to="/select-club" replace />
   return <Outlet />
+}
+
+/** Raiz: primeira visita cai no tutorial; depois vai direto ao dashboard. */
+function RootRedirect() {
+  return <Navigate to={isOnboarded() ? '/dashboard' : '/welcome'} replace />
 }
 
 /** Quem já está logado não vê o login. */
@@ -133,7 +139,7 @@ export function App() {
             <Route element={<RequireAuth />}>
               <Route element={<RequireClub />}>
                 <Route element={<AppLayout />}>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/" element={<RootRedirect />} />
                   <Route path="/welcome"   element={<WelcomePage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/lineup"    element={<LineupPage />} />

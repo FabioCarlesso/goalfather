@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useClub } from '../api/queries/useClub'
 import { useSaveLineup } from '../api/queries/useSaveLineup'
 import { useMyClubId } from '../auth/useMyClubId'
@@ -8,26 +8,32 @@ import {
   POSITION_ABBR,
   POSITION_LABEL,
 } from '../domain/formations'
-import type { Formation, Player } from '../domain/types'
+import type { Club, Formation, Player } from '../domain/types'
 
+/**
+ * Carrega o clube e só então monta o formulário. O `key={club.id}` remonta
+ * `LineupForm` ao trocar de clube, fazendo o estado reiniciar a partir da
+ * escalação salva via inicializadores de `useState` — sem `useEffect`.
+ */
 export function LineupPage() {
   const myClubId = useMyClubId()
   const { data: club, isLoading } = useClub(myClubId)
-  const save = useSaveLineup(myClubId)
-
-  const [formation, setFormation] = useState<Formation>('4-4-2')
-  const [slots, setSlots] = useState<(number | null)[]>(Array(11).fill(null))
-
-  // Recarrega a escalação salva quando o clube é (re)carregado
-  useEffect(() => {
-    if (club?.lineup) {
-      setFormation(club.lineup.formation)
-      const ids = club.lineup.playerIds
-      setSlots(Array.from({ length: 11 }, (_, i) => ids[i] ?? null))
-    }
-  }, [club])
 
   if (isLoading || !club) return <p className="text-slate-400">Carregando…</p>
+
+  return <LineupForm key={club.id} club={club} />
+}
+
+function LineupForm({ club }: { club: Club }) {
+  const save = useSaveLineup(club.id)
+
+  // Estado inicializado a partir da escalação salva (estado derivado só na
+  // montagem); edições subsequentes ficam locais ao formulário.
+  const [formation, setFormation] = useState<Formation>(club.lineup?.formation ?? '4-4-2')
+  const [slots, setSlots] = useState<(number | null)[]>(() => {
+    const ids = club.lineup?.playerIds ?? []
+    return Array.from({ length: 11 }, (_, i) => ids[i] ?? null)
+  })
 
   const positions = FORMATION_SLOTS[formation]
   const complete = slots.every((id) => id !== null)

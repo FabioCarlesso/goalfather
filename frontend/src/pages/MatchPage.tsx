@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
 import { useMyClubId } from '../auth/useMyClubId'
@@ -18,32 +18,35 @@ interface Teams {
  * Drill-down de uma partida específica (issue #9). Conecta em
  * `/ws/matches/{id}` ao montar e renderiza placar + feed ao vivo. Os
  * nomes dos jogadores do clube do usuário são resolvidos pelo lookup.
+ *
+ * O wrapper apenas resolve o `matchId` da rota e usa `key={matchId}` para
+ * remontar `MatchView` ao trocar de partida — assim o estado (events/status)
+ * reinicia naturalmente, sem precisar resetá-lo dentro do `useEffect`.
  */
 export function MatchPage() {
   const { matchId } = useParams<{ matchId: string }>()
+  if (!matchId) return null
+  return <MatchView key={matchId} matchId={matchId} />
+}
+
+function MatchView({ matchId }: { matchId: string }) {
   const myClubId = useMyClubId()
   const { data: myClub } = useClub(myClubId)
 
   const [events, setEvents] = useState<MatchEvent[]>([])
   const [status, setStatus] = useState<Status>('connecting')
   const [error, setError] = useState<string | null>(null)
-  const wsRef = useRef<WebSocket | null>(null)
 
   const playerLookup = useMemo(
     () => new Map<number, string>(myClub?.squad.map((p) => [p.id, p.name]) ?? []),
     [myClub],
   )
 
-  // Conecta ao montar / quando o matchId muda.
+  // Conecta ao montar. Como o componente é remontado via `key` quando o
+  // `matchId` muda, não há reset de estado manual aqui.
   useEffect(() => {
-    if (!matchId) return
-    setEvents([])
-    setError(null)
-    setStatus('connecting')
-
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const socket = new WebSocket(`${protocol}//${window.location.host}/ws/matches/${matchId}`)
-    wsRef.current = socket
 
     socket.onopen = () => setStatus('live')
     socket.onmessage = (e) => {
@@ -80,7 +83,10 @@ export function MatchPage() {
     () =>
       events.reduce(
         (acc, e) => {
-          if (e.type === 'Goal') (e.home ? acc.home++ : acc.away++)
+          if (e.type === 'Goal') {
+            if (e.home) acc.home++
+            else acc.away++
+          }
           return acc
         },
         { home: 0, away: 0 },
