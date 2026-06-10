@@ -40,6 +40,9 @@ interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {
     fun findAllByClubId(clubId: Long): List<PlayerEntity>
     fun findAllByClubIdIsNullAndPosition(position: PositionEnum): List<PlayerEntity>
     fun findAllByClubIdIsNull(): List<PlayerEntity>
+
+    /** Busca o elenco de vários clubes numa só query — evita o N+1 do `findAll`. */
+    fun findAllByClubIdIn(clubIds: Collection<Long>): List<PlayerEntity>
 }
 
 /**

@@ -1053,11 +1053,12 @@ components:
     RoundFinance:
       description: Receita/despesa de um clube em uma rodada (valores em centavos).
       type: object
-      required: [clubId, ticketRevenue, salariesPaid]
+      required: [clubId, ticketRevenue, salariesPaid, deficit]
       properties:
         clubId:        { type: integer, format: int64 }
         ticketRevenue: { type: integer, format: int64, description: Bilheteria do mandante (0 para visitante) }
         salariesPaid:  { type: integer, format: int64, description: Folha salarial paga na rodada (0 fora do "mês") }
+        deficit:       { type: integer, format: int64, description: Parte da folha não coberta pelo caixa (> 0 ⇒ clube no vermelho) }
 
     ReadinessStatus:
       description: |

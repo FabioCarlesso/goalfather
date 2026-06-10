@@ -36,10 +36,17 @@ export function MatchEventFeed({
       {events.length === 0 ? (
         <p className="text-slate-600 italic">{emptyLabel}</p>
       ) : (
-        events.map((event, i) => <EventLine key={i} event={event} nameOf={nameOf} />)
+        events.map((event, i) => <EventLine key={eventKey(event, i)} event={event} nameOf={nameOf} />)
       )}
     </div>
   )
+}
+
+// Eventos de partida não têm id próprio. A chave combina conteúdo (tipo+minuto)
+// com a posição — dá ao React mais identidade do que o índice puro, mantendo a
+// unicidade caso dois eventos caiam no mesmo minuto (issue #23).
+function eventKey(event: MatchEvent, i: number): string {
+  return `${i}-${event.type}-${event.minute}`
 }
 
 // Switch exaustivo sobre o discriminated union MatchEvent.

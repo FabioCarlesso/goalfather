@@ -18,7 +18,13 @@ const queryClient = new QueryClient({
     },
   },
   queryCache: new QueryCache({
-    onError: (error) => toast.error(errorMessage(error)),
+    // Só notifica falha de CARGA INICIAL (sem dado em cache). Refetch em
+    // background de uma query que já tem dado falha em silêncio — o usuário
+    // continua vendo o dado anterior e não leva um toast vermelho a cada
+    // hiccup de rede (issue #23). Erros de mutation seguem sempre notificados.
+    onError: (error, query) => {
+      if (query.state.data === undefined) toast.error(errorMessage(error))
+    },
   }),
   mutationCache: new MutationCache({
     onError: (error) => toast.error(errorMessage(error)),

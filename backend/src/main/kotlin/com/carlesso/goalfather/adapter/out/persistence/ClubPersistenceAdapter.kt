@@ -40,9 +40,14 @@ class ClubPersistenceAdapter(
     }
 
     override suspend fun findAll(): List<Club> = withContext(Dispatchers.IO) {
-        clubRepo.findAll().map { entity ->
-            val players = playerRepo.findAllByClubId(entity.id)
-            entity.toDomain(players, json)
+        val entities = clubRepo.findAll()
+        // Uma só query para o elenco de todos os clubes, agrupado em memória —
+        // antes era 1 query de players por clube (N+1, issue #23).
+        val playersByClub = playerRepo
+            .findAllByClubIdIn(entities.map { it.id })
+            .groupBy { it.clubId }
+        entities.map { entity ->
+            entity.toDomain(playersByClub[entity.id].orEmpty(), json)
         }
     }
 

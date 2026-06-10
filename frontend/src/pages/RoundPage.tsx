@@ -396,6 +396,11 @@ function FinalBanner({
             saldo {finance.ticketRevenue - finance.salariesPaid >= 0 ? '+' : '−'}
             {formatMoney(Math.abs(finance.ticketRevenue - finance.salariesPaid))}
           </span>
+          {finance.deficit > 0 && (
+            <span className="font-semibold text-red-400">
+              ⚠ no vermelho — {formatMoney(finance.deficit)} de salários sem cobertura
+            </span>
+          )}
         </div>
       )}
       <ul className="mt-2 text-sm space-y-1">

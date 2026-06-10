@@ -222,7 +222,10 @@ class PlayRoundService(
                     ticketRevenue(club.stadiumCapacity, club.startingLineup().teamStrength())
                 else 0L
             val salaries = if (salaryRound) club.squad.sumOf { it.salary.toLong() } else 0L
-            RoundFinance(club.id, ticketRevenue = revenue, salariesPaid = salaries)
+            // Rombo = quanto da folha o caixa+bilheteria não cobriram. Espelha o
+            // truncamento em zero de [persistRoundEffects] (issue #23).
+            val deficit = (salaries - revenue - club.cash).coerceAtLeast(0)
+            RoundFinance(club.id, ticketRevenue = revenue, salariesPaid = salaries, deficit = deficit)
         }
     }
 
