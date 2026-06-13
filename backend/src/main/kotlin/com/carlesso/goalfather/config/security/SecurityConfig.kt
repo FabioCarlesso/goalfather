@@ -21,9 +21,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
  * Cadeia de segurança (issue #18).
  *
  * - Stateless (JWT), CSRF desabilitado (sem cookies de sessão).
- * - Os endpoints de register/login e os de WebSocket ficam liberados; os
- *   demais sob `/api` exigem token. (WebSocket fica aberto por ora — o browser
- *   não envia header `Authorization` no handshake; auth de WS é tema da #20.)
+ * - Os endpoints de register/login ficam liberados; os demais sob `/api`
+ *   exigem token. O `permitAll` das rotas `/ws` aqui não é um buraco aberto: o
+ *   browser não manda `Authorization` no handshake, então a autenticação do
+ *   WebSocket roda no `JwtHandshakeInterceptor` (token em `?token=`, issue #27),
+ *   que rejeita o handshake com 401 antes de a conexão subir.
  * - 401 com corpo JSON via [RestAuthenticationEntryPoint].
  * - `BCryptPasswordEncoder` por trás do port [PasswordHasher], mantendo o
  *   Spring Security fora da camada `application`.
