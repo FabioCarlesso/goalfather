@@ -202,7 +202,9 @@ enableMocks().then(() => ReactDOM.createRoot(...).render(<App />))
 
 ## 6. WebSocket de partida ao vivo
 
-Endpoint real: `ws://host/ws/matches/{id}` → stream de `MatchEvent` (JSON por mensagem).
+Endpoint real: `ws://host/ws/matches/{id}?token=<jwt>` → stream de `MatchEvent` (JSON por mensagem).
+
+> **Autenticação (issue #27):** o browser não envia `Authorization` no handshake de WebSocket, então o JWT viaja no query param `?token=`. O helper `src/api/wsUrl.ts` anexa o token salvo; o backend valida no `JwtHandshakeInterceptor` e rejeita o handshake (401) sem token válido.
 
 **Mock local:** servidor WS embarcado no Vite via plugin (ex.: `vite-plugin-mock-server` ou um middleware customizado em `vite.config.ts`). Ao receber conexão, dispara `setInterval` que emite eventos respeitando o mesmo formato `{type, minute, ...}` do OpenAPI.
 

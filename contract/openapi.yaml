@@ -456,6 +456,14 @@ paths:
           required: true
           description: Número da rodada
           schema: { type: integer, minimum: 1 }
+        - name: token
+          in: query
+          required: true
+          description: |
+            JWT de autenticação (issue #27). O browser não envia o header
+            `Authorization` no handshake de WebSocket, então o token viaja aqui.
+            Handshake sem token válido é rejeitado com 401.
+          schema: { type: string }
       responses:
         '101':
           description: Switching Protocols — WebSocket estabelecido
@@ -492,6 +500,14 @@ paths:
           required: true
           description: ID da partida em andamento
           schema: { type: integer, format: int64 }
+        - name: token
+          in: query
+          required: true
+          description: |
+            JWT de autenticação (issue #27). O browser não envia o header
+            `Authorization` no handshake de WebSocket, então o token viaja aqui.
+            Handshake sem token válido é rejeitado com 401.
+          schema: { type: string }
       responses:
         '101':
           description: Switching Protocols — conexão WebSocket estabelecida

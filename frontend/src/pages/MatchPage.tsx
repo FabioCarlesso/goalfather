@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
+import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import type { MatchEvent } from '../domain/types'
@@ -45,8 +46,7 @@ function MatchView({ matchId }: { matchId: string }) {
   // Conecta ao montar. Como o componente é remontado via `key` quando o
   // `matchId` muda, não há reset de estado manual aqui.
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const socket = new WebSocket(`${protocol}//${window.location.host}/ws/matches/${matchId}`)
+    const socket = new WebSocket(wsUrl(`/ws/matches/${matchId}`))
 
     socket.onopen = () => setStatus('live')
     socket.onmessage = (e) => {

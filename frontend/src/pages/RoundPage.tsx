@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
 import { useRoundReadiness, useMarkReady, roundReadinessKey } from '../api/queries/useRoundReadiness'
 import { useClub } from '../api/queries/useClub'
+import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { useAuth } from '../auth/AuthContext'
 import { standingsKey } from '../api/queries/useStandings'
@@ -149,8 +150,7 @@ export function RoundPage() {
       return
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const socket = new WebSocket(`${protocol}//${window.location.host}/ws/round/${round.number}`)
+    const socket = new WebSocket(wsUrl(`/ws/round/${round.number}`))
     wsRef.current = socket
 
     socket.onopen = () => setStatus('live')
