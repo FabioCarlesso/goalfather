@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { getToken, setToken, clearToken } from '../api/token'
+import { onSessionExpired } from '../api/sessionEvents'
 import type { AuthUser, AuthResponse } from '../domain/types'
 
 /**
@@ -73,6 +74,17 @@ export function AuthProvider({
       active = false
     }
   }, [initialAuth])
+
+  // Sessão expirou no meio do uso: um 401 inesperado em qualquer `/api/**`
+  // (não no login) derruba a sessão aqui → guardas de rota levam ao /login
+  // (issue #28). Os setters do `useState` são estáveis, então `[]` basta.
+  useEffect(() => {
+    return onSessionExpired(() => {
+      clearToken()
+      setUser(null)
+      setStatus('unauthenticated')
+    })
+  }, [])
 
   const apply = (res: AuthResponse) => {
     setToken(res.token)
