@@ -57,7 +57,8 @@ goalfather/
 │       ├── main.tsx                  # entrypoint (monta MSW em dev)
 │       ├── App.tsx                   # router
 │       ├── api/
-│       │   ├── client.ts             # fetch wrapper + tipos gerados
+│       │   ├── client.ts             # fetch wrapper + tipos gerados; 401 inesperado → emite sessionEvents (issue #28)
+│       │   ├── sessionEvents.ts       # pub/sub "sessão expirou": AuthProvider escuta e desloga (issue #28)
 │       │   ├── generated.d.ts        # gerado por openapi-typescript
 │       │   └── queries/              # hooks TanStack Query por recurso
 │       │       ├── useClub.ts
