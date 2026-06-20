@@ -48,6 +48,14 @@ class ClubClaimTransaction(
 ) {
     @Transactional
     fun claim(clubId: Long, userId: Long): ClaimResult {
+        // Valida o usuário ANTES de mexer no clube (issue #29). Se carregássemos
+        // o usuário só depois de gravar o ownerId, um id fantasma deixaria o
+        // clube preso a um dono inexistente e ainda devolveria AlreadyClaimed —
+        // semanticamente errado. Carregar primeiro mantém a transação intacta
+        // (nada foi alterado) e o resultado distinto faz o 401 certo lá em cima.
+        val user = userRepo.findById(userId).orElse(null)
+            ?: return ClaimResult.UserNotFound(UserId(userId))
+
         val club = clubRepo.findById(clubId).orElse(null)
             ?: return ClaimResult.ClubNotFound(ClubId(clubId))
 
@@ -57,8 +65,6 @@ class ClubClaimTransaction(
         club.ownerId = userId
         clubRepo.save(club) // @Version: a verificação ocorre no flush/commit
 
-        val user = userRepo.findById(userId).orElse(null)
-            ?: return ClaimResult.AlreadyClaimed(ClubId(clubId))
         user.clubId = clubId
         val saved = userRepo.save(user)
 

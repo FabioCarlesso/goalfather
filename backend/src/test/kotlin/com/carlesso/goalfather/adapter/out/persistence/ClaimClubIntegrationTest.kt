@@ -72,6 +72,20 @@ class ClaimClubIntegrationTest {
     }
 
     @Test
+    fun `usuario inexistente retorna UserNotFound e nao prende o clube`(): Unit = runBlocking {
+        // issue #29: o principal do JWT sempre mapeia um usuário real, mas se o
+        // invariante quebrar o clube NÃO pode ficar preso a um dono fantasma.
+        val clubId = anyAvailableClubId()
+
+        val result = claimRepo.claim(clubId, UserId(999_999))
+
+        assertIs<ClaimResult.UserNotFound>(result)
+        // Clube intacto: sem dono e ainda disponível para outro jogador.
+        assertNull(clubRepo.findById(clubId)!!.ownerId)
+        assertTrue(clubRepo.findAvailable().any { it.id == clubId })
+    }
+
+    @Test
     fun `apos claim, salvar o clube nao quebra por lock otimista (regressao ampliar estadio)`() = runBlocking {
         // O claim incrementa o @Version do clube. Salvar o clube depois (ampliar
         // estádio, escalação, compra/venda) precisa preservar essa versão, senão
