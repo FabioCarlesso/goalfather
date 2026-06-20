@@ -67,6 +67,11 @@ class ClubController(
             is ClaimResult.AlreadyClaimed -> ResponseEntity.status(409).body(
                 ErrorResponse(code = "CLUB_ALREADY_CLAIMED", message = "Clube $id já foi reivindicado"),
             )
+            // Principal do JWT não mapeia um usuário real (issue #29) → 401,
+            // mesmo tratamento de `/me` em AuthController.
+            is ClaimResult.UserNotFound -> ResponseEntity.status(401).body(
+                ErrorResponse(code = "UNAUTHORIZED", message = "Usuário não encontrado"),
+            )
         }
     }
 
