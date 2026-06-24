@@ -94,6 +94,11 @@ Variáveis de ambiente do backend:
 export JWT_SECRET="$(openssl rand -base64 48)"
 ```
 
+> **Fail-fast (issue #30):** o backend **aborta o boot** se o `JWT_SECRET` ainda
+> for o default de desenvolvimento e o profile não for dev/test (ex.: `prod`).
+> Como o default está versionado no repositório, subir com ele permitiria forjar
+> tokens. O `bootRun` local (sem profile) continua usando o default sem fricção.
+
 No frontend (MSW) o fluxo funciona sem backend: o mock implementa register/login/me/available/claim e persiste a sessão no `localStorage`.
 
 ---
