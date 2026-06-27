@@ -300,7 +300,47 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 
 ---
 
-## 11. O que NÃO fazer
+## 11. Segurança: armazenamento do token (risco aceito)
+
+> Origem: review da PR #26 (item **L3 / low**) — issue #31.
+
+O JWT é guardado em `localStorage` sob a chave `gf:token` (ver `src/api/token.ts`).
+`localStorage` é **legível por qualquer JavaScript** que rode na origem, então um
+**XSS** consegue exfiltrar o token e se passar pelo usuário até ele expirar.
+
+**Decisão: risco aceito.** É o tradeoff padrão de SPA single-page e foi adotado
+conscientemente para esta fase do projeto, pelos seguintes motivos:
+
+- GoalFather é hoje um jogo single-player de estudo, sem dados sensíveis nem
+  exposição pública em produção.
+- A alternativa "correta" (cookie `HttpOnly`) traz custo real: o WebSocket de
+  partida (issue #27) já depende de ler o token em JS para anexá-lo no query
+  param (`?token=`), porque o browser não envia `Authorization` no handshake de
+  WS. Um cookie `HttpOnly` não resolveria esse caso sem mecanismo adicional.
+- O vetor de XSS é mitigado na raiz: React escapa conteúdo por padrão, não
+  usamos `dangerouslySetInnerHTML`, e dependências entram pelo contrato/tipos —
+  não há renderização de HTML arbitrário de terceiros.
+
+**Mitigações já em vigor:**
+
+- Ponto único de acesso ao token (`src/api/token.ts`); nada mais toca o
+  `localStorage` para credenciais.
+- `401` inesperado limpa a sessão e desloga (issues #28/#29), reduzindo a janela
+  de um token vazado.
+- Sem `dangerouslySetInnerHTML` e sem injeção de HTML de fontes não confiáveis.
+
+**Alternativas para reavaliar se o app for a produção pública (futuro):**
+
+| Alternativa | Ganho | Custo |
+|---|---|---|
+| Cookie `HttpOnly` + `SameSite` + CSRF token | Token inacessível a JS → XSS não exfiltra | Backend passa a setar/validar cookie; precisa de proteção CSRF; WS precisa de outro caminho de auth |
+| Token em memória + *refresh token* rotativo | Access token nunca persiste; janela de roubo curta | Exige endpoint de refresh, fluxo de silent-renew e re-login ao recarregar a aba |
+
+Enquanto nenhuma dessas for adotada, **este risco permanece formalmente aceito**.
+
+---
+
+## 12. O que NÃO fazer
 
 - Não inventar campos no frontend que não existem no `openapi.yaml`. Se faltar, atualize o contrato primeiro.
 - Não chamar `fetch` direto de componentes. Sempre via hooks em `api/queries/`.
