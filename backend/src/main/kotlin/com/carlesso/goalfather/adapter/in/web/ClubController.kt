@@ -14,7 +14,6 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
 import com.carlesso.goalfather.domain.result.LineupResult
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -37,14 +36,13 @@ class ClubController(
      * (literal): o Spring casa antes de `/{id}`, então não há ambiguidade.
      */
     @GetMapping("/available")
-    fun listAvailable(): List<AvailableClubDto> = runBlocking {
+    suspend fun listAvailable(): List<AvailableClubDto> =
         clubRepo.findAvailable().map { it.toAvailableDto() }
-    }
 
     @GetMapping("/{id}")
-    fun getClub(@PathVariable id: Long): ResponseEntity<Any> = runBlocking {
+    suspend fun getClub(@PathVariable id: Long): ResponseEntity<Any> {
         val club = clubRepo.findById(ClubId(id))
-        if (club == null) {
+        return if (club == null) {
             ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
@@ -55,10 +53,10 @@ class ClubController(
 
     /** Reivindicar clube para o usuário autenticado (issue #19). */
     @PostMapping("/{id}/claim")
-    fun claim(
+    suspend fun claim(
         @PathVariable id: Long,
         @AuthenticationPrincipal userId: Long,
-    ): ResponseEntity<Any> = runBlocking {
+    ): ResponseEntity<Any> =
         when (val result = claimClub.execute(ClubId(id), UserId(userId))) {
             is ClaimResult.Success -> ResponseEntity.ok(result.user.toDto())
             is ClaimResult.ClubNotFound -> ResponseEntity.status(404).body(
@@ -73,14 +71,13 @@ class ClubController(
                 ErrorResponse(code = "UNAUTHORIZED", message = "Usuário não encontrado"),
             )
         }
-    }
 
     @PostMapping("/{id}/lineup")
-    fun saveLineup(
+    suspend fun saveLineup(
         @PathVariable id: Long,
         @RequestBody req: LineupRequest,
         @AuthenticationPrincipal userId: Long,
-    ): ResponseEntity<Any> = runBlocking {
+    ): ResponseEntity<Any> =
         // Posse é verificada dentro do use case (fetch único) — issue #18/#19.
         when (val result = saveLineup.execute(ClubId(id), userId, req.formation, req.playerIds)) {
             is LineupResult.Success -> ResponseEntity.noContent().build()
@@ -103,22 +100,21 @@ class ClubController(
                 ),
             )
         }
-    }
 
     @PostMapping("/{id}/stadium/expand")
-    fun expandStadium(
+    suspend fun expandStadium(
         @PathVariable id: Long,
         @RequestBody req: ExpandStadiumRequest,
         @AuthenticationPrincipal userId: Long,
-    ): ResponseEntity<Any> = runBlocking {
+    ): ResponseEntity<Any> {
         val club = clubRepo.findById(ClubId(id))
-            ?: return@runBlocking ResponseEntity.status(404).body(
+            ?: return ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
-        ownershipError(club, userId)?.let { return@runBlocking it }
+        ownershipError(club, userId)?.let { return it }
         val cost = req.additionalSeats * 100_00L
         if (club.cash < cost) {
-            return@runBlocking ResponseEntity.status(402).body(
+            return ResponseEntity.status(402).body(
                 ErrorResponse(
                     code = "INSUFFICIENT_FUNDS",
                     message = "Caixa insuficiente para ampliar",
@@ -130,7 +126,7 @@ class ClubController(
             stadiumCapacity = club.stadiumCapacity + req.additionalSeats,
         )
         clubRepo.save(updated)
-        ResponseEntity.ok(updated)
+        return ResponseEntity.ok(updated)
     }
 
     /**

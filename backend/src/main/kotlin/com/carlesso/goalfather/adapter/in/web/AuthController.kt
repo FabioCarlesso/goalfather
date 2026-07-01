@@ -13,7 +13,6 @@ import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.LoginResult
 import com.carlesso.goalfather.domain.result.RegisterResult
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -32,9 +31,9 @@ class AuthController(
 ) {
 
     @PostMapping("/register")
-    fun register(@RequestBody req: RegisterRequest): ResponseEntity<Any> = runBlocking {
-        validate(req.username, req.password)?.let { return@runBlocking it }
-        when (val result = register.execute(normalize(req.username), req.password)) {
+    suspend fun register(@RequestBody req: RegisterRequest): ResponseEntity<Any> {
+        validate(req.username, req.password)?.let { return it }
+        return when (val result = register.execute(normalize(req.username), req.password)) {
             is RegisterResult.Success -> ResponseEntity.status(201).body(authResponse(result.user))
             is RegisterResult.UsernameTaken -> ResponseEntity.status(409).body(
                 ErrorResponse(code = "USERNAME_TAKEN", message = "Username '${result.username}' já está em uso"),
@@ -43,27 +42,26 @@ class AuthController(
     }
 
     @PostMapping("/login")
-    fun login(@RequestBody req: LoginRequest): ResponseEntity<Any> = runBlocking {
+    suspend fun login(@RequestBody req: LoginRequest): ResponseEntity<Any> =
         when (val result = login.execute(normalize(req.username), req.password)) {
             is LoginResult.Success -> ResponseEntity.ok(authResponse(result.user))
             is LoginResult.InvalidCredentials -> ResponseEntity.status(401).body(
                 ErrorResponse(code = "INVALID_CREDENTIALS", message = "Usuário ou senha inválidos"),
             )
         }
-    }
 
     @GetMapping("/me")
-    fun me(@AuthenticationPrincipal userId: Long?): ResponseEntity<Any> = runBlocking {
+    suspend fun me(@AuthenticationPrincipal userId: Long?): ResponseEntity<Any> {
         if (userId == null) {
-            return@runBlocking ResponseEntity.status(401).body(
+            return ResponseEntity.status(401).body(
                 ErrorResponse(code = "UNAUTHORIZED", message = "Autenticação necessária"),
             )
         }
         val user = userRepo.findById(UserId(userId))
-            ?: return@runBlocking ResponseEntity.status(401).body(
+            ?: return ResponseEntity.status(401).body(
                 ErrorResponse(code = "UNAUTHORIZED", message = "Usuário não encontrado"),
             )
-        ResponseEntity.ok(user.toDto())
+        return ResponseEntity.ok(user.toDto())
     }
 
     /**

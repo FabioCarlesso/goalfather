@@ -39,6 +39,16 @@ class JwtAuthenticationFilter(
         filterChain.doFilter(request, response)
     }
 
+    /**
+     * Os controllers `suspend` são despachados de forma assíncrona pelo Spring
+     * MVC; no *dispatch* de renderização o `AuthorizationFilter` reavalia a
+     * autorização. Como o `OncePerRequestFilter` pula dispatches ASYNC por
+     * padrão, o `SecurityContext` chegaria vazio e a resposta viraria 401. Sendo
+     * a auth stateless (token relido do header), reautenticar no ASYNC é barato
+     * e mantém o principal disponível. Ver issue #42.
+     */
+    override fun shouldNotFilterAsyncDispatch(): Boolean = false
+
     private companion object {
         const val BEARER_PREFIX = "Bearer "
     }

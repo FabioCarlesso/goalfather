@@ -10,7 +10,6 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
-import kotlinx.coroutines.runBlocking
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,27 +29,27 @@ class MarketController(
 ) {
 
     @GetMapping
-    fun listMarket(
+    suspend fun listMarket(
         @RequestParam(required = false) position: Position?,
         @RequestParam(required = false) maxPrice: Long?,
-    ) = runBlocking { marketRepo.findAll(position, maxPrice) }
+    ) = marketRepo.findAll(position, maxPrice)
 
     @PostMapping("/buy")
-    fun buy(
+    suspend fun buy(
         @RequestBody req: BuyPlayerRequest,
         @AuthenticationPrincipal userId: Long,
-    ): ResponseEntity<Any> = runBlocking {
-        ownershipError(req.clubId, userId)?.let { return@runBlocking it }
-        ResponseEntity.ok(buyUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)))
+    ): ResponseEntity<Any> {
+        ownershipError(req.clubId, userId)?.let { return it }
+        return ResponseEntity.ok(buyUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)))
     }
 
     @PostMapping("/sell")
-    fun sell(
+    suspend fun sell(
         @RequestBody req: SellPlayerRequest,
         @AuthenticationPrincipal userId: Long,
-    ): ResponseEntity<Any> = runBlocking {
-        ownershipError(req.clubId, userId)?.let { return@runBlocking it }
-        ResponseEntity.ok(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)))
+    ): ResponseEntity<Any> {
+        ownershipError(req.clubId, userId)?.let { return it }
+        return ResponseEntity.ok(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)))
     }
 
     /** 403 se o usuário não é dono do clube alvo da operação (issue #18). */

@@ -8,10 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.MvcResult
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -29,12 +33,23 @@ class AuthSecurityMvcTest {
     @Autowired private lateinit var json: Json
     @Autowired private lateinit var clubRepo: ClubRepository
 
+    /**
+     * Os controllers agora são `suspend`: o Spring MVC os executa de forma
+     * assíncrona (via `kotlinx-coroutines-reactor`), então o MockMvc precisa de
+     * `asyncDispatch` para materializar a resposta final — sem isso o corpo vem
+     * vazio. Requisições barradas pelo `SecurityFilterChain` (401) nem chegam ao
+     * controller, logo permanecem síncronas e não passam por aqui.
+     */
+    private fun MvcResult.await(): MockHttpServletResponse =
+        if (request.isAsyncStarted) mockMvc.perform(asyncDispatch(this)).andReturn().response
+        else response
+
     /** Cadastra e devolve o JWT do novo usuário. */
     private fun register(username: String): String {
         val body = mockMvc.post("/api/auth/register") {
             contentType = MediaType.APPLICATION_JSON
             content = """{"username":"$username","password":"secret123"}"""
-        }.andReturn().response.contentAsString
+        }.andReturn().await().contentAsString
         return json.decodeFromString(AuthResponse.serializer(), body).token
     }
 
@@ -54,22 +69,22 @@ class AuthSecurityMvcTest {
         val token = register(username)
         assertTrue(token.isNotBlank())
 
-        mockMvc.get("/api/auth/me") {
+        val response = mockMvc.get("/api/auth/me") {
             header("Authorization", "Bearer $token")
-        }.andExpect {
-            status { isOk() }
-            jsonPath("$.username") { value(username) }
-        }
+        }.andReturn().await()
+        assertEquals(200, response.status)
+        assertTrue(response.contentAsString.contains(""""username":"$username""""))
     }
 
     @Test
     fun `username duplicado retorna 409`() {
         val username = "mvc-dup-${System.nanoTime()}"
         register(username)
-        mockMvc.post("/api/auth/register") {
+        val response = mockMvc.post("/api/auth/register") {
             contentType = MediaType.APPLICATION_JSON
             content = """{"username":"$username","password":"secret123"}"""
-        }.andExpect { status { isConflict() } }
+        }.andReturn().await()
+        assertEquals(409, response.status)
     }
 
     @Test
@@ -79,15 +94,17 @@ class AuthSecurityMvcTest {
         val clubId = runBlocking { clubRepo.findAvailable().first().id.value }
 
         // A reivindica o clube.
-        mockMvc.post("/api/clubs/$clubId/claim") {
+        val claim = mockMvc.post("/api/clubs/$clubId/claim") {
             header("Authorization", "Bearer $tokenA")
-        }.andExpect { status { isOk() } }
+        }.andReturn().await()
+        assertEquals(200, claim.status)
 
         // B tenta salvar escalação no clube de A → 403 (checagem de posse).
-        mockMvc.post("/api/clubs/$clubId/lineup") {
+        val lineup = mockMvc.post("/api/clubs/$clubId/lineup") {
             header("Authorization", "Bearer $tokenB")
             contentType = MediaType.APPLICATION_JSON
             content = """{"formation":"4-4-2","playerIds":[1,2,3,4,5,6,7,8,9,10,11]}"""
-        }.andExpect { status { isForbidden() } }
+        }.andReturn().await()
+        assertEquals(403, lineup.status)
     }
 }
