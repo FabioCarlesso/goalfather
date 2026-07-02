@@ -44,6 +44,17 @@ app:
   jwt:
     secret: ${JWT_SECRET:dev-secret-change-me-please-0123456789-abcdefghijklmnop}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}   # 24h
+  # ─── Rate limiting de autenticação (issue #43) ────────────────────────────
+  # Mitiga brute force/credential stuffing no login. `login` é por IP+username
+  # (só tentativas inválidas contam); `register` é por IP (throttle de criação
+  # em massa). `window` aceita 30s, 1m, 1h... Premissa: instância única.
+  rate-limit:
+    login:
+      max-attempts: ${AUTH_LOGIN_MAX_ATTEMPTS:5}
+      window: ${AUTH_LOGIN_WINDOW:1m}
+    register:
+      max-attempts: ${AUTH_REGISTER_MAX_ATTEMPTS:10}
+      window: ${AUTH_REGISTER_WINDOW:1h}
 
 logging:
   level:

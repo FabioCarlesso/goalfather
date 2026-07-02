@@ -31,3 +31,13 @@ app:
   jwt:
     secret: test-secret-0123456789-abcdefghijklmnopqrstuvwxyz-0123456789
     expiration-ms: 86400000
+  # Rate limit (issue #43): login apertado para o teste de 429; register
+  # afrouxado para não interferir nos demais testes que registram vários
+  # usuários do mesmo IP (127.0.0.1) dentro do contexto Spring compartilhado.
+  rate-limit:
+    login:
+      max-attempts: 5
+      window: 1m
+    register:
+      max-attempts: 100000
+      window: 1m
