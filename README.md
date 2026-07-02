@@ -88,6 +88,10 @@ Variáveis de ambiente do backend:
 |---|---|---|
 | `JWT_SECRET` | segredo de dev embutido | Chave HMAC-SHA256 (≥ 32 bytes). **Defina em produção.** |
 | `JWT_EXPIRATION_MS` | `86400000` (24h) | Validade do token em milissegundos. |
+| `AUTH_LOGIN_MAX_ATTEMPTS` | `5` | Tentativas inválidas de login por `IP + username` antes do `429`. |
+| `AUTH_LOGIN_WINDOW` | `1m` | Janela do limite de login (ex.: `30s`, `1m`, `5m`). |
+| `AUTH_REGISTER_MAX_ATTEMPTS` | `20` | Cadastros por `IP` antes do `429` (folgado por causa de NAT/CGNAT). |
+| `AUTH_REGISTER_WINDOW` | `1h` | Janela do limite de cadastro. |
 
 ```bash
 # Gere um segredo forte para produção:
@@ -98,6 +102,14 @@ export JWT_SECRET="$(openssl rand -base64 48)"
 > for o default de desenvolvimento e o profile não for dev/test (ex.: `prod`).
 > Como o default está versionado no repositório, subir com ele permitiria forjar
 > tokens. O `bootRun` local (sem profile) continua usando o default sem fricção.
+
+> **Rate limiting (issue #43):** `POST /api/auth/login` e `POST /api/auth/register`
+> têm proteção contra brute force. Excedido o limite na janela, respondem `429
+> Too Many Requests` com header `Retry-After`. Login conta por `IP + username`
+> (só tentativas inválidas; login OK zera o contador); register conta por `IP`.
+> Premissa: **instância única** (contador em memória via Caffeine). O IP vem do
+> header `X-Real-IP`, que o nginx seta com `$remote_addr` (não forjável pelo
+> cliente); sem proxy, usa o IP do socket.
 
 No frontend (MSW) o fluxo funciona sem backend: o mock implementa register/login/me/available/claim e persiste a sessão no `localStorage`.
 
