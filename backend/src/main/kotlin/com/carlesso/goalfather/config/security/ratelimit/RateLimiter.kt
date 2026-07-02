@@ -25,15 +25,15 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class RateLimiter(
     private val maxAttempts: Int,
-    window: Duration,
+    private val window: Duration,
     ticker: Ticker = Ticker.systemTicker(),
 ) {
-    /** Segundos da janela — usado como `Retry-After` (limite superior conservador). */
-    val retryAfterSeconds: Long = window.seconds
-
     private val counters: Cache<String, AtomicInteger> =
         Caffeine.newBuilder()
             .expireAfterWrite(window)
+            // Teto alto de chaves: um flood de chaves distintas não deve despejar
+            // (evicção por tamanho) o contador de uma vítima antes de a janela
+            // fechar — o que zeraria o limite cedo e abriria brecha de bypass.
             .maximumSize(MAX_KEYS)
             .ticker(ticker)
             .build()
@@ -50,7 +50,21 @@ class RateLimiter(
     /** Zera o contador (ex.: login bem-sucedido). */
     fun reset(key: String) = counters.invalidate(key)
 
+    /**
+     * Segundos até a janela da chave expirar — valor do header `Retry-After`.
+     * Calcula o TEMPO RESTANTE real (janela − idade da entrada) via
+     * `Policy.ageOf`, em vez de devolver sempre a janela inteira. Cai para a
+     * janela cheia se a chave não existir; nunca abaixo de 1s.
+     */
+    fun retryAfterSeconds(key: String): Long {
+        val remaining = counters.policy().expireAfterWrite()
+            .flatMap { it.ageOf(key) }
+            .map { age -> window.minus(age) }
+            .orElse(window)
+        return remaining.coerceAtLeast(Duration.ofSeconds(1)).seconds
+    }
+
     private companion object {
-        const val MAX_KEYS = 10_000L
+        const val MAX_KEYS = 100_000L
     }
 }

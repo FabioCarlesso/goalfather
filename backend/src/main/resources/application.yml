@@ -53,7 +53,9 @@ app:
       max-attempts: ${AUTH_LOGIN_MAX_ATTEMPTS:5}
       window: ${AUTH_LOGIN_WINDOW:1m}
     register:
-      max-attempts: ${AUTH_REGISTER_MAX_ATTEMPTS:10}
+      # Folgado: register é por IP e, atrás de NAT/CGNAT, vários clientes
+      # legítimos compartilham o mesmo IP (premissa 1 IP ≈ 1 cliente).
+      max-attempts: ${AUTH_REGISTER_MAX_ATTEMPTS:20}
       window: ${AUTH_REGISTER_WINDOW:1h}
 
 logging:

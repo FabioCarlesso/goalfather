@@ -117,7 +117,7 @@ class AuthController(
     private fun rateLimited(limiter: RateLimiter, key: String): ResponseEntity<Any>? =
         if (limiter.isBlocked(key)) {
             ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                .header(HttpHeaders.RETRY_AFTER, limiter.retryAfterSeconds.toString())
+                .header(HttpHeaders.RETRY_AFTER, limiter.retryAfterSeconds(key).toString())
                 .body(
                     ErrorResponse(
                         code = "TOO_MANY_REQUESTS",
@@ -129,17 +129,19 @@ class AuthController(
         }
 
     /**
-     * IP de origem para a chave de rate limit. Atrás do nginx (docker-compose),
-     * o IP real vem no `X-Forwarded-For` — pega-se o PRIMEIRO da lista (o
-     * cliente; os demais são proxies). Sem proxy, usa `remoteAddr`.
+     * IP de origem para a chave de rate limit.
      *
-     * Ressalva: `X-Forwarded-For` é forjável se a app ficar exposta sem um proxy
-     * confiável na frente. Na topologia atual (nginx único) o header é setado
-     * pelo proxy, então é confiável o suficiente para throttling.
+     * Usa `X-Real-IP`, que o nginx seta com `$remote_addr` via `proxy_set_header`
+     * (sobrescreve — o cliente não consegue forjá-lo através do proxy). NÃO usa
+     * `X-Forwarded-For`: com o `$proxy_add_x_forwarded_for` o valor forjado pelo
+     * cliente fica no 1º token, então confiar nele deixaria o limiter
+     * contornável trocando o header a cada request (issue #43, review PR #49).
+     *
+     * Sem proxy (ex.: acesso direto à porta de debug), o header vem ausente e
+     * caímos no `remoteAddr` do socket — não spoofável.
      */
     private fun clientIp(request: HttpServletRequest): String =
-        request.getHeader("X-Forwarded-For")
-            ?.substringBefore(',')
+        request.getHeader("X-Real-IP")
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
             ?: request.remoteAddr

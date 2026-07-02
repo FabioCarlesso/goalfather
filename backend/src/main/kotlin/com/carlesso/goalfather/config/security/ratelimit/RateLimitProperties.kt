@@ -16,12 +16,14 @@ import java.time.Duration
  * - `login`: janela curta e apertada — mitiga brute force/credential stuffing
  *   por chave `IP + username`.
  * - `register`: janela mais longa e branda — throttle de criação de contas em
- *   massa por `IP` (ver [RateLimiter] e AuthController).
+ *   massa por `IP` (ver [RateLimiter] e AuthController). Premissa: `1 IP ≈ 1
+ *   cliente`. Atrás de NAT/CGNAT vários clientes legítimos compartilham o IP,
+ *   por isso o default é folgado; ajuste via `AUTH_REGISTER_MAX_ATTEMPTS`.
  */
 @ConfigurationProperties("app.rate-limit")
 data class RateLimitProperties(
     val login: Rule = Rule(maxAttempts = 5, window = Duration.ofMinutes(1)),
-    val register: Rule = Rule(maxAttempts = 10, window = Duration.ofHours(1)),
+    val register: Rule = Rule(maxAttempts = 20, window = Duration.ofHours(1)),
 ) {
     data class Rule(
         val maxAttempts: Int,
