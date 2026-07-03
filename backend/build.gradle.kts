@@ -37,6 +37,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    // ── Observabilidade (issue #44) ───────────────────────────────────────
+    //    Actuator já traz micrometer-core (a API de Meter/Timer/Counter, usada
+    //    na camada application). O registry Prometheus é o backend concreto que
+    //    expõe /actuator/prometheus no formato de scrape.
+    implementation("io.micrometer:micrometer-registry-prometheus")
+
     // ── Auth (issue #18): Spring Security + JWT (jjwt) ────────────────────
     //    BCrypt vem do starter-security. jjwt é dividido em api/impl/jackson:
     //    só a api é compile-time; impl/jackson resolvem em runtime.

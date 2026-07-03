@@ -113,6 +113,44 @@ export JWT_SECRET="$(openssl rand -base64 48)"
 
 No frontend (MSW) o fluxo funciona sem backend: o mock implementa register/login/me/available/claim e persiste a sessão no `localStorage`.
 
+### 5. Observabilidade / métricas (Fase 5, issue #44)
+
+O backend expõe métricas no formato Prometheus via Actuator + Micrometer. Endpoints liberados **sem token** (como `health`/`info`):
+
+| Endpoint | Para quê |
+|---|---|
+| `GET /actuator/health` | liveness/readiness |
+| `GET /actuator/info` | metadados do build |
+| `GET /actuator/prometheus` | scrape de métricas (Micrometer → Prometheus) |
+
+Além das métricas de JVM/HTTP que o Micrometer já fornece, instrumentamos os pontos-chave do domínio (prefixo `goalfather_`):
+
+| Métrica | Tipo | Descrição |
+|---|---|---|
+| `goalfather_round_simulation_seconds` | timer | duração da simulação de uma rodada inteira (só a engine, sem o *pacing* do WebSocket) |
+| `goalfather_match_simulation_seconds` | timer | duração da simulação de uma partida (drill-down `/ws/matches/{id}`) |
+| `goalfather_market_transfers_total{result}` | counter | compras no mercado por desfecho: `success`, `conflict` (jogador já levado — lock otimista da #21), `insufficient_funds`, `squad_full` |
+| `goalfather_auth_logins_total{result}` | counter | tentativas de login por desfecho: `success`, `failure` |
+
+> Os counters aparecem no scrape **após o primeiro evento** de cada tipo (Micrometer os cria sob demanda); os timers já aparecem no boot com contagem zero.
+
+**Espiar rapidamente (backend rodando em `:8080`):**
+
+```bash
+curl -s localhost:8080/actuator/prometheus | grep goalfather_
+```
+
+**Prometheus local via docker-compose (opcional):** o serviço fica atrás do profile `observability`, então não sobe no `up` padrão.
+
+```bash
+docker compose --profile observability up --build
+# Prometheus em http://localhost:9090 — ex.: query `goalfather_round_simulation_seconds_count`
+```
+
+A config de scrape está em [`observability/prometheus.yml`](observability/prometheus.yml) (aponta para `backend:8080`). Para raspar um `bootRun` na máquina host em vez do container, troque o target por `host.docker.internal:8081`.
+
+> **Segurança:** o `/actuator/prometheus` é aberto assumindo **instância única em rede interna** (o scraper não envia `Authorization`). Ao expor publicamente, proteja com basic-auth/rede no nível do deploy.
+
 ---
 
 ## 🗺️ Roadmap

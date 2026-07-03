@@ -26,6 +26,17 @@ spring:
 server:
   port: 8080
 
+# Observabilidade (issue #44): expõe /actuator/prometheus também sob teste, para
+# o MvcTest do endpoint. Espelha o application.yml principal.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: goalfather
+
 # Auth/JWT (issue #18) — segredo fixo de teste (>= 32 bytes para HS256).
 app:
   jwt:

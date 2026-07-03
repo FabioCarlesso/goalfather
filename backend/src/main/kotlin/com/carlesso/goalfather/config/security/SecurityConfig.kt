@@ -54,6 +54,11 @@ class SecurityConfig(
                 authorize("/ws/**", permitAll)
                 authorize("/actuator/health", permitAll)
                 authorize("/actuator/info", permitAll)
+                // Scrape do Prometheus (issue #44): sem token, como health/info. O
+                // scraper não manda Authorization; numa instância única atrás da
+                // rede interna é o padrão. Se um dia expor publicamente, proteger
+                // com basic-auth/rede é responsabilidade do deploy.
+                authorize("/actuator/prometheus", permitAll)
                 authorize("/api/**", authenticated)
                 authorize(anyRequest, permitAll)
             }
