@@ -5,6 +5,7 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.LoginRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.RegisterRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
+import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.LoginUseCase
 import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
 import com.carlesso.goalfather.application.port.out.UserRepository
@@ -14,6 +15,7 @@ import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.LoginResult
 import com.carlesso.goalfather.domain.result.RegisterResult
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpHeaders
@@ -35,6 +37,7 @@ class AuthController(
     private val jwt: JwtService,
     @Qualifier("loginRateLimiter") private val loginRateLimiter: RateLimiter,
     @Qualifier("registerRateLimiter") private val registerRateLimiter: RateLimiter,
+    private val meterRegistry: MeterRegistry,
 ) {
 
     @PostMapping("/register")
@@ -65,10 +68,12 @@ class AuthController(
         return when (val result = login.execute(username, req.password)) {
             is LoginResult.Success -> {
                 loginRateLimiter.reset(key)
+                countLogin("success")
                 ResponseEntity.ok(authResponse(result.user))
             }
             is LoginResult.InvalidCredentials -> {
                 loginRateLimiter.record(key)
+                countLogin("failure")
                 ResponseEntity.status(401).body(
                     ErrorResponse(code = "INVALID_CREDENTIALS", message = "Usuário ou senha inválidos"),
                 )
@@ -88,6 +93,12 @@ class AuthController(
                 ErrorResponse(code = "UNAUTHORIZED", message = "Usuário não encontrado"),
             )
         return ResponseEntity.ok(user.toDto())
+    }
+
+    /** Conta a tentativa de login por desfecho (`success`/`failure`) — issue #44. */
+    private fun countLogin(outcome: String) {
+        meterRegistry.counter(GoalfatherMetrics.AUTH_LOGINS, GoalfatherMetrics.TAG_RESULT, outcome)
+            .increment()
     }
 
     /**

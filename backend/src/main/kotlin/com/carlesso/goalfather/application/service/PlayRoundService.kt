@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -22,6 +23,9 @@ import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
 import com.carlesso.goalfather.domain.rules.ticketRevenue
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
@@ -48,7 +52,13 @@ class PlayRoundService(
     private val leagueRepo: LeagueRepository,
     private val readinessRepo: RoundReadinessRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
+    // Default = registry isolado: mantém os testes existentes construindo o
+    // service sem passar métrica; em produção o BeanConfig injeta o registry real
+    // (mesmo padrão do `Random`/`MatchSimulator` já injetáveis).
+    private val meterRegistry: MeterRegistry = SimpleMeterRegistry(),
 ) : PlayRoundUseCase {
+
+    private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
 
     // Serializa a seção que finaliza a rodada: em liga compartilhada (issue #20)
     // dois clientes podem abrir o WS da mesma rodada simultaneamente. O Mutex +
@@ -76,6 +86,12 @@ class PlayRoundService(
         // persistir as estatísticas dos jogadores ao final (issue #2).
         val involvedClubs = mutableMapOf<Long, Club>()
 
+        // Timer só sobre o trabalho da engine (todas as partidas). Fica AQUI e não
+        // no WS handler de propósito: o handler intercala delays de ~80ms/minuto
+        // para dar sensação de "ao vivo" — cronometrar lá mediria a animação, não
+        // a simulação. `Timer.start/stop` só captura wall time, então atravessa
+        // suspensões de coroutine sem problema.
+        val sample = Timer.start(meterRegistry)
         for (match in round.matches) {
             val home = clubRepo.findById(match.homeClubId)
             val away = clubRepo.findById(match.awayClubId)
@@ -96,6 +112,7 @@ class PlayRoundService(
                 }
             }
         }
+        sample.stop(simulationTimer)
 
         // Estável por minuto: eventos de minuto igual saem juntos
         // (sensação de "vários estádios ao mesmo tempo").

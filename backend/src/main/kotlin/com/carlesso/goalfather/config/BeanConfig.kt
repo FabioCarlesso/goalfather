@@ -26,6 +26,7 @@ import com.carlesso.goalfather.application.service.RoundReadinessService
 import com.carlesso.goalfather.application.service.SaveLineupService
 import com.carlesso.goalfather.application.service.SellPlayerService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
+import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -67,7 +68,10 @@ class BeanConfig {
         leagueRepo: LeagueRepository,
         readinessRepo: RoundReadinessRepository,
         simulator: MatchSimulator,
-    ): PlayRoundUseCase = PlayRoundService(clubRepo, leagueRepo, readinessRepo, simulator)
+        // MeterRegistry é provido pelo actuator; injetado para o timer da
+        // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
+        meterRegistry: MeterRegistry,
+    ): PlayRoundUseCase = PlayRoundService(clubRepo, leagueRepo, readinessRepo, simulator, meterRegistry)
 
     @Bean
     fun roundReadinessUseCase(
@@ -81,7 +85,8 @@ class BeanConfig {
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
         simulator: MatchSimulator,
-    ): StreamMatchUseCase = PlayMatchService(clubRepo, leagueRepo, simulator)
+        meterRegistry: MeterRegistry,
+    ): StreamMatchUseCase = PlayMatchService(clubRepo, leagueRepo, simulator, meterRegistry)
 
     // ── Auth (issue #18) + seleção de clube (issue #19) ───────────────────
     @Bean

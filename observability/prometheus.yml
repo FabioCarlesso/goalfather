@@ -1,0 +1,13 @@
+# Config mínima do Prometheus para raspar o backend do GoalFather (issue #44).
+# Usada pelo serviço opcional `prometheus` do docker-compose (profile
+# `observability`). Ajuste `targets` se rodar o backend fora do compose
+# (ex.: `host.docker.internal:8081` para um bootRun na máquina host).
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: goalfather
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # `backend` é o nome do serviço no docker-compose; 8080 é a porta interna.
+      - targets: ["backend:8080"]

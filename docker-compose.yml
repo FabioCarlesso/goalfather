@@ -7,6 +7,11 @@
 # O frontend (nginx) faz proxy de /api e /ws para o backend, então só a porta
 # 8080 precisa ser exposta ao host. O backend também é publicado em 8081 para
 # acesso direto/depuração.
+#
+# Observabilidade (issue #44): um Prometheus opcional raspa /actuator/prometheus.
+# Fica atrás do profile `observability`, então NÃO sobe no `up` padrão:
+#   docker compose --profile observability up --build   # inclui o Prometheus
+#   # Prometheus em http://localhost:9090 (tente a query `goalfather_round_simulation_seconds_count`)
 
 services:
   postgres:
@@ -40,6 +45,18 @@ services:
     build: ./frontend
     ports:
       - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Coletor opcional de métricas (issue #44). Só sobe com `--profile observability`.
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    profiles: ["observability"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
     depends_on:
       backend:
         condition: service_healthy

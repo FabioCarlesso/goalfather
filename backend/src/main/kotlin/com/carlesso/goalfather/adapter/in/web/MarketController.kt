@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.`in`.web
 import com.carlesso.goalfather.adapter.`in`.web.dto.BuyPlayerRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.SellPlayerRequest
+import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
@@ -10,6 +11,8 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.result.TransferResult
+import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,6 +29,7 @@ class MarketController(
     private val clubRepo: ClubRepository,
     private val buyUseCase: BuyPlayerUseCase,
     private val sellUseCase: SellPlayerUseCase,
+    private val meterRegistry: MeterRegistry,
 ) {
 
     @GetMapping
@@ -40,7 +44,23 @@ class MarketController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> {
         ownershipError(req.clubId, userId)?.let { return it }
-        return ResponseEntity.ok(buyUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)))
+        val result = buyUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId))
+        // Conta a compra dimensionada pelo desfecho (issue #44). `conflict` cobre
+        // o `PlayerNotAvailable` — na prática, a perda do lock otimista do mercado
+        // (#21) quando dois donos disputam o mesmo jogador.
+        countTransfer(result)
+        return ResponseEntity.ok(result)
+    }
+
+    private fun countTransfer(result: TransferResult) {
+        val outcome = when (result) {
+            is TransferResult.Success -> "success"
+            is TransferResult.InsufficientFunds -> "insufficient_funds"
+            is TransferResult.SquadFull -> "squad_full"
+            is TransferResult.PlayerNotAvailable -> "conflict"
+        }
+        meterRegistry.counter(GoalfatherMetrics.MARKET_TRANSFERS, GoalfatherMetrics.TAG_RESULT, outcome)
+            .increment()
     }
 
     @PostMapping("/sell")

@@ -67,7 +67,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # `prometheus` habilita GET /actuator/prometheus (issue #44). health/info
+        # seguem expostos; nenhum outro endpoint sensível é aberto.
+        include: health,info,prometheus
+  metrics:
+    tags:
+      # Tag comum a toda métrica exportada — facilita filtrar por serviço quando
+      # múltiplas apps publicam no mesmo Prometheus.
+      application: goalfather
 
 # ─── Profile prod: PostgreSQL ─────────────────────────────────────────────
 ---
