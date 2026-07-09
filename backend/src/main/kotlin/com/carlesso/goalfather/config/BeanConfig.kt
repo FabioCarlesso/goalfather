@@ -27,8 +27,10 @@ import com.carlesso.goalfather.application.service.SaveLineupService
 import com.carlesso.goalfather.application.service.SellPlayerService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.time.Clock
 
 /**
  * Wiring explícito de application services como beans. Os services não
@@ -40,7 +42,15 @@ import org.springframework.context.annotation.Configuration
  * `adapter/out/persistence`. O domínio não conhece esses adapters.
  */
 @Configuration
+@EnableConfigurationProperties(RoundReadinessProperties::class)
 class BeanConfig {
+
+    /**
+     * Fonte de tempo injetável (issue #45). Um bean único deixa o timeout de
+     * readiness testável e, se preciso, mockável; produção usa o relógio do SO.
+     */
+    @Bean
+    fun clock(): Clock = Clock.systemUTC()
 
     @Bean
     fun matchSimulator(): MatchSimulator = MatchSimulator()
@@ -78,7 +88,10 @@ class BeanConfig {
         leagueRepo: LeagueRepository,
         userRepo: UserRepository,
         readinessRepo: RoundReadinessRepository,
-    ): RoundReadinessUseCase = RoundReadinessService(leagueRepo, userRepo, readinessRepo)
+        readinessProps: RoundReadinessProperties,
+        clock: Clock,
+    ): RoundReadinessUseCase =
+        RoundReadinessService(leagueRepo, userRepo, readinessRepo, readinessProps.timeout, clock)
 
     @Bean
     fun streamMatchUseCase(

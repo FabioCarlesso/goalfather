@@ -95,6 +95,9 @@ class LeagueController(
                         "ready" to result.status.readyCount.toString(),
                         "total" to result.status.totalCount.toString(),
                         "pending" to result.status.pendingUsernames.joinToString(","),
+                        // Segundos até o auto-start do escape hatch (issue #45);
+                        // ausente quando o cronômetro ainda não está armado.
+                        "secondsRemaining" to (result.status.secondsRemaining?.toString() ?: ""),
                     ),
                 ),
             )

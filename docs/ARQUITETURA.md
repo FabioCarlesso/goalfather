@@ -344,9 +344,15 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [x] Sincronização de rodadas entre técnicos humanos — issue #20
   (`round_readiness` + gate "todos prontos → joga", `Mutex` no `PlayRoundService`
   para a simulação não rodar 2× sob WS concorrentes)
-- [ ] **Escape hatch para técnico ausente** (follow-up #20): hoje um único dono
-  de clube offline trava a rodada para todos. Faltam timeout/force-start ou
-  "expulsar técnico inativo".
+- [x] **Escape hatch para técnico ausente** (follow-up #20 → issue #45):
+  timeout auto-start. Assim que o PRIMEIRO técnico sinaliza pronto começa a
+  correr `app.round-readiness.timeout` (default 2min); ao expirar, o gate
+  `start()` passa de "todos prontos" para "todos prontos OU timeout", e a
+  rodada joga com os ausentes usando a última escalação salva
+  (`club.startingLineup()`, sem "escalar por eles"). Tempo entra via `Clock`
+  injetável — testável sem `sleep`. `ReadinessStatus` ganhou
+  `secondsRemaining`/`timedOut` para o countdown na UI. (Expulsão permanente /
+  bot persistente segue fora de escopo.)
 - [ ] **Atomicidade multi-instância** (follow-up #20): os `Mutex` de readiness/finish
   são in-JVM (premissa de instância única). Para escalar horizontalmente, trocar
   por `@Version` na rodada (optimistic lock) ou lock distribuído.

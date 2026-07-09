@@ -57,6 +57,13 @@ app:
       # legítimos compartilham o mesmo IP (premissa 1 IP ≈ 1 cliente).
       max-attempts: ${AUTH_REGISTER_MAX_ATTEMPTS:20}
       window: ${AUTH_REGISTER_WINDOW:1h}
+  # ─── Escape hatch para técnico ausente (issue #45) ────────────────────────
+  # Tempo, a partir do primeiro técnico "pronto", após o qual a rodada destrava
+  # mesmo com pendentes (ausentes entram com a última escalação salva). Evita
+  # que um único dono offline trave a liga. Aceita 30s, 2m, 1h... Baixe em
+  # dev/E2E (ex.: 30s) para não esperar; premissa: instância única.
+  round-readiness:
+    timeout: ${ROUND_READINESS_TIMEOUT:2m}
 
 logging:
   level:

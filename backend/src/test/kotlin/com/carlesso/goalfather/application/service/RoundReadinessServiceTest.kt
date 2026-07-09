@@ -17,25 +17,54 @@ import io.mockk.mockk
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
  * Cobre a sincronização de rodadas (issue #20): contagem de prontos,
- * sinalização e o gate `start()` que só destrava com todos prontos.
+ * sinalização e o gate `start()` que só destrava com todos prontos — mais o
+ * escape hatch por timeout (issue #45), com `Clock` injetado para adiantar o
+ * relógio sem `Thread.sleep`.
  */
 class RoundReadinessServiceTest {
 
     private val leagueRepo: LeagueRepository = mockk()
     private val userRepo: UserRepository = mockk()
     private val readinessRepo: RoundReadinessRepository = mockk(relaxed = true)
-    private val service = RoundReadinessService(leagueRepo, userRepo, readinessRepo)
+
+    private val timeout: Duration = Duration.ofMinutes(2)
+    private val base: Instant = Instant.parse("2026-07-09T12:00:00Z")
+
+    // Relógio ajustável: `now` controla o "agora" em cada teste de timeout.
+    private var now: Instant = base
+    private val clock = object : Clock() {
+        override fun instant() = now
+        override fun getZone() = ZoneOffset.UTC
+        override fun withZone(zone: java.time.ZoneId?) = this
+    }
+
+    private val service = RoundReadinessService(leagueRepo, userRepo, readinessRepo, timeout, clock)
 
     private val scheduled = Round(number = 5, season = 2026, matches = emptyList())
 
     private fun manager(id: Long, name: String) = User(UserId(id), name, "hash", ClubId(id))
+
+    @BeforeTest
+    fun setup() {
+        // Default: sem primeiro-pronto registrado → cronômetro não corre. O
+        // relaxed mock devolveria um `Instant` fictício (não null), fazendo o
+        // timeout parecer estourado; fixamos null e cada teste de timeout
+        // sobrescreve com um instante concreto.
+        coEvery { readinessRepo.firstReadyAt(any()) } returns null
+    }
 
     @Test
     fun `status conta prontos e lista os pendentes pelo username`() = runTest {
@@ -164,5 +193,67 @@ class RoundReadinessServiceTest {
         // Ambos confirmam Started, mas a gravação InProgress acontece UMA vez.
         assertTrue(results.all { it is StartRoundResult.Started })
         coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.InProgress }) }
+    }
+
+    // ─── Escape hatch por timeout (issue #45) ─────────────────────────────
+
+    @Test
+    fun `status expoe secondsRemaining enquanto o timeout corre - issue 45`() = runTest {
+        coEvery { leagueRepo.findLatest() } returns scheduled
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { readinessRepo.firstReadyAt(5) } returns base
+        now = base.plusSeconds(90) // faltam 30s dos 120s
+
+        val status = service.status()
+
+        assertEquals(30, status.secondsRemaining)
+        assertTrue(!status.timedOut)
+        assertTrue(!status.canStart)
+    }
+
+    @Test
+    fun `sem ninguem pronto o cronometro nao corre - issue 45`() = runTest {
+        coEvery { leagueRepo.findLatest() } returns scheduled
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        coEvery { readinessRepo.readyUserIds(5) } returns emptySet()
+
+        val status = service.status()
+
+        assertNull(status.secondsRemaining)
+        assertTrue(!status.timedOut)
+        // Não consulta firstReadyAt: relógio só arma com o primeiro pronto.
+        coVerify(exactly = 0) { readinessRepo.firstReadyAt(any()) }
+    }
+
+    @Test
+    fun `start destrava com pendente quando o timeout expira - issue 45`() = runTest {
+        coEvery { leagueRepo.findLatest() } returns scheduled
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        // bruno nunca sinaliza; só ana está pronta.
+        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { readinessRepo.firstReadyAt(5) } returns base
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        now = base.plus(timeout).plusSeconds(1) // ultrapassa o timeout
+
+        val result = service.start()
+
+        assertEquals(StartRoundResult.Started(5), result)
+        coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.InProgress }) }
+    }
+
+    @Test
+    fun `start segue NotReady antes de o timeout expirar - issue 45`() = runTest {
+        coEvery { leagueRepo.findLatest() } returns scheduled
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { readinessRepo.firstReadyAt(5) } returns base
+        now = base.plusSeconds(60) // ainda dentro dos 120s
+
+        val result = service.start()
+
+        val notReady = assertIs<StartRoundResult.NotReady>(result)
+        assertEquals(60, notReady.status.secondsRemaining)
+        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
     }
 }

@@ -12,6 +12,9 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
+import java.time.Instant
 
 /**
  * Repositórios Spring Data — interfaces declarativas. Implementação
@@ -81,6 +84,16 @@ interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
 
 interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, RoundReadinessId> {
     fun findAllByIdRoundNumber(roundNumber: Int): List<RoundReadinessEntity>
+
+    /**
+     * Menor `ready_at` da rodada = instante do primeiro "pronto" (issue #45).
+     * `MIN` no banco evita carregar todas as linhas só para achar o mínimo;
+     * devolve `null` quando não há nenhuma marcação.
+     */
+    @Query(
+        "select min(r.readyAt) from RoundReadinessEntity r where r.id.roundNumber = :roundNumber",
+    )
+    fun findFirstReadyAt(@Param("roundNumber") roundNumber: Int): Instant?
 }
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int> {

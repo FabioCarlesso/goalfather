@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -50,5 +52,20 @@ class RoundReadinessIntegrationTest {
         assertTrue(repo.readyUserIds(round).isEmpty())
         // A rodada vizinha permanece intacta.
         assertEquals(setOf(UserId(1)), repo.readyUserIds(other))
+    }
+
+    @Test
+    fun `firstReadyAt devolve o menor ready_at e null quando vazio - issue 45`() = runBlocking {
+        val round = 9005
+        assertNull(repo.firstReadyAt(round))
+
+        repo.markReady(round, UserId(1))
+        repo.markReady(round, UserId(2))
+
+        val first = repo.firstReadyAt(round)
+        assertNotNull(first)
+        // reset apaga tudo → volta a null, confirmando que o MIN só via as linhas da rodada.
+        repo.reset(round)
+        assertNull(repo.firstReadyAt(round))
     }
 }
