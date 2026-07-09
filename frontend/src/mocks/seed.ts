@@ -272,9 +272,12 @@ export function readinessStatus(roundNumber: number) {
   const pending = mgrs.filter((u) => !ready.has(u.id))
 
   // Cronômetro só corre com pendentes E ao menos um pronto (o primeiro pronto
-  // o arma) — parity com `buildStatus` do backend (issue #45).
+  // o arma) — parity com `buildStatus` do backend (issue #45). O guard
+  // `ready.size > 0` é essencial: sem ele, um `firstAt` remanescente de uma
+  // rodada anterior de mesmo número (rollover de temporada volta à rodada 1)
+  // faria uma rodada nova, sem ninguém pronto, aparecer como `timedOut`.
   const firstAt = roundFirstReadyAt[roundNumber]
-  const timerRunning = pending.length > 0 && mgrs.length > 0 && firstAt != null
+  const timerRunning = pending.length > 0 && ready.size > 0 && firstAt != null
   const secondsRemaining = timerRunning
     ? Math.max(0, Math.ceil((firstAt + READINESS_TIMEOUT_MS - Date.now()) / 1000))
     : null
@@ -299,6 +302,9 @@ export function markRoundReady(roundNumber: number, userId: number): void {
 
 export function resetRoundReadiness(roundNumber: number): void {
   delete roundReadiness[roundNumber]
+  // Limpa também a âncora do timeout: senão o timestamp vaza para uma futura
+  // rodada de mesmo número (rollover de temporada reusa a rodada 1).
+  delete roundFirstReadyAt[roundNumber]
 }
 
 export function userIdFromAuthHeader(header: string | null): number | null {
