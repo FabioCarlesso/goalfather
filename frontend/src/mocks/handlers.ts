@@ -408,10 +408,11 @@ export const handlers = [
       }
       return HttpResponse.json(err, { status: 409 })
     }
-    // Gate de liga compartilhada (issue #20): só destrava com todos prontos.
+    // Gate de liga compartilhada (issue #20): destrava com todos prontos OU
+    // quando o timeout do escape hatch expira (issue #45).
     const status = readinessStatus(state.currentRound.number)
     const allReady = status.totalCount > 0 && status.readyCount >= status.totalCount
-    if (!allReady) {
+    if (!allReady && !status.timedOut) {
       const err: ErrorResponse = {
         code: 'ROUND_NOT_READY',
         message: `Aguardando técnicos: ${status.pendingUsernames.join(', ')}`,
@@ -419,6 +420,7 @@ export const handlers = [
           ready: String(status.readyCount),
           total: String(status.totalCount),
           pending: status.pendingUsernames.join(','),
+          secondsRemaining: status.secondsRemaining != null ? String(status.secondsRemaining) : '',
         },
       }
       return HttpResponse.json(err, { status: 409 })

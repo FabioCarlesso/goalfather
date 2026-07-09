@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.UserId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Repository
+import java.time.Instant
 
 /**
  * Implementação JPA do port [RoundReadinessRepository] (issue #20). Mesma
@@ -32,6 +33,10 @@ class RoundReadinessPersistenceAdapter(
 
     override suspend fun readyUserIds(roundNumber: Int): Set<UserId> = withContext(Dispatchers.IO) {
         repo.findAllByIdRoundNumber(roundNumber).map { UserId(it.id.userId) }.toSet()
+    }
+
+    override suspend fun firstReadyAt(roundNumber: Int): Instant? = withContext(Dispatchers.IO) {
+        repo.findFirstReadyAt(roundNumber)
     }
 
     override suspend fun reset(roundNumber: Int) {

@@ -65,6 +65,9 @@ export function RoundPage() {
     !readiness.pendingUsernames.includes(user.username)
   const allReady =
     readiness != null && readiness.totalCount > 0 && readiness.readyCount >= readiness.totalCount
+  // Escape hatch (issue #45): pode jogar com todos prontos OU quando o timeout
+  // expira (ausentes entram com a última escalação salva).
+  const canStart = allReady || readiness?.timedOut === true
 
   const wsRef = useRef<WebSocket | null>(null)
 
@@ -212,8 +215,8 @@ export function RoundPage() {
         </div>
         <button
           onClick={startRound}
-          disabled={busy || !allReady}
-          title={!allReady ? 'Aguardando todos os técnicos sinalizarem prontos' : undefined}
+          disabled={busy || !canStart}
+          title={!canStart ? 'Aguardando técnicos sinalizarem prontos (ou o timeout expirar)' : undefined}
           className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
         >
           {buttonLabel}
@@ -227,6 +230,8 @@ export function RoundPage() {
           totalCount={readiness.totalCount}
           pendingUsernames={readiness.pendingUsernames}
           amIReady={amIReady}
+          secondsRemaining={readiness.secondsRemaining}
+          timedOut={readiness.timedOut}
           onReady={() => markReady.mutate()}
           marking={markReady.isPending}
         />

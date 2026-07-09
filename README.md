@@ -92,6 +92,7 @@ Variáveis de ambiente do backend:
 | `AUTH_LOGIN_WINDOW` | `1m` | Janela do limite de login (ex.: `30s`, `1m`, `5m`). |
 | `AUTH_REGISTER_MAX_ATTEMPTS` | `20` | Cadastros por `IP` antes do `429` (folgado por causa de NAT/CGNAT). |
 | `AUTH_REGISTER_WINDOW` | `1h` | Janela do limite de cadastro. |
+| `ROUND_READINESS_TIMEOUT` | `2m` | Escape hatch (issue #45): tempo, a partir do 1º técnico "pronto", após o qual a rodada joga mesmo com ausentes (entram com a última escalação). Ex.: `30s` em dev/E2E. |
 
 ```bash
 # Gere um segredo forte para produção:

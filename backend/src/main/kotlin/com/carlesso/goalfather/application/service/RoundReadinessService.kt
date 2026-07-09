@@ -10,12 +10,25 @@ import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.StartRoundResult
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.Clock
+import java.time.Duration
 
 /**
- * Implementação da sincronização de rodadas da liga compartilhada (issue #20).
+ * Implementação da sincronização de rodadas da liga compartilhada (issue #20)
+ * + escape hatch para técnico ausente (issue #45).
  *
  * Técnico humano = usuário com `clubId != null`. A rodada destrava quando o
- * número de prontos iguala o número de técnicos.
+ * número de prontos iguala o número de técnicos — OU quando o timeout expira.
+ *
+ * **Escape hatch (issue #45):** um único dono offline travava a liga para
+ * sempre. Agora, assim que o PRIMEIRO técnico sinaliza pronto, começa a correr
+ * [timeout]; ao expirar, o gate passa a aceitar o start mesmo com pendentes.
+ * Os ausentes entram com a última escalação salva no clube — a engine já usa
+ * `club.startingLineup()` em [PlayRoundService], então não é preciso "escalar
+ * por eles" aqui; nada a fazer no caminho de simulação.
+ *
+ * O tempo entra por [Clock] injetável (mesmo espírito do `Random` da engine):
+ * em teste, um `Clock` fixo/adiantável verifica o timeout sem `Thread.sleep`.
  *
  * A concorrência é o ponto delicado: dois usuários podem clicar "jogar" no
  * mesmo instante após ambos prontos. O [Mutex] em [start] serializa a
@@ -32,6 +45,8 @@ class RoundReadinessService(
     private val leagueRepo: LeagueRepository,
     private val userRepo: UserRepository,
     private val readinessRepo: RoundReadinessRepository,
+    private val timeout: Duration = Duration.ofMinutes(2),
+    private val clock: Clock = Clock.systemUTC(),
 ) : RoundReadinessUseCase {
 
     private val startMutex = Mutex()
@@ -57,7 +72,9 @@ class RoundReadinessService(
         }
 
         val status = buildStatus(round.number)
-        if (!status.allReady) return StartRoundResult.NotReady(status)
+        // Gate agora é "todos prontos OU timeout estourado" (issue #45): um
+        // ausente não segura mais a liga indefinidamente.
+        if (!status.canStart) return StartRoundResult.NotReady(status)
 
         // Idempotente: se outro técnico já destravou, a rodada está InProgress —
         // não regravamos, só confirmamos para o cliente conectar no WS.
@@ -71,16 +88,34 @@ class RoundReadinessService(
      * Monta o status comparando técnicos (donos de clube) com quem já marcou
      * pronto. `pending` preserva a ordem de [UserRepository.findManagers] para
      * uma listagem estável no 409/UI.
+     *
+     * Também resolve o timeout do escape hatch (issue #45): o cronômetro só
+     * corre quando há pendentes E ao menos um técnico já sinalizou — ou seja,
+     * nunca destrava uma liga sem nenhum pronto (o primeiro "pronto" arma o
+     * relógio). `secondsRemaining` fica `null` fora dessa janela.
      */
     private suspend fun buildStatus(roundNumber: Int): ReadinessStatus {
         val managers = userRepo.findManagers()
         val ready = readinessRepo.readyUserIds(roundNumber)
         val pending = managers.filter { it.id !in ready }
+        val hasPending = managers.isNotEmpty() && pending.isNotEmpty()
+
+        // Só faz sentido cronometrar quando ainda há pendentes e alguém já se
+        // marcou pronto (o primeiro "pronto" ancora o timeout).
+        val firstReady = if (hasPending && ready.isNotEmpty()) readinessRepo.firstReadyAt(roundNumber) else null
+        val secondsRemaining = firstReady?.let {
+            val remaining = Duration.between(clock.instant(), it.plus(timeout))
+            remaining.seconds.coerceAtLeast(0).toInt()
+        }
+
         return ReadinessStatus(
             roundNumber = roundNumber,
             readyCount = managers.size - pending.size,
             totalCount = managers.size,
             pendingUsernames = pending.map { it.username },
+            secondsRemaining = secondsRemaining,
+            // Expirou quando o cronômetro estava armado e chegou a zero.
+            timedOut = secondsRemaining == 0,
         )
     }
 }

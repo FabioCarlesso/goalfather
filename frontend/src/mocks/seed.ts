@@ -251,6 +251,15 @@ export const TOKEN_PREFIX = 'mock-token-'
 // rodada. Estado de sessão (não persistido) — o mock é descartável.
 export const roundReadiness: Record<number, Set<number>> = {}
 
+// Instante (ms) do primeiro "pronto" de cada rodada — ancora o timeout do
+// escape hatch (issue #45), espelhando `MIN(ready_at)` do backend.
+const roundFirstReadyAt: Record<number, number> = {}
+
+// Timeout do escape hatch no mock (issue #45). Curto de propósito (30s) para o
+// comportamento ser demonstrável/E2E-ável sem esperar os 2min do backend real;
+// o valor real vem de `app.round-readiness.timeout` no servidor.
+export const READINESS_TIMEOUT_MS = 30_000
+
 /** Técnicos humanos = usuários do mock que já reivindicaram um clube. */
 export function managers(): MockUser[] {
   return auth.users.filter((u) => u.clubId != null)
@@ -261,11 +270,22 @@ export function readinessStatus(roundNumber: number) {
   const ready = roundReadiness[roundNumber] ?? new Set<number>()
   const mgrs = managers()
   const pending = mgrs.filter((u) => !ready.has(u.id))
+
+  // Cronômetro só corre com pendentes E ao menos um pronto (o primeiro pronto
+  // o arma) — parity com `buildStatus` do backend (issue #45).
+  const firstAt = roundFirstReadyAt[roundNumber]
+  const timerRunning = pending.length > 0 && mgrs.length > 0 && firstAt != null
+  const secondsRemaining = timerRunning
+    ? Math.max(0, Math.ceil((firstAt + READINESS_TIMEOUT_MS - Date.now()) / 1000))
+    : null
+
   return {
     roundNumber,
     readyCount: mgrs.length - pending.length,
     totalCount: mgrs.length,
     pendingUsernames: pending.map((u) => u.username),
+    secondsRemaining,
+    timedOut: secondsRemaining === 0,
   }
 }
 
@@ -274,6 +294,7 @@ export function markRoundReady(roundNumber: number, userId: number): void {
   // backend (issue #20, ponto #6); evita marcar usuário sem clube.
   if (!managers().some((u) => u.id === userId)) return
   ;(roundReadiness[roundNumber] ??= new Set<number>()).add(userId)
+  roundFirstReadyAt[roundNumber] ??= Date.now()
 }
 
 export function resetRoundReadiness(roundNumber: number): void {

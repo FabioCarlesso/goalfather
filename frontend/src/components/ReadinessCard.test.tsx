@@ -61,4 +61,34 @@ describe('ReadinessCard', () => {
     expect(screen.getByText(/Todos prontos/)).toBeInTheDocument()
     expect(screen.getByText('Pronto ✓')).toBeInTheDocument()
   })
+
+  it('mostra o countdown do escape hatch enquanto o timeout corre (issue #45)', () => {
+    render(
+      <ReadinessCard
+        readyCount={1}
+        totalCount={2}
+        pendingUsernames={['bruno']}
+        amIReady
+        secondsRemaining={65}
+        timedOut={false}
+        onReady={() => {}}
+      />,
+    )
+    expect(screen.getByText(/Auto-início em 1m 05s/)).toBeInTheDocument()
+  })
+
+  it('ao expirar o timeout, avisa que ausentes entram com a escalação atual (issue #45)', () => {
+    render(
+      <ReadinessCard
+        readyCount={1}
+        totalCount={2}
+        pendingUsernames={['bruno']}
+        amIReady
+        secondsRemaining={0}
+        timedOut
+        onReady={() => {}}
+      />,
+    )
+    expect(screen.getByText(/Tempo esgotado/)).toBeInTheDocument()
+  })
 })
