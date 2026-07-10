@@ -26,10 +26,11 @@ import com.carlesso.goalfather.domain.rules.ticketRevenue
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 /**
@@ -133,22 +134,52 @@ class PlayRoundService(
             return@flow
         }
 
-        // Daqui para baixo somos o vencedor da corrida — os efeitos rodam uma vez.
+        // Vencemos a corrida: aplicamos os efeitos exatamente uma vez.
         //
-        // Nota: a rodada já consta `Finished` antes dos efeitos serem gravados.
-        // Nessa janela (milissegundos) um leitor concorrente vê a tabela ainda
-        // sem os pontos da rodada. É o preço de usar o status como claim; a
-        // alternativa (efeitos e claim na MESMA transação) exigiria que toda a
-        // persistência de clubes fosse síncrona, quebrando os ports `suspend`.
-        // Uma reconexão ao WS já devolve a tabela definitiva.
+        // Ordem (claim ANTES dos efeitos) troca a semântica de *at-least-once*
+        // para *at-most-once*: nunca dobramos caixa/estatísticas, mas uma
+        // interrupção entre o claim e o fim da persistência deixaria a rodada
+        // `Finished` com efeitos parciais — e como todo stream seguinte cai no
+        // replay, a liga travaria (a próxima rodada nunca seria gerada). Por
+        // isso o bloco roda em `NonCancellable`: fechar a aba do WS (o handler
+        // faz `job.cancel()` no `afterConnectionClosed`) logo após o FullTime
+        // não pode rasgar a finalização no meio.
+        //
+        // NonCancellable NÃO cobre crash de processo entre o claim e o fim —
+        // esse resíduo de durabilidade fica documentado em docs/ARQUITETURA.md
+        // (fechá-lo exige efeitos + claim na MESMA transação, hoje inviável com
+        // os ports `suspend` por agregado). É estreito: dezenas de ms.
+        //
+        // Enquanto os efeitos não são gravados, um leitor concorrente vê a
+        // tabela sem os pontos desta rodada; uma reconexão posterior já devolve
+        // a definitiva (não vale para o caso de crash acima).
+        val tailEvents = withContext(NonCancellable) {
+            finalizeRound(round, finishedRound, tagged.map { it.second }, involvedClubs.values)
+        }
+        // Emissão fora do NonCancellable: `emit` exige o mesmo contexto do
+        // coletor (invariante do Flow), que `withContext` quebraria.
+        for (event in tailEvents) emit(event)
+    }
 
+    /**
+     * Aplica os efeitos da rodada vencida e devolve os eventos de cauda na
+     * ordem de emissão (SeasonFinished, quando há, antes do RoundFinished).
+     * Roda inteiro dentro de `NonCancellable` — não emite nada, só persiste e
+     * devolve, para que o chamador emita no contexto do Flow.
+     */
+    private suspend fun finalizeRound(
+        round: Round,
+        finishedRound: Round,
+        events: List<MatchEvent>,
+        involvedClubs: Collection<Club>,
+    ): List<RoundEvent> {
         // Calcula o balanço financeiro da rodada — bilheteria (mandante) e
         // folha salarial em rodadas de "mês" (issue #4).
-        val finances = computeFinances(round, involvedClubs.values)
+        val finances = computeFinances(round, involvedClubs)
 
         // Acumula estatísticas dos jogadores (issue #2) e aplica o caixa
         // (issue #4) em uma única gravação por clube.
-        persistRoundEffects(tagged.map { it.second }, involvedClubs.values, finances)
+        persistRoundEffects(events, involvedClubs, finances)
 
         val newStandings = applyRoundToStandings(finishedRound, leagueRepo.currentStandings())
         leagueRepo.saveStandings(newStandings)
@@ -166,8 +197,9 @@ class PlayRoundService(
         val seasonRounds = clubs.size - 1
         val seasonEnded = canSchedule && round.number >= seasonRounds
 
+        val tail = mutableListOf<RoundEvent>()
         if (seasonEnded) {
-            startNextSeason(round.season, newStandings, clubs)
+            tail += startNextSeason(round.season, newStandings, clubs)
         } else if (canSchedule) {
             // Gera a próxima rodada antes de sinalizar RoundFinished, para que
             // `getCurrentRound` já encontre uma rodada Scheduled.
@@ -176,20 +208,22 @@ class PlayRoundService(
 
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
         // encerrada"); SeasonFinished, quando há, vem logo antes dele.
-        emit(RoundEvent.RoundFinished(newStandings, finances))
+        tail += RoundEvent.RoundFinished(newStandings, finances)
+        return tail
     }
 
     /**
      * Encerra a temporada e abre a seguinte: zera as estatísticas de
      * temporada dos jogadores, gera a rodada 1 e uma tabela nova. A tabela
      * encerrada NÃO é apagada (PK por `season`), continua consultável via
-     * `GET /api/league/standings?season=`.
+     * `GET /api/league/standings?season=`. Devolve o `SeasonFinished` para o
+     * chamador emitir (nada é emitido aqui — roda sob `NonCancellable`).
      */
-    private suspend fun FlowCollector<RoundEvent>.startNextSeason(
+    private suspend fun startNextSeason(
         endedSeason: Int,
         finalStandings: Standings,
         clubs: List<Club>,
-    ) {
+    ): RoundEvent.SeasonFinished {
         val champion = finalStandings.rows.first()
         val nextSeason = endedSeason + 1
 
@@ -197,7 +231,7 @@ class PlayRoundService(
         leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
         leagueRepo.saveStandings(freshStandings(nextSeason, clubs))
 
-        emit(RoundEvent.SeasonFinished(season = endedSeason, champion = champion, standings = finalStandings))
+        return RoundEvent.SeasonFinished(season = endedSeason, champion = champion, standings = finalStandings)
     }
 
     /**

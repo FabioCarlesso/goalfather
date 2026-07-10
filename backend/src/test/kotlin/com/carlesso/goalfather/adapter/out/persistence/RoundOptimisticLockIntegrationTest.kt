@@ -10,6 +10,9 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.dao.OptimisticLockingFailureException
+import java.util.concurrent.Callable
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -100,6 +103,61 @@ class RoundOptimisticLockIntegrationTest {
         leagueRepo.saveRound(round(number).copy(status = RoundStatus.Scheduled))
 
         assertEquals(RoundStatus.Scheduled, leagueRepo.findRound(number)?.status)
-        assertTrue(roundRepo.findById(number).orElseThrow().version >= 2)
+        // Exatamente 2 (insert=0, startRound=1, saveRound=2). `>=` esconderia um
+        // incremento duplo — o defeito que este teste existe para pegar.
+        assertEquals(2L, roundRepo.findById(number).orElseThrow().version)
+    }
+
+    @Test
+    fun `finishRound rejeita rodada de outra temporada na mesma PK`(): Unit = runBlocking {
+        // A PK de `rounds` é só `number`; a virada de temporada reescreve a
+        // rodada 1 com `season+1`. Um perdedor atrasado que chega com a rodada
+        // da temporada ANTERIOR passaria pelo guard de status (Scheduled !=
+        // Finished) e sobrescreveria a temporada nova, aplicando efeitos em
+        // dobro. O guard de `season` barra esse claim.
+        val number = 9105
+        leagueRepo.saveRound(round(number)) // 9105/2026 Scheduled
+        assertTrue(leagueRepo.finishRound(round(number).copy(status = RoundStatus.Finished)))
+
+        // Virada de temporada: MESMA PK regravada como 9105/2027 Scheduled.
+        leagueRepo.saveRound(Round(number = number, season = 2027, matches = emptyList()))
+
+        // Perdedor chega com a rodada de 2026 — deve ser rejeitado, sem tocar na linha.
+        assertFalse(
+            leagueRepo.finishRound(round(number).copy(status = RoundStatus.Finished)),
+            "claim de temporada obsoleta não pode vencer",
+        )
+        val fresh = leagueRepo.findRound(number)
+        assertEquals(2027, fresh?.season)
+        assertEquals(RoundStatus.Scheduled, fresh?.status)
+    }
+
+    @Test
+    fun `duas THREADS reais disputando finishRound resultam em um unico vencedor`() {
+        // Concorrência de verdade (fora de runTest): duas threads alinhadas por
+        // uma barreira chamam finishRound na mesma rodada. O `false` do perdedor
+        // pode vir do guard de status (se a outra já commitou) OU da
+        // OptimisticLockException do @Version (se as duas leram antes de qualquer
+        // commit) — o desfecho é o mesmo e é o que importa: exatamente um vence.
+        val number = 9106
+        runBlocking { leagueRepo.saveRound(round(number)) }
+        val finished = round(number).copy(status = RoundStatus.Finished)
+
+        val barrier = CyclicBarrier(2)
+        val pool = Executors.newFixedThreadPool(2)
+        try {
+            val task = Callable {
+                barrier.await()
+                runBlocking { leagueRepo.finishRound(finished) }
+            }
+            val a = pool.submit(task)
+            val b = pool.submit(task)
+            val winners = listOf(a.get(), b.get()).count { it }
+
+            assertEquals(1, winners, "exatamente uma thread pode encerrar a rodada")
+            assertEquals(RoundStatus.Finished, runBlocking { leagueRepo.findRound(number) }?.status)
+        } finally {
+            pool.shutdownNow()
+        }
     }
 }

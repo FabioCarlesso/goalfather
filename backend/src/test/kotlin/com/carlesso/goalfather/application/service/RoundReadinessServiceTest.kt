@@ -202,6 +202,24 @@ class RoundReadinessServiceTest {
         assertEquals(1, transitions.get())
     }
 
+    @Test
+    fun `start devolve AlreadyFinished se a rodada foi simulada durante a corrida - issue 46`() = runTest {
+        // Janela fina: a rodada era Scheduled no `findLatest`, mas outra
+        // instância a simulou por completo antes do `startRound`. O CAS falha e
+        // a releitura mostra Finished — não podemos anunciar `Started` de uma
+        // rodada encerrada. O código antigo descartava o retorno e ressuscitava
+        // a rodada com `saveRound(InProgress)`, apagando os placares.
+        coEvery { leagueRepo.findLatest() } returnsMany
+            listOf(scheduled, scheduled.copy(status = RoundStatus.Finished))
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"))
+        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { leagueRepo.startRound(5) } returns false
+
+        val result = service.start()
+
+        assertEquals(StartRoundResult.AlreadyFinished(5), result)
+    }
+
     // ─── Escape hatch por timeout (issue #45) ─────────────────────────────
 
     @Test

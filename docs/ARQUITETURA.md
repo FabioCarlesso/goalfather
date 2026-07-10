@@ -358,15 +358,34 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   V6) e a `LeagueRepository` expõe duas transições atômicas — `startRound`
   (`Scheduled → InProgress`) e `finishRound` (`→ Finished`, gravando os
   placares). Ambas rodam no bean **não-suspend** `RoundTransition`, e a
-  `OptimisticLockingFailureException` do commit perdedor vira `false` no
-  adapter. `finishRound` é o **ponto de serialização** do encerramento: só quem
-  recebe `true` aplica caixa, estatísticas, tabela e próxima rodada; o perdedor
-  faz apenas replay dos eventos. Vale entre JVMs, então 2+ réplicas contra o
-  mesmo Postgres não dobram efeitos.
-  - *Janela conhecida:* a rodada consta `Finished` alguns milissegundos antes
-    de os efeitos serem gravados; um leitor concorrente pode ver a tabela sem os
-    pontos da rodada. Fechar isso exigiria efeitos e claim na mesma transação —
-    ou seja, persistência de clubes síncrona, quebrando os ports `suspend`.
+  `OptimisticLockingFailureException` do commit perdedor vira `false` no adapter
+  (contado na métrica `goalfather.round.claim.conflicts`). `finishRound` é o
+  **ponto de serialização** do encerramento: só quem recebe `true` aplica caixa,
+  estatísticas, tabela e próxima rodada; o perdedor faz apenas replay dos
+  eventos. Vale entre JVMs, então 2+ réplicas contra o mesmo Postgres não dobram
+  efeitos. O guard de `finishRound` compara **status E `season`**: a PK de
+  `rounds` é só `number`, e a virada de temporada reescreve a rodada 1, então um
+  claim atrasado da temporada anterior é rejeitado (senão sobrescreveria a
+  temporada nova).
+  - *Simulação em dobro (consciente):* cada conexão WS simula a rodada inteira,
+    logo 2 nós/2 abas simulam em paralelo. A seed é `Random(matchId)`
+    (determinística), então os eventos coincidem e **só os efeitos** são
+    serializados pelo claim. Diverge apenas num replay tardio, após lesões
+    mudarem `startingLineup()` — cosmético, não corrompe dados.
+  - *Leitura suja (janela curta):* enquanto o vencedor grava os efeitos
+    (`persistRoundEffects` faz 1 `save` por clube, cada um em sua transação,
+    ~dezenas de ms; centenas na virada de temporada), um leitor concorrente vê a
+    tabela sem os pontos desta rodada. Uma reconexão posterior já traz a
+    definitiva. Fechar de vez exigiria efeitos + claim na MESMA transação — hoje
+    inviável com os ports `suspend` por agregado.
+  - *Durabilidade — resíduo em aberto:* a ordem é claim (marca `Finished`) →
+    efeitos, ou seja *at-most-once* (nunca dobra; podia dobrar antes). O bloco de
+    efeitos roda em `withContext(NonCancellable)`, então **fechar a aba do WS**
+    logo após o FullTime não rasga a finalização no meio. O que **não** está
+    coberto é um **crash de processo** entre o claim e o fim dos efeitos: deixaria
+    a rodada `Finished` com efeitos parciais e sem sucessora, e todo stream
+    seguinte cairia no replay (a liga travaria). Recuperação (rodada `Finished`
+    sem sucessora → reconciliar) fica como follow-up.
 - **Foco de estudo:** coroutines + concorrência, transações otimistas
 
 #### Decisão: lock otimista vs. pessimista no mercado (issue #21)

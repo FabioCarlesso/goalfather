@@ -69,10 +69,15 @@ class RoundReadinessService(
         if (!status.canStart) return StartRoundResult.NotReady(status)
 
         // Idempotente: se outro técnico (nesta ou noutra instância) já destravou,
-        // `startRound` devolve false e nada é regravado — em ambos os casos a
-        // rodada está InProgress e o cliente pode conectar no WS.
-        if (round.status == RoundStatus.Scheduled) {
-            leagueRepo.startRound(round.number)
+        // `startRound` devolve false. Isso engloba dois casos — já `InProgress`
+        // (sucesso: o cliente conecta no WS) ou já `Finished` (a rodada foi
+        // simulada entre o `findLatest` e aqui). Só o segundo muda a resposta,
+        // então relemos para não anunciar `Started` de uma rodada encerrada.
+        if (round.status == RoundStatus.Scheduled && !leagueRepo.startRound(round.number)) {
+            val fresh = leagueRepo.findLatest()
+            if (fresh != null && fresh.status == RoundStatus.Finished) {
+                return StartRoundResult.AlreadyFinished(fresh.number)
+            }
         }
         return StartRoundResult.Started(round.number)
     }
