@@ -72,9 +72,12 @@ class RoundReadinessService(
         // `startRound` devolve false. Isso engloba dois casos — já `InProgress`
         // (sucesso: o cliente conecta no WS) ou já `Finished` (a rodada foi
         // simulada entre o `findLatest` e aqui). Só o segundo muda a resposta,
-        // então relemos para não anunciar `Started` de uma rodada encerrada.
+        // então relemos ESTA rodada por número para não anunciar `Started` de
+        // uma rodada encerrada. Reler por `findLatest()` não serviria: quando o
+        // vencedor conclui a finalização ele já gerou a rodada `N+1` (Scheduled),
+        // que passaria a ser a "última" e mascararia o encerramento da nossa.
         if (round.status == RoundStatus.Scheduled && !leagueRepo.startRound(round.number)) {
-            val fresh = leagueRepo.findLatest()
+            val fresh = leagueRepo.findRound(round.number)
             if (fresh != null && fresh.status == RoundStatus.Finished) {
                 return StartRoundResult.AlreadyFinished(fresh.number)
             }

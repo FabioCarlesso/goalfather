@@ -203,14 +203,18 @@ class RoundReadinessServiceTest {
     }
 
     @Test
-    fun `start devolve AlreadyFinished se a rodada foi simulada durante a corrida - issue 46`() = runTest {
-        // Janela fina: a rodada era Scheduled no `findLatest`, mas outra
-        // instância a simulou por completo antes do `startRound`. O CAS falha e
-        // a releitura mostra Finished — não podemos anunciar `Started` de uma
-        // rodada encerrada. O código antigo descartava o retorno e ressuscitava
-        // a rodada com `saveRound(InProgress)`, apagando os placares.
-        coEvery { leagueRepo.findLatest() } returnsMany
-            listOf(scheduled, scheduled.copy(status = RoundStatus.Finished))
+    fun `start devolve AlreadyFinished mesmo com a proxima rodada ja gerada - issue 46`() = runTest {
+        // A rodada 5 era Scheduled no primeiro `findLatest`, mas outra instância
+        // a simulou por completo antes do `startRound` — e ao concluir já gerou a
+        // rodada 6 (Scheduled), que passou a ser a "última". O CAS falha; a
+        // detecção precisa reler a rodada 5 POR NÚMERO (`findRound(5)`). Se
+        // voltasse a usar `findLatest()`, leria a 6 (Scheduled), não veria o
+        // encerramento e devolveria `Started(5)` de uma rodada já encerrada
+        // (achado 2 da review). O stub de `findLatest` devolve a 6 justamente
+        // para o teste falhar caso a detecção regrida para ele.
+        val roundReadThenNext = listOf(scheduled, Round(number = 6, season = 2026, matches = emptyList()))
+        coEvery { leagueRepo.findLatest() } returnsMany roundReadThenNext
+        coEvery { leagueRepo.findRound(5) } returns scheduled.copy(status = RoundStatus.Finished)
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"))
         coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
         coEvery { leagueRepo.startRound(5) } returns false
