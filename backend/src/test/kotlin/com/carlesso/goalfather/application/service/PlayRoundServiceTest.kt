@@ -23,6 +23,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.assertThrows
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -73,6 +74,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         val events = service.stream(1).toList()
@@ -95,6 +97,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         val events = service.stream(1).toList()
@@ -109,22 +112,24 @@ class PlayRoundServiceTest {
     }
 
     @Test
-    fun `salvaRound e saveStandings sao invocados`() = runTest {
+    fun `finishRound e saveStandings sao invocados`() = runTest {
         coEvery { leagueRepo.findRound(1) } returns round
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(any()) } returns homeClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
-        val savedRounds = mutableListOf<Round>()
         val savedStandings = slot<Standings>()
-        coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
+        val claimed = slot<Round>()
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(capture(claimed)) } returns true
         coEvery { leagueRepo.saveStandings(capture(savedStandings)) } just Runs
 
         service.stream(1).toList()
 
         assertTrue(savedStandings.isCaptured)
-        // A rodada atual finalizada é salva (primeiro saveRound).
-        val finished = savedRounds.first()
+        // A rodada encerra pelo claim `finishRound` (issue #46), não por um
+        // `saveRound` solto — é ele que serializa as instâncias.
+        val finished = claimed.captured
         assertEquals(RoundStatus.Finished, finished.status)
         assertNotNull(finished.matches.find { it.status == RoundStatus.Finished })
     }
@@ -138,6 +143,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         val events1 = service.stream(1).toList()
@@ -161,12 +167,14 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         val savedRounds = mutableListOf<Round>()
         coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         service.stream(1).toList()
 
-        // saveRound: rodada 1/2026 finalizada + rodada 1/2027 agendada.
-        assertEquals(2, savedRounds.size)
+        // A rodada 1/2026 encerra via `finishRound`; `saveRound` só grava a
+        // rodada 1/2027 agendada (issue #46).
+        assertEquals(1, savedRounds.size)
         val next = savedRounds.last()
         assertEquals(1, next.number)
         assertEquals(2027, next.season)
@@ -183,6 +191,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         val savedStandings = mutableListOf<Standings>()
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(capture(savedStandings)) } just Runs
 
         val events = service.stream(1).toList()
@@ -223,6 +232,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         val savedRounds = mutableListOf<Round>()
         coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         val events = service.stream(1).toList()
@@ -243,6 +253,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<com.carlesso.goalfather.domain.model.Club>()
         coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
@@ -283,6 +294,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findAll() } returns listOf(homeClub, poorAway)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         val finished = service.stream(2).toList().last()
@@ -315,7 +327,8 @@ class PlayRoundServiceTest {
         assertTrue(events.any { it is RoundEvent.MatchUpdate })
         assertIs<RoundEvent.RoundFinished>(events.last())
 
-        // Nenhum efeito colateral: sem persistência de rodada/tabela/clube nem nova rodada.
+        // Nenhum efeito colateral: nem sequer tenta reivindicar o encerramento.
+        coVerify(exactly = 0) { leagueRepo.finishRound(any()) }
         coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
         coVerify(exactly = 0) { leagueRepo.saveStandings(any()) }
         coVerify(exactly = 0) { clubRepo.save(any()) }
@@ -332,6 +345,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         service.stream(1).toList()
@@ -342,21 +356,24 @@ class PlayRoundServiceTest {
 
     @Test
     fun `dois streams concorrentes da mesma rodada aplicam os efeitos uma unica vez (issue 20)`() = runTest {
-        // Guard do `finishMutex` + re-leitura do status: em liga compartilhada
-        // dois clientes abrem o WS da mesma rodada ao mesmo tempo. O re-read sob
-        // o lock deve enxergar a rodada já finalizada pelo concorrente — modelamos
-        // isso com um mock com estado: `findRound` passa a devolver Finished assim
-        // que o primeiro stream grava a rodada encerrada.
+        // Dois clientes abrem o WS da mesma rodada ao mesmo tempo — no mesmo
+        // processo OU em instâncias diferentes (issue #46). O mock reproduz o
+        // compare-and-set que o `@Version` garante no banco: só o primeiro a ver
+        // a rodada não-finalizada sai de `finishRound` com `true`.
         var current = round
+        val claims = AtomicInteger()
         coEvery { leagueRepo.findRound(1) } answers { current }
         coEvery { leagueRepo.currentStandings() } returns standings
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
-        coEvery { leagueRepo.saveRound(any()) } answers {
-            val saved = firstArg<Round>()
-            if (saved.status == RoundStatus.Finished) current = saved
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } answers {
+            if (current.status == RoundStatus.Finished) return@answers false
+            current = firstArg()
+            claims.incrementAndGet()
+            true
         }
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
@@ -365,11 +382,37 @@ class PlayRoundServiceTest {
         awaitAll(a, b)
 
         // Apesar dos dois streams, a rodada é encerrada e a prontidão é zerada
-        // UMA vez só — o concorrente faz apenas replay. (Não asserimos sobre
-        // saveStandings: esta liga de 2 clubes vira a temporada na rodada 1, o
-        // que grava a tabela 2× num único encerramento — fora do escopo do guard.)
-        coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.Finished }) }
+        // UMA vez só — o perdedor da corrida faz apenas replay. (Não asserimos
+        // sobre saveStandings: esta liga de 2 clubes vira a temporada na rodada 1,
+        // o que grava a tabela 2× num único encerramento — fora do escopo.)
+        assertEquals(1, claims.get())
         coVerify(exactly = 1) { readinessRepo.reset(1) }
+    }
+
+    @Test
+    fun `perdedor da corrida entre instancias nao aplica efeito nenhum (issue 46)`() = runTest {
+        // Cenário multi-instância: o nó B simula, mas ao tentar reivindicar o
+        // encerramento descobre que o nó A já commitou (`@Version` no banco →
+        // OptimisticLockException → `false`). B não pode gravar NADA: caixa,
+        // estatísticas, tabela e próxima rodada já foram aplicados por A.
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { leagueRepo.finishRound(any()) } returns false
+
+        val events = service.stream(1).toList()
+
+        // O stream do perdedor ainda entrega a partida e o RoundFinished — do
+        // ponto de vista do cliente, nada muda.
+        assertTrue(events.any { it is RoundEvent.MatchUpdate })
+        assertIs<RoundEvent.RoundFinished>(events.last())
+
+        coVerify(exactly = 0) { clubRepo.save(any()) }
+        coVerify(exactly = 0) { leagueRepo.saveStandings(any()) }
+        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
+        coVerify(exactly = 0) { readinessRepo.reset(any()) }
+        coVerify(exactly = 0) { clubRepo.findAll() }
     }
 
     @Test
@@ -400,6 +443,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         val events = service.stream(1).toList()

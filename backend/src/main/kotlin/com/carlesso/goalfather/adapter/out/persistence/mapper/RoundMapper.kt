@@ -25,6 +25,18 @@ fun Round.toEntity(json: Json): RoundEntity = RoundEntity(
     matchesJson = json.encodeToString(ListSerializer(RoundMatch.serializer()), matches),
 )
 
+/**
+ * Copia os campos do domínio numa entidade JÁ carregada. Necessário desde o
+ * `@Version` da rodada (issue #46): mapear para uma instância nova (version=0)
+ * faria o Hibernate ver um update obsoleto contra a versão do banco e estourar
+ * `StaleObjectStateException` em todo `saveRound`. Mesmo cuidado do clube (#19).
+ */
+fun RoundEntity.updateFrom(round: Round, json: Json): RoundEntity = apply {
+    season = round.season
+    status = round.status.toEntity()
+    matchesJson = json.encodeToString(ListSerializer(RoundMatch.serializer()), round.matches)
+}
+
 fun StandingsEntity.toDomain(json: Json): Standings = Standings(
     season = season,
     round = round,

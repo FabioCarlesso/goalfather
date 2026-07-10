@@ -342,8 +342,8 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   `PlayerNotAvailable` sem debitar caixa. Decisão **otimista vs. pessimista**
   abaixo.)
 - [x] Sincronização de rodadas entre técnicos humanos — issue #20
-  (`round_readiness` + gate "todos prontos → joga", `Mutex` no `PlayRoundService`
-  para a simulação não rodar 2× sob WS concorrentes)
+  (`round_readiness` + gate "todos prontos → joga"; a simulação não roda 2× sob
+  WS concorrentes graças ao claim de rodada da issue #46, abaixo)
 - [x] **Escape hatch para técnico ausente** (follow-up #20 → issue #45):
   timeout auto-start. Assim que o PRIMEIRO técnico sinaliza pronto começa a
   correr `app.round-readiness.timeout` (default 2min); ao expirar, o gate
@@ -353,10 +353,21 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   injetável — testável sem `sleep`. `ReadinessStatus` ganhou
   `secondsRemaining`/`timedOut` para o countdown na UI. (Expulsão permanente /
   bot persistente segue fora de escopo.)
-- [ ] **Atomicidade multi-instância** (follow-up #20): os `Mutex` de readiness/finish
-  são in-JVM (premissa de instância única). Para escalar horizontalmente, trocar
-  por `@Version` na rodada (optimistic lock) ou lock distribuído.
-- **Foco de estudo:** coroutines + concorrência, `Mutex`, transações otimistas
+- [x] **Atomicidade multi-instância** (follow-up #20 → issue #46): os `Mutex`
+  in-JVM de readiness/finish saíram. `RoundEntity` ganhou `@Version` (migração
+  V6) e a `LeagueRepository` expõe duas transições atômicas — `startRound`
+  (`Scheduled → InProgress`) e `finishRound` (`→ Finished`, gravando os
+  placares). Ambas rodam no bean **não-suspend** `RoundTransition`, e a
+  `OptimisticLockingFailureException` do commit perdedor vira `false` no
+  adapter. `finishRound` é o **ponto de serialização** do encerramento: só quem
+  recebe `true` aplica caixa, estatísticas, tabela e próxima rodada; o perdedor
+  faz apenas replay dos eventos. Vale entre JVMs, então 2+ réplicas contra o
+  mesmo Postgres não dobram efeitos.
+  - *Janela conhecida:* a rodada consta `Finished` alguns milissegundos antes
+    de os efeitos serem gravados; um leitor concorrente pode ver a tabela sem os
+    pontos da rodada. Fechar isso exigiria efeitos e claim na mesma transação —
+    ou seja, persistência de clubes síncrona, quebrando os ports `suspend`.
+- **Foco de estudo:** coroutines + concorrência, transações otimistas
 
 #### Decisão: lock otimista vs. pessimista no mercado (issue #21)
 
