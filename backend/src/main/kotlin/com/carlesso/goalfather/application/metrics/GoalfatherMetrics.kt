@@ -26,6 +26,14 @@ object GoalfatherMetrics {
     /** Counter de tentativas de login, dimensionado por [TAG_RESULT]. */
     const val AUTH_LOGINS = "goalfather.auth.logins"
 
+    /**
+     * Counter de conflitos de lock otimista na transição de rodada (issue #46):
+     * quantas vezes uma instância perdeu a corrida de `startRound`/`finishRound`.
+     * Num deploy multi-instância é o sinal de que o `@Version` está de fato
+     * serializando os nós — zero pode significar tráfego de instância única.
+     */
+    const val ROUND_CLAIM_CONFLICTS = "goalfather.round.claim.conflicts"
+
     /** Tag que dimensiona o desfecho (`success`, `conflict`, `failure`, ...). */
     const val TAG_RESULT = "result"
 }

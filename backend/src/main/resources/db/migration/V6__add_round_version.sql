@@ -1,0 +1,11 @@
+-- Lock otimista na rodada (issue #46).
+-- Compatível com H2 (MODE=PostgreSQL) e PostgreSQL.
+--
+-- Com 2+ instâncias do backend apontando para o mesmo banco, dois nós podiam
+-- ler a rodada como não-finalizada e aplicar os efeitos (caixa, estatísticas,
+-- tabela, próxima rodada) em dobro — o `Mutex` que serializava isso era
+-- in-JVM. A coluna `version` habilita o lock otimista do Hibernate na
+-- RoundEntity: o vencedor comita a transição de status; o perdedor leva
+-- OptimisticLockException e desiste, fazendo apenas replay dos eventos.
+-- Mesma estratégia do claim de clube (V3) e do mercado (V5).
+ALTER TABLE rounds ADD COLUMN version BIGINT NOT NULL DEFAULT 0;

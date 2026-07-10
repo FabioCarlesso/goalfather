@@ -162,7 +162,7 @@ A config de scrape está em [`observability/prometheus.yml`](observability/prome
 | **2** | Use cases + persistência (JPA, Flyway, Caffeine) · Telas contra mocks MSW | coroutines, `Result`/sealed para erros |
 | **3** | API REST + WebSocket · Swap incremental mock → endpoint real | `Flow` → WebSocket, serialização, OpenAPI bidirecional |
 | **4** | DSL de seed + temporadas + suíte de testes ampla · Polimento de UI | `@DslMarker`, builders |
-| **5** | Multiplayer (auth, liga compartilhada, concorrência) · Lobby/seleção de clube | `Mutex`, locks otimistas |
+| **5** | Multiplayer (auth, liga compartilhada, concorrência) · Lobby/seleção de clube | coroutines, locks otimistas (`@Version`) |
 
 Detalhes de cada fase em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#8-roadmap-em-fases).
 

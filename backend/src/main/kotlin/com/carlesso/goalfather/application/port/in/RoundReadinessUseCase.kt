@@ -19,8 +19,10 @@ interface RoundReadinessUseCase {
 
     /**
      * Tenta destravar a rodada. Só transiciona para `InProgress` quando todos
-     * os técnicos humanos estão prontos; serializado por `Mutex` para que dois
-     * cliques simultâneos não disparem a simulação duas vezes.
+     * os técnicos humanos estão prontos; a transição é serializada no banco por
+     * lock otimista (`LeagueRepository.startRound`, issue #46), então dois
+     * cliques simultâneos — no mesmo processo ou em instâncias diferentes — não
+     * disparam a simulação duas vezes.
      */
     suspend fun start(): StartRoundResult
 }

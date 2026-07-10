@@ -64,6 +64,7 @@ class PlayerStatsPersistenceTest {
         coEvery { clubRepo.findById(ClubId(2)) } returns away
         coEvery { clubRepo.findAll() } returns listOf(home, away)
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
         coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }

@@ -70,6 +70,7 @@ class SimulationMetricsTest {
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { firstArg() }
         coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
 
         service.stream(1).toList()

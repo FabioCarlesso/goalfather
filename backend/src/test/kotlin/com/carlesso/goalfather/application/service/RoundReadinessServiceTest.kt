@@ -9,10 +9,8 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.StartRoundResult
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -21,6 +19,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -106,7 +105,7 @@ class RoundReadinessServiceTest {
         val notReady = assertIs<StartRoundResult.NotReady>(result)
         assertEquals(listOf("bruno"), notReady.status.pendingUsernames)
         // Não destrava a rodada.
-        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
+        coVerify(exactly = 0) { leagueRepo.startRound(any()) }
     }
 
     @Test
@@ -114,12 +113,12 @@ class RoundReadinessServiceTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
         coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1), UserId(2))
-        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.startRound(5) } returns true
 
         val result = service.start()
 
         assertEquals(StartRoundResult.Started(5), result)
-        coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.InProgress }) }
+        coVerify(exactly = 1) { leagueRepo.startRound(5) }
     }
 
     @Test
@@ -132,7 +131,7 @@ class RoundReadinessServiceTest {
 
         assertEquals(StartRoundResult.Started(5), result)
         // Já estava InProgress: não regrava.
-        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
+        coVerify(exactly = 0) { leagueRepo.startRound(any()) }
     }
 
     @Test
@@ -142,7 +141,7 @@ class RoundReadinessServiceTest {
         val result = service.start()
 
         assertEquals(StartRoundResult.AlreadyFinished(5), result)
-        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
+        coVerify(exactly = 0) { leagueRepo.startRound(any()) }
     }
 
     @Test
@@ -177,22 +176,52 @@ class RoundReadinessServiceTest {
 
     @Test
     fun `dois start concorrentes destravam a rodada uma unica vez - ponto 3`() = runTest {
-        // O `startMutex` serializa a transição Scheduled→InProgress: mesmo com
-        // dois cliques simultâneos, só uma corrotina grava a rodada. Mock com
-        // estado: após o primeiro saveRound, findLatest passa a devolver InProgress.
+        // A transição Scheduled→InProgress agora é um compare-and-set no banco
+        // (`startRound`, lock otimista da issue #46), não mais um Mutex in-JVM.
+        // O mock reproduz o contrato do port: só o primeiro chamador a ver
+        // `Scheduled` sai com `true`; os demais recebem `false` e seguem
+        // idempotentes.
         var current = scheduled
+        val transitions = AtomicInteger()
         coEvery { leagueRepo.findLatest() } answers { current }
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
         coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1), UserId(2))
-        coEvery { leagueRepo.saveRound(any()) } answers { current = firstArg() }
+        coEvery { leagueRepo.startRound(5) } answers {
+            if (current.status != RoundStatus.Scheduled) return@answers false
+            current = current.copy(status = RoundStatus.InProgress)
+            transitions.incrementAndGet()
+            true
+        }
 
         val a = async { service.start() }
         val b = async { service.start() }
         val results = awaitAll(a, b)
 
-        // Ambos confirmam Started, mas a gravação InProgress acontece UMA vez.
+        // Ambos confirmam Started, mas a rodada só transita UMA vez.
         assertTrue(results.all { it is StartRoundResult.Started })
-        coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.InProgress }) }
+        assertEquals(1, transitions.get())
+    }
+
+    @Test
+    fun `start devolve AlreadyFinished mesmo com a proxima rodada ja gerada - issue 46`() = runTest {
+        // A rodada 5 era Scheduled no primeiro `findLatest`, mas outra instância
+        // a simulou por completo antes do `startRound` — e ao concluir já gerou a
+        // rodada 6 (Scheduled), que passou a ser a "última". O CAS falha; a
+        // detecção precisa reler a rodada 5 POR NÚMERO (`findRound(5)`). Se
+        // voltasse a usar `findLatest()`, leria a 6 (Scheduled), não veria o
+        // encerramento e devolveria `Started(5)` de uma rodada já encerrada
+        // (achado 2 da review). O stub de `findLatest` devolve a 6 justamente
+        // para o teste falhar caso a detecção regrida para ele.
+        val roundReadThenNext = listOf(scheduled, Round(number = 6, season = 2026, matches = emptyList()))
+        coEvery { leagueRepo.findLatest() } returnsMany roundReadThenNext
+        coEvery { leagueRepo.findRound(5) } returns scheduled.copy(status = RoundStatus.Finished)
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"))
+        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { leagueRepo.startRound(5) } returns false
+
+        val result = service.start()
+
+        assertEquals(StartRoundResult.AlreadyFinished(5), result)
     }
 
     // ─── Escape hatch por timeout (issue #45) ─────────────────────────────
@@ -233,13 +262,13 @@ class RoundReadinessServiceTest {
         // bruno nunca sinaliza; só ana está pronta.
         coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
         coEvery { readinessRepo.firstReadyAt(5) } returns base
-        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.startRound(5) } returns true
         now = base.plus(timeout).plusSeconds(1) // ultrapassa o timeout
 
         val result = service.start()
 
         assertEquals(StartRoundResult.Started(5), result)
-        coVerify(exactly = 1) { leagueRepo.saveRound(match { it.status == RoundStatus.InProgress }) }
+        coVerify(exactly = 1) { leagueRepo.startRound(5) }
     }
 
     @Test
@@ -254,6 +283,6 @@ class RoundReadinessServiceTest {
 
         val notReady = assertIs<StartRoundResult.NotReady>(result)
         assertEquals(60, notReady.status.secondsRemaining)
-        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
+        coVerify(exactly = 0) { leagueRepo.startRound(any()) }
     }
 }

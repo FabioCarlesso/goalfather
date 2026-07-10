@@ -8,8 +8,6 @@ import com.carlesso.goalfather.domain.model.ReadinessStatus
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.StartRoundResult
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.time.Clock
 import java.time.Duration
 
@@ -31,15 +29,11 @@ import java.time.Duration
  * em teste, um `Clock` fixo/adiantável verifica o timeout sem `Thread.sleep`.
  *
  * A concorrência é o ponto delicado: dois usuários podem clicar "jogar" no
- * mesmo instante após ambos prontos. O [Mutex] em [start] serializa a
- * transição `Scheduled → InProgress`, então apenas uma corrotina dispara a
- * simulação — idioma Kotlin (coroutine-aware) no lugar de `synchronized`, que
- * bloquearia a thread.
- *
- * PREMISSA: instância única. O [startMutex] é in-JVM — serializa concorrência
- * dentro de UM processo. Num deploy multi-instância seria preciso lock
- * distribuído ou `@Version` (optimistic locking) na rodada para a transição ser
- * atômica entre nós. Aceitável no escopo de estudo (#20 foca em coroutines).
+ * mesmo instante após ambos prontos. A transição `Scheduled → InProgress` é
+ * serializada no banco por [LeagueRepository.startRound] (lock otimista via
+ * `@Version` na rodada, issue #46) — antes era um `Mutex` in-JVM, que só valia
+ * com instância única. O perdedor da corrida recebe `false` e o trata como
+ * sucesso idempotente: a rodada está liberada, é só conectar no WS.
  */
 class RoundReadinessService(
     private val leagueRepo: LeagueRepository,
@@ -48,8 +42,6 @@ class RoundReadinessService(
     private val timeout: Duration = Duration.ofMinutes(2),
     private val clock: Clock = Clock.systemUTC(),
 ) : RoundReadinessUseCase {
-
-    private val startMutex = Mutex()
 
     override suspend fun status(): ReadinessStatus =
         buildStatus(leagueRepo.findLatest()?.number ?: 0)
@@ -65,7 +57,7 @@ class RoundReadinessService(
         return buildStatus(round.number)
     }
 
-    override suspend fun start(): StartRoundResult = startMutex.withLock {
+    override suspend fun start(): StartRoundResult {
         val round = leagueRepo.findLatest() ?: return StartRoundResult.NoRound
         if (round.status == RoundStatus.Finished) {
             return StartRoundResult.AlreadyFinished(round.number)
@@ -76,12 +68,21 @@ class RoundReadinessService(
         // ausente não segura mais a liga indefinidamente.
         if (!status.canStart) return StartRoundResult.NotReady(status)
 
-        // Idempotente: se outro técnico já destravou, a rodada está InProgress —
-        // não regravamos, só confirmamos para o cliente conectar no WS.
-        if (round.status == RoundStatus.Scheduled) {
-            leagueRepo.saveRound(round.copy(status = RoundStatus.InProgress))
+        // Idempotente: se outro técnico (nesta ou noutra instância) já destravou,
+        // `startRound` devolve false. Isso engloba dois casos — já `InProgress`
+        // (sucesso: o cliente conecta no WS) ou já `Finished` (a rodada foi
+        // simulada entre o `findLatest` e aqui). Só o segundo muda a resposta,
+        // então relemos ESTA rodada por número para não anunciar `Started` de
+        // uma rodada encerrada. Reler por `findLatest()` não serviria: quando o
+        // vencedor conclui a finalização ele já gerou a rodada `N+1` (Scheduled),
+        // que passaria a ser a "última" e mascararia o encerramento da nossa.
+        if (round.status == RoundStatus.Scheduled && !leagueRepo.startRound(round.number)) {
+            val fresh = leagueRepo.findRound(round.number)
+            if (fresh != null && fresh.status == RoundStatus.Finished) {
+                return StartRoundResult.AlreadyFinished(fresh.number)
+            }
         }
-        StartRoundResult.Started(round.number)
+        return StartRoundResult.Started(round.number)
     }
 
     /**

@@ -26,12 +26,11 @@ import com.carlesso.goalfather.domain.rules.ticketRevenue
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 /**
@@ -59,18 +58,6 @@ class PlayRoundService(
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
-
-    // Serializa a seção que finaliza a rodada: em liga compartilhada (issue #20)
-    // dois clientes podem abrir o WS da mesma rodada simultaneamente. O Mutex +
-    // re-leitura do status garantem que os efeitos (caixa, estatísticas, tabela,
-    // próxima rodada) sejam aplicados UMA vez só.
-    //
-    // PREMISSA: instância única. Este Mutex é in-JVM — protege concorrência
-    // dentro de UM processo. Em deploy multi-instância há janela TOCTOU (dois
-    // nós leem `status != Finished` e aplicam efeitos em dobro); fechá-la
-    // exigiria `@Version` na rodada (saveRound vira o ponto de serialização) ou
-    // lock distribuído. Fora do escopo de estudo da #20.
-    private val finishMutex = Mutex()
 
     override fun stream(roundNumber: Int): Flow<RoundEvent> = flow {
         val round = leagueRepo.findRound(roundNumber)
@@ -130,70 +117,113 @@ class PlayRoundService(
             return@flow
         }
 
-        // Seção crítica (issue #20): dois WS da mesma rodada podem chegar aqui
-        // ao mesmo tempo. Sob o Mutex, re-lemos o status — se um concorrente já
-        // finalizou, fazemos apenas o replay; senão, aplicamos os efeitos UMA vez.
-        finishMutex.withLock {
-            val fresh = leagueRepo.findRound(roundNumber)
-            if (fresh == null || fresh.status == RoundStatus.Finished) {
-                emit(RoundEvent.RoundFinished(leagueRepo.currentStandings()))
-                return@flow
-            }
+        // Ponto de serialização (issues #20 e #46): dois WS da mesma rodada — no
+        // mesmo processo OU em instâncias diferentes do backend — podem chegar
+        // aqui ao mesmo tempo. `finishRound` faz a transição `→ Finished` sob
+        // lock otimista (`@Version` na rodada): exatamente UM chamador recebe
+        // `true` e fica autorizado a aplicar os efeitos. O perdedor não escreve
+        // nada e cai no mesmo replay da reconexão.
+        //
+        // Antes disto era um `Mutex` in-JVM, válido só com instância única: dois
+        // nós liam `status != Finished` e dobravam caixa, estatísticas e tabela.
+        val finishedMatches = round.matches.map { m -> m.finish(finalScores[m.matchId]) }
+        val finishedRound = round.copy(matches = finishedMatches, status = RoundStatus.Finished)
 
-            // Calcula o balanço financeiro da rodada — bilheteria (mandante) e
-            // folha salarial em rodadas de "mês" (issue #4).
-            val finances = computeFinances(round, involvedClubs.values)
-
-            // Acumula estatísticas dos jogadores (issue #2) e aplica o caixa
-            // (issue #4) em uma única gravação por clube.
-            persistRoundEffects(tagged.map { it.second }, involvedClubs.values, finances)
-
-            // Atualiza estado pós-rodada e dispara RoundFinished.
-            val finishedMatches = round.matches.map { m -> m.finish(finalScores[m.matchId]) }
-            val finishedRound = round.copy(matches = finishedMatches, status = RoundStatus.Finished)
-            val newStandings = applyRoundToStandings(finishedRound, leagueRepo.currentStandings())
-
-            leagueRepo.saveRound(finishedRound)
-            leagueRepo.saveStandings(newStandings)
-
-            // Rodada consumida: zera a prontidão para a próxima começar limpa
-            // (issue #20). Os técnicos sinalizam de novo na rodada seguinte.
-            readinessRepo.reset(round.number)
-
-            // Avança o calendário. Num turno único (Berger), a temporada tem
-            // N-1 rodadas para N clubes. Enquanto não chega à última, gera a
-            // próxima rodada da MESMA temporada (para jogar N seguidas). Ao
-            // encerrar a última, vira a temporada (issue #11).
-            val clubs = clubRepo.findAll()
-            val canSchedule = clubs.size >= 2 && clubs.size % 2 == 0
-            val seasonRounds = clubs.size - 1
-            val seasonEnded = canSchedule && round.number >= seasonRounds
-
-            if (seasonEnded) {
-                startNextSeason(round.season, newStandings, clubs)
-            } else if (canSchedule) {
-                // Gera a próxima rodada antes de sinalizar RoundFinished, para que
-                // `getCurrentRound` já encontre uma rodada Scheduled.
-                leagueRepo.saveRound(generateRound(round.number + 1, round.season, clubs))
-            }
-
-            // RoundFinished é sempre o último evento do stream (sinal de "rodada
-            // encerrada"); SeasonFinished, quando há, vem logo antes dele.
-            emit(RoundEvent.RoundFinished(newStandings, finances))
+        if (!leagueRepo.finishRound(finishedRound)) {
+            emit(RoundEvent.RoundFinished(leagueRepo.currentStandings()))
+            return@flow
         }
+
+        // Vencemos a corrida: aplicamos os efeitos exatamente uma vez.
+        //
+        // Ordem (claim ANTES dos efeitos) troca a semântica de *at-least-once*
+        // para *at-most-once*: nunca dobramos caixa/estatísticas, mas uma
+        // interrupção entre o claim e o fim da persistência deixaria a rodada
+        // `Finished` com efeitos parciais — e como todo stream seguinte cai no
+        // replay, a liga travaria (a próxima rodada nunca seria gerada). Por
+        // isso o bloco roda em `NonCancellable`: fechar a aba do WS (o handler
+        // faz `job.cancel()` no `afterConnectionClosed`) logo após o FullTime
+        // não pode rasgar a finalização no meio.
+        //
+        // NonCancellable NÃO cobre crash de processo entre o claim e o fim —
+        // esse resíduo de durabilidade fica documentado em docs/ARQUITETURA.md
+        // (fechá-lo exige efeitos + claim na MESMA transação, hoje inviável com
+        // os ports `suspend` por agregado). É estreito: dezenas de ms.
+        //
+        // Enquanto os efeitos não são gravados, um leitor concorrente vê a
+        // tabela sem os pontos desta rodada; uma reconexão posterior já devolve
+        // a definitiva (não vale para o caso de crash acima).
+        val tailEvents = withContext(NonCancellable) {
+            finalizeRound(round, finishedRound, tagged.map { it.second }, involvedClubs.values)
+        }
+        // Emissão fora do NonCancellable: `emit` exige o mesmo contexto do
+        // coletor (invariante do Flow), que `withContext` quebraria.
+        for (event in tailEvents) emit(event)
+    }
+
+    /**
+     * Aplica os efeitos da rodada vencida e devolve os eventos de cauda na
+     * ordem de emissão (SeasonFinished, quando há, antes do RoundFinished).
+     * Roda inteiro dentro de `NonCancellable` — não emite nada, só persiste e
+     * devolve, para que o chamador emita no contexto do Flow.
+     */
+    private suspend fun finalizeRound(
+        round: Round,
+        finishedRound: Round,
+        events: List<MatchEvent>,
+        involvedClubs: Collection<Club>,
+    ): List<RoundEvent> {
+        // Calcula o balanço financeiro da rodada — bilheteria (mandante) e
+        // folha salarial em rodadas de "mês" (issue #4).
+        val finances = computeFinances(round, involvedClubs)
+
+        // Acumula estatísticas dos jogadores (issue #2) e aplica o caixa
+        // (issue #4) em uma única gravação por clube.
+        persistRoundEffects(events, involvedClubs, finances)
+
+        val newStandings = applyRoundToStandings(finishedRound, leagueRepo.currentStandings())
+        leagueRepo.saveStandings(newStandings)
+
+        // Rodada consumida: zera a prontidão para a próxima começar limpa
+        // (issue #20). Os técnicos sinalizam de novo na rodada seguinte.
+        readinessRepo.reset(round.number)
+
+        // Avança o calendário. Num turno único (Berger), a temporada tem
+        // N-1 rodadas para N clubes. Enquanto não chega à última, gera a
+        // próxima rodada da MESMA temporada (para jogar N seguidas). Ao
+        // encerrar a última, vira a temporada (issue #11).
+        val clubs = clubRepo.findAll()
+        val canSchedule = clubs.size >= 2 && clubs.size % 2 == 0
+        val seasonRounds = clubs.size - 1
+        val seasonEnded = canSchedule && round.number >= seasonRounds
+
+        val tail = mutableListOf<RoundEvent>()
+        if (seasonEnded) {
+            tail += startNextSeason(round.season, newStandings, clubs)
+        } else if (canSchedule) {
+            // Gera a próxima rodada antes de sinalizar RoundFinished, para que
+            // `getCurrentRound` já encontre uma rodada Scheduled.
+            leagueRepo.saveRound(generateRound(round.number + 1, round.season, clubs))
+        }
+
+        // RoundFinished é sempre o último evento do stream (sinal de "rodada
+        // encerrada"); SeasonFinished, quando há, vem logo antes dele.
+        tail += RoundEvent.RoundFinished(newStandings, finances)
+        return tail
     }
 
     /**
      * Encerra a temporada e abre a seguinte: zera as estatísticas de
      * temporada dos jogadores, gera a rodada 1 e uma tabela nova. A tabela
      * encerrada NÃO é apagada (PK por `season`), continua consultável via
-     * `GET /api/league/standings?season=`.
+     * `GET /api/league/standings?season=`. Devolve o `SeasonFinished` para o
+     * chamador emitir (nada é emitido aqui — roda sob `NonCancellable`).
      */
-    private suspend fun FlowCollector<RoundEvent>.startNextSeason(
+    private suspend fun startNextSeason(
         endedSeason: Int,
         finalStandings: Standings,
         clubs: List<Club>,
-    ) {
+    ): RoundEvent.SeasonFinished {
         val champion = finalStandings.rows.first()
         val nextSeason = endedSeason + 1
 
@@ -201,7 +231,7 @@ class PlayRoundService(
         leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
         leagueRepo.saveStandings(freshStandings(nextSeason, clubs))
 
-        emit(RoundEvent.SeasonFinished(season = endedSeason, champion = champion, standings = finalStandings))
+        return RoundEvent.SeasonFinished(season = endedSeason, champion = champion, standings = finalStandings)
     }
 
     /**
