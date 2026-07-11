@@ -8,6 +8,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsId
 import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
@@ -96,10 +97,22 @@ interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, Roun
     fun findFirstReadyAt(@Param("roundNumber") roundNumber: Int): Instant?
 }
 
-interface StandingsJpaRepository : JpaRepository<StandingsEntity, Int> {
-    /** Tabela da temporada ativa = maior `season` (suporta histórico multi-temporada). */
+interface StandingsJpaRepository : JpaRepository<StandingsEntity, StandingsId> {
+    /**
+     * Tabelas da temporada ativa = maior `season`, uma por divisão (issue
+     * #47). Sem parâmetros de propósito: o cache usa `SimpleKey.EMPTY` e a
+     * subquery resolve a temporada ativa na mesma ida ao banco.
+     */
     @Cacheable("standings")
-    fun findTopByOrderBySeasonDesc(): StandingsEntity?
+    @Query(
+        "select s from StandingsEntity s " +
+            "where s.season = (select max(x.season) from StandingsEntity x) " +
+            "order by s.division",
+    )
+    fun findAllForLatestSeason(): List<StandingsEntity>
+
+    /** Tabelas de uma temporada específica (histórico), ordenadas por divisão. */
+    fun findAllBySeasonOrderByDivision(season: Int): List<StandingsEntity>
 
     @CacheEvict("standings", allEntries = true)
     override fun <S : StandingsEntity> save(entity: S): S

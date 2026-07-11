@@ -72,6 +72,7 @@ export interface ClubMeta {
   name: string
   strength: number    // overall agregado (mock)
   squad: number[]     // IDs sintéticos para autoria de gols/cartões
+  division: number    // divisão INICIAL (a corrente vive em state.divisions)
 }
 
 const aiSquad = (offset: number): number[] =>
@@ -80,62 +81,143 @@ const aiSquad = (offset: number): number[] =>
 const myClubStrength =
   initialSquad.reduce((sum, p) => sum + p.overall, 0) / initialSquad.length
 
+// 2 divisões (issue #47) — espelha o seed do backend (DataInitializer).
 export const clubMeta: Record<number, ClubMeta> = {
-  1: { id: 1, name: 'Goal Father FC',       strength: myClubStrength, squad: initialSquad.map((p) => p.id) },
-  2: { id: 2, name: 'Atlético Bonsucesso',  strength: 76, squad: aiSquad(2000) },
-  3: { id: 3, name: 'Esporte Clube Vargem', strength: 72, squad: aiSquad(3000) },
-  4: { id: 4, name: 'Tupinambás FC',        strength: 70, squad: aiSquad(4000) },
-  5: { id: 5, name: 'Independente Sul',     strength: 74, squad: aiSquad(5000) },
-  6: { id: 6, name: 'Real Capela',          strength: 73, squad: aiSquad(6000) },
+  1:  { id: 1,  name: 'Goal Father FC',        strength: myClubStrength, squad: initialSquad.map((p) => p.id), division: 1 },
+  2:  { id: 2,  name: 'Atlético Bonsucesso',   strength: 76, squad: aiSquad(2000),  division: 1 },
+  3:  { id: 3,  name: 'Esporte Clube Vargem',  strength: 72, squad: aiSquad(3000),  division: 1 },
+  4:  { id: 4,  name: 'Tupinambás FC',         strength: 70, squad: aiSquad(4000),  division: 1 },
+  5:  { id: 5,  name: 'Independente Sul',      strength: 74, squad: aiSquad(5000),  division: 1 },
+  6:  { id: 6,  name: 'Real Capela',           strength: 73, squad: aiSquad(6000),  division: 1 },
+  7:  { id: 7,  name: 'Ferroviária da Serra',  strength: 68, squad: aiSquad(7000),  division: 2 },
+  8:  { id: 8,  name: 'Operário do Vale',      strength: 66, squad: aiSquad(8000),  division: 2 },
+  9:  { id: 9,  name: 'Náutico Boa Vista',     strength: 67, squad: aiSquad(9000),  division: 2 },
+  10: { id: 10, name: 'Comercial de Ouro Fino', strength: 64, squad: aiSquad(10000), division: 2 },
+  11: { id: 11, name: 'Juventude Alvorada',    strength: 65, squad: aiSquad(11000), division: 2 },
+  12: { id: 12, name: 'União Primavera',       strength: 63, squad: aiSquad(12000), division: 2 },
 }
 
 const allClubIds = Object.values(clubMeta).map((c) => c.id)
 
-export const initialStandings: Standings = {
-  season: 2026,
-  round: 0,
-  rows: allClubIds.map((id, i) => ({
-    position: i + 1,
-    clubId: id,
-    clubName: clubMeta[id]!.name,
-    played: 0, wins: 0, draws: 0, losses: 0,
-    goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
-  })),
+// ─── Divisões (issue #47) ────────────────────────────────────────────────
+// Divisão corrente de cada clube — muda na virada de temporada via
+// promoção/rebaixamento. Espelha PromotionRelegationRules.kt do backend
+// (regra duplicada APENAS aqui em mocks/, que é descartável — CLAUDE.md).
+
+export const PROMOTION_RELEGATION_SPOTS = 2
+
+const initialDivisions: Record<number, number> =
+  Object.fromEntries(allClubIds.map((id) => [id, clubMeta[id]!.division]))
+
+// Estado mutável da divisão corrente (sessão) — a virada de temporada troca
+// as entradas de quem subiu/desceu.
+export const divisionAssignments: Record<number, number> = { ...initialDivisions }
+
+function divisionsInPlay(divisions: Record<number, number>): number[] {
+  return [...new Set(Object.values(divisions))].sort((a, b) => a - b)
+}
+
+function clubsOfDivision(divisions: Record<number, number>, division: number): number[] {
+  return allClubIds.filter((id) => divisions[id] === division)
+}
+
+const promotionSpotsOf = (division: number): number =>
+  division === 1 ? 0 : PROMOTION_RELEGATION_SPOTS
+
+const relegationSpotsOf = (division: number, divisionCount: number): number =>
+  division >= divisionCount ? 0 : PROMOTION_RELEGATION_SPOTS
+
+// Tabelas zeradas de uma temporada, uma por divisão — espelha freshStandings
+// do PlayRoundService.
+function freshStandings(season: number, divisions: Record<number, number>): Standings[] {
+  const tiers = divisionsInPlay(divisions)
+  return tiers.map((division) => ({
+    season,
+    division,
+    round: 0,
+    promotionSpots: promotionSpotsOf(division),
+    relegationSpots: relegationSpotsOf(division, tiers.length),
+    rows: clubsOfDivision(divisions, division).map((id, i) => ({
+      position: i + 1,
+      clubId: id,
+      clubName: clubMeta[id]!.name,
+      played: 0, wins: 0, draws: 0, losses: 0,
+      goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+    })),
+  }))
+}
+
+export const initialStandings: Standings[] = freshStandings(2026, initialDivisions)
+
+/**
+ * Promoção/rebaixamento sobre as tabelas finais: em cada par de divisões
+ * adjacentes, os últimos N da de cima trocam com os primeiros N da de
+ * baixo. Devolve a divisão da próxima temporada por clube — espelha
+ * applyPromotionRelegation do backend.
+ */
+export function applyPromotionRelegation(tables: Standings[]): Record<number, number> {
+  const ordered = [...tables].sort((a, b) => a.division - b.division)
+  const next: Record<number, number> = {}
+  for (const table of ordered) {
+    for (const row of table.rows) next[row.clubId] = table.division
+  }
+  for (let i = 0; i + 1 < ordered.length; i++) {
+    const upper = ordered[i]!
+    const lower = ordered[i + 1]!
+    const spots = Math.min(PROMOTION_RELEGATION_SPOTS, upper.rows.length, lower.rows.length)
+    const byPosition = (t: Standings) => [...t.rows].sort((a, b) => a.position - b.position)
+    for (const row of byPosition(upper).slice(-spots)) next[row.clubId] = lower.division
+    for (const row of byPosition(lower).slice(0, spots)) next[row.clubId] = upper.division
+  }
+  return next
 }
 
 // ─── Geração de rodadas ──────────────────────────────────────────────────
-// Round-robin simples: pareamentos rotacionam a cada rodada. Para 6 clubes
-// teremos 5 rodadas de 3 partidas cada (turno único).
+// Round-robin (Berger) POR DIVISÃO, mesclado numa rodada global. Para 6
+// clubes por divisão teremos 5 rodadas de 3 partidas por divisão.
 
 function generateRound(roundNumber: number, season: number): Round {
-  // Algoritmo: clube 1 fixo, os outros rotacionam (estilo Berger).
-  const n = allClubIds.length
-  const fixed = allClubIds[0]!
-  const rotating = allClubIds.slice(1)
-  const offset = (roundNumber - 1) % (n - 1)
-  const rotated = [...rotating.slice(offset), ...rotating.slice(0, offset)]
-  const order = [fixed, ...rotated]
-
+  const divisions = divisionAssignments
   const matches: RoundMatch[] = []
-  for (let i = 0; i < n / 2; i++) {
-    const homeId = order[i]!
-    const awayId = order[n - 1 - i]!
-    matches.push({
-      matchId: roundNumber * 1000 + i + 1,
-      homeClubId: homeId,
-      awayClubId: awayId,
-      homeClubName: clubMeta[homeId]!.name,
-      awayClubName: clubMeta[awayId]!.name,
-      status: 'Scheduled',
-      homeGoals: 0,
-      awayGoals: 0,
-      minute: 0,
-    })
+
+  for (const division of divisionsInPlay(divisions)) {
+    const ids = clubsOfDivision(divisions, division).sort((a, b) => a - b)
+    const n = ids.length
+    if (roundNumber > n - 1) continue // turno desta divisão já terminou
+
+    // Algoritmo: clube de menor id fixo, os outros rotacionam (estilo Berger).
+    const fixed = ids[0]!
+    const rotating = ids.slice(1)
+    const offset = (roundNumber - 1) % (n - 1)
+    const rotated = [...rotating.slice(offset), ...rotating.slice(0, offset)]
+    const order = [fixed, ...rotated]
+
+    for (let i = 0; i < n / 2; i++) {
+      const homeId = order[i]!
+      const awayId = order[n - 1 - i]!
+      matches.push({
+        // rodada × 1000 + divisão × 100 + índice — fórmula do backend
+        // (RoundFixturesGenerator), única entre divisões da mesma rodada.
+        matchId: roundNumber * 1000 + division * 100 + i + 1,
+        homeClubId: homeId,
+        awayClubId: awayId,
+        homeClubName: clubMeta[homeId]!.name,
+        awayClubName: clubMeta[awayId]!.name,
+        status: 'Scheduled',
+        homeGoals: 0,
+        awayGoals: 0,
+        minute: 0,
+        division,
+      })
+    }
   }
   return { number: roundNumber, season, status: 'Scheduled', matches }
 }
 
 // ─── Atualização da tabela após uma rodada ───────────────────────────────
+// Aplica a rodada à tabela de UMA divisão: partidas de clubes fora de
+// `current.rows` são ignoradas, então a MESMA rodada global pode ser
+// aplicada a cada tabela (mesma semântica do backend, issue #47).
 export function applyRoundToStandings(round: Round, current: Standings): Standings {
   const byId = new Map(current.rows.map((r) => [r.clubId, { ...r }]))
 
@@ -174,20 +256,24 @@ export function applyRoundToStandings(round: Round, current: Standings): Standin
   )
 
   return {
-    season: current.season,
+    // Spread preserva divisão e vagas de promoção/rebaixamento da tabela.
+    ...current,
     round: round.number,
     rows: sorted.map((r, i) => ({ ...r, position: i + 1 })),
   }
 }
 
-// Turno único (Berger): N-1 rodadas para N clubes. A última encerra a temporada.
-export const SEASON_ROUNDS = allClubIds.length - 1
+// Turno único (Berger): a temporada dura o turno da MAIOR divisão (N-1
+// rodadas para N clubes). Constante vale porque as trocas de promoção/
+// rebaixamento são balanceadas — os tamanhos das divisões não mudam.
+export const SEASON_ROUNDS =
+  Math.max(...divisionsInPlay(initialDivisions).map((d) => clubsOfDivision(initialDivisions, d).length)) - 1
 
 // Estado mutável — mocks alteram aqui para simular persistência durante a sessão.
 export const state = {
   clubs: { [myClub.id]: myClub } as Record<number, Club>,
   market: [...marketEntries] as MarketEntry[],
-  standings: { ...initialStandings, rows: [...initialStandings.rows] } as Standings,
+  standings: initialStandings.map((s) => ({ ...s, rows: [...s.rows] })) as Standings[],
   currentRound: generateRound(1, 2026) as Round,
   nextRound: () => generateRound(state.currentRound.number + 1, state.currentRound.season),
 }
@@ -354,25 +440,12 @@ export function materializeClub(id: number): void {
   }
 }
 
-// Tabela zerada de uma temporada — espelha freshStandings do PlayRoundService.
-function freshStandings(season: number): Standings {
-  return {
-    season,
-    round: 0,
-    rows: allClubIds.map((id, i) => ({
-      position: i + 1,
-      clubId: id,
-      clubName: clubMeta[id]!.name,
-      played: 0, wins: 0, draws: 0, losses: 0,
-      goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
-    })),
-  }
-}
-
-// Vira a temporada (issue #11): zera estatísticas do elenco do usuário, cria
-// tabela nova e gera a rodada 1 da próxima temporada. Espelha startNextSeason
-// do backend, mantendo a parity mock ↔ real.
-export function startNewSeason(season: number): void {
+// Vira a temporada (issue #11): aplica promoção/rebaixamento às tabelas
+// finais (issue #47), zera estatísticas do elenco do usuário, cria tabelas
+// novas (uma por divisão) e gera a rodada 1 da próxima temporada. Espelha
+// startNextSeason do backend, mantendo a parity mock ↔ real.
+export function startNewSeason(season: number, finalTables: Standings[]): void {
+  Object.assign(divisionAssignments, applyPromotionRelegation(finalTables))
   const my = state.clubs[1]
   if (my) {
     state.clubs[1] = {
@@ -380,6 +453,6 @@ export function startNewSeason(season: number): void {
       squad: my.squad.map((p) => ({ ...p, goals: 0, yellowCards: 0, redCards: 0, injured: false })),
     }
   }
-  state.standings = freshStandings(season)
+  state.standings = freshStandings(season, divisionAssignments)
   state.currentRound = generateRound(1, season)
 }

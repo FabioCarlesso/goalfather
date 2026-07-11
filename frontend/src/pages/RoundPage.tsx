@@ -44,7 +44,7 @@ export function RoundPage() {
   const [events, setEvents] = useState<RoundEvent[]>([])
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [finalStandings, setFinalStandings] = useState<Standings | null>(null)
+  const [finalStandings, setFinalStandings] = useState<Standings[] | null>(null)
   const [finalFinance, setFinalFinance] = useState<RoundFinance | null>(null)
   const [champion, setChampion] = useState<SeasonFinishedEvent | null>(null)
 
@@ -249,16 +249,22 @@ export function RoundPage() {
         allFinished={allFinished && status === 'finished'}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {round.matches.map((m) => (
-          <MatchCard
-            key={m.matchId}
-            match={m}
-            state={matchStates.get(m.matchId)}
-            highlight={m.homeClubId === myClubId || m.awayClubId === myClubId}
-          />
-        ))}
-      </div>
+      {/* Partidas agrupadas por divisão (issue #47). */}
+      {divisionsOf(round.matches).map(([division, matches]) => (
+        <div key={division} className="space-y-2">
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">Divisão {division}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {matches.map((m) => (
+              <MatchCard
+                key={m.matchId}
+                match={m}
+                state={matchStates.get(m.matchId)}
+                highlight={m.homeClubId === myClubId || m.awayClubId === myClubId}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
 
       {myMatch && (
         <div className="space-y-2">
@@ -279,10 +285,30 @@ export function RoundPage() {
       )}
 
       {finalStandings && status === 'finished' && (
-        <FinalBanner standings={finalStandings} round={round.number} finance={finalFinance} />
+        <FinalBanner
+          standings={myDivisionTable(finalStandings, myClubId)}
+          round={round.number}
+          finance={finalFinance}
+        />
       )}
     </section>
   )
+}
+
+/** Pares [divisão, partidas] na ordem da elite para baixo. */
+function divisionsOf(matches: RoundMatch[]): Array<[number, RoundMatch[]]> {
+  const grouped = new Map<number, RoundMatch[]>()
+  for (const m of matches) {
+    const list = grouped.get(m.division) ?? []
+    list.push(m)
+    grouped.set(m.division, list)
+  }
+  return [...grouped.entries()].sort(([a], [b]) => a - b)
+}
+
+/** Tabela da divisão do usuário (fallback: elite) para o banner de fim de rodada. */
+function myDivisionTable(tables: Standings[], myClubId: number): Standings {
+  return tables.find((t) => t.rows.some((r) => r.clubId === myClubId)) ?? tables[0]!
 }
 
 function ChampionBanner({ season, champion }: { season: number; champion: StandingRow }) {

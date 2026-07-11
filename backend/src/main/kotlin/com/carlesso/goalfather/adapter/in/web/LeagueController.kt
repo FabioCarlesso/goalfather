@@ -24,11 +24,12 @@ class LeagueController(
     @GetMapping("/standings")
     suspend fun getStandings(@RequestParam(required = false) season: Int?): ResponseEntity<Any> {
         if (season == null) {
+            // Uma tabela por divisão, da elite para baixo (issue #47).
             return ResponseEntity.ok(leagueRepo.currentStandings())
         }
-        // Histórico: tabela final de uma temporada já encerrada (issue #11).
+        // Histórico: tabelas finais de uma temporada já encerrada (issue #11).
         val standings = leagueRepo.findStandings(season)
-        return if (standings == null) {
+        return if (standings.isEmpty()) {
             ResponseEntity.status(404).body(
                 ErrorResponse(code = "STANDINGS_NOT_FOUND", message = "Temporada $season sem tabela"),
             )

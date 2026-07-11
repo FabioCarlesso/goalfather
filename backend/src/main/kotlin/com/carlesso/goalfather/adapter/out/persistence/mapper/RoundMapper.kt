@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.out.persistence.mapper
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundStatusEnum
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
+import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
@@ -41,11 +42,17 @@ fun StandingsEntity.toDomain(json: Json): Standings = Standings(
     season = season,
     round = round,
     rows = json.decodeFromString(ListSerializer(StandingRow.serializer()), rowsJson),
+    division = Division(division),
+    promotionSpots = promotionSpots,
+    relegationSpots = relegationSpots,
 )
 
 fun Standings.toEntity(json: Json): StandingsEntity = StandingsEntity(
     season = season,
+    division = division.value,
     round = round,
+    promotionSpots = promotionSpots,
+    relegationSpots = relegationSpots,
     rowsJson = json.encodeToString(ListSerializer(StandingRow.serializer()), rows),
 )
 

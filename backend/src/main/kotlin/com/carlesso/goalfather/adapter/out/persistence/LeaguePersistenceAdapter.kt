@@ -36,16 +36,17 @@ class LeaguePersistenceAdapter(
         roundRepo.findTopByOrderByNumberDesc()?.toDomain(json)
     }
 
-    override suspend fun currentStandings(): Standings = withContext(Dispatchers.IO) {
-        // Temporada ativa = maior `season`. Ao virar o ano, a tabela anterior
-        // permanece no DB (PK por season) e esta passa a apontar para a nova.
-        val entity = standingsRepo.findTopByOrderBySeasonDesc()
-            ?: throw IllegalStateException("Standings nao inicializada — seed faltando")
-        entity.toDomain(json)
+    override suspend fun currentStandings(): List<Standings> = withContext(Dispatchers.IO) {
+        // Temporada ativa = maior `season`. Ao virar o ano, as tabelas
+        // anteriores permanecem no DB (PK por season+division) e estas passam
+        // a apontar para a nova. Uma tabela por divisão (issue #47).
+        val entities = standingsRepo.findAllForLatestSeason()
+        check(entities.isNotEmpty()) { "Standings nao inicializada — seed faltando" }
+        entities.map { it.toDomain(json) }
     }
 
-    override suspend fun findStandings(season: Int): Standings? = withContext(Dispatchers.IO) {
-        standingsRepo.findById(season).orElse(null)?.toDomain(json)
+    override suspend fun findStandings(season: Int): List<Standings> = withContext(Dispatchers.IO) {
+        standingsRepo.findAllBySeasonOrderByDivision(season).map { it.toDomain(json) }
     }
 
     override suspend fun saveRound(round: Round) {

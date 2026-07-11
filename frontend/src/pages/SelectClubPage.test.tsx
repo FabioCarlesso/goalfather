@@ -18,9 +18,9 @@ describe('SelectClubPage', () => {
       expect(screen.getByText('Goal Father FC')).toBeInTheDocument()
     })
 
-    // Clubes do seed (1 humano + 5 IA) começam todos sem dono.
+    // Clubes do seed (12 em 2 divisões — issue #47) começam todos sem dono.
     expect(screen.getByText('Atlético Bonsucesso')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Escolha seu clube' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /treinar este clube/i }).length).toBe(6)
+    expect(screen.getAllByRole('button', { name: /treinar este clube/i }).length).toBe(12)
   })
 })

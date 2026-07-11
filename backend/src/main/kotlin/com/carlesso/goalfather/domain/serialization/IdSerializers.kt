@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.serialization
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.PlayerId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -41,4 +42,15 @@ object ClubIdSerializer : KSerializer<ClubId> {
 
     override fun deserialize(decoder: Decoder): ClubId =
         ClubId(decoder.decodeLong())
+}
+
+object DivisionSerializer : KSerializer<Division> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("Division", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: Division) =
+        encoder.encodeInt(value.value)
+
+    override fun deserialize(decoder: Decoder): Division =
+        Division(decoder.decodeInt())
 }
