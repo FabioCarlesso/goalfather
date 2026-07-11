@@ -38,4 +38,20 @@ class JwtSecretGuardTest {
         assertTrue(isSecretAllowed(setOf("prod"), customSecret))
         assertTrue(isSecretAllowed(setOf("dev"), customSecret))
     }
+
+    /**
+     * O profile `postgres` (issue #67) só escolhe o datasource — não diz nada
+     * sobre o ambiente ser seguro. É o que o stack do docker-compose usa junto
+     * de `dev`: o `dev` é que autoriza o segredo default, não o `postgres`.
+     */
+    @Test
+    fun `postgres sozinho nao autoriza o segredo default`() {
+        assertFalse(isSecretAllowed(setOf("postgres"), DEFAULT_DEV_SECRET))
+        assertFalse(isSecretAllowed(setOf("prod", "postgres"), DEFAULT_DEV_SECRET))
+    }
+
+    @Test
+    fun `stack local dev+postgres aceita o segredo default`() {
+        assertTrue(isSecretAllowed(setOf("dev", "postgres"), DEFAULT_DEV_SECRET))
+    }
 }

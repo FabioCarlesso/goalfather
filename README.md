@@ -88,6 +88,13 @@ docker compose down -v      # para E zera o estado
 
 O nginx do frontend faz proxy de `/api` e `/ws` para o backend, então só a porta 8080 precisa ser exposta (o backend também sai em `:8081` para depuração).
 
+O backend sobe com os profiles **`dev,postgres`** — Postgres como banco, mas ambiente de desenvolvimento (credenciais fixas, portas abertas). É por isso que o stack sobe sem configurar nada: o profile `dev` autoriza o `JWT_SECRET` default. O profile **`postgres` apenas escolhe o datasource e não torna o ambiente seguro** — em produção use `prod`, que continua exigindo um `JWT_SECRET` de verdade (issue #67). Para testar o stack local com um segredo real, basta exportá-lo antes do `up` (ele é repassado ao container só se existir no host):
+
+```bash
+export JWT_SECRET="$(openssl rand -base64 48)"
+docker compose up --build
+```
+
 > **Contexto de build do frontend é a raiz do repo**, não `frontend/` — a imagem precisa de `contract/openapi.yaml` para rodar o `gen:api` durante o build. Ou seja: `docker build -f frontend/Dockerfile .` (a partir da raiz), nunca `docker build ./frontend`. Assim os tipos TS saem **sempre** do contrato; o `src/api/generated.d.ts` é um artefato derivado e gitignorado, e nunca entra na imagem (issue #65).
 
 ### 4. Autenticação (Fase 5)
