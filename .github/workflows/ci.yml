@@ -91,17 +91,29 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
-  # Guarda de regressão da issue #65: o build Docker do frontend gerava os tipos
-  # a partir do `generated.d.ts` do disco (gitignorado) em vez do contrato, então
-  # quebrava em clone limpo e passava despercebido — o CI nunca buildava imagem.
-  # O checkout aqui é limpo (sem `generated.d.ts`), o que reproduz exatamente o
-  # cenário. Usa `docker compose build` (não `docker build`) para validar também
-  # o contexto/dockerfile declarados no compose.
-  docker-frontend:
-    name: Docker (imagem do frontend)
+  # Guarda de regressão do stack Docker. Duas classes de bug passaram batidas
+  # aqui porque o CI nunca tocava no compose:
+  #   #65 — o build do frontend usava o `generated.d.ts` do disco (gitignorado)
+  #         em vez do contrato, e quebrava em clone limpo. O checkout do runner é
+  #         limpo, então buildar a imagem já reproduz o cenário.
+  #   #67 — o backend subia com profile `prod` sem JWT_SECRET e o JwtSecretGuard
+  #         abortava o boot. Buildar não bastava: só `up` pega isso, daí o
+  #         `--wait` (falha se algum container não ficar healthy) + smoke test.
+  docker-stack:
+    name: Docker (stack completo)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build da imagem do frontend
-        run: docker compose build frontend
+      - name: Subir o stack
+        run: docker compose up --build --wait --wait-timeout 180
+      - name: Smoke test — backend e frontend respondendo
+        run: |
+          curl -fsS http://localhost:8081/actuator/health | grep -q '"status":"UP"'
+          curl -fsS -o /dev/null http://localhost:8080/
+      - name: Logs (em caso de falha)
+        if: failure()
+        run: docker compose logs --tail 50
+      - name: Derrubar o stack
+        if: always()
+        run: docker compose down -v

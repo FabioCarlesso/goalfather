@@ -30,11 +30,20 @@ services:
 
   backend:
     build: ./backend
+    # `dev,postgres`, não `prod`: este stack usa Postgres mas NÃO é produção
+    # (credenciais fixas, portas abertas ao host). Ativar `prod` só para trocar
+    # o datasource fazia o JwtSecretGuard (#30) derrubar o boot, porque o
+    # segredo default é proibido fora de dev/test — ver issue #67.
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_URL: jdbc:postgresql://postgres:5432/goalfather
-      DB_USER: goalfather
-      DB_PASSWORD: goalfather
+      # Lista (não mapa) para permitir o pass-through do JWT_SECRET abaixo.
+      - SPRING_PROFILES_ACTIVE=dev,postgres
+      - DB_URL=jdbc:postgresql://postgres:5432/goalfather
+      - DB_USER=goalfather
+      - DB_PASSWORD=goalfather
+      # Sem `=`: a variável só é injetada se existir no host. Assim o stack local
+      # sobe sem configurar nada (profile dev aceita o segredo default), e quem
+      # quiser testar com um segredo real faz `export JWT_SECRET=...` antes do up.
+      - JWT_SECRET
     ports:
       - "8081:8080"
     depends_on:

@@ -83,12 +83,18 @@ management:
       # múltiplas apps publicam no mesmo Prometheus.
       application: goalfather
 
-# ─── Profile prod: PostgreSQL ─────────────────────────────────────────────
+# ─── PostgreSQL: profile `prod` OU `postgres` ─────────────────────────────
+# "Qual banco" e "isto é produção" são coisas diferentes (issue #67). O stack do
+# docker-compose precisa de Postgres mas NÃO é produção — antes ele ativava
+# `prod` só para trocar o datasource, e aí o JwtSecretGuard (#30) derrubava o
+# boot por causa do segredo default. Com a expressão `prod | postgres`, o stack
+# local sobe como `dev,postgres` (honesto: Postgres, mas ambiente de dev) e o
+# `prod` continua exigindo JWT_SECRET de verdade.
 ---
 spring:
   config:
     activate:
-      on-profile: prod
+      on-profile: "prod | postgres"
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/goalfather}
     username: ${DB_USER:goalfather}
