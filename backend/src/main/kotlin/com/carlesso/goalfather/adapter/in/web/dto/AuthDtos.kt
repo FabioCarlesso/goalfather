@@ -33,6 +33,8 @@ data class AvailableClubDto(
     val cash: Long,
     val stadiumCapacity: Int,
     val averageOverall: Int,
+    /** Divisão em que o clube disputa a temporada (issue #47) — orienta a escolha. */
+    val division: Int,
 )
 
 fun User.toDto(): AuthUserDto = AuthUserDto(
@@ -48,4 +50,5 @@ fun Club.toAvailableDto(): AvailableClubDto = AvailableClubDto(
     cash = cash,
     stadiumCapacity = stadiumCapacity,
     averageOverall = if (squad.isEmpty()) 0 else squad.sumOf { it.overall } / squad.size,
+    division = division.value,
 )

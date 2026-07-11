@@ -22,5 +22,9 @@ describe('SelectClubPage', () => {
     expect(screen.getByText('Atlético Bonsucesso')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Escolha seu clube' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /treinar este clube/i }).length).toBe(12)
+
+    // Cada card informa a divisão do clube (issue #47, follow-up da review).
+    expect(screen.getAllByText('Divisão 1').length).toBe(6)
+    expect(screen.getAllByText('Divisão 2').length).toBe(6)
   })
 })

@@ -327,8 +327,13 @@ export const auth = {
   nextId: persistedAuth?.nextId ?? 1,
 }
 
-export const clubOwners: Record<number, number | null> =
-  persistedAuth?.owners ?? Object.fromEntries(allClubIds.map((id) => [id, null]))
+// Merge com os defaults em vez de substituição: um localStorage persistido
+// ANTES das divisões (issue #47) só conhece os clubes 1..6 — sem o merge, os
+// clubes da divisão 2 sumiriam da seleção até um localStorage.clear().
+export const clubOwners: Record<number, number | null> = {
+  ...Object.fromEntries(allClubIds.map((id) => [id, null])),
+  ...(persistedAuth?.owners ?? {}),
+}
 
 export const TOKEN_PREFIX = 'mock-token-'
 
@@ -401,6 +406,7 @@ export function userIdFromAuthHeader(header: string | null): number | null {
 
 /** Resumo de um clube disponível (espelha AvailableClubDto do backend). */
 export function availableClubInfo(id: number) {
+  const division = divisionAssignments[id] ?? clubMeta[id]!.division
   if (id === 1) {
     const c = state.clubs[1]!
     return {
@@ -409,10 +415,18 @@ export function availableClubInfo(id: number) {
       cash: c.cash,
       stadiumCapacity: c.stadiumCapacity,
       averageOverall: Math.round(c.squad.reduce((s, p) => s + p.overall, 0) / c.squad.length),
+      division,
     }
   }
   const meta = clubMeta[id]!
-  return { id, name: meta.name, cash: 500_000_00, stadiumCapacity: 12_000, averageOverall: meta.strength }
+  return {
+    id,
+    name: meta.name,
+    cash: 500_000_00,
+    stadiumCapacity: 12_000,
+    averageOverall: meta.strength,
+    division,
+  }
 }
 
 /**

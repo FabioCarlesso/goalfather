@@ -612,7 +612,7 @@ components:
     AvailableClub:
       description: Resumo de um clube sem dono, para o card de seleção.
       type: object
-      required: [id, name, cash, stadiumCapacity, averageOverall]
+      required: [id, name, cash, stadiumCapacity, averageOverall, division]
       properties:
         id:              { type: integer, format: int64 }
         name:            { type: string }
@@ -623,6 +623,10 @@ components:
           minimum: 0
           maximum: 99
           description: Força média do elenco (média dos `overall`).
+        division:
+          type: integer
+          minimum: 1
+          description: 'Divisão em que o clube disputa a temporada (1 = elite)'
 
     # ─── Enums ─────────────────────────────────────────────────────────────
     Position:

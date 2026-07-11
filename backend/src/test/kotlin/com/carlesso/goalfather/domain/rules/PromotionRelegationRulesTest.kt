@@ -89,6 +89,14 @@ class PromotionRelegationRulesTest {
     }
 
     @Test
+    fun `buraco na piramide (tiers nao contiguos) e rejeitado`() {
+        // Divisões 1 e 3 sem a 2: erro de seed — a regra não deve "pontear".
+        assertThrows<IllegalArgumentException> {
+            applyPromotionRelegation(listOf(table(1, 1, 2), table(3, 3, 4)))
+        }
+    }
+
+    @Test
     fun `vagas da zona seguem a posicao da divisao na piramide`() {
         assertEquals(0, promotionSpotsFor(Division(1)))
         assertEquals(PROMOTION_RELEGATION_SPOTS, promotionSpotsFor(Division(2)))

@@ -41,7 +41,9 @@ fun relegationSpotsFor(division: Division, divisionCount: Int, spots: Int = PROM
  * issue #47.
  *
  * `zipWithNext` percorre os pares adjacentes (1ª↔2ª, 2ª↔3ª, ...) — idioma
- * Kotlin para "janela deslizante de 2" sem indexação manual. O N efetivo de
+ * Kotlin para "janela deslizante de 2" sem indexação manual. Os tiers devem
+ * ser CONTÍGUOS: um buraco na pirâmide (ex.: divisões 1 e 3) é um erro de
+ * seed, não algo para a regra "pontear" silenciosamente. O N efetivo de
  * cada par é limitado pelo tamanho das divisões, o que mantém as divisões
  * com o MESMO número de clubes após a troca (sobem tantos quantos descem).
  */
@@ -60,6 +62,9 @@ fun applyPromotionRelegation(
         .toMap(mutableMapOf())
 
     for ((upper, lower) in ordered.zipWithNext()) {
+        require(lower.division.value == upper.division.value + 1) {
+            "Divisões não contíguas na pirâmide: ${upper.division.value} → ${lower.division.value}"
+        }
         val exchanged = minOf(spots, upper.rows.size, lower.rows.size)
         val byPosition = { table: Standings -> table.rows.sortedBy { it.position } }
         byPosition(upper).takeLast(exchanged).forEach { next[it.clubId] = lower.division }
