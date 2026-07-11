@@ -78,6 +78,18 @@ npm run gen:api      # regera tipos TS a partir do contrato
 
 Critério de "endpoint pronto": desliga o handler MSW correspondente e o E2E continua passando contra `localhost:8080`.
 
+### 3.1. Rodando o stack completo com Docker
+
+```bash
+docker compose up --build   # Postgres + backend + frontend; UI em http://localhost:8080
+docker compose down         # para (mantém o volume do Postgres)
+docker compose down -v      # para E zera o estado
+```
+
+O nginx do frontend faz proxy de `/api` e `/ws` para o backend, então só a porta 8080 precisa ser exposta (o backend também sai em `:8081` para depuração).
+
+> **Contexto de build do frontend é a raiz do repo**, não `frontend/` — a imagem precisa de `contract/openapi.yaml` para rodar o `gen:api` durante o build. Ou seja: `docker build -f frontend/Dockerfile .` (a partir da raiz), nunca `docker build ./frontend`. Assim os tipos TS saem **sempre** do contrato; o `src/api/generated.d.ts` é um artefato derivado e gitignorado, e nunca entra na imagem (issue #65).
+
 ### 4. Autenticação (Fase 5)
 
 A partir da Fase 5 a API exige **JWT** em `/api/**` (exceto `/api/auth/register` e `/api/auth/login`). O fluxo do usuário é: **cadastrar/entrar → escolher um clube sem dono (`/select-club`) → dashboard**.

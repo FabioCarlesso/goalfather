@@ -1,0 +1,38 @@
+# Contexto de build da RAIZ — usado pelo build do frontend, que precisa de
+# `contract/` além de `frontend/` (issue #65). O build do backend tem contexto
+# próprio (./backend) e não é afetado por este arquivo.
+#
+# Regra: excluir tudo que não entra na imagem, para o contexto enviado ao daemon
+# ficar enxuto e para artefatos locais (node_modules, dist, tipos gerados) nunca
+# vazarem para dentro do build.
+
+# ─── Módulos e artefatos de build ───
+**/node_modules/
+**/dist/
+**/build/
+**/.gradle/
+**/coverage/
+**/playwright-report/
+**/test-results/
+
+# Tipos gerados do contrato: o build SEMPRE roda `gen:api` e os regera. Deixar
+# a cópia local entrar seria repetir o bug da issue #65 (tipos velhos vencendo
+# o contrato).
+frontend/src/api/generated.d.ts
+
+# ─── Fora do escopo da imagem do frontend ───
+backend/
+docs/
+prototype/
+observability/
+.github/
+.git/
+.idea/
+.vscode/
+
+# ─── Segredos e ruído local ───
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
