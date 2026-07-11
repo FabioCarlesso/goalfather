@@ -42,7 +42,12 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    # Contexto na RAIZ (não em ./frontend) para que `contract/openapi.yaml` entre
+    # no build: os tipos TS são gerados dele, e não de um `generated.d.ts` do
+    # disco — que é gitignorado e pode estar desatualizado (issue #65).
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
       - "8080:80"
     depends_on:
