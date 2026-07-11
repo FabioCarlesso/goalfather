@@ -18,7 +18,8 @@ value class ClubId(val value: Long)
  *
  * Valores monetários em centavos (Long) — mesma convenção do contrato.
  * `ownerId == null` significa controlado pela IA (preparado para
- * multiplayer da Fase 5).
+ * multiplayer da Fase 5). `division` é o tier em que o clube disputa a
+ * temporada corrente (issue #47) — muda na virada via promoção/rebaixamento.
  */
 @Serializable
 data class Club(
@@ -29,6 +30,7 @@ data class Club(
     val squad: List<Player>,
     val lineup: Lineup? = null,
     val ownerId: Long? = null,
+    val division: Division = Division.FIRST,
 ) {
     init {
         require(cash >= 0) { "cash não pode ser negativo: $cash" }

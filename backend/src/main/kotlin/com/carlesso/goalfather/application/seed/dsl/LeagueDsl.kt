@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.seed.dsl
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -11,6 +12,8 @@ import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.rules.promotionSpotsFor
+import com.carlesso.goalfather.domain.rules.relegationSpotsFor
 
 /**
  * DSL type-safe de seed de liga.
@@ -22,11 +25,14 @@ import com.carlesso.goalfather.domain.model.Standings
  *
  * ```kotlin
  * val league = league(season = 2026) {
- *     club(1, "Goal Father FC") {
- *         cash = 800_000_00
- *         stadium = 15_000
- *         player(1, "Marcos Figueiredo") { position = Position.GK; overall = 78; salary = 25_000_00; age = 32 }
+ *     division(1) {
+ *         club(1, "Goal Father FC") {
+ *             cash = 800_000_00
+ *             stadium = 15_000
+ *             player(1, "Marcos Figueiredo") { position = Position.GK; overall = 78; salary = 25_000_00; age = 32 }
+ *         }
  *     }
+ *     division(2) { club(7, "Ferroviária da Serra") { /* ... */ } }
  *     round(1) { match(homeId = 1, awayId = 6) }
  * }
  * ```
@@ -56,8 +62,9 @@ annotation class SeedDsl
 
 /**
  * Produto imutável da DSL. Agrega tudo que o seed precisa persistir:
- * clubes (com elenco), mercado e calendário. A tabela inicial é derivada
- * dos clubes — não há razão para descrevê-la à mão.
+ * clubes (com elenco, cada um na sua divisão), mercado e calendário. As
+ * tabelas iniciais são derivadas dos clubes — não há razão para
+ * descrevê-las à mão.
  */
 data class League(
     val season: Int,
@@ -65,14 +72,26 @@ data class League(
     val market: List<MarketEntry>,
     val rounds: List<Round>,
 ) {
-    /** Tabela zerada, na ordem de declaração dos clubes. */
-    fun initialStandings(): Standings = Standings(
-        season = season,
-        round = 0,
-        rows = clubs.mapIndexed { i, club ->
-            StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
-        },
-    )
+    /**
+     * Tabelas zeradas — uma por divisão (issue #47), na ordem de declaração
+     * dos clubes dentro de cada divisão. As vagas de promoção/rebaixamento
+     * vêm das regras de domínio (0 quando não há para onde subir/descer).
+     */
+    fun initialStandings(): List<Standings> {
+        val byDivision = clubs.groupBy { it.division }.toSortedMap()
+        return byDivision.map { (division, divisionClubs) ->
+            Standings(
+                season = season,
+                round = 0,
+                rows = divisionClubs.mapIndexed { i, club ->
+                    StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
+                },
+                division = division,
+                promotionSpots = promotionSpotsFor(division),
+                relegationSpots = relegationSpotsFor(division, byDivision.size),
+            )
+        }
+    }
 }
 
 @SeedDsl
@@ -106,7 +125,11 @@ class PlayerBuilder(private val id: Long, private val name: String) {
 }
 
 @SeedDsl
-class ClubBuilder(private val id: Long, private val name: String) {
+class ClubBuilder(
+    private val id: Long,
+    private val name: String,
+    private val division: Division = Division.FIRST,
+) {
     var cash: Long = 0
     var stadium: Int = 0
 
@@ -122,7 +145,24 @@ class ClubBuilder(private val id: Long, private val name: String) {
         cash = cash,
         stadiumCapacity = stadium,
         squad = players.toList(),
+        division = division,
     )
+}
+
+/**
+ * Agrupa clubes de uma divisão (issue #47). Só repassa a divisão ao
+ * [ClubBuilder] — o produto continua sendo a lista plana de clubes, cada um
+ * sabendo seu tier.
+ */
+@SeedDsl
+class DivisionBuilder(private val division: Division) {
+    private val clubs = mutableListOf<Club>()
+
+    fun club(id: Long, name: String, block: ClubBuilder.() -> Unit) {
+        clubs += ClubBuilder(id, name, division).apply(block).build()
+    }
+
+    fun build(): List<Club> = clubs.toList()
 }
 
 @SeedDsl
@@ -145,18 +185,28 @@ class RoundBuilder(private val number: Int) {
     }
 
     /**
-     * Resolve os nomes dos clubes (só conhecidos no nível da liga) e numera
-     * as partidas pela mesma fórmula do gerador de calendário
-     * (`generateRound`): `número da rodada × 1000 + índice`.
+     * Resolve nome e divisão dos clubes (só conhecidos no nível da liga) e
+     * numera as partidas pela mesma fórmula do gerador de calendário
+     * (`generateRound`): `rodada × 1000 + divisão × 100 + índice na divisão`.
+     * Partidas entre divisões diferentes são um erro de seed.
      */
-    fun build(season: Int, clubNameById: Map<Long, String>): Round {
-        val matches = pairings.mapIndexed { i, (homeId, awayId) ->
+    fun build(season: Int, clubById: Map<Long, Club>): Round {
+        val indexInDivision = mutableMapOf<Division, Int>()
+        val matches = pairings.map { (homeId, awayId) ->
+            val home = clubById.getValue(homeId)
+            val away = clubById.getValue(awayId)
+            require(home.division == away.division) {
+                "Partida entre divisões diferentes: ${home.name} (${home.division.value}) × " +
+                    "${away.name} (${away.division.value})"
+            }
+            val index = indexInDivision.merge(home.division, 1, Int::plus)!!
             RoundMatch(
-                matchId = number * 1000L + i + 1,
-                homeClubId = ClubId(homeId),
-                awayClubId = ClubId(awayId),
-                homeClubName = clubNameById.getValue(homeId),
-                awayClubName = clubNameById.getValue(awayId),
+                matchId = number * 1000L + home.division.value * 100L + index,
+                homeClubId = home.id,
+                awayClubId = away.id,
+                homeClubName = home.name,
+                awayClubName = away.name,
+                division = home.division,
             )
         }
         return Round(number = number, season = season, status = RoundStatus.Scheduled, matches = matches)
@@ -169,8 +219,14 @@ class LeagueBuilder(private val season: Int) {
     private var market: List<MarketEntry> = emptyList()
     private val roundBuilders = mutableListOf<RoundBuilder>()
 
+    /** Clube declarado direto na liga entra na elite (divisão 1). */
     fun club(id: Long, name: String, block: ClubBuilder.() -> Unit) {
         clubs += ClubBuilder(id, name).apply(block).build()
+    }
+
+    /** Bloco de divisão (issue #47): clubes declarados aqui entram no tier dado. */
+    fun division(tier: Int, block: DivisionBuilder.() -> Unit) {
+        clubs += DivisionBuilder(Division(tier)).apply(block).build()
     }
 
     fun market(block: MarketBuilder.() -> Unit) {
@@ -182,12 +238,12 @@ class LeagueBuilder(private val season: Int) {
     }
 
     fun build(): League {
-        val clubNameById = clubs.associate { it.id.value to it.name }
+        val clubById = clubs.associateBy { it.id.value }
         return League(
             season = season,
             clubs = clubs.toList(),
             market = market,
-            rounds = roundBuilders.map { it.build(season, clubNameById) },
+            rounds = roundBuilders.map { it.build(season, clubById) },
         )
     }
 }

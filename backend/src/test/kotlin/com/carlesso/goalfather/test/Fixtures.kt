@@ -2,6 +2,7 @@ package com.carlesso.goalfather.test
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -37,6 +38,7 @@ internal fun makeClub(
     overall: Int = 75,
     lineup: Lineup? = null,
     ownerId: Long? = null,
+    division: Division = Division.FIRST,
 ): Club = Club(
     id = ClubId(id),
     name = name,
@@ -45,4 +47,5 @@ internal fun makeClub(
     squad = (1L..squadSize.toLong()).map { makePlayer(it, overall = overall) },
     lineup = lineup,
     ownerId = ownerId,
+    division = division,
 )

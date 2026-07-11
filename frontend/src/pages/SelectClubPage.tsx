@@ -75,7 +75,12 @@ function ClubCard({
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 p-5">
       <div>
-        <h2 className="text-lg font-semibold text-slate-100">{club.name}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-slate-100">{club.name}</h2>
+          <span className="shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-300">
+            Divisão {club.division}
+          </span>
+        </div>
         <p className="text-xs text-slate-500">ID #{club.id}</p>
       </div>
       <dl className="grid grid-cols-3 gap-2 text-center">

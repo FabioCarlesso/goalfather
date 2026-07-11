@@ -326,7 +326,13 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [x] **4.2** Fim de temporada com campeão + virada automática de temporada — issue #11
 - [x] **4.3** Cobertura E2E ampliada (mercado, escalação) — issue #12
 - [x] **4.4** Caffeine cache em standings/mercado — issue #13
-- [ ] Promoção/rebaixamento, mercado dinâmico — *futuro* (depende de divisões)
+- [x] **4.6** Múltiplas divisões com promoção/rebaixamento — issue #47
+  (clubes têm `division`; fixtures Berger e tabela por divisão; na virada de
+  temporada os últimos N da divisão de cima trocam com os primeiros N da de
+  baixo — regra pura em `domain/rules/PromotionRelegationRules.kt`. O
+  contrato expõe `promotionSpots`/`relegationSpots` por tabela para a UI
+  pintar as zonas sem duplicar a regra.)
+- [ ] Mercado dinâmico — *futuro* (habilitado pelas divisões da 4.6)
 
 ### Fase 4.5 — DevOps / empacotamento ✅
 - [x] **4.5.1** Dockerfile multi-stage do backend — issue #14

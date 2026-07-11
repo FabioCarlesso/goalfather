@@ -6,7 +6,7 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 
 /**
- * Aplica o resultado de uma rodada finalizada à tabela.
+ * Aplica o resultado de uma rodada finalizada à tabela de UMA divisão.
  *
  * Função PURA — recebe e devolve `Standings` sem efeitos colaterais.
  * Espelha `applyRoundToStandings` em `frontend/src/mocks/seed.ts`.
@@ -15,6 +15,9 @@ import com.carlesso.goalfather.domain.model.Standings
  * - Vitória vale 3 pts, empate 1, derrota 0.
  * - Tiebreak: pontos → saldo de gols → gols pró → nome alfabético.
  * - Partidas com `status != Finished` são ignoradas (rodada parcial).
+ * - Partidas de clubes que não estão em `current.rows` são ignoradas —
+ *   com múltiplas divisões (issue #47), a MESMA rodada pode ser aplicada
+ *   a cada tabela e só os jogos daquela divisão contam.
  */
 fun applyRoundToStandings(round: Round, current: Standings): Standings {
     val byId = current.rows.associateBy { it.clubId }.toMutableMap()
@@ -41,8 +44,8 @@ fun applyRoundToStandings(round: Round, current: Standings): Standings {
             .thenBy { it.clubName },
     )
 
-    return Standings(
-        season = current.season,
+    // `copy` preserva divisão e vagas de promoção/rebaixamento da tabela.
+    return current.copy(
         round = round.number,
         rows = sorted.mapIndexed { i, row -> row.copy(position = i + 1) },
     )

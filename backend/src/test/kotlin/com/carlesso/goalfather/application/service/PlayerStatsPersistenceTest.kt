@@ -59,7 +59,7 @@ class PlayerStatsPersistenceTest {
     @Test
     fun `gols e cartoes dos eventos sao acumulados no elenco e persistidos`() = runTest {
         coEvery { leagueRepo.findRound(1) } returns round
-        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(ClubId(1)) } returns home
         coEvery { clubRepo.findById(ClubId(2)) } returns away
         coEvery { clubRepo.findAll() } returns listOf(home, away)

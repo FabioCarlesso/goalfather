@@ -335,10 +335,11 @@ paths:
     get:
       tags: [League]
       operationId: getStandings
-      summary: Tabela de classificação do campeonato
+      summary: Tabelas de classificação do campeonato (uma por divisão)
       description: |
-        Sem `season`, retorna a tabela da temporada ativa. Com `season`,
-        retorna a tabela final de uma temporada já encerrada (histórico).
+        Sem `season`, retorna as tabelas da temporada ativa. Com `season`,
+        retorna as tabelas finais de uma temporada já encerrada (histórico).
+        Uma tabela por divisão, ordenadas da elite (divisão 1) para baixo.
       parameters:
         - name: season
           in: query
@@ -347,10 +348,13 @@ paths:
           schema: { type: integer }
       responses:
         '200':
-          description: Tabela ordenada por pontos, saldo, gols pró
+          description: |
+            Tabelas por divisão; cada uma ordenada por pontos, saldo, gols pró
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Standings' }
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Standings' }
         '404':
           description: Temporada inexistente
           content:
@@ -608,7 +612,7 @@ components:
     AvailableClub:
       description: Resumo de um clube sem dono, para o card de seleção.
       type: object
-      required: [id, name, cash, stadiumCapacity, averageOverall]
+      required: [id, name, cash, stadiumCapacity, averageOverall, division]
       properties:
         id:              { type: integer, format: int64 }
         name:            { type: string }
@@ -619,6 +623,10 @@ components:
           minimum: 0
           maximum: 99
           description: Força média do elenco (média dos `overall`).
+        division:
+          type: integer
+          minimum: 1
+          description: 'Divisão em que o clube disputa a temporada (1 = elite)'
 
     # ─── Enums ─────────────────────────────────────────────────────────────
     Position:
@@ -966,11 +974,26 @@ components:
         points:          { type: integer, minimum: 0 }
 
     Standings:
+      description: |
+        Tabela de UMA divisão em uma temporada. `promotionSpots` /
+        `relegationSpots` dizem quantas posições do topo/fundo trocam de
+        divisão na virada — a UI pinta as zonas a partir deles, sem duplicar
+        a regra de negócio no cliente. São 0 quando não há para onde subir
+        (elite) ou descer (última divisão).
       type: object
-      required: [season, round, rows]
+      required: [season, division, round, rows, promotionSpots, relegationSpots]
       properties:
-        season: { type: integer, description: Ano da temporada }
-        round:  { type: integer, minimum: 0, description: Rodada atual concluída }
+        season:   { type: integer, description: Ano da temporada }
+        division: { type: integer, minimum: 1, description: 'Divisão (1 = elite)' }
+        round:    { type: integer, minimum: 0, description: Rodada atual concluída }
+        promotionSpots:
+          type: integer
+          minimum: 0
+          description: Posições do topo que sobem de divisão na virada (0 na elite)
+        relegationSpots:
+          type: integer
+          minimum: 0
+          description: Posições do fundo que descem de divisão na virada (0 na última)
         rows:
           type: array
           items: { $ref: '#/components/schemas/StandingRow' }
@@ -981,7 +1004,10 @@ components:
       enum: [Scheduled, InProgress, Finished]
 
     RoundMatch:
-      description: Estado de uma partida individual dentro de uma rodada.
+      description: |
+        Estado de uma partida individual dentro de uma rodada. A rodada é
+        global: cada divisão contribui com as próprias partidas, e `division`
+        permite à UI agrupá-las.
       type: object
       required:
         - matchId
@@ -993,6 +1019,7 @@ components:
         - homeGoals
         - awayGoals
         - minute
+        - division
       properties:
         matchId:       { type: integer, format: int64 }
         homeClubId:    { type: integer, format: int64 }
@@ -1003,6 +1030,7 @@ components:
         homeGoals:     { type: integer, minimum: 0 }
         awayGoals:     { type: integer, minimum: 0 }
         minute:        { type: integer, minimum: 0, maximum: 120 }
+        division:      { type: integer, minimum: 1, description: 'Divisão da partida (1 = elite)' }
 
     Round:
       type: object
@@ -1046,8 +1074,11 @@ components:
       type: object
       required: [type, standings, finances]
       properties:
-        type:      { type: string, enum: [RoundFinished] }
-        standings: { $ref: '#/components/schemas/Standings' }
+        type: { type: string, enum: [RoundFinished] }
+        standings:
+          type: array
+          description: Tabelas atualizadas — uma por divisão, da elite para baixo.
+          items: { $ref: '#/components/schemas/Standings' }
         finances:
           type: array
           description: Balanço financeiro de cada clube na rodada (bilheteria − salários).
@@ -1056,15 +1087,20 @@ components:
     SeasonFinishedEvent:
       description: |
         Emitido quando a última rodada do turno encerra a temporada. Carrega
-        o campeão (líder da tabela final) e a tabela encerrada. O backend já
-        abriu a próxima temporada (rodada 1 + tabela zerada) antes de emitir.
+        o campeão (líder da elite — divisão 1) e as tabelas finais de todas
+        as divisões. O backend já abriu a próxima temporada
+        (promoção/rebaixamento aplicados, rodada 1 + tabelas zeradas) antes
+        de emitir.
       type: object
       required: [type, season, champion, standings]
       properties:
-        type:      { type: string, enum: [SeasonFinished] }
-        season:    { type: integer, description: Ano da temporada encerrada }
-        champion:  { $ref: '#/components/schemas/StandingRow' }
-        standings: { $ref: '#/components/schemas/Standings' }
+        type:     { type: string, enum: [SeasonFinished] }
+        season:   { type: integer, description: Ano da temporada encerrada }
+        champion: { $ref: '#/components/schemas/StandingRow' }
+        standings:
+          type: array
+          description: Tabelas finais — uma por divisão, da elite para baixo.
+          items: { $ref: '#/components/schemas/Standings' }
 
     RoundFinance:
       description: Receita/despesa de um clube em uma rodada (valores em centavos).

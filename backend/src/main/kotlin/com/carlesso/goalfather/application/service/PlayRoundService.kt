@@ -10,6 +10,8 @@ import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Club
+import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Round
@@ -19,9 +21,14 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.teamStrength
+import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
+import com.carlesso.goalfather.domain.rules.canScheduleSeason
 import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
+import com.carlesso.goalfather.domain.rules.promotionSpotsFor
+import com.carlesso.goalfather.domain.rules.relegationSpotsFor
+import com.carlesso.goalfather.domain.rules.seasonRounds
 import com.carlesso.goalfather.domain.rules.ticketRevenue
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
@@ -181,25 +188,29 @@ class PlayRoundService(
         // (issue #4) em uma única gravação por clube.
         persistRoundEffects(events, involvedClubs, finances)
 
-        val newStandings = applyRoundToStandings(finishedRound, leagueRepo.currentStandings())
-        leagueRepo.saveStandings(newStandings)
+        // A MESMA rodada é aplicada à tabela de cada divisão: só os jogos da
+        // divisão em questão contam (clubes fora da tabela são ignorados pela
+        // regra), então nenhum filtro manual é necessário (issue #47).
+        val newStandings = leagueRepo.currentStandings()
+            .map { applyRoundToStandings(finishedRound, it) }
+        newStandings.forEach { leagueRepo.saveStandings(it) }
 
         // Rodada consumida: zera a prontidão para a próxima começar limpa
         // (issue #20). Os técnicos sinalizam de novo na rodada seguinte.
         readinessRepo.reset(round.number)
 
-        // Avança o calendário. Num turno único (Berger), a temporada tem
-        // N-1 rodadas para N clubes. Enquanto não chega à última, gera a
-        // próxima rodada da MESMA temporada (para jogar N seguidas). Ao
-        // encerrar a última, vira a temporada (issue #11).
+        // Avança o calendário. Num turno único (Berger), a temporada dura o
+        // turno da MAIOR divisão (N-1 rodadas para N clubes). Enquanto não
+        // chega à última rodada, gera a próxima da MESMA temporada. Ao
+        // encerrar a última, vira a temporada (issue #11) com
+        // promoção/rebaixamento entre divisões (issue #47).
         val clubs = clubRepo.findAll()
-        val canSchedule = clubs.size >= 2 && clubs.size % 2 == 0
-        val seasonRounds = clubs.size - 1
-        val seasonEnded = canSchedule && round.number >= seasonRounds
+        val canSchedule = canScheduleSeason(clubs)
+        val seasonEnded = canSchedule && round.number >= seasonRounds(clubs)
 
         val tail = mutableListOf<RoundEvent>()
         if (seasonEnded) {
-            tail += startNextSeason(round.season, newStandings, clubs)
+            tail += startNextSeason(round.season, newStandings)
         } else if (canSchedule) {
             // Gera a próxima rodada antes de sinalizar RoundFinished, para que
             // `getCurrentRound` já encontre uma rodada Scheduled.
@@ -213,46 +224,63 @@ class PlayRoundService(
     }
 
     /**
-     * Encerra a temporada e abre a seguinte: zera as estatísticas de
-     * temporada dos jogadores, gera a rodada 1 e uma tabela nova. A tabela
-     * encerrada NÃO é apagada (PK por `season`), continua consultável via
-     * `GET /api/league/standings?season=`. Devolve o `SeasonFinished` para o
-     * chamador emitir (nada é emitido aqui — roda sob `NonCancellable`).
+     * Encerra a temporada e abre a seguinte: aplica promoção/rebaixamento
+     * às tabelas finais (issue #47), zera as estatísticas de temporada dos
+     * jogadores, gera a rodada 1 e tabelas novas (uma por divisão). As
+     * tabelas encerradas NÃO são apagadas (PK por `season`+`division`),
+     * continuam consultáveis via `GET /api/league/standings?season=`.
+     * Devolve o `SeasonFinished` para o chamador emitir (nada é emitido
+     * aqui — roda sob `NonCancellable`).
      */
     private suspend fun startNextSeason(
         endedSeason: Int,
-        finalStandings: Standings,
-        clubs: List<Club>,
+        finalStandings: List<Standings>,
     ): RoundEvent.SeasonFinished {
-        val champion = finalStandings.rows.first()
+        // Campeão = líder da elite (divisão 1).
+        val champion = finalStandings.minBy { it.division }.rows.first()
         val nextSeason = endedSeason + 1
 
-        resetSeasonStats()
+        val nextDivisions = applyPromotionRelegation(finalStandings)
+        val clubs = startNextSeasonClubs(nextDivisions)
         leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
-        leagueRepo.saveStandings(freshStandings(nextSeason, clubs))
+        freshStandings(nextSeason, clubs).forEach { leagueRepo.saveStandings(it) }
 
         return RoundEvent.SeasonFinished(season = endedSeason, champion = champion, standings = finalStandings)
     }
 
     /**
-     * Zera gols/cartões e cura lesões de todos os jogadores no início da
-     * nova temporada. Relê os clubes (já com o caixa pós-bilheteria) para
-     * não desfazer as finanças aplicadas na rodada.
+     * Prepara os clubes para a nova temporada numa ÚNICA gravação por clube:
+     * zera gols/cartões, cura lesões e move quem subiu/desceu para a nova
+     * divisão (issue #47). Relê os clubes (já com o caixa pós-bilheteria)
+     * para não desfazer as finanças aplicadas na rodada. Devolve o estado
+     * atualizado, que alimenta o calendário e as tabelas da temporada nova.
      */
-    private suspend fun resetSeasonStats() {
-        for (club in clubRepo.findAll()) {
+    private suspend fun startNextSeasonClubs(nextDivisions: Map<ClubId, Division>): List<Club> =
+        clubRepo.findAll().map { club ->
             val reset = club.squad.map { it.copy(goals = 0, yellowCards = 0, redCards = 0, injured = false) }
-            if (reset != club.squad) clubRepo.save(club.copy(squad = reset))
+            val updated = club.copy(
+                squad = reset,
+                division = nextDivisions[club.id] ?: club.division,
+            )
+            if (updated != club) clubRepo.save(updated)
+            updated
+        }
+
+    private fun freshStandings(season: Int, clubs: List<Club>): List<Standings> {
+        val byDivision = clubs.groupBy { it.division }.toSortedMap()
+        return byDivision.map { (division, divisionClubs) ->
+            Standings(
+                season = season,
+                round = 0,
+                rows = divisionClubs.sortedBy { it.id.value }.mapIndexed { i, club ->
+                    StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
+                },
+                division = division,
+                promotionSpots = promotionSpotsFor(division),
+                relegationSpots = relegationSpotsFor(division, byDivision.size),
+            )
         }
     }
-
-    private fun freshStandings(season: Int, clubs: List<Club>): Standings = Standings(
-        season = season,
-        round = 0,
-        rows = clubs.sortedBy { it.id.value }.mapIndexed { i, club ->
-            StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
-        },
-    )
 
     /**
      * Calcula o balanço financeiro de cada clube na rodada: bilheteria (só

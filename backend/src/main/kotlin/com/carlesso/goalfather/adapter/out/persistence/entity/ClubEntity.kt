@@ -36,6 +36,10 @@ class ClubEntity(
     @Column(name = "owner_id")
     var ownerId: Long? = null,
 
+    /** Divisão (tier) do clube na temporada corrente (issue #47). */
+    @Column(name = "division", nullable = false)
+    var division: Int = 1,
+
     /**
      * Lock otimista (issue #19): o Hibernate incrementa `version` a cada
      * update e rejeita o save se a versão lida não bate com a do banco. Dois

@@ -16,6 +16,9 @@ data class RoundMatch(
     val homeGoals: Int = 0,
     val awayGoals: Int = 0,
     val minute: Int = 0,
+    // Divisão da partida (issue #47). Default = elite: rodadas persistidas
+    // antes das divisões desserializam sem migração de dados no matches_json.
+    val division: Division = Division.FIRST,
 )
 
 @Serializable

@@ -32,9 +32,14 @@ test.describe('Round flow', () => {
       timeout: 30_000,
     })
 
-    // Tabela tem que refletir 1 jogo jogado para todos os 6 clubes
+    // Tabela por divisao (issue #47): as duas divisoes aparecem, com a zona
+    // de promocao/rebaixamento indicada na legenda.
     await page.getByRole('link', { name: 'Tabela' }).click()
     await expect(page.getByRole('heading', { name: 'Tabela' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Divisão 1' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Divisão 2' })).toBeVisible()
+    await expect(page.getByText(/Rebaixamento/i)).toBeVisible()
+    await expect(page.getByText(/Promoção/i)).toBeVisible()
     // Pelo menos uma linha tem pontos > 0 (vencedor de algum jogo)
     await expect(page.locator('tbody tr td:nth-child(8)')
       .filter({ hasText: /^[1-9]\d*$/ })

@@ -76,6 +76,13 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.mockk:mockk:1.13.13")
     testImplementation("org.springframework.security:spring-security-test")
+
+    // Migrations validadas contra Postgres REAL (achado 4 da review do PR #47):
+    // H2 em MODE=PostgreSQL não pega toda incompatibilidade de sintaxe. O teste
+    // usa Testcontainers e se auto-desabilita sem Docker (roda no CI ubuntu).
+    // Versões gerenciadas pelo BOM do Spring Boot.
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:postgresql")
 }
 
 // Plugin JPA precisa de no-arg constructors para entities — o kotlin-jpa plugin

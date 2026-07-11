@@ -64,7 +64,7 @@ class SimulationMetricsTest {
     @Test
     fun `simular uma rodada registra o timer goalfather_round_simulation`() = runTest {
         coEvery { leagueRepo.findRound(1) } returns round
-        coEvery { leagueRepo.currentStandings() } returns standings
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)

@@ -40,7 +40,7 @@ class CacheIntegrationTest {
     fun `standings e cacheada na leitura e invalidada ao salvar`() = runBlocking {
         cacheManager.getCache("standings")?.clear()
 
-        val standings = leagueRepo.currentStandings()
+        val standings = leagueRepo.currentStandings().first()
         assertNotNull(cachedEntry("standings"), "primeira leitura deve popular o cache")
 
         // Uma mutação na tabela precisa invalidar (senão serviríamos dados velhos).

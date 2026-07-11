@@ -26,24 +26,29 @@ sealed interface RoundEvent {
         val event: MatchEvent,
     ) : RoundEvent
 
+    /**
+     * `standings` traz UMA tabela por divisão (issue #47), ordenadas da
+     * elite para baixo — todas jogam na mesma rodada global.
+     */
     @Serializable
     @SerialName("RoundFinished")
     data class RoundFinished(
-        val standings: Standings,
+        val standings: List<Standings>,
         val finances: List<RoundFinance> = emptyList(),
     ) : RoundEvent
 
     /**
      * Emitido quando a última rodada do turno é encerrada: a temporada
-     * acabou. Carrega o `champion` (líder da tabela final) e a `standings`
-     * encerrada para que o cliente celebre o título. O backend já abriu a
-     * próxima temporada (rodada 1 + tabela zerada) antes de emitir.
+     * acabou. Carrega o `champion` (líder da elite — divisão 1) e as
+     * tabelas finais de todas as divisões para que o cliente celebre o
+     * título. O backend já abriu a próxima temporada (promoção/rebaixamento
+     * aplicados, rodada 1 + tabelas zeradas) antes de emitir.
      */
     @Serializable
     @SerialName("SeasonFinished")
     data class SeasonFinished(
         val season: Int,
         val champion: StandingRow,
-        val standings: Standings,
+        val standings: List<Standings>,
     ) : RoundEvent
 }

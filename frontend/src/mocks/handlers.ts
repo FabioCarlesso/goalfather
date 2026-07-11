@@ -494,7 +494,10 @@ export const handlers = [
           : m
       })
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
-      state.standings = applyRoundToStandings(state.currentRound, state.standings)
+      // A mesma rodada é aplicada à tabela de cada divisão — só os jogos da
+      // divisão em questão contam (issue #47).
+      state.standings = state.standings.map((table) =>
+        applyRoundToStandings(state.currentRound, table))
 
       // Rodada consumida: zera a prontidão para a próxima começar limpa (issue #20).
       resetRoundReadiness(round.number)
@@ -557,7 +560,7 @@ export const handlers = [
         }
       }
 
-      // Tabela final desta temporada (capturada antes de eventual reset).
+      // Tabelas finais desta temporada (capturadas antes de eventual reset).
       const finalStandings = state.standings
       const seasonEnded = round.number >= SEASON_ROUNDS
 
@@ -569,15 +572,17 @@ export const handlers = [
 
       if (seasonEnded) {
         // Fim de temporada (issue #11): emite SeasonFinished ANTES do
-        // RoundFinished (mesma ordem do backend) e abre a próxima temporada.
+        // RoundFinished (mesma ordem do backend) e abre a próxima temporada
+        // com promoção/rebaixamento aplicados (issue #47).
+        const elite = finalStandings.find((t) => t.division === 1) ?? finalStandings[0]!
         const seasonFin: RoundEvent = {
           type: 'SeasonFinished',
           season: round.season,
-          champion: finalStandings.rows[0]!,
+          champion: elite.rows[0]!,
           standings: finalStandings,
         }
         client.send(JSON.stringify(seasonFin))
-        startNewSeason(round.season + 1)
+        startNewSeason(round.season + 1, finalStandings)
       } else {
         // Avança para a próxima rodada (cliente busca via getCurrentRound depois)
         state.currentRound = state.nextRound()
