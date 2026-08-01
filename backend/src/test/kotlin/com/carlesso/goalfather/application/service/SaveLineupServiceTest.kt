@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
@@ -85,6 +86,43 @@ class SaveLineupServiceTest {
 
         assertIs<LineupResult.PlayersNotInSquad>(result)
         assertEquals((100L..110L).toList(), result.missingIds)
+    }
+
+    @Test
+    fun `escalar lesionado retorna InjuredPlayers sem persistir`() = runTest {
+        // Issue #54: lesionado não entra em campo enquanto o afastamento durar.
+        val base = makeClub(squadSize = 15, ownerId = owner)
+        val club = base.copy(
+            squad = base.squad.mapIndexed { i, p ->
+                if (i == 3) p.copy(availability = Availability.Injured(2)) else p
+            },
+        )
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, club.squad.take(11).map { it.id })
+
+        assertIs<LineupResult.InjuredPlayers>(result)
+        assertEquals(listOf(club.squad[3].id.value), result.playerIds)
+        coVerify(exactly = 0) { clubRepo.save(any()) }
+    }
+
+    @Test
+    fun `escalacao sem o lesionado continua valida`() = runTest {
+        val base = makeClub(squadSize = 15, ownerId = owner)
+        val club = base.copy(
+            squad = base.squad.mapIndexed { i, p ->
+                if (i == 3) p.copy(availability = Availability.Injured(2)) else p
+            },
+        )
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+        val saved = slot<Club>()
+        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+
+        val healthy = club.squad.filterNot { it.injured }.take(11).map { it.id }
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, healthy)
+
+        assertIs<LineupResult.Success>(result)
+        assertEquals(healthy, saved.captured.lineup?.players?.map { it.id })
     }
 
     @Test

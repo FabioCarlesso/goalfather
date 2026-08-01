@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.out.persistence.mapper
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
+import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
@@ -21,7 +22,8 @@ fun PlayerEntity.toDomain(): Player = Player(
     goals = goals,
     yellowCards = yellowCards,
     redCards = redCards,
-    injured = injured,
+    availability = if (injuredForRounds >= 1) Availability.Injured(injuredForRounds)
+    else Availability.Available,
 )
 
 fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
@@ -40,7 +42,11 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     goals = goals,
     yellowCards = yellowCards,
     redCards = redCards,
-    injured = injured,
+    // `when` exaustivo sobre o sealed: a soma de tipos vira o Int da coluna.
+    injuredForRounds = when (val a = availability) {
+        is Availability.Available -> 0
+        is Availability.Injured -> a.roundsOut
+    },
 )
 
 private fun PositionEnum.toDomain(): Position = when (this) {

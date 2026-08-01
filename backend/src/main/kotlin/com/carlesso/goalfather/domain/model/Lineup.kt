@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.rules.effectiveOverall
 import kotlinx.serialization.Serializable
 
 /**
@@ -23,7 +24,9 @@ data class Lineup(
 }
 
 /**
- * Força agregada do time = média de overall dos jogadores escalados.
+ * Força agregada do time = média do overall EFETIVO dos escalados, isto é,
+ * já descontada a fadiga (issue #54). Escalar um titular exausto passa a
+ * custar força de time — é o que dá sentido a rodar o elenco.
  *
  * Extension function — lê como linguagem natural: `home.teamStrength()`.
  * Default 60.0 para lineup vazio mantém o domínio robusto sem precisar
@@ -31,4 +34,4 @@ data class Lineup(
  */
 fun Lineup.teamStrength(): Double =
     if (players.isEmpty()) 60.0
-    else players.sumOf { it.overall }.toDouble() / players.size
+    else players.sumOf { it.effectiveOverall() } / players.size

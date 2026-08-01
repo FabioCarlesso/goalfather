@@ -12,7 +12,8 @@ import com.carlesso.goalfather.domain.result.LineupResult
  * Implementação de `SaveLineupUseCase`. Valida:
  * 1. Clube existe;
  * 2. Exatamente 11 jogadores;
- * 3. Todos os IDs estão no elenco do clube.
+ * 3. Todos os IDs estão no elenco do clube;
+ * 4. Nenhum deles está lesionado (issue #54).
  *
  * Validação posicional (jogador certo no slot certo da formação)
  * fica para o backend num refinamento futuro — frontend já faz UI-
@@ -52,8 +53,14 @@ class SaveLineupService(
             return LineupResult.PlayersNotInSquad(missingIds = missing)
         }
 
-        // !! seguro: missing está vazio, então todos os IDs existem no índice.
+        // `missing` está vazio, então todos os IDs existem no índice.
         val orderedPlayers = playerIds.map { squadIndex.getValue(it) }
+
+        // Lesionado não entra em campo enquanto o afastamento durar (issue #54).
+        val injured = orderedPlayers.filter { it.injured }.map { it.id.value }
+        if (injured.isNotEmpty()) {
+            return LineupResult.InjuredPlayers(playerIds = injured)
+        }
         val lineup = Lineup(players = orderedPlayers, formation = formation)
         val updatedClub = clubRepo.save(club.copy(lineup = lineup))
 

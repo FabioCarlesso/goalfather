@@ -5,14 +5,19 @@ import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
+import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.Formation
+import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -346,6 +351,199 @@ class PlayRoundServiceTest {
         // O caixa do mandante salvo reflete o caixa inicial + bilheteria.
         val savedHome = savedClubs.last { it.id == ClubId(1) }
         assertEquals(homeClub.cash + homeFinance.ticketRevenue, savedHome.cash)
+    }
+
+    @Test
+    fun `rodada desgasta os titulares e recupera os reservas (issue 54)`() = runTest {
+        // Elenco de 14: os 11 primeiros entram em campo (fallback de
+        // startingLineup), os 3 últimos ficam no banco e recuperam.
+        val deepHome = makeClub(id = 1, name = "Home FC", squadSize = 14, overall = 80, stamina = 80)
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns deepHome
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        // 4 clubes → temporada de 3 rodadas: a rodada 1 NÃO vira temporada, senão
+        // a pré-temporada zeraria a fadiga e mascararia o que este teste mede.
+        coEvery { clubRepo.findAll() } returns listOf(
+            deepHome,
+            awayClub,
+            makeClub(id = 3, name = "C3"),
+            makeClub(id = 4, name = "C4"),
+        )
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        service.stream(1).toList()
+
+        val savedHome = savedClubs.last { it.id == ClubId(1) }
+        val byId = savedHome.squad.associateBy { it.id.value }
+        for (id in 1L..11L) {
+            assertTrue(
+                byId.getValue(id).stamina < 80,
+                "titular $id deveria ter cansado, ficou com ${byId.getValue(id).stamina}",
+            )
+        }
+        for (id in 12L..14L) {
+            assertTrue(
+                byId.getValue(id).stamina > 80,
+                "reserva $id deveria ter recuperado, ficou com ${byId.getValue(id).stamina}",
+            )
+        }
+    }
+
+    @Test
+    fun `clube que folga na rodada recupera stamina (issue 54)`() = runTest {
+        // Regressão: a fadiga só alcançava os clubes ENVOLVIDOS na rodada, então
+        // quem folgasse nunca recuperaria. Hoje toda divisão tem nº par de clubes
+        // e ninguém folga, mas a regra não pode depender disso.
+        val resting = makeClub(id = 3, name = "Folga FC", squadSize = 11, stamina = 60)
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        // O clube 3 existe na liga mas NÃO tem partida nesta rodada.
+        coEvery { clubRepo.findAll() } returns listOf(
+            homeClub,
+            awayClub,
+            resting,
+            makeClub(id = 4, name = "C4"),
+        )
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        service.stream(1).toList()
+
+        val savedResting = savedClubs.last { it.id == ClubId(3) }
+        assertTrue(
+            savedResting.squad.all { it.stamina == 60 + BENCH_STAMINA_RECOVERY },
+            "elenco inteiro do clube que folgou deveria recuperar",
+        )
+    }
+
+    @Test
+    fun `lesionado nao entra em campo na rodada seguinte (issue 54)`() = runTest {
+        // Regressão do achado da review do PR #69: o guard de lesão vivia só no
+        // SaveLineupService, então quem se machucava DEPOIS de escalar seguia
+        // titular. Aqui o clube entra na rodada já com um titular lesionado.
+        val base = makeClub(id = 1, name = "Home FC", squadSize = 14, overall = 80)
+        val injuredHome = base.copy(
+            lineup = Lineup(players = base.squad.take(11), formation = Formation.F_4_4_2),
+            squad = base.squad.mapIndexed { i, p ->
+                if (i == 0) p.copy(availability = Availability.Injured(2)) else p
+            },
+        )
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns injuredHome
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(
+            injuredHome,
+            awayClub,
+            makeClub(id = 3, name = "C3"),
+            makeClub(id = 4, name = "C4"),
+        )
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        val events = service.stream(1).toList()
+
+        // O lesionado não pode aparecer como autor de nada na partida.
+        val actors = events.filterIsInstance<RoundEvent.MatchUpdate>().mapNotNull {
+            when (val e = it.event) {
+                is MatchEvent.Goal -> e.scorerId
+                is MatchEvent.Card -> e.playerId
+                is MatchEvent.Injury -> e.playerId
+                else -> null
+            }
+        }.toSet()
+        assertTrue(PlayerId(1) !in actors, "lesionado não deveria participar da partida")
+
+        // E, por não ter entrado em campo, descansa em vez de cansar.
+        val savedHome = savedClubs.last { it.id == ClubId(1) }
+        val injuredPlayer = savedHome.squad.first { it.id == PlayerId(1) }
+        assertTrue(injuredPlayer.stamina >= 100, "lesionado no banco deveria recuperar, não cansar")
+        assertEquals(Availability.Injured(1), injuredPlayer.availability, "lesão anda uma rodada")
+    }
+
+    @Test
+    fun `lesao da rodada afasta o jogador pelas rodadas do evento (issue 54)`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        // 4 clubes → a rodada 1 não encerra a temporada (a pré-temporada curaria
+        // as lesões antes de podermos observá-las).
+        coEvery { clubRepo.findAll() } returns listOf(
+            homeClub,
+            awayClub,
+            makeClub(id = 3, name = "C3"),
+            makeClub(id = 4, name = "C4"),
+        )
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        val events = service.stream(1).toList()
+
+        // O afastamento persistido tem que bater com o que o evento anunciou —
+        // é o que garante que a UI e o banco contam a mesma história.
+        val injuries = events.filterIsInstance<RoundEvent.MatchUpdate>()
+            .map { it.event }
+            .filterIsInstance<MatchEvent.Injury>()
+            .associate { it.playerId.value to it.roundsOut }
+
+        val persisted = savedClubs.flatMap { it.squad }.associateBy { it.id.value }
+        for ((playerId, roundsOut) in injuries) {
+            val player = persisted[playerId] ?: continue
+            assertEquals(
+                Availability.Injured(roundsOut),
+                player.availability,
+                "jogador $playerId deveria ficar $roundsOut rodada(s) fora",
+            )
+        }
+    }
+
+    @Test
+    fun `virada de temporada devolve o elenco inteiro e descansado (issue 54)`() = runTest {
+        // Elenco chega machucado e exausto ao fim da temporada.
+        val wornOut = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80, stamina = 45)
+            .let { c -> c.copy(squad = c.squad.map { it.copy(availability = Availability.Injured(3)) }) }
+        val lastRound = Round(
+            number = 1,
+            season = 2026,
+            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+        )
+        coEvery { leagueRepo.findRound(1) } returns lastRound
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns wornOut
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        // 2 clubes → temporada de 1 rodada: a rodada 1 já é a última.
+        coEvery { clubRepo.findAll() } returns listOf(wornOut, awayClub)
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        val events = service.stream(1).toList()
+        assertTrue(events.any { it is RoundEvent.SeasonFinished }, "temporada deveria encerrar")
+
+        val preSeason = savedClubs.last { it.id == ClubId(1) }
+        assertTrue(
+            preSeason.squad.all { it.stamina == 100 && it.availability == Availability.Available },
+            "pré-temporada deveria zerar fadiga e lesões",
+        )
     }
 
     @Test

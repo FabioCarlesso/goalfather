@@ -21,7 +21,15 @@ import {
   markRoundReady,
   resetRoundReadiness,
 } from './seed'
-import { simulateMatch, averageOverall } from './engine'
+import {
+  simulateMatch,
+  averageOverall,
+  applyRoundFitness,
+  applyMedicalTreatment,
+  startingEleven,
+  MulberryRng,
+  MEDICAL_DEPARTMENT_COST_CENTS,
+} from './engine'
 import type {
   TransferResult,
   Club,
@@ -212,6 +220,32 @@ export const handlers = [
       ...club,
       cash: club.cash - totalCost,
       stadiumCapacity: club.stadiumCapacity + body.additionalSeats,
+    }
+    state.clubs[clubId] = updated
+    return HttpResponse.json(updated)
+  }),
+
+  // ─── treatSquad (departamento médico, issue #54) ──────────────────────
+  http.post('/api/clubs/:id/medical', async ({ params }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const clubId = Number(params.id)
+    const club = state.clubs[clubId]
+    if (!club) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
+
+    if (club.cash < MEDICAL_DEPARTMENT_COST_CENTS) {
+      return HttpResponse.json(
+        {
+          code: 'INSUFFICIENT_FUNDS',
+          message: 'Caixa insuficiente para o departamento médico',
+        } satisfies ErrorResponse,
+        { status: 402 },
+      )
+    }
+
+    const updated: Club = {
+      ...club,
+      cash: club.cash - MEDICAL_DEPARTMENT_COST_CENTS,
+      squad: applyMedicalTreatment(club.squad),
     }
     state.clubs[clubId] = updated
     return HttpResponse.json(updated)
@@ -534,7 +568,9 @@ export const handlers = [
         const goals = new Map<number, number>()
         const yellow = new Map<number, number>()
         const red = new Map<number, number>()
-        const injured = new Set<number>()
+        // Lesão carrega a duração sorteada pela engine; duas na mesma rodada,
+        // vale o afastamento mais longo (issue #54).
+        const injuries = new Map<number, number>()
         for (const { event } of allEvents) {
           if (event.type === 'Goal') {
             goals.set(event.scorerId, (goals.get(event.scorerId) ?? 0) + 1)
@@ -542,20 +578,28 @@ export const handlers = [
             const target = event.red ? red : yellow
             target.set(event.playerId, (target.get(event.playerId) ?? 0) + 1)
           } else if (event.type === 'Injury') {
-            injured.add(event.playerId)
+            injuries.set(event.playerId, Math.max(injuries.get(event.playerId) ?? 0, event.roundsOut))
           }
         }
         const myFinance = finances.find((f) => f.clubId === 1)
         const cashDelta = myFinance ? myFinance.ticketRevenue - myFinance.salariesPaid : 0
+        // Titulares = escalação salva revalidada (lesionado fora, reserva apto
+        // assume), exatamente como `Club.startingLineup()` do backend.
+        const starterIds = startingEleven(myClub.squad, myClub.lineup?.playerIds)
+        const rested = applyRoundFitness(
+          myClub.squad,
+          starterIds,
+          new MulberryRng(round.number * 1000 + 1),
+          injuries,
+        )
         state.clubs[1] = {
           ...myClub,
           cash: Math.max(0, myClub.cash + cashDelta),
-          squad: myClub.squad.map((p) => ({
+          squad: rested.map((p) => ({
             ...p,
             goals: p.goals + (goals.get(p.id) ?? 0),
             yellowCards: p.yellowCards + (yellow.get(p.id) ?? 0),
             redCards: p.redCards + (red.get(p.id) ?? 0),
-            injured: p.injured || injured.has(p.id),
           })),
         }
       }

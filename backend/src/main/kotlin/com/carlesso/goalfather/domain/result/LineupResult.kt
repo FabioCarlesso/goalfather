@@ -37,4 +37,13 @@ sealed interface LineupResult {
     @Serializable
     @SerialName("PlayersNotInSquad")
     data class PlayersNotInSquad(val missingIds: List<Long>) : LineupResult
+
+    /**
+     * Escalação contém jogador lesionado (issue #54) — controller mapeia 400.
+     * Modelado como variante do `sealed` em vez de exception: erro de negócio
+     * é valor, não fluxo de controle (CLAUDE.md).
+     */
+    @Serializable
+    @SerialName("InjuredPlayers")
+    data class InjuredPlayers(val playerIds: List<Long>) : LineupResult
 }

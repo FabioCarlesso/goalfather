@@ -39,13 +39,25 @@ class FlywayPostgresMigrationTest {
             .load()
 
     @Test
-    fun `cadeia completa migra em Postgres e a V7 preserva dados pre-divisoes`() {
+    fun `cadeia completa migra em Postgres preservando dados pre-divisoes e pre-fadiga`() {
         // 1. Banco "de produção" pré-divisões: migra até a V6 e povoa.
         flyway(target = "6").migrate()
         DriverManager.getConnection(postgres.jdbcUrl, postgres.username, postgres.password).use { conn ->
             conn.createStatement().use { st ->
                 st.execute("INSERT INTO clubs (id, name, cash, stadium_capacity) VALUES (1, 'Legado FC', 100, 5000)")
                 st.execute("INSERT INTO standings (season, round_number, rows_json) VALUES (2025, 3, '[]')")
+                // Dois jogadores legados: um íntegro e um lesionado — a V8 troca
+                // o booleano eterno por duração em rodadas (issue #54).
+                st.execute(
+                    "INSERT INTO players (id, club_id, name, position, overall, pace, shooting, " +
+                        "passing, defending, stamina, salary, age, goals, yellow_cards, red_cards, injured) " +
+                        "VALUES (1, 1, 'Sadio', 'MF', 70, 70, 70, 70, 70, 100, 1000, 25, 0, 0, 0, FALSE)",
+                )
+                st.execute(
+                    "INSERT INTO players (id, club_id, name, position, overall, pace, shooting, " +
+                        "passing, defending, stamina, salary, age, goals, yellow_cards, red_cards, injured) " +
+                        "VALUES (2, 1, 'Machucado', 'FW', 75, 75, 75, 75, 75, 60, 2000, 28, 3, 1, 0, TRUE)",
+                )
             }
         }
 
@@ -70,6 +82,16 @@ class FlywayPostgresMigrationTest {
                 assertEquals(3, standings.getInt("round_number"))
                 assertEquals(0, standings.getInt("promotion_spots"))
                 assertEquals(0, standings.getInt("relegation_spots"))
+
+                // 4. Semântica da V8: `injured` vira duração em rodadas. Quem
+                //    estava lesionado herda 1 rodada; os demais ficam aptos.
+                val players = st.executeQuery(
+                    "SELECT id, injured_for_rounds FROM players ORDER BY id",
+                )
+                assertTrue(players.next(), "jogador legado deveria sobreviver à V8")
+                assertEquals(0, players.getInt("injured_for_rounds"), "jogador íntegro fica apto")
+                assertTrue(players.next())
+                assertEquals(1, players.getInt("injured_for_rounds"), "lesionado herda 1 rodada")
             }
         }
     }

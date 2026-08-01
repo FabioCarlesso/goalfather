@@ -8,12 +8,14 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.toAvailableDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
+import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
 import com.carlesso.goalfather.domain.result.LineupResult
+import com.carlesso.goalfather.domain.result.MedicalResult
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -29,6 +31,7 @@ class ClubController(
     private val clubRepo: ClubRepository,
     private val saveLineup: SaveLineupUseCase,
     private val claimClub: ClaimClubUseCase,
+    private val treatSquad: TreatSquadUseCase,
 ) {
 
     /**
@@ -97,6 +100,40 @@ class ClubController(
                 ErrorResponse(
                     code = "INVALID_LINEUP",
                     message = "Jogadores fora do elenco: ${result.missingIds}",
+                ),
+            )
+            is LineupResult.InjuredPlayers -> ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    code = "INJURED_PLAYERS",
+                    message = "Jogadores lesionados não podem ser escalados: ${result.playerIds}",
+                ),
+            )
+        }
+
+    /**
+     * Departamento médico (issue #54): debita a taxa fixa e acelera a
+     * recuperação do elenco (stamina + rodadas de lesão).
+     */
+    @PostMapping("/{id}/medical")
+    suspend fun treatSquad(
+        @PathVariable id: Long,
+        @AuthenticationPrincipal userId: Long,
+    ): ResponseEntity<Any> =
+        when (val result = treatSquad.execute(ClubId(id), userId)) {
+            is MedicalResult.Success -> ResponseEntity.ok(result.club)
+            is MedicalResult.ClubNotFound -> ResponseEntity.status(404).body(
+                ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
+            )
+            is MedicalResult.NotOwner -> ResponseEntity.status(403).body(
+                ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
+            )
+            // 402 é o mesmo status já usado pela ampliação de estádio para
+            // "caixa não cobre" — mantém a UI com um só caminho de erro.
+            is MedicalResult.InsufficientFunds -> ResponseEntity.status(402).body(
+                ErrorResponse(
+                    code = "INSUFFICIENT_FUNDS",
+                    message = "Caixa insuficiente para o departamento médico " +
+                        "(necessário ${result.required}, disponível ${result.available})",
                 ),
             )
         }

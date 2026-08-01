@@ -9,11 +9,13 @@ import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
+import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -22,8 +24,10 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
+import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.canScheduleSeason
+import com.carlesso.goalfather.domain.rules.fitnessSeed
 import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
@@ -184,9 +188,22 @@ class PlayRoundService(
         // folha salarial em rodadas de "mês" (issue #4).
         val finances = computeFinances(round, involvedClubs)
 
-        // Acumula estatísticas dos jogadores (issue #2) e aplica o caixa
-        // (issue #4) em uma única gravação por clube.
-        persistRoundEffects(events, involvedClubs, finances)
+        // Acumula estatísticas dos jogadores (issue #2), aplica o caixa
+        // (issue #4) e o desgaste da rodada (issue #54) em uma única gravação
+        // por clube.
+        //
+        // A fadiga alcança TODOS os clubes, não só os que entraram em campo:
+        // quem folga na rodada precisa recuperar stamina. Hoje toda divisão tem
+        // nº PAR de clubes (o gerador de fixtures rejeita ímpar), então na
+        // prática ninguém folga — mas depender disso deixaria a regra errada por
+        // acidente. `ifEmpty` cai para os clubes envolvidos se o repositório
+        // vier vazio, preservando o comportamento dos testes que só stubam
+        // `findById`.
+        //
+        // Uma leitura só, reusada no calendário lá embaixo: `persistRoundEffects`
+        // não mexe em id/nome/divisão, que é tudo que o agendamento consulta.
+        val clubs = clubRepo.findAll().ifEmpty { involvedClubs.toList() }
+        persistRoundEffects(round.number, events, clubs, involvedClubs, finances)
 
         // A MESMA rodada é aplicada à tabela de cada divisão: só os jogos da
         // divisão em questão contam (clubes fora da tabela são ignorados pela
@@ -204,7 +221,6 @@ class PlayRoundService(
         // chega à última rodada, gera a próxima da MESMA temporada. Ao
         // encerrar a última, vira a temporada (issue #11) com
         // promoção/rebaixamento entre divisões (issue #47).
-        val clubs = clubRepo.findAll()
         val canSchedule = canScheduleSeason(clubs)
         val seasonEnded = canSchedule && round.number >= seasonRounds(clubs)
 
@@ -257,7 +273,16 @@ class PlayRoundService(
      */
     private suspend fun startNextSeasonClubs(nextDivisions: Map<ClubId, Division>): List<Club> =
         clubRepo.findAll().map { club ->
-            val reset = club.squad.map { it.copy(goals = 0, yellowCards = 0, redCards = 0, injured = false) }
+            // Pré-temporada: elenco volta inteiro e descansado (issue #54).
+            val reset = club.squad.map {
+                it.copy(
+                    goals = 0,
+                    yellowCards = 0,
+                    redCards = 0,
+                    availability = Availability.Available,
+                    stamina = 100,
+                )
+            }
             val updated = club.copy(
                 squad = reset,
                 division = nextDivisions[club.id] ?: club.division,
@@ -306,23 +331,37 @@ class PlayRoundService(
 
     /**
      * Aplica, numa ÚNICA gravação por clube, o incremento de estatísticas
-     * dos jogadores (gols/cartões/lesão — issue #2) e a variação de caixa
-     * da rodada (bilheteria − salários — issue #4).
+     * dos jogadores (gols/cartões — issue #2), a variação de caixa da rodada
+     * (bilheteria − salários — issue #4) e o desgaste físico: titulares
+     * cansam, reservas recuperam e as lesões andam uma rodada (issue #54).
      *
      * A atribuição de estatísticas é por `playerId`: cada clube só atualiza
      * jogadores do próprio elenco (ids únicos), sem ambiguidade entre
      * mandante e visitante. O caixa nunca fica negativo (`coerceAtLeast(0)`).
      * Clubes sem nenhuma mudança não são salvos.
+     *
+     * O RNG da fadiga é semeado por `rodada + clube` — determinístico como o
+     * resto do fluxo (a partida usa `matchId`), então reprocessar a mesma
+     * rodada com o mesmo elenco dá exatamente o mesmo desgaste.
+     *
+     * @param clubs todos os clubes da liga — quem folgou também recupera.
+     * @param playedClubs só os que entraram em campo; para os demais o conjunto
+     *   de titulares é vazio, então o elenco inteiro descansa.
      */
     private suspend fun persistRoundEffects(
+        roundNumber: Int,
         events: List<MatchEvent>,
         clubs: Collection<Club>,
+        playedClubs: Collection<Club>,
         finances: List<RoundFinance>,
     ) {
+        val playedIds = playedClubs.map { it.id }.toSet()
         val goals = mutableMapOf<Long, Int>()
         val yellow = mutableMapOf<Long, Int>()
         val red = mutableMapOf<Long, Int>()
-        val injured = mutableSetOf<Long>()
+        // Lesão carrega a duração sorteada pela engine; se o jogador se
+        // machucar duas vezes na mesma rodada, vale o afastamento mais longo.
+        val injuries = mutableMapOf<PlayerId, Int>()
 
         for (event in events) {
             when (event) {
@@ -330,7 +369,7 @@ class PlayRoundService(
                 is MatchEvent.Card ->
                     if (event.red) red.merge(event.playerId.value, 1, Int::plus)
                     else yellow.merge(event.playerId.value, 1, Int::plus)
-                is MatchEvent.Injury -> injured.add(event.playerId.value)
+                is MatchEvent.Injury -> injuries.merge(event.playerId, event.roundsOut, ::maxOf)
                 is MatchEvent.KickOff, is MatchEvent.Save, is MatchEvent.FullTime -> Unit
             }
         }
@@ -338,20 +377,31 @@ class PlayRoundService(
         val financeByClub = finances.associateBy { it.clubId.value }
 
         for (club in clubs) {
-            val updatedSquad = club.squad.map { p ->
+            // Quem entrou em campo — mesma escalação que a engine usou. Clube
+            // que folgou não tem titular: o elenco inteiro recupera.
+            val starterIds =
+                if (club.id in playedIds) club.startingLineup().players.map { it.id }.toSet()
+                else emptySet()
+
+            val rested = applyRoundFitness(
+                squad = club.squad,
+                starterIds = starterIds,
+                rng = Random(fitnessSeed(roundNumber, club.id)),
+                newInjuries = injuries,
+            )
+
+            val updatedSquad = rested.map { p ->
                 val id = p.id.value
                 val g = goals[id] ?: 0
                 val y = yellow[id] ?: 0
                 val r = red[id] ?: 0
-                val hurt = id in injured
-                if (g == 0 && y == 0 && r == 0 && !hurt) {
+                if (g == 0 && y == 0 && r == 0) {
                     p
                 } else {
                     p.copy(
                         goals = p.goals + g,
                         yellowCards = p.yellowCards + y,
                         redCards = p.redCards + r,
-                        injured = p.injured || hurt,
                     )
                 }
             }

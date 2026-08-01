@@ -9,6 +9,7 @@ import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
+import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -25,6 +26,7 @@ import com.carlesso.goalfather.application.service.RegisterUserService
 import com.carlesso.goalfather.application.service.RoundReadinessService
 import com.carlesso.goalfather.application.service.SaveLineupService
 import com.carlesso.goalfather.application.service.SellPlayerService
+import com.carlesso.goalfather.application.service.TreatSquadService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -71,6 +73,12 @@ class BeanConfig {
     fun saveLineupUseCase(
         clubRepo: ClubRepository,
     ): SaveLineupUseCase = SaveLineupService(clubRepo)
+
+    /** Departamento médico (issue #54). */
+    @Bean
+    fun treatSquadUseCase(
+        clubRepo: ClubRepository,
+    ): TreatSquadUseCase = TreatSquadService(clubRepo)
 
     @Bean
     fun playRoundUseCase(

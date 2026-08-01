@@ -6,7 +6,7 @@
 // MatchSimulator com Flow<MatchEvent>, esta engine é descartada. A app real
 // (src/api/, src/pages/) nunca sabe que esta engine existe.
 
-import type { MatchEvent } from '../domain/types'
+import type { Availability, MatchEvent } from '../domain/types'
 
 /** RNG seedável (mulberry32) — mesmo seed → mesma sequência de eventos. */
 export class MulberryRng {
@@ -42,6 +42,17 @@ const P_SAVE_AT_EVENT  = 0.30
 const P_CARD_AT_EVENT  = 0.22
 const P_INJURY_AT_EVENT = 1.0 - P_GOAL_AT_EVENT - P_SAVE_AT_EVENT - P_CARD_AT_EVENT
 const P_RED_CARD       = 0.12
+
+// ─── Fadiga e lesões (issue #54) — espelham domain/rules/FitnessRules.kt ───
+export const INJURY_DURATION_MIN = 1
+export const INJURY_DURATION_MAX = 4
+export const STARTER_STAMINA_LOSS_MIN = 10
+export const STARTER_STAMINA_LOSS_MAX = 25
+export const STAMINA_MATCH_FLOOR = 40
+export const BENCH_STAMINA_RECOVERY = 12
+export const STAMINA_FULL_PERFORMANCE = 70
+export const MEDICAL_DEPARTMENT_COST_CENTS = 30_000_00
+export const MEDICAL_STAMINA_RECOVERY = 30
 
 /**
  * Gera o fluxo de eventos da partida.
@@ -89,15 +100,105 @@ export function* simulateMatch(
       const home = rng.next() < 0.5
       const squad = home ? setup.homeSquad : setup.awaySquad
       const playerId = squad.length > 0 ? rng.pick(squad) : 0
-      yield { type: 'Injury', minute, playerId }
+      // Duração sorteada com o RNG da própria partida (issue #54) — espelha
+      // drawInjuryDuration do MatchSimulator.kt.
+      const roundsOut = INJURY_DURATION_MIN
+        + Math.floor(rng.next() * (INJURY_DURATION_MAX - INJURY_DURATION_MIN + 1))
+      yield { type: 'Injury', minute, playerId, roundsOut }
     }
   }
 
   yield { type: 'FullTime', minute: 90, homeGoals, awayGoals }
 }
 
-/** Média de overall do elenco — usado como "força" agregada do time. */
-export function averageOverall(squad: { overall: number }[]): number {
+/**
+ * Overall efetivo — já descontada a fadiga (issue #54). Espelha
+ * `Player.effectiveOverall()` do backend: sem penalidade acima do piso de
+ * forma, queda proporcional abaixo dele.
+ */
+export const effectiveOverall = (p: { overall: number; stamina?: number }): number => {
+  const stamina = p.stamina ?? 100
+  return stamina >= STAMINA_FULL_PERFORMANCE
+    ? p.overall
+    : p.overall * (stamina / STAMINA_FULL_PERFORMANCE)
+}
+
+/** Força agregada do time = média do overall EFETIVO dos escalados. */
+export function averageOverall(squad: { overall: number; stamina?: number }[]): number {
   if (squad.length === 0) return 60
-  return squad.reduce((sum, p) => sum + p.overall, 0) / squad.length
+  return squad.reduce((sum, p) => sum + effectiveOverall(p), 0) / squad.length
+}
+
+// ─── Desgaste de rodada (espelha FitnessRules.kt) ─────────────────────────
+
+type FitPlayer = {
+  id: number
+  stamina: number
+  availability: Availability
+}
+
+const advanceInjury = (a: Availability, rounds = 1): Availability =>
+  a.type === 'Injured' && a.roundsOut - rounds >= 1
+    ? { type: 'Injured', roundsOut: a.roundsOut - rounds }
+    : { type: 'Available' }
+
+/**
+ * Aplica UMA rodada de desgaste: titulares cansam, reservas recuperam,
+ * lesões em curso andam uma rodada e as novas entram em vigor. Mesma ordem
+ * do backend — decrementa antes de aplicar as lesões da própria rodada.
+ */
+export function applyRoundFitness<T extends FitPlayer>(
+  squad: T[],
+  starterIds: Set<number>,
+  rng: MulberryRng,
+  newInjuries: Map<number, number> = new Map(),
+): T[] {
+  return squad.map((p) => {
+    const stamina = starterIds.has(p.id)
+      ? Math.max(
+          STAMINA_MATCH_FLOOR,
+          p.stamina - (STARTER_STAMINA_LOSS_MIN
+            + Math.floor(rng.next() * (STARTER_STAMINA_LOSS_MAX - STARTER_STAMINA_LOSS_MIN + 1))),
+        )
+      : Math.min(100, p.stamina + BENCH_STAMINA_RECOVERY)
+
+    const advanced = advanceInjury(p.availability)
+    const fresh = newInjuries.get(p.id)
+    const availability: Availability =
+      fresh == null
+        ? advanced
+        : {
+            type: 'Injured',
+            roundsOut: advanced.type === 'Injured' ? Math.max(advanced.roundsOut, fresh) : fresh,
+          }
+
+    return { ...p, stamina, availability }
+  })
+}
+
+/**
+ * Quem de fato entra em campo — espelha `Club.startingLineup()` do backend:
+ * a escalação salva é revalidada contra o estado atual do elenco, lesionado
+ * fica fora e reserva apto assume a vaga (issue #54).
+ */
+export function startingEleven<T extends FitPlayer>(
+  squad: T[],
+  savedPlayerIds: number[] | undefined,
+): Set<number> {
+  const available = squad.filter((p) => p.availability.type !== 'Injured')
+  if (!savedPlayerIds) return new Set(available.slice(0, 11).map((p) => p.id))
+
+  const byId = new Map(available.map((p) => [p.id, p]))
+  const starters = savedPlayerIds.filter((id) => byId.has(id))
+  const substitutes = available.filter((p) => !starters.includes(p.id)).map((p) => p.id)
+  return new Set([...starters, ...substitutes].slice(0, 11))
+}
+
+/** Sessão do departamento médico — espelha `applyMedicalTreatment` do backend. */
+export function applyMedicalTreatment<T extends FitPlayer>(squad: T[]): T[] {
+  return squad.map((p) => ({
+    ...p,
+    stamina: Math.min(100, p.stamina + MEDICAL_STAMINA_RECOVERY),
+    availability: advanceInjury(p.availability),
+  }))
 }

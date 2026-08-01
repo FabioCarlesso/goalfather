@@ -8,6 +8,7 @@ import {
   POSITION_ABBR,
   POSITION_LABEL,
 } from '../domain/formations'
+import { isInjured } from '../domain/players'
 import type { Club, Formation, Player } from '../domain/types'
 
 /**
@@ -128,9 +129,10 @@ function SlotPicker({
   otherSelected: number[]
   onChange: (id: number | null) => void
 }) {
-  // Lesionados ficam indisponíveis para escalação (issue #2).
+  // Lesionados ficam indisponíveis para escalação (issues #2/#54) — o backend
+  // recusa com INJURED_PLAYERS, aqui a opção nem aparece.
   const available = squad.filter(
-    (p) => p.position === position && !otherSelected.includes(p.id) && !p.injured,
+    (p) => p.position === position && !otherSelected.includes(p.id) && !isInjured(p),
   )
 
   return (
@@ -146,7 +148,7 @@ function SlotPicker({
         <option value="">— {POSITION_LABEL[position]} —</option>
         {available.map((p) => (
           <option key={p.id} value={p.id}>
-            {p.name} ({p.overall})
+            {p.name} ({p.overall}) · {p.stamina}%
           </option>
         ))}
       </select>

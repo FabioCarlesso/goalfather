@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useClub } from '../api/queries/useClub'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
 import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
+import { useTreatSquad, MEDICAL_COST_CENTS } from '../api/queries/useTreatSquad'
 import { ApiError } from '../api/client'
 import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney, formatSeats } from '../domain/formatters'
-import type { Club, TransferResult } from '../domain/types'
+import { isInjured, injuryRoundsOut, staminaLevel } from '../domain/players'
+import type { Availability, Club, TransferResult } from '../domain/types'
 
 export function DashboardPage() {
   const myClubId = useMyClubId()
@@ -45,6 +47,8 @@ export function DashboardPage() {
 
       <StadiumExpandPanel club={club} />
 
+      <MedicalDepartmentPanel club={club} />
+
       <div>
         <h2 className="text-xl font-semibold text-slate-100 mb-3">Elenco</h2>
         <ul className="divide-y divide-slate-800 rounded-lg border border-slate-800">
@@ -53,16 +57,10 @@ export function DashboardPage() {
               <div className="min-w-0">
                 <span className="font-medium text-slate-100">{p.name}</span>
                 <span className="ml-2 text-xs text-slate-500">{p.position} · {p.age}a</span>
-                {p.injured && (
-                  <span
-                    className="ml-2 rounded bg-orange-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300"
-                    title="Lesionado — indisponível para escalação"
-                  >
-                    🚑 LESIONADO
-                  </span>
-                )}
+                <InjuryBadge availability={p.availability} />
               </div>
               <div className="flex items-center gap-3">
+                <StaminaBar stamina={p.stamina} />
                 <PlayerStats player={p} />
                 {p.star && <span className="text-yellow-400" title="Estrela">★</span>}
                 <span className="text-slate-300 font-mono w-8 text-right">{p.overall}</span>
@@ -129,6 +127,88 @@ function StadiumExpandPanel({ club }: { club: Club }) {
       )}
       {expand.isSuccess && <p className="text-sm text-emerald-400">Capacidade ampliada ✓</p>}
     </div>
+  )
+}
+
+/**
+ * Departamento médico (issue #54): taxa fixa que devolve stamina e encurta
+ * lesões. Custo e efeitos vêm do backend — o painel só dispara e reporta.
+ */
+function MedicalDepartmentPanel({ club }: { club: Club }) {
+  const treat = useTreatSquad(club.id)
+
+  const injuredCount = club.squad.filter(isInjured).length
+  const tiredCount = club.squad.filter((p) => staminaLevel(p.stamina) !== 'fresh').length
+  const affordable = club.cash >= MEDICAL_COST_CENTS
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-100">Departamento médico</h2>
+        <span className="text-xs text-slate-500">{formatMoney(MEDICAL_COST_CENTS)} / sessão</span>
+      </div>
+      <p className="text-sm text-slate-400">
+        Recupera forma física do elenco e encurta as lesões em uma rodada.
+        {' '}
+        <span className="text-slate-300">
+          {injuredCount} lesionado{injuredCount === 1 ? '' : 's'} · {tiredCount} desgastado
+          {tiredCount === 1 ? '' : 's'}
+        </span>
+      </p>
+      <button
+        onClick={() => treat.mutate()}
+        disabled={!affordable || treat.isPending}
+        className="rounded-md bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
+      >
+        {treat.isPending ? 'Tratando…' : 'Tratar elenco'}
+      </button>
+      {!affordable && (
+        <p className="text-xs text-amber-300">
+          Caixa insuficiente — necessário {formatMoney(MEDICAL_COST_CENTS)}.
+        </p>
+      )}
+      {treat.isError && (
+        <p className="text-sm text-red-400">
+          {treat.error instanceof ApiError && treat.error.status === 402
+            ? `Caixa insuficiente — custo ${formatMoney(MEDICAL_COST_CENTS)}, disponível ${formatMoney(club.cash)}.`
+            : `Erro no tratamento: ${String(treat.error)}`}
+        </p>
+      )}
+      {treat.isSuccess && <p className="text-sm text-emerald-400">Elenco tratado ✓</p>}
+    </div>
+  )
+}
+
+/** Badge de lesão com a duração restante (issue #54). */
+function InjuryBadge({ availability }: { availability: Availability }) {
+  const roundsOut = injuryRoundsOut(availability)
+  if (roundsOut === null) return null
+  return (
+    <span
+      className="ml-2 rounded bg-orange-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300"
+      title={`Lesionado — indisponível por mais ${roundsOut} rodada(s)`}
+    >
+      🚑 LESIONADO · {roundsOut} rod.
+    </span>
+  )
+}
+
+/** Barra de forma física (issue #54). A faixa de cor vem de `staminaLevel`. */
+function StaminaBar({ stamina }: { stamina: number }) {
+  const level = staminaLevel(stamina)
+  const color = {
+    fresh:     'bg-emerald-500',
+    tired:     'bg-amber-500',
+    exhausted: 'bg-red-500',
+  }[level]
+
+  return (
+    <span className="flex items-center gap-1.5" title={`Forma física: ${stamina}%`}>
+      <span className="h-1.5 w-12 overflow-hidden rounded-full bg-slate-800">
+        <span className={`block h-full ${color}`} style={{ width: `${stamina}%` }} />
+      </span>
+      <span className="w-8 text-right font-mono text-[10px] text-slate-500">{stamina}%</span>
+    </span>
   )
 }
 

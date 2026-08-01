@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.test
 
+import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
@@ -17,6 +18,8 @@ internal fun makePlayer(
     id: Long,
     position: Position = Position.MF,
     overall: Int = 75,
+    stamina: Int = 100,
+    availability: Availability = Availability.Available,
 ): Player = Player(
     id = PlayerId(id),
     name = "Player$id",
@@ -26,8 +29,10 @@ internal fun makePlayer(
     shooting = overall,
     passing = overall,
     defending = overall,
+    stamina = stamina,
     salary = 10_000,
     age = 25,
+    availability = availability,
 )
 
 internal fun makeClub(
@@ -39,12 +44,13 @@ internal fun makeClub(
     lineup: Lineup? = null,
     ownerId: Long? = null,
     division: Division = Division.FIRST,
+    stamina: Int = 100,
 ): Club = Club(
     id = ClubId(id),
     name = name,
     cash = cash,
     stadiumCapacity = 15_000,
-    squad = (1L..squadSize.toLong()).map { makePlayer(it, overall = overall) },
+    squad = (1L..squadSize.toLong()).map { makePlayer(it, overall = overall, stamina = stamina) },
     lineup = lineup,
     ownerId = ownerId,
     division = division,

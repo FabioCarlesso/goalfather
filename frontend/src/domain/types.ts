@@ -5,6 +5,7 @@
 import type { components } from '../api/generated'
 
 export type Player        = components['schemas']['Player']
+export type Availability  = components['schemas']['Availability']
 export type Club          = components['schemas']['Club']
 export type Lineup        = components['schemas']['Lineup']
 export type Formation     = components['schemas']['Formation']
