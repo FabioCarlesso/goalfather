@@ -40,10 +40,20 @@ data class Club(
     /**
      * Escalação que o time entra em campo — `lineup` salvo, ou
      * fallback dos 11 primeiros do elenco em 4-4-2.
+     *
+     * O `lineup` salvo guarda uma FOTO dos jogadores do momento em que o
+     * técnico escalou, e essa foto envelhece a cada rodada (stamina, lesão,
+     * gols, cartões). Por isso os titulares são reidratados pelo id a partir
+     * do `squad`, que é a única fonte de verdade do estado do jogador — sem
+     * isso a fadiga da issue #54 nunca chegaria à força do time. `mapNotNull`
+     * descarta quem saiu do elenco desde a escalação (jogador vendido).
      */
-    fun startingLineup(): Lineup =
-        lineup ?: Lineup(
-            formation = Formation.F_4_4_2,
-            players = squad.take(11),
-        )
+    fun startingLineup(): Lineup {
+        val byId = squad.associateBy { it.id }
+        return lineup?.let { saved -> saved.copy(players = saved.players.mapNotNull { byId[it.id] }) }
+            ?: Lineup(
+                formation = Formation.F_4_4_2,
+                players = squad.take(11),
+            )
+    }
 }

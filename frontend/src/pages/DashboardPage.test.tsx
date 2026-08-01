@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { DashboardPage } from './DashboardPage'
 import { renderWithProviders } from '../test/render'
 
@@ -23,5 +24,35 @@ describe('DashboardPage', () => {
     // Alguns jogadores conhecidos do seed
     expect(screen.getByText('Marcos Figueiredo')).toBeInTheDocument()
     expect(screen.getByText('Renato Silva')).toBeInTheDocument()
+  })
+
+  it('mostra forma física do elenco e o painel do departamento médico (issue #54)', async () => {
+    renderWithProviders(<DashboardPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
+    })
+
+    // Elenco do seed começa inteiro em 100% de forma.
+    expect(screen.getAllByTitle('Forma física: 100%')).toHaveLength(11)
+
+    expect(screen.getByRole('heading', { name: 'Departamento médico' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tratar elenco' })).toBeEnabled()
+    expect(screen.getByText(/0 lesionados · 0 desgastados/)).toBeInTheDocument()
+  })
+
+  it('trata o elenco e debita o caixa via endpoint do mock', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Tratar elenco' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Elenco tratado ✓')).toBeInTheDocument()
+    })
   })
 })

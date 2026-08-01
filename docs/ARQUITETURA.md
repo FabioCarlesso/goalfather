@@ -104,6 +104,13 @@ enum class Formation(val slots: List<Position>) {
 value class PlayerId(val value: Long)          // value class: zero overhead
 
 // ---- Entities ----
+// Disponibilidade como soma de tipos: a duração da lesão só existe DENTRO
+// de Injured, então "lesionado sem duração" é irrepresentável (issue #54).
+sealed interface Availability {
+    data object Available : Availability
+    data class Injured(val roundsOut: Int) : Availability
+}
+
 data class Player(
     val id: PlayerId,
     val name: String,
@@ -114,9 +121,10 @@ data class Player(
     val salary: Int,
     val age: Int,
     val goals: Int = 0,
-    val injured: Boolean = false,
+    val availability: Availability = Availability.Available,
 ) {
     val isStar: Boolean get() = overall >= 82
+    val injured: Boolean get() = availability is Availability.Injured
 }
 
 data class Lineup(val players: List<Player>, val formation: Formation) {
@@ -267,6 +275,7 @@ class PlayMatchService(
 | `POST` | `/api/market/buy` | Contratar jogador |
 | `POST` | `/api/market/sell` | Vender jogador |
 | `POST` | `/api/clubs/{id}/stadium/expand` | Ampliar estádio |
+| `POST` | `/api/clubs/{id}/medical` | Departamento médico: recupera stamina e encurta lesões — issue #54 |
 | `GET` | `/api/league/standings` | Tabela de classificação |
 | `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
 | `POST` | `/api/league/round/ready` | Técnico sinaliza "estou pronto" — issue #20 |
@@ -393,6 +402,42 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
     seguinte cairia no replay (a liga travaria). Recuperação (rodada `Finished`
     sem sucessora → reconciliar) fica como follow-up.
 - **Foco de estudo:** coroutines + concorrência, transações otimistas
+
+### Fase 6 — Profundidade de gestão
+- [x] **6.1** Fadiga, lesões com duração e departamento médico — issue #54
+  (regra pura em `domain/rules/FitnessRules.kt`: titulares perdem 10–25 de
+  stamina por rodada com piso em 40, reservas recuperam 12, e a `stamina`
+  passa a escalar o `overall` efetivo abaixo de 70 — é o que dá sentido a
+  rodar o elenco. A lesão deixou de ser um booleano eterno: virou o `sealed
+  interface Availability` com `Injured(roundsOut)`, decrementado a cada
+  rodada, e `SaveLineupService` recusa escalar lesionado com
+  `LineupResult.InjuredPlayers`. `POST /api/clubs/{id}/medical` cobra
+  R$ 30.000 e devolve +30 de stamina / −1 rodada de lesão, com caixa
+  insuficiente modelado como valor (`MedicalResult.InsufficientFunds`), não
+  exception. Migration V8 troca a coluna `injured` por `injured_for_rounds`.)
+- [ ] Mercado dinâmico / variação de preços — *futuro*
+
+##### Por que `Availability` e não `injuredForRounds: Int`
+
+O par `injured: Boolean` + duração admitiria estados sem sentido —
+`injured = false` com 3 rodadas de afastamento. Um `Int` sozinho resolve isso,
+mas ainda deixa o "0 = apto" como convenção implícita que todo caller precisa
+lembrar. Com o `sealed interface`, a duração só é representável **dentro** de
+`Injured`, o `when` sobre as variantes é exaustivo sem `else`, e o compilador
+avisa em cada ponto de uso quando uma variante nova aparecer (ex.: suspensão
+por cartão). É o exercício de "torne estados inválidos irrepresentáveis" que a
+issue pedia. O `Int` continua existindo — mas só na coluna do banco, onde não
+há soma de tipos, reconstruído no `PlayerMapper`.
+
+##### Nota: escalação salva vs. estado do jogador
+
+`Club.lineup` é persistido como um `Lineup` serializado, ou seja, uma **foto**
+dos jogadores no momento em que o técnico escalou. Essa foto envelhece a cada
+rodada. Antes da issue #54 isso era só cosmético (gols/cartões desatualizados
+no JSON); com fadiga passaria a ser um bug de regra — o time entraria em campo
+com a stamina do dia da escalação e a fadiga nunca chegaria à força do time.
+Por isso `Club.startingLineup()` agora **reidrata os titulares pelo id a partir
+do `squad`**, que é a única fonte de verdade do estado do jogador.
 
 #### Decisão: lock otimista vs. pessimista no mercado (issue #21)
 

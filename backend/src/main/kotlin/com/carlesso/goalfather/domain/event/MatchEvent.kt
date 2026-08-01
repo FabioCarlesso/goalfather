@@ -47,11 +47,18 @@ sealed interface MatchEvent {
         val red: Boolean,
     ) : MatchEvent
 
+    /**
+     * Lesão em campo. `roundsOut` é o afastamento sorteado com o RNG da
+     * PRÓPRIA partida (issue #54): a duração viaja no evento, então quem
+     * aplica os efeitos da rodada não precisa re-sortear nada — e o replay
+     * de um stream reproduz exatamente a mesma lesão.
+     */
     @Serializable
     @SerialName("Injury")
     data class Injury(
         override val minute: Int,
         val playerId: PlayerId,
+        val roundsOut: Int,
     ) : MatchEvent
 
     @Serializable

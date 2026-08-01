@@ -57,8 +57,11 @@ class PlayerEntity(
     @Column(name = "red_cards", nullable = false)
     var redCards: Int = 0,
 
-    @Column(name = "injured", nullable = false)
-    var injured: Boolean = false,
+    // Rodadas de afastamento restantes; 0 = apto (issue #54). A coluna é um
+    // Int cru porque o banco não tem soma de tipos — o `sealed Availability`
+    // do domínio é reconstruído no PlayerMapper.
+    @Column(name = "injured_for_rounds", nullable = false)
+    var injuredForRounds: Int = 0,
 )
 
 /**

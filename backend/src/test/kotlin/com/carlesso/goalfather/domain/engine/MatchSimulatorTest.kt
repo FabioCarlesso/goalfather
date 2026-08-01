@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.rules.INJURY_DURATION
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
@@ -168,6 +169,23 @@ class MatchSimulatorTest {
             } else {
                 assertTrue(goal.scorerId in awayIds, "Gol away com scorer fora do squad away: ${goal.scorerId}")
             }
+        }
+    }
+
+    @Test
+    fun `lesao sai do evento ja com a duracao sorteada (issue 54)`() = runTest {
+        // Varre várias seeds para garantir que pelo menos uma partida tenha lesão.
+        val injuries = (1..200).flatMap { seed ->
+            MatchSimulator().simulate(setup, Random(seed.toLong())).toList()
+                .filterIsInstance<MatchEvent.Injury>()
+        }
+
+        assertTrue(injuries.isNotEmpty(), "200 partidas deveriam produzir alguma lesão")
+        for (injury in injuries) {
+            assertTrue(
+                injury.roundsOut in INJURY_DURATION,
+                "afastamento fora da faixa $INJURY_DURATION: ${injury.roundsOut}",
+            )
         }
     }
 

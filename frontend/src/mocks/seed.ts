@@ -30,7 +30,7 @@ const player = (
   goals: 0,
   yellowCards: 0,
   redCards: 0,
-  injured: false,
+  availability: { type: 'Available' },
   star: ovr >= 82,
 })
 
@@ -464,7 +464,15 @@ export function startNewSeason(season: number, finalTables: Standings[]): void {
   if (my) {
     state.clubs[1] = {
       ...my,
-      squad: my.squad.map((p) => ({ ...p, goals: 0, yellowCards: 0, redCards: 0, injured: false })),
+      // Pré-temporada: elenco volta inteiro e descansado (issue #54).
+      squad: my.squad.map((p) => ({
+        ...p,
+        goals: 0,
+        yellowCards: 0,
+        redCards: 0,
+        stamina: 100,
+        availability: { type: 'Available' as const },
+      })),
     }
   }
   state.standings = freshStandings(season, divisionAssignments)

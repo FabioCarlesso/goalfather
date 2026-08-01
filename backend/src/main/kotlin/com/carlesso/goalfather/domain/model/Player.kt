@@ -23,6 +23,11 @@ value class PlayerId(val value: Long)
  * `isStar` é derivado (computed property) — não armazenado, recalculado
  * sob demanda. Idioma Kotlin: comportamento perto do dado, sem getter
  * verboso à la Java.
+ *
+ * `stamina` (0..100) é consumida a cada rodada pelos titulares e recuperada
+ * pelos reservas; `availability` diz se o jogador pode ser escalado. Ambas
+ * são movidas exclusivamente pelas regras puras de `domain/rules/FitnessRules`
+ * (issue #54).
  */
 @Serializable
 data class Player(
@@ -40,9 +45,15 @@ data class Player(
     val goals: Int = 0,
     val yellowCards: Int = 0,
     val redCards: Int = 0,
-    val injured: Boolean = false,
+    val availability: Availability = Availability.Available,
 ) {
     val star: Boolean get() = overall >= 82
+
+    /**
+     * Atalho de leitura para as checagens de "pode escalar?". Derivado de
+     * [availability] — não é um campo, então não há como divergir dela.
+     */
+    val injured: Boolean get() = availability is Availability.Injured
 
     init {
         require(overall in 0..99) { "overall fora de 0..99: $overall" }

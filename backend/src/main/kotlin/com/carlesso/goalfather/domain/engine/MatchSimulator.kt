@@ -3,6 +3,7 @@ package com.carlesso.goalfather.domain.engine
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.teamStrength
+import com.carlesso.goalfather.domain.rules.drawInjuryDuration
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.random.Random
@@ -94,7 +95,15 @@ class MatchSimulator {
                     val squad = if (isHome) setup.home.players else setup.away.players
                     if (squad.isEmpty()) continue
                     val player = squad[rng.nextInt(squad.size)]
-                    emit(MatchEvent.Injury(minute = minute, playerId = player.id))
+                    // Duração sorteada aqui, com o RNG da partida (issue #54):
+                    // o evento já sai completo e o serviço só aplica.
+                    emit(
+                        MatchEvent.Injury(
+                            minute = minute,
+                            playerId = player.id,
+                            roundsOut = drawInjuryDuration(rng),
+                        ),
+                    )
                 }
             }
         }
