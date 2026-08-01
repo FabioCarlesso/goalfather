@@ -434,10 +434,22 @@ há soma de tipos, reconstruído no `PlayerMapper`.
 `Club.lineup` é persistido como um `Lineup` serializado, ou seja, uma **foto**
 dos jogadores no momento em que o técnico escalou. Essa foto envelhece a cada
 rodada. Antes da issue #54 isso era só cosmético (gols/cartões desatualizados
-no JSON); com fadiga passaria a ser um bug de regra — o time entraria em campo
-com a stamina do dia da escalação e a fadiga nunca chegaria à força do time.
-Por isso `Club.startingLineup()` agora **reidrata os titulares pelo id a partir
-do `squad`**, que é a única fonte de verdade do estado do jogador.
+no JSON); com fadiga e lesão passou a ser bug de regra. Por isso
+`Club.startingLineup()` **revalida a escalação salva no apito inicial**, em
+duas frentes:
+
+1. **Reidrata os titulares pelo id a partir do `squad`**, única fonte de verdade
+   do estado do jogador — sem isso o time entraria em campo com a stamina do dia
+   da escalação e a fadiga nunca chegaria à força do time.
+2. **Descarta lesionados e completa com reservas aptos.** `SaveLineupService`
+   recusa *salvar* escalação com lesionado, mas quem se machuca DEPOIS seguiria
+   titular na rodada seguinte — o guard de salvamento não alcança a escalação já
+   persistida. Sem reservas aptos o time entra desfalcado, com menos de 11, que
+   é o resultado correto para um elenco dizimado.
+
+A substituição é simples e determinística (ordem do elenco), não uma
+auto-escalação inteligente, e não tenta casar posição — validação posicional
+segue fora do domínio, como no `SaveLineupService`.
 
 #### Decisão: lock otimista vs. pessimista no mercado (issue #21)
 

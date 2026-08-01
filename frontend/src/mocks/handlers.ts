@@ -26,6 +26,7 @@ import {
   averageOverall,
   applyRoundFitness,
   applyMedicalTreatment,
+  startingEleven,
   MulberryRng,
   MEDICAL_DEPARTMENT_COST_CENTS,
 } from './engine'
@@ -582,15 +583,14 @@ export const handlers = [
         }
         const myFinance = finances.find((f) => f.clubId === 1)
         const cashDelta = myFinance ? myFinance.ticketRevenue - myFinance.salariesPaid : 0
-        // Titulares = escalação salva (ou os 11 primeiros), como no backend.
-        const starterIds = new Set(
-          myClub.lineup?.playerIds ?? myClub.squad.slice(0, 11).map((p) => p.id),
-        )
+        // Titulares = escalação salva revalidada (lesionado fora, reserva apto
+        // assume), exatamente como `Club.startingLineup()` do backend.
+        const starterIds = startingEleven(myClub.squad, myClub.lineup?.playerIds)
         const rested = applyRoundFitness(
           myClub.squad,
           starterIds,
-          injuries,
           new MulberryRng(round.number * 1000 + 1),
+          injuries,
         )
         state.clubs[1] = {
           ...myClub,

@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Availability
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -11,6 +12,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
@@ -87,8 +89,8 @@ class FitnessRulesTest {
         val after = applyRoundFitness(
             squad = listOf(makePlayer(1)),
             starterIds = setOf(PlayerId(1)),
-            newInjuries = mapOf(PlayerId(1) to 3),
             rng = Random(1),
+            newInjuries = mapOf(PlayerId(1) to 3),
         )
 
         assertEquals(Availability.Injured(3), after[0].availability)
@@ -113,8 +115,8 @@ class FitnessRulesTest {
         val after = applyRoundFitness(
             squad = listOf(makePlayer(1)),
             starterIds = setOf(PlayerId(1)),
-            newInjuries = mapOf(PlayerId(1) to 1),
             rng = Random(1),
+            newInjuries = mapOf(PlayerId(1) to 1),
         )
 
         assertEquals(Availability.Injured(1), after[0].availability)
@@ -125,9 +127,9 @@ class FitnessRulesTest {
         val after = applyRoundFitness(
             squad = listOf(makePlayer(1, availability = Availability.Injured(4))),
             starterIds = emptySet(),
+            rng = Random(1),
             // 4 em curso vira 3 no decremento; a nova de 2 não pode reduzir isso.
             newInjuries = mapOf(PlayerId(1) to 2),
-            rng = Random(1),
         )
 
         assertEquals(Availability.Injured(3), after[0].availability)
@@ -181,6 +183,30 @@ class FitnessRulesTest {
             worn.teamStrength() < rested.teamStrength(),
             "time desgastado deveria ser mais fraco: ${worn.teamStrength()} vs ${rested.teamStrength()}",
         )
+    }
+
+    // ─── Seed determinística ──────────────────────────────────────────────
+
+    @Test
+    fun `seed nao colide entre pares distintos de rodada e clube`() {
+        // Regressão: `rodada * 1000 + clube` colidia com id de clube >= 1000 —
+        // rodada 1/clube 1000 dava a MESMA seed que rodada 2/clube 0, e os dois
+        // elencos cansariam de forma idêntica.
+        assertNotEquals(
+            fitnessSeed(1, ClubId(1000)),
+            fitnessSeed(2, ClubId(0)),
+        )
+
+        // Injetiva numa varredura ampla de rodadas × clubes.
+        val seeds = (1..40).flatMap { round ->
+            (0L..2_000L).map { fitnessSeed(round, ClubId(it)) }
+        }
+        assertEquals(seeds.size, seeds.toSet().size, "toda combinação deveria dar uma seed única")
+    }
+
+    @Test
+    fun `seed e estavel para o mesmo par`() {
+        assertEquals(fitnessSeed(7, ClubId(3)), fitnessSeed(7, ClubId(3)))
     }
 
     // ─── Departamento médico ──────────────────────────────────────────────

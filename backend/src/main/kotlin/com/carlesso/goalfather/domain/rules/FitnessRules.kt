@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Availability
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import kotlin.random.Random
@@ -64,6 +65,18 @@ fun Player.effectiveOverall(): Double =
 fun drawInjuryDuration(rng: Random): Int = INJURY_DURATION.random(rng)
 
 /**
+ * Seed determinística do desgaste de um clube numa rodada.
+ *
+ * Empacota os dois números em faixas DISJUNTAS do `Long` em vez de somá-los:
+ * um `rodada * 1000 + clube` colide assim que um id de clube passa de 999
+ * (rodada 1/clube 1000 daria a mesma seed que rodada 2/clube 0, e os dois
+ * elencos cansariam de forma idêntica). O deslocamento de 32 bits é injetivo
+ * para qualquer id que caiba num `Int` sem sinal.
+ */
+fun fitnessSeed(roundNumber: Int, clubId: ClubId): Long =
+    (roundNumber.toLong() shl 32) xor clubId.value
+
+/**
  * Aplica UMA rodada de desgaste ao elenco: titulares cansam, reservas
  * recuperam, lesões em curso andam uma rodada e as lesões novas da rodada
  * entram em vigor.
@@ -82,8 +95,8 @@ fun drawInjuryDuration(rng: Random): Int = INJURY_DURATION.random(rng)
 fun applyRoundFitness(
     squad: List<Player>,
     starterIds: Set<PlayerId>,
-    newInjuries: Map<PlayerId, Int> = emptyMap(),
     rng: Random,
+    newInjuries: Map<PlayerId, Int> = emptyMap(),
 ): List<Player> = squad.map { player ->
     val stamina =
         if (player.id in starterIds) {

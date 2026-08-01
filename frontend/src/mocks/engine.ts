@@ -150,8 +150,8 @@ const advanceInjury = (a: Availability, rounds = 1): Availability =>
 export function applyRoundFitness<T extends FitPlayer>(
   squad: T[],
   starterIds: Set<number>,
-  newInjuries: Map<number, number>,
   rng: MulberryRng,
+  newInjuries: Map<number, number> = new Map(),
 ): T[] {
   return squad.map((p) => {
     const stamina = starterIds.has(p.id)
@@ -174,6 +174,24 @@ export function applyRoundFitness<T extends FitPlayer>(
 
     return { ...p, stamina, availability }
   })
+}
+
+/**
+ * Quem de fato entra em campo — espelha `Club.startingLineup()` do backend:
+ * a escalação salva é revalidada contra o estado atual do elenco, lesionado
+ * fica fora e reserva apto assume a vaga (issue #54).
+ */
+export function startingEleven<T extends FitPlayer>(
+  squad: T[],
+  savedPlayerIds: number[] | undefined,
+): Set<number> {
+  const available = squad.filter((p) => p.availability.type !== 'Injured')
+  if (!savedPlayerIds) return new Set(available.slice(0, 11).map((p) => p.id))
+
+  const byId = new Map(available.map((p) => [p.id, p]))
+  const starters = savedPlayerIds.filter((id) => byId.has(id))
+  const substitutes = available.filter((p) => !starters.includes(p.id)).map((p) => p.id)
+  return new Set([...starters, ...substitutes].slice(0, 11))
 }
 
 /** Sessão do departamento médico — espelha `applyMedicalTreatment` do backend. */

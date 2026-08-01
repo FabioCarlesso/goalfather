@@ -7,6 +7,7 @@ import {
   MulberryRng,
   applyRoundFitness,
   applyMedicalTreatment,
+  startingEleven,
   effectiveOverall,
   averageOverall,
   simulateMatch,
@@ -27,7 +28,7 @@ const fit = (id: number, stamina = 100, availability: Availability = { type: 'Av
 describe('desgaste de rodada', () => {
   it('titular perde stamina dentro da faixa do protótipo', () => {
     const squad = [1, 2, 3].map((id) => fit(id))
-    const after = applyRoundFitness(squad, new Set([1, 2, 3]), new Map(), new MulberryRng(42))
+    const after = applyRoundFitness(squad, new Set([1, 2, 3]), new MulberryRng(42))
 
     for (const p of after) {
       const lost = 100 - p.stamina
@@ -40,7 +41,6 @@ describe('desgaste de rodada', () => {
     const after = applyRoundFitness(
       [fit(1, 50), fit(2, 95)],
       new Set(),
-      new Map(),
       new MulberryRng(1),
     )
 
@@ -52,7 +52,6 @@ describe('desgaste de rodada', () => {
     const after = applyRoundFitness(
       [fit(1, STAMINA_MATCH_FLOOR)],
       new Set([1]),
-      new Map(),
       new MulberryRng(7),
     )
 
@@ -61,8 +60,8 @@ describe('desgaste de rodada', () => {
 
   it('mesma seed produz o mesmo desgaste', () => {
     const squad = [1, 2, 3].map((id) => fit(id))
-    const a = applyRoundFitness(squad, new Set([1, 2, 3]), new Map(), new MulberryRng(2026))
-    const b = applyRoundFitness(squad, new Set([1, 2, 3]), new Map(), new MulberryRng(2026))
+    const a = applyRoundFitness(squad, new Set([1, 2, 3]), new MulberryRng(2026))
+    const b = applyRoundFitness(squad, new Set([1, 2, 3]), new MulberryRng(2026))
 
     expect(a.map((p) => p.stamina)).toEqual(b.map((p) => p.stamina))
   })
@@ -70,13 +69,13 @@ describe('desgaste de rodada', () => {
 
 describe('lesões com duração', () => {
   it('lesão nova entra em vigor com a duração do evento', () => {
-    const after = applyRoundFitness([fit(1)], new Set([1]), new Map([[1, 3]]), new MulberryRng(1))
+    const after = applyRoundFitness([fit(1)], new Set([1]), new MulberryRng(1), new Map([[1, 3]]))
 
     expect(after[0]!.availability).toEqual({ type: 'Injured', roundsOut: 3 })
   })
 
   it('lesão sofrida na rodada não é decrementada na mesma virada', () => {
-    const after = applyRoundFitness([fit(1)], new Set([1]), new Map([[1, 1]]), new MulberryRng(1))
+    const after = applyRoundFitness([fit(1)], new Set([1]), new MulberryRng(1), new Map([[1, 1]]))
 
     expect(after[0]!.availability).toEqual({ type: 'Injured', roundsOut: 1 })
   })
@@ -84,10 +83,10 @@ describe('lesões com duração', () => {
   it('lesão em curso decrementa até liberar o jogador', () => {
     let player = fit(1, 100, { type: 'Injured', roundsOut: 2 })
 
-    player = applyRoundFitness([player], new Set(), new Map(), new MulberryRng(1))[0]!
+    player = applyRoundFitness([player], new Set(), new MulberryRng(1))[0]!
     expect(player.availability).toEqual({ type: 'Injured', roundsOut: 1 })
 
-    player = applyRoundFitness([player], new Set(), new Map(), new MulberryRng(1))[0]!
+    player = applyRoundFitness([player], new Set(), new MulberryRng(1))[0]!
     expect(player.availability).toEqual({ type: 'Available' })
   })
 
@@ -95,8 +94,8 @@ describe('lesões com duração', () => {
     const after = applyRoundFitness(
       [fit(1, 100, { type: 'Injured', roundsOut: 4 })],
       new Set(),
-      new Map([[1, 2]]),
       new MulberryRng(1),
+      new Map([[1, 2]]),
     )
 
     expect(after[0]!.availability).toEqual({ type: 'Injured', roundsOut: 3 })
@@ -137,6 +136,46 @@ describe('stamina × força do time', () => {
 
     expect(averageOverall(rested)).toBe(80)
     expect(averageOverall(worn)).toBeLessThan(averageOverall(rested))
+  })
+})
+
+describe('titulares em campo (paridade com Club.startingLineup)', () => {
+  const squad = Array.from({ length: 14 }, (_, i) => fit(i + 1))
+  const savedIds = squad.slice(0, 11).map((p) => p.id)
+
+  it('lesionado numa escalação já salva não entra em campo', () => {
+    const withInjury = squad.map((p) =>
+      p.id === 1 ? fit(1, 100, { type: 'Injured', roundsOut: 2 }) : p,
+    )
+
+    const onField = startingEleven(withInjury, savedIds)
+
+    expect(onField.has(1)).toBe(false)
+    expect(onField.size).toBe(11)
+    expect(onField.has(12)).toBe(true) // reserva apto assume
+  })
+
+  it('sem reservas aptos o time entra desfalcado', () => {
+    const eleven = squad.slice(0, 11).map((p) =>
+      p.id <= 2 ? fit(p.id, 100, { type: 'Injured', roundsOut: 1 }) : p,
+    )
+
+    expect(startingEleven(eleven, savedIds).size).toBe(9)
+  })
+
+  it('sem escalação salva também ignora lesionados', () => {
+    const withInjury = squad.map((p) =>
+      p.id === 1 ? fit(1, 100, { type: 'Injured', roundsOut: 2 }) : p,
+    )
+
+    const onField = startingEleven(withInjury, undefined)
+
+    expect(onField.has(1)).toBe(false)
+    expect(onField.size).toBe(11)
+  })
+
+  it('elenco são mantém a escalação salva', () => {
+    expect([...startingEleven(squad, savedIds)]).toEqual(savedIds)
   })
 })
 

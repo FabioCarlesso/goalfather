@@ -27,6 +27,7 @@ import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.canScheduleSeason
+import com.carlesso.goalfather.domain.rules.fitnessSeed
 import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
@@ -190,7 +191,19 @@ class PlayRoundService(
         // Acumula estatísticas dos jogadores (issue #2), aplica o caixa
         // (issue #4) e o desgaste da rodada (issue #54) em uma única gravação
         // por clube.
-        persistRoundEffects(round.number, events, involvedClubs, finances)
+        //
+        // A fadiga alcança TODOS os clubes, não só os que entraram em campo:
+        // quem folga na rodada precisa recuperar stamina. Hoje toda divisão tem
+        // nº PAR de clubes (o gerador de fixtures rejeita ímpar), então na
+        // prática ninguém folga — mas depender disso deixaria a regra errada por
+        // acidente. `ifEmpty` cai para os clubes envolvidos se o repositório
+        // vier vazio, preservando o comportamento dos testes que só stubam
+        // `findById`.
+        //
+        // Uma leitura só, reusada no calendário lá embaixo: `persistRoundEffects`
+        // não mexe em id/nome/divisão, que é tudo que o agendamento consulta.
+        val clubs = clubRepo.findAll().ifEmpty { involvedClubs.toList() }
+        persistRoundEffects(round.number, events, clubs, involvedClubs, finances)
 
         // A MESMA rodada é aplicada à tabela de cada divisão: só os jogos da
         // divisão em questão contam (clubes fora da tabela são ignorados pela
@@ -208,7 +221,6 @@ class PlayRoundService(
         // chega à última rodada, gera a próxima da MESMA temporada. Ao
         // encerrar a última, vira a temporada (issue #11) com
         // promoção/rebaixamento entre divisões (issue #47).
-        val clubs = clubRepo.findAll()
         val canSchedule = canScheduleSeason(clubs)
         val seasonEnded = canSchedule && round.number >= seasonRounds(clubs)
 
@@ -331,13 +343,19 @@ class PlayRoundService(
      * O RNG da fadiga é semeado por `rodada + clube` — determinístico como o
      * resto do fluxo (a partida usa `matchId`), então reprocessar a mesma
      * rodada com o mesmo elenco dá exatamente o mesmo desgaste.
+     *
+     * @param clubs todos os clubes da liga — quem folgou também recupera.
+     * @param playedClubs só os que entraram em campo; para os demais o conjunto
+     *   de titulares é vazio, então o elenco inteiro descansa.
      */
     private suspend fun persistRoundEffects(
         roundNumber: Int,
         events: List<MatchEvent>,
         clubs: Collection<Club>,
+        playedClubs: Collection<Club>,
         finances: List<RoundFinance>,
     ) {
+        val playedIds = playedClubs.map { it.id }.toSet()
         val goals = mutableMapOf<Long, Int>()
         val yellow = mutableMapOf<Long, Int>()
         val red = mutableMapOf<Long, Int>()
@@ -359,13 +377,17 @@ class PlayRoundService(
         val financeByClub = finances.associateBy { it.clubId.value }
 
         for (club in clubs) {
-            // Quem entrou em campo — mesma escalação que a engine usou.
-            val starterIds = club.startingLineup().players.map { it.id }.toSet()
+            // Quem entrou em campo — mesma escalação que a engine usou. Clube
+            // que folgou não tem titular: o elenco inteiro recupera.
+            val starterIds =
+                if (club.id in playedIds) club.startingLineup().players.map { it.id }.toSet()
+                else emptySet()
+
             val rested = applyRoundFitness(
                 squad = club.squad,
                 starterIds = starterIds,
+                rng = Random(fitnessSeed(roundNumber, club.id)),
                 newInjuries = injuries,
-                rng = Random(roundNumber * 1_000L + club.id.value),
             )
 
             val updatedSquad = rested.map { p ->
