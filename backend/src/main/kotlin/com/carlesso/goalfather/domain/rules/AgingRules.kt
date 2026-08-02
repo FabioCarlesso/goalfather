@@ -2,6 +2,8 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Player
+import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Retirement
 import kotlin.random.Random
 
 /**
@@ -112,10 +114,14 @@ sealed interface AgingOutcome {
  * atributos que deveriam sustentá-lo.
  */
 fun Player.ageOneSeason(rng: Random): AgingOutcome {
-    // Quem já bateu o teto de carreira se aposenta SEM sortear nada: envelhecer
-    // mais um ano poderia estourar o invariante de idade do Player, e nenhum
-    // delta mudaria o desfecho.
-    if (age >= FORCED_RETIREMENT_AGE) return AgingOutcome.Retired(this)
+    // Quem já bateu o teto de carreira se aposenta sem sortear delta nenhum —
+    // nada mudaria o desfecho. Ainda assim ganha o ano, para que TODA variante
+    // de AgingOutcome carregue o jogador na idade com que terminou a virada
+    // (o extrato de fim de temporada mostra a idade certa). O `coerceAtMost`
+    // cobre o seed absurdo de alguém já no topo do invariante do Player.
+    if (age >= FORCED_RETIREMENT_AGE) {
+        return AgingOutcome.Retired(copy(age = (age + 1).coerceAtMost(Player.AGE_RANGE.last)))
+    }
 
     val nextAge = age + 1
     val delta = AgeBand.of(nextAge).overallDelta.random(rng)
@@ -144,6 +150,112 @@ fun ageSquadOneSeason(squad: List<Player>, rng: Random): List<AgingOutcome> =
     squad.map { it.ageOneSeason(rng) }
 
 /**
+ * Virada de temporada de um elenco: envelhece todo mundo e promove a base no
+ * lugar de quem se aposentou.
+ *
+ * **Por que a promoção existe:** sem ela o elenco só encolhe. Como os elencos
+ * nascem com 11 jogadores, a primeira aposentadoria já deixaria o time
+ * incompleto — e um clube da IA, que não compra ninguém, chegaria a zero em
+ * poucas temporadas. A reposição 1:1 mantém o tamanho do elenco estável e é o
+ * equivalente barato de uma categoria de base.
+ *
+ * A seed sai de [agingSeed]: mesma temporada + mesmo clube ⇒ mesma virada,
+ * inclusive os garotos promovidos.
+ */
+fun ageSquadForSeason(squad: List<Player>, clubId: ClubId, season: Int): SquadSeasonTurn {
+    val rng = Random(agingSeed(season, clubId))
+    val outcomes = ageSquadOneSeason(squad, rng)
+
+    val next = mutableListOf<Player>()
+    val retirements = mutableListOf<Retirement>()
+    for (outcome in outcomes) {
+        when (outcome) {
+            is AgingOutcome.Retired -> {
+                // O slot é a posição do aposentado na fila de saídas: junto com
+                // clube e temporada é o que torna o id do garoto único.
+                val slot = retirements.size + 1
+                val youth = youthFor(
+                    retired = outcome.player,
+                    id = youthPlayerId(clubId, season, slot),
+                    slot = slot,
+                    rng = rng,
+                )
+                next += youth
+                retirements += Retirement(clubId, retired = outcome.player, promoted = youth)
+            }
+
+            is AgingOutcome.Evolved,
+            is AgingOutcome.Steady,
+            is AgingOutcome.Regressed,
+            -> next += outcome.player
+        }
+    }
+    return SquadSeasonTurn(squad = next, retirements = retirements)
+}
+
+/** Elenco da temporada nova + as aposentadorias que aconteceram no caminho. */
+data class SquadSeasonTurn(
+    val squad: List<Player>,
+    val retirements: List<Retirement>,
+)
+
+/** Faixa de idade de um garoto que sobe da base. */
+val YOUTH_AGE: IntRange = 17..19
+
+/**
+ * O quanto o garoto entra ABAIXO do veterano que substituiu. Ele não repõe o
+ * nível de imediato — mas está na faixa que mais evolui (`AgeBand.YOUNG`),
+ * então vira aposta de médio prazo em vez de tapa-buraco.
+ */
+val YOUTH_OVERALL_GAP: IntRange = 8..18
+
+/** Salário de quem sobe da base, em centavos (R$ 3.000) — cabe em qualquer folha. */
+const val YOUTH_SALARY_CENTS: Int = 3_000_00
+
+/**
+ * Garoto da base que assume a vaga do aposentado: mesma posição, idade de
+ * formação e atributos abaixo dos dele.
+ *
+ * O nome é genérico de propósito — o domínio não conhece o nome do clube, e um
+ * gerador de nomes de verdade pluga depois sem tocar na regra.
+ */
+private fun youthFor(retired: Player, id: PlayerId, slot: Int, rng: Random): Player {
+    val overall = (retired.overall - YOUTH_OVERALL_GAP.random(rng))
+        .coerceIn(YOUTH_MIN_OVERALL, Player.OVERALL_RANGE.last)
+    return Player(
+        id = id,
+        name = "Cria da base $slot",
+        position = retired.position,
+        overall = overall,
+        pace = overall,
+        shooting = overall,
+        passing = overall,
+        defending = overall,
+        salary = YOUTH_SALARY_CENTS,
+        age = YOUTH_AGE.random(rng),
+    )
+}
+
+/** Piso do garoto: abaixo disto ele não seria jogador de elenco principal. */
+private const val YOUTH_MIN_OVERALL: Int = 40
+
+/**
+ * Id do garoto promovido — determinístico, sem consultar o banco.
+ *
+ * Fica numa faixa alta e disjunta ([YOUTH_ID_BASE]) para não colidir com os ids
+ * do seed (`clube * 1000 + slot`) nem com os do mercado. Cada clube ganha um
+ * bloco de 10⁹ ids, e dentro dele `temporada * 1000 + slot` é único — ou seja,
+ * a fórmula é injetiva para clube < 9.000 e até 999 promoções por temporada.
+ * O resultado cabe folgado em 2^53, então sobrevive ao `number` do JavaScript
+ * (a API serializa id como int64, mas quem consome é o TypeScript).
+ */
+fun youthPlayerId(clubId: ClubId, season: Int, slot: Int): PlayerId =
+    PlayerId(YOUTH_ID_BASE + clubId.value * CLUB_ID_BLOCK + season * 1_000L + slot)
+
+private const val YOUTH_ID_BASE: Long = 1_000_000_000_000L
+private const val CLUB_ID_BLOCK: Long = 1_000_000_000L
+
+/**
  * Quem continua no clube na temporada nova. O `when` exaustivo é o ponto:
  * a aposentadoria não é um `null` a ser filtrado por engano, é uma variante
  * que o compilador obriga a tratar.
@@ -170,8 +282,18 @@ fun List<AgingOutcome>.remainingSquad(): List<Player> = mapNotNull { outcome ->
 fun agingSeed(season: Int, clubId: ClubId): Long =
     ((season.toLong() shl 32) xor clubId.value) xor AGING_SEED_SALT
 
+/**
+ * Seed do envelhecimento de quem está no MERCADO. A lista de transferências não
+ * pertence a nenhum clube, então ganha uma seed própria — e um salt diferente,
+ * para não repetir a sequência de nenhum clube real na mesma temporada.
+ */
+fun marketAgingSeed(season: Int): Long = (season.toLong() shl 32) xor MARKET_SEED_SALT
+
 /** "AGING" em hexa — só para descolar os streams de aging e fitness. */
 private const val AGING_SEED_SALT: Long = 0x4147_494E_47L
+
+/** "MARKET" em hexa — mesma ideia, para o envelhecimento da lista de transferências. */
+private const val MARKET_SEED_SALT: Long = 0x4D41_524B_4554L
 
 /** Aposenta o veterano que já não rende — ou qualquer um no teto duro de carreira. */
 private fun Player.retires(): Boolean =

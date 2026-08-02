@@ -425,7 +425,16 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   protege o invariante `age in 15..50` do `Player` de uma carreira infinita. A
   seed é `agingSeed(temporada, clube)`, com o mesmo empacotamento disjunto de
   `fitnessSeed` mais um salt, para que temporada 7 e rodada 7 não sorteiem a
-  mesma sequência.)
+  mesma sequência. **Reposição pela base:** quem se aposenta é substituído 1:1
+  por um garoto de 17–19 anos na mesma posição, 8–18 pontos de `overall` abaixo
+  do veterano e salário de R$ 3.000 — sem isso o elenco só encolhe e o clube da
+  IA, que não compra ninguém, chegaria a zero jogador em poucas temporadas. O id
+  do promovido sai de `youthPlayerId(clube, temporada, vaga)`, determinístico e
+  numa faixa disjunta da do seed. As aposentadorias viajam no
+  `RoundEvent.SeasonFinished` (`retirements`), então a UI conta a notícia. Quem
+  está no mercado também envelhece — com seed própria — e sai da lista ao se
+  aposentar; o aposentado é APAGADO do banco pelo novo port `PlayerRepository`,
+  em vez de virar linha órfã com `club_id = null`.)
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`
@@ -440,14 +449,31 @@ interpretado**, o `when` que separa quem fica de quem sai é exaustivo sem
 em cada ponto de uso em vez de um `null` mal tratado. Mesma lição de
 `Availability` na 6.1: quando o domínio tem N desfechos, o tipo diz quais são.
 
-*Follow-ups conhecidos:* elenco só encolhe — não há regeneração de base nem
-contratação automática da IA, então clubes perdem jogadores ao longo das
-temporadas (irrelevante no seed atual, cujos elencos têm 25–32 anos, mas é o
-próximo passo natural junto do mercado dinâmico). Quem está no mercado também
-não envelhece — a regra roda sobre o `squad` de cada clube, e a lista de
-transferências não pertence a nenhum. E o jogador aposentado
-continua como linha órfã em `players` com `club_id = null`: invisível no jogo
-(o mercado só lista quem tem entrada em `market_entries`), mas não apagado.
+##### Por que a base repõe o aposentado (e por que as idades do seed foram espalhadas)
+
+A primeira versão deixava o elenco apenas encolher. Simulando a regra sobre um
+elenco da IA — 11 jogadores, **todos com 25 anos**, como o seed criava —, o
+resultado era brusco: como a idade era uniforme, os onze cruzavam a barreira dos
+36 na MESMA virada e o clube ia de 11 jogadores a zero por volta da temporada
+11 (com `strength` 60; até os de 80 zeravam na 16ª). O jogo não quebrava — o
+`MatchSimulator` ignora elenco vazio —, mas a liga perdia sentido, e o técnico
+humano travava antes disso: com menos de 11 jogadores, `SaveLineupService`
+devolve `IncompleteLineup` para sempre.
+
+Duas correções, ambas baratas:
+
+1. **Promoção da base 1:1** na própria virada — o elenco nunca encolhe, e a
+   renovação vira parte do jogo (o garoto entra pior, mas na faixa que mais
+   evolui);
+2. **Idades espalhadas no seed** da IA (21–32 em vez de 25 para todos), o que
+   troca a aposentadoria em bloco por uma ou duas saídas por temporada.
+
+O teste `vinte temporadas seguidas nao esvaziam o elenco` (e o gêmeo no mock) é
+a regressão disso.
+
+*Follow-up que segue aberto:* a IA não compra nem vende — a base repõe o número,
+não a qualidade, então um elenco de IA tende a se estabilizar num nível mais
+baixo ao longo de muitas temporadas. Fecha junto do mercado dinâmico.
 
 ##### Por que `Availability` e não `injuredForRounds: Int`
 

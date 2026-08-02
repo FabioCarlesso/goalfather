@@ -113,11 +113,20 @@ class DataInitializer(
                     position = positionForSlot(slot)
                     overall = strength
                     salary = 10_000_00
-                    age = 25
+                    age = ageForSlot(slot)
                 }
             }
         }
     }
+
+    /**
+     * Idades espalhadas entre 21 e 32 (issue #55). Com o elenco inteiro na
+     * mesma idade — era 25 para todo mundo — os onze cruzariam a barreira da
+     * aposentadoria na MESMA virada de temporada, e o clube trocaria de elenco
+     * inteiro de uma vez. Espalhar transforma isso numa renovação gradual, uma
+     * ou duas saídas por temporada.
+     */
+    private fun ageForSlot(slot: Int): Int = 21 + (slot * 5) % 12
 
     /** Traduz o agregado de domínio para entidades JPA e grava. */
     private fun persist(league: League) {

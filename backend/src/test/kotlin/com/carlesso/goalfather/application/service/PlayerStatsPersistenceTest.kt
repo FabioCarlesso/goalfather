@@ -32,7 +32,8 @@ class PlayerStatsPersistenceTest {
     private val clubRepo: ClubRepository = mockk()
     private val leagueRepo: LeagueRepository = mockk()
     private val readinessRepo: RoundReadinessRepository = mockk(relaxed = true)
-    private val service = PlayRoundService(clubRepo, leagueRepo, readinessRepo)
+    private val service =
+        PlayRoundService(clubRepo, leagueRepo, readinessRepo, mockk(relaxed = true), mockk(relaxed = true))
 
     private val home = makeClub(id = 1, name = "Home FC")
         .copy(squad = (1L..11L).map { makePlayer(it, overall = 85) })

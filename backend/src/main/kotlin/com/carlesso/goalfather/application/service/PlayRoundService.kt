@@ -4,6 +4,8 @@ import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.application.port.out.MarketRepository
+import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
@@ -15,7 +17,9 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -23,8 +27,9 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.teamStrength
-import com.carlesso.goalfather.domain.rules.ageSquadOneSeason
-import com.carlesso.goalfather.domain.rules.agingSeed
+import com.carlesso.goalfather.domain.rules.AgingOutcome
+import com.carlesso.goalfather.domain.rules.ageOneSeason
+import com.carlesso.goalfather.domain.rules.ageSquadForSeason
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
@@ -32,9 +37,9 @@ import com.carlesso.goalfather.domain.rules.canScheduleSeason
 import com.carlesso.goalfather.domain.rules.fitnessSeed
 import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
+import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
-import com.carlesso.goalfather.domain.rules.remainingSquad
 import com.carlesso.goalfather.domain.rules.seasonRounds
 import com.carlesso.goalfather.domain.rules.ticketRevenue
 import io.micrometer.core.instrument.MeterRegistry
@@ -64,6 +69,11 @@ class PlayRoundService(
     private val clubRepo: ClubRepository,
     private val leagueRepo: LeagueRepository,
     private val readinessRepo: RoundReadinessRepository,
+    // Mercado e jogadores soltos só entram em cena na virada de temporada
+    // (issue #55): quem está anunciado envelhece junto, e o aposentado sai do
+    // banco em vez de virar linha órfã.
+    private val marketRepo: MarketRepository,
+    private val playerRepo: PlayerRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
     // Default = registry isolado: mantém os testes existentes construindo o
     // service sem passar métrica; em produção o BeanConfig injeta o registry real
@@ -260,37 +270,49 @@ class PlayRoundService(
         val nextSeason = endedSeason + 1
 
         val nextDivisions = applyPromotionRelegation(finalStandings)
-        val clubs = startNextSeasonClubs(nextSeason, nextDivisions)
+        val (clubs, retirements) = startNextSeasonClubs(nextSeason, nextDivisions)
+        ageMarket(nextSeason)
         leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
         freshStandings(nextSeason, clubs).forEach { leagueRepo.saveStandings(it) }
 
-        return RoundEvent.SeasonFinished(season = endedSeason, champion = champion, standings = finalStandings)
+        return RoundEvent.SeasonFinished(
+            season = endedSeason,
+            champion = champion,
+            standings = finalStandings,
+            retirements = retirements,
+        )
     }
 
     /**
      * Prepara os clubes para a nova temporada numa ÚNICA gravação por clube:
-     * envelhece o elenco (issue #55), zera gols/cartões, cura lesões e move
-     * quem subiu/desceu para a nova divisão (issue #47). Relê os clubes (já
-     * com o caixa pós-bilheteria) para não desfazer as finanças aplicadas na
-     * rodada. Devolve o estado atualizado, que alimenta o calendário e as
-     * tabelas da temporada nova.
+     * envelhece o elenco e promove a base no lugar de quem se aposentou
+     * (issue #55), zera gols/cartões, cura lesões e move quem subiu/desceu
+     * para a nova divisão (issue #47). Relê os clubes (já com o caixa
+     * pós-bilheteria) para não desfazer as finanças aplicadas na rodada.
+     * Devolve o estado atualizado — que alimenta o calendário e as tabelas da
+     * temporada nova — junto das aposentadorias, que viajam no `SeasonFinished`
+     * para o técnico saber quem pendurou as chuteiras.
      *
      * O RNG do envelhecimento é semeado por `temporada + clube` — mesmo padrão
      * determinístico do desgaste (`fitnessSeed`) e da partida (`matchId`):
      * reprocessar a mesma virada com o mesmo elenco dá exatamente a mesma
-     * evolução. Os aposentados simplesmente saem do `squad`, e como a folha é
-     * somada a partir dele, o salário some junto.
+     * evolução. O aposentado sai do `squad` (e da folha, que é somada dele) e é
+     * APAGADO do banco: mantê-lo com `club_id = null` o deixaria indistinguível
+     * de um agente livre.
      */
     private suspend fun startNextSeasonClubs(
         nextSeason: Int,
         nextDivisions: Map<ClubId, Division>,
-    ): List<Club> =
-        clubRepo.findAll().map { club ->
-            val aged = ageSquadOneSeason(club.squad, Random(agingSeed(nextSeason, club.id)))
-                .remainingSquad()
+    ): SeasonTurnover {
+        val clubs = mutableListOf<Club>()
+        val retirements = mutableListOf<Retirement>()
+
+        for (club in clubRepo.findAll()) {
+            val turn = ageSquadForSeason(club.squad, club.id, nextSeason)
+            retirements += turn.retirements
 
             // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-            val reset = aged.map {
+            val reset = turn.squad.map {
                 it.copy(
                     goals = 0,
                     yellowCards = 0,
@@ -304,8 +326,55 @@ class PlayRoundService(
                 division = nextDivisions[club.id] ?: club.division,
             )
             if (updated != club) clubRepo.save(updated)
-            updated
+            clubs += updated
         }
+
+        // Depois do save do clube: enquanto o aposentado ainda constava do
+        // elenco, apagá-lo faria o `save` tentar reatribuir uma linha inexistente.
+        playerRepo.deleteAll(retirements.map { it.retired.id })
+        return SeasonTurnover(clubs, retirements)
+    }
+
+    /** Clubes prontos para a temporada nova + as aposentadorias da virada. */
+    private data class SeasonTurnover(
+        val clubs: List<Club>,
+        val retirements: List<Retirement>,
+    )
+
+    /**
+     * Envelhece quem está anunciado no mercado (issue #55). Sem isso a lista de
+     * transferências seria um museu: enquanto todo elenco envelhece, os
+     * anunciados ficariam eternamente com a idade do seed.
+     *
+     * Ninguém sobe da base aqui — não há clube para promover —, então o
+     * aposentado simplesmente sai do mercado: `claim` remove a entrada (mesma
+     * transição atômica da compra, issue #21) e a linha do jogador é apagada.
+     * Se o `claim` devolver `false`, alguém comprou o jogador no meio do
+     * caminho: ele já pertence a um elenco e não é mais problema desta regra.
+     */
+    private suspend fun ageMarket(nextSeason: Int) {
+        val entries = marketRepo.findAll()
+        if (entries.isEmpty()) return
+
+        val rng = Random(marketAgingSeed(nextSeason))
+        val stillListed = mutableListOf<Player>()
+        val retired = mutableListOf<PlayerId>()
+
+        for (entry in entries) {
+            when (val outcome = entry.player.ageOneSeason(rng)) {
+                is AgingOutcome.Retired ->
+                    if (marketRepo.claim(outcome.player.id)) retired += outcome.player.id
+
+                is AgingOutcome.Evolved,
+                is AgingOutcome.Steady,
+                is AgingOutcome.Regressed,
+                -> stillListed += outcome.player
+            }
+        }
+
+        playerRepo.saveFreeAgents(stillListed)
+        playerRepo.deleteAll(retired)
+    }
 
     private fun freshStandings(season: Int, clubs: List<Club>): List<Standings> {
         val byDivision = clubs.groupBy { it.division }.toSortedMap()

@@ -1179,7 +1179,7 @@ components:
         (promoção/rebaixamento aplicados, rodada 1 + tabelas zeradas) antes
         de emitir.
       type: object
-      required: [type, season, champion, standings]
+      required: [type, season, champion, standings, retirements]
       properties:
         type:     { type: string, enum: [SeasonFinished] }
         season:   { type: integer, description: Ano da temporada encerrada }
@@ -1188,6 +1188,24 @@ components:
           type: array
           description: Tabelas finais — uma por divisão, da elite para baixo.
           items: { $ref: '#/components/schemas/Standings' }
+        retirements:
+          type: array
+          description: |
+            Aposentadorias da virada (issue #55), de TODOS os clubes — cabe ao
+            cliente filtrar o que interessa ao técnico.
+          items: { $ref: '#/components/schemas/Retirement' }
+
+    Retirement:
+      description: |
+        Um jogador pendurou as chuteiras na virada de temporada e a base do
+        clube assumiu a vaga (issue #55). A reposição é 1:1 — elenco que só
+        encolhe acabaria em time incompleto.
+      type: object
+      required: [clubId, retired, promoted]
+      properties:
+        clubId:   { type: integer, format: int64 }
+        retired:  { $ref: '#/components/schemas/Player' }
+        promoted: { $ref: '#/components/schemas/Player' }
 
     RoundFinance:
       description: Receita/despesa de um clube em uma rodada (valores em centavos).

@@ -56,8 +56,19 @@ data class Player(
     val injured: Boolean get() = availability is Availability.Injured
 
     init {
-        require(overall in 0..99) { "overall fora de 0..99: $overall" }
+        require(overall in OVERALL_RANGE) { "overall fora de $OVERALL_RANGE: $overall" }
         require(stamina in 0..100) { "stamina fora de 0..100: $stamina" }
-        require(age in 15..50) { "age fora de 15..50: $age" }
+        require(age in AGE_RANGE) { "age fora de $AGE_RANGE: $age" }
+    }
+
+    /**
+     * Os invariantes viram constantes nomeadas para que as REGRAS possam
+     * truncar nos mesmos limites (ver `domain/rules/AgingRules.kt`) em vez de
+     * repetir os literais e torcer para não divergirem. O `require` continua
+     * sendo a última linha de defesa, não a primeira.
+     */
+    companion object {
+        val OVERALL_RANGE: IntRange = 0..99
+        val AGE_RANGE: IntRange = 15..50
     }
 }

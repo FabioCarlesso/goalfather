@@ -22,6 +22,7 @@ export type RoundMatch    = components['schemas']['RoundMatch']
 export type RoundStatus   = components['schemas']['RoundStatus']
 export type RoundEvent    = components['schemas']['RoundEvent']
 export type RoundFinance  = components['schemas']['RoundFinance']
+export type Retirement    = components['schemas']['Retirement']
 export type ReadinessStatus = components['schemas']['ReadinessStatus']
 
 // Auth (issue #18) + seleção de clube (issue #19)

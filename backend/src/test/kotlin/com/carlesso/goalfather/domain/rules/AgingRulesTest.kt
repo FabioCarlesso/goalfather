@@ -1,6 +1,8 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Player
+import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.test.makePlayer
 import kotlin.random.Random
 import kotlin.test.Test
@@ -171,8 +173,20 @@ class AgingRulesTest {
         val outcome = makePlayer(1, overall = 99, age = FORCED_RETIREMENT_AGE).ageOneSeason(Random(1))
 
         assertIs<AgingOutcome.Retired>(outcome)
-        // Não envelhece mais: quem bate o teto sai com a idade que tinha.
-        assertEquals(FORCED_RETIREMENT_AGE, outcome.player.age)
+        // Ganha o ano como todo mundo: TODA variante carrega o jogador na idade
+        // com que terminou a virada, para o extrato de fim de temporada não
+        // mentir a idade de quem parou.
+        assertEquals(FORCED_RETIREMENT_AGE + 1, outcome.player.age)
+    }
+
+    @Test
+    fun `nem o jogador no topo do invariante de idade quebra o Player`() {
+        // Seed absurdo (alguém já em 50 anos): a virada não pode estourar o
+        // `require(age in 15..50)` só para incrementar o ano.
+        val outcome = makePlayer(1, overall = 60, age = Player.AGE_RANGE.last).ageOneSeason(Random(1))
+
+        assertIs<AgingOutcome.Retired>(outcome)
+        assertEquals(Player.AGE_RANGE.last, outcome.player.age)
     }
 
     @Test
@@ -250,6 +264,109 @@ class AgingRulesTest {
         // Sem o salt, temporada 7/clube 3 e rodada 7/clube 3 sorteariam a MESMA
         // sequência — envelhecimento e fadiga andariam correlacionados.
         assertNotEquals(agingSeed(7, ClubId(3)), fitnessSeed(7, ClubId(3)))
+    }
+
+    // ─── Promoção da base (elenco não pode só encolher) ───────────────────
+
+    @Test
+    fun `a base repoe o aposentado e o elenco nao encolhe`() {
+        val squad = listOf(
+            makePlayer(1, position = Position.GK, overall = 62, age = 38), // aposenta
+            makePlayer(2, position = Position.CB, overall = 80, age = 25),
+            makePlayer(3, position = Position.FW, overall = 55, age = 39), // aposenta
+        )
+
+        val turn = ageSquadForSeason(squad, ClubId(7), season = 2030)
+
+        assertEquals(squad.size, turn.squad.size, "o elenco deveria manter o tamanho")
+        assertEquals(2, turn.retirements.size)
+        // O garoto entra na MESMA posição do veterano — o time não fica sem goleiro.
+        assertEquals(
+            listOf(Position.GK, Position.FW),
+            turn.retirements.map { it.promoted.position },
+        )
+        assertTrue(
+            turn.retirements.all { it.promoted.age in YOUTH_AGE },
+            "promovido deveria vir da faixa de base $YOUTH_AGE",
+        )
+        assertTrue(
+            turn.retirements.all { it.promoted.overall < it.retired.overall },
+            "o garoto entra abaixo do veterano — é aposta, não reposição imediata",
+        )
+        assertTrue(
+            turn.retirements.all { it.clubId == ClubId(7) },
+            "a aposentadoria carrega o clube, para o evento saber de quem falar",
+        )
+    }
+
+    @Test
+    fun `elenco sem aposentadoria passa intacto em tamanho e ordem`() {
+        val squad = (1L..11L).map { makePlayer(it, overall = 75, age = 24) }
+
+        val turn = ageSquadForSeason(squad, ClubId(1), season = 2027)
+
+        assertTrue(turn.retirements.isEmpty())
+        assertEquals(squad.map { it.id }, turn.squad.map { it.id })
+    }
+
+    @Test
+    fun `virada do elenco e deterministica por temporada e clube`() {
+        val squad = listOf(makePlayer(1, overall = 60, age = 38), makePlayer(2, overall = 70, age = 22))
+
+        assertEquals(
+            ageSquadForSeason(squad, ClubId(3), 2028),
+            ageSquadForSeason(squad, ClubId(3), 2028),
+        )
+        assertNotEquals(
+            ageSquadForSeason(squad, ClubId(3), 2028).squad,
+            ageSquadForSeason(squad, ClubId(4), 2028).squad,
+            "clubes distintos não deveriam viver a mesma temporada",
+        )
+    }
+
+    @Test
+    fun `id do promovido e unico por clube temporada e vaga`() {
+        val ids = (2026..2050).flatMap { season ->
+            (1L..30L).flatMap { club ->
+                (1..5).map { slot -> youthPlayerId(ClubId(club), season, slot) }
+            }
+        }
+
+        assertEquals(ids.size, ids.toSet().size, "cada garoto precisa de um id só seu")
+        // Faixa alta e disjunta: não colide com o seed (`clube * 1000 + slot`)
+        // nem com o mercado, e cabe no `number` do JavaScript (2^53).
+        assertTrue(ids.all { it.value > 1_000_000L && it.value < (1L shl 53) })
+    }
+
+    /**
+     * Regressão do achado da review: elencos da IA nasciam TODOS com 25 anos e
+     * cruzavam a barreira da aposentadoria na mesma virada — o clube ficava
+     * vazio por volta da temporada 11. Com a base repondo 1:1, o tamanho do
+     * elenco não cai por mais longa que seja a simulação.
+     */
+    @Test
+    fun `vinte temporadas seguidas nao esvaziam o elenco`() {
+        var squad = (1L..11L).map { makePlayer(it, overall = 70, age = 25) }
+
+        for (season in 2026..2045) {
+            val turn = ageSquadForSeason(squad, ClubId(1), season)
+            squad = turn.squad
+            assertEquals(11, squad.size, "elenco encolheu na temporada $season")
+        }
+
+        // E o elenco realmente girou: ninguém sobrevive 20 temporadas.
+        assertTrue(squad.none { it.id.value in 1L..11L }, "o elenco deveria ter se renovado")
+    }
+
+    // ─── Seed do mercado ──────────────────────────────────────────────────
+
+    @Test
+    fun `seed do mercado nao coincide com a de nenhum clube na mesma temporada`() {
+        val season = 2031
+        val clubSeeds = (0L..2_000L).map { agingSeed(season, ClubId(it)) }.toSet()
+
+        assertTrue(marketAgingSeed(season) !in clubSeeds)
+        assertNotEquals(marketAgingSeed(season), marketAgingSeed(season + 1))
     }
 
     private fun deltaOf(age: Int, seed: Int): Int {

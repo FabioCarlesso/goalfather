@@ -33,7 +33,14 @@ class SimulationMetricsTest {
     private val leagueRepo: LeagueRepository = mockk()
     private val readinessRepo: RoundReadinessRepository = mockk(relaxed = true)
     private val registry = SimpleMeterRegistry()
-    private val service = PlayRoundService(clubRepo, leagueRepo, readinessRepo, meterRegistry = registry)
+    private val service = PlayRoundService(
+        clubRepo,
+        leagueRepo,
+        readinessRepo,
+        mockk(relaxed = true),
+        mockk(relaxed = true),
+        meterRegistry = registry,
+    )
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)

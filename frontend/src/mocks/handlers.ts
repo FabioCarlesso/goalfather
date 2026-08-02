@@ -619,14 +619,17 @@ export const handlers = [
         // RoundFinished (mesma ordem do backend) e abre a próxima temporada
         // com promoção/rebaixamento aplicados (issue #47).
         const elite = finalStandings.find((t) => t.division === 1) ?? finalStandings[0]!
+        // A virada roda ANTES do evento: é ela que produz as aposentadorias
+        // (issue #55), que viajam junto do campeão.
+        const retirements = startNewSeason(round.season + 1, finalStandings)
         const seasonFin: RoundEvent = {
           type: 'SeasonFinished',
           season: round.season,
           champion: elite.rows[0]!,
           standings: finalStandings,
+          retirements,
         }
         client.send(JSON.stringify(seasonFin))
-        startNewSeason(round.season + 1, finalStandings)
       } else {
         // Avança para a próxima rodada (cliente busca via getCurrentRound depois)
         state.currentRound = state.nextRound()

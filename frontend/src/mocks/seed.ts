@@ -7,6 +7,7 @@ import type {
   Player,
   MarketEntry,
   Standings,
+  Retirement,
   Round,
   RoundMatch,
 } from '../domain/types'
@@ -460,18 +461,21 @@ export function materializeClub(id: number): void {
 // (issue #55), cria tabelas novas (uma por divisão) e gera a rodada 1 da
 // próxima temporada. Espelha startNextSeason do backend, mantendo a parity
 // mock ↔ real.
-export function startNewSeason(season: number, finalTables: Standings[]): void {
+export function startNewSeason(season: number, finalTables: Standings[]): Retirement[] {
   Object.assign(divisionAssignments, applyPromotionRelegation(finalTables))
   const my = state.clubs[1]
+  let retirements: Retirement[] = []
   if (my) {
-    // Envelhecimento (issue #55): +1 ano, evolução/regressão por faixa etária e
-    // aposentadoria do veterano que já não rende. O mock tem um clube só, então
-    // a temporada basta como seed (no backend é `agingSeed(temporada, clube)`).
-    const aged = ageSquadOneSeason(my.squad, new MulberryRng(season))
+    // Envelhecimento (issue #55): +1 ano, evolução/regressão por faixa etária,
+    // aposentadoria do veterano que já não rende e promoção da base no lugar
+    // dele. O mock tem um clube só, então a temporada basta como seed (no
+    // backend é `agingSeed(temporada, clube)`).
+    const turn = ageSquadOneSeason(my.squad, new MulberryRng(season), 1, (slot) => season * 1_000 + slot)
+    retirements = turn.retirements
     state.clubs[1] = {
       ...my,
       // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-      squad: aged.map((p) => ({
+      squad: turn.squad.map((p) => ({
         ...p,
         goals: 0,
         yellowCards: 0,
@@ -486,4 +490,5 @@ export function startNewSeason(season: number, finalTables: Standings[]): void {
   }
   state.standings = freshStandings(season, divisionAssignments)
   state.currentRound = generateRound(1, season)
+  return retirements
 }
