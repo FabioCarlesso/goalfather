@@ -2,6 +2,8 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.application.port.out.MarketRepository
+import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
@@ -11,6 +13,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -19,6 +22,7 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
 import com.carlesso.goalfather.test.makeClub
+import com.carlesso.goalfather.test.makePlayer
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,7 +48,11 @@ class PlayRoundServiceTest {
     // relaxed: o reset de prontidão (issue #20) é efeito colateral; só alguns
     // testes o verificam explicitamente, os demais ignoram.
     private val readinessRepo: RoundReadinessRepository = mockk(relaxed = true)
-    private val service = PlayRoundService(clubRepo, leagueRepo, readinessRepo)
+    // relaxed: mercado e jogadores soltos só importam na virada de temporada
+    // (issue #55); os testes que os verificam stubam explicitamente.
+    private val marketRepo: MarketRepository = mockk(relaxed = true)
+    private val playerRepo: PlayerRepository = mockk(relaxed = true)
+    private val service = PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo)
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
@@ -265,9 +273,14 @@ class PlayRoundServiceTest {
         val seasonFinished = events.filterIsInstance<RoundEvent.SeasonFinished>().single()
         assertEquals(ClubId(1), seasonFinished.champion.clubId)
 
-        // 3 e 4 caem, 5 e 6 sobem — só quem mudou de divisão é regravado.
+        // 3 e 4 caem, 5 e 6 sobem; os demais ficam onde estavam. Todos os clubes
+        // são regravados na virada — desde a issue #55 o elenco envelhece, então
+        // não existe mais clube "sem mudança" no fim de temporada.
         val divisionByClub = savedClubs.associate { it.id.value to it.division.value }
-        assertEquals(mapOf(3L to 2, 4L to 2, 5L to 1, 6L to 1), divisionByClub)
+        assertEquals(
+            mapOf(1L to 1, 2L to 1, 3L to 2, 4L to 2, 5L to 1, 6L to 1, 7L to 2, 8L to 2),
+            divisionByClub,
+        )
 
         // Rodada 1 da temporada nova respeita as divisões recompostas.
         val nextRound = savedRounds.last()
@@ -349,7 +362,11 @@ class PlayRoundServiceTest {
         assertEquals(0L, awayFinance.ticketRevenue, "Visitante não tem bilheteria")
 
         // O caixa do mandante salvo reflete o caixa inicial + bilheteria.
-        val savedHome = savedClubs.last { it.id == ClubId(1) }
+        // É a PRIMEIRA gravação do clube: esta liga de 2 clubes vira a temporada
+        // já na rodada 1, e a virada regrava o elenco envelhecido (issue #55) a
+        // partir de um `findAll` que, no mock, devolve sempre o clube original.
+        // Em produção esse re-read traz o caixa já atualizado.
+        val savedHome = savedClubs.first { it.id == ClubId(1) }
         assertEquals(homeClub.cash + homeFinance.ticketRevenue, savedHome.cash)
     }
 
@@ -544,6 +561,133 @@ class PlayRoundServiceTest {
             preSeason.squad.all { it.stamina == 100 && it.availability == Availability.Available },
             "pré-temporada deveria zerar fadiga e lesões",
         )
+    }
+
+    @Test
+    fun `virada de temporada envelhece o elenco e aposenta o veterano (issue 55)`() = runTest {
+        // Elenco padrão (25 anos) + um veterano em fim de linha: 38 anos,
+        // overall baixo e salário de veterano — o caso de aposentadoria da issue.
+        val veteran = makePlayer(99, overall = 55, age = 38, salary = 30_000_00)
+        val base = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
+        val aging = base.copy(squad = base.squad + veteran)
+        val lastRound = Round(
+            number = 1,
+            season = 2026,
+            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+        )
+        coEvery { leagueRepo.findRound(1) } returns lastRound
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns aging
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        // 2 clubes → temporada de 1 rodada: a rodada 1 já é a última.
+        coEvery { clubRepo.findAll() } returns listOf(aging, awayClub)
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        service.stream(1).toList()
+
+        val preSeason = savedClubs.last { it.id == ClubId(1) }
+        assertTrue(
+            preSeason.squad.none { it.id == PlayerId(99) },
+            "veterano de 38 anos e overall baixo deveria se aposentar",
+        )
+        // A base assume a vaga: o elenco não encolhe, e a folha do garoto é
+        // menor que a do veterano que saiu.
+        assertEquals(aging.squad.size, preSeason.squad.size, "a base deveria repor o aposentado")
+        assertTrue(
+            preSeason.squad.sumOf { it.salary.toLong() } < aging.squad.sumOf { it.salary.toLong() },
+            "a folha deveria cair ao trocar veterano por cria da base",
+        )
+        assertTrue(
+            preSeason.squad.filter { it.id != PlayerId(99) }.all { it.age == 26 || it.age in 17..19 },
+            "todo mundo ganha um ano na virada; quem entrou vem da base",
+        )
+
+        // O elenco muda de nível: o envelhecimento não é decorativo.
+        assertTrue(
+            preSeason.squad.map { it.overall } != base.squad.map { it.overall },
+            "algum atributo deveria ter variado na virada",
+        )
+
+        // Determinismo (critério de aceite): reprocessar a MESMA virada com o
+        // mesmo elenco dá exatamente a mesma evolução — a seed vem de
+        // temporada+clube, não de um `Random()` solto.
+        savedClubs.clear()
+        service.stream(1).toList()
+        assertEquals(preSeason.squad, savedClubs.last { it.id == ClubId(1) }.squad)
+    }
+
+    @Test
+    fun `SeasonFinished conta quem se aposentou e quem subiu da base (issue 55)`() = runTest {
+        val veteran = makePlayer(99, overall = 55, age = 38)
+        val base = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
+        val aging = base.copy(squad = base.squad + veteran)
+        val lastRound = Round(
+            number = 1,
+            season = 2026,
+            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+        )
+        coEvery { leagueRepo.findRound(1) } returns lastRound
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns aging
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(aging, awayClub)
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        val events = service.stream(1).toList()
+
+        val seasonFinished = events.filterIsInstance<RoundEvent.SeasonFinished>().single()
+        val retirement = seasonFinished.retirements.single { it.retired.id == PlayerId(99) }
+        assertEquals(ClubId(1), retirement.clubId)
+        assertEquals(39, retirement.retired.age, "o extrato mostra a idade com que ele parou")
+        assertTrue(retirement.promoted.age in 17..19, "quem entrou vem da base")
+        assertEquals(retirement.retired.position, retirement.promoted.position)
+
+        // A linha do aposentado sai do banco — deixá-la com `club_id = null` a
+        // tornaria indistinguível de um agente livre.
+        coVerify { playerRepo.deleteAll(match { PlayerId(99) in it }) }
+    }
+
+    @Test
+    fun `virada de temporada envelhece o mercado e tira o aposentado da lista (issue 55)`() = runTest {
+        // Um anunciado jovem (continua na lista) e um veterano em fim de linha.
+        val prospect = MarketEntry(makePlayer(201, overall = 70, age = 22), price = 100_000_00)
+        val fading = MarketEntry(makePlayer(202, overall = 55, age = 39), price = 50_000_00)
+        val lastRound = Round(
+            number = 1,
+            season = 2026,
+            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+        )
+        coEvery { leagueRepo.findRound(1) } returns lastRound
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        coEvery { marketRepo.findAll() } returns listOf(prospect, fading)
+        coEvery { marketRepo.claim(PlayerId(202)) } returns true
+        val listed = mutableListOf<List<com.carlesso.goalfather.domain.model.Player>>()
+        coEvery { playerRepo.saveFreeAgents(capture(listed)) } just Runs
+
+        service.stream(1).toList()
+
+        // O jovem envelheceu e continua anunciado…
+        val stillListed = listed.flatten().single()
+        assertEquals(PlayerId(201), stillListed.id)
+        assertEquals(23, stillListed.age, "quem está no mercado também ganha um ano")
+
+        // …e o veterano saiu do mercado e do banco.
+        coVerify { marketRepo.claim(PlayerId(202)) }
+        coVerify { playerRepo.deleteAll(match { PlayerId(202) in it }) }
     }
 
     @Test

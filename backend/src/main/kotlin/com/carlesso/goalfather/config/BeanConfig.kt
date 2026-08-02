@@ -15,6 +15,7 @@ import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PasswordHasher
+import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BuyPlayerService
@@ -85,11 +86,22 @@ class BeanConfig {
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
         readinessRepo: RoundReadinessRepository,
+        // Virada de temporada (issue #55): mercado envelhece e aposentado sai do banco.
+        marketRepo: MarketRepository,
+        playerRepo: PlayerRepository,
         simulator: MatchSimulator,
         // MeterRegistry é provido pelo actuator; injetado para o timer da
         // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
         meterRegistry: MeterRegistry,
-    ): PlayRoundUseCase = PlayRoundService(clubRepo, leagueRepo, readinessRepo, simulator, meterRegistry)
+    ): PlayRoundUseCase = PlayRoundService(
+        clubRepo,
+        leagueRepo,
+        readinessRepo,
+        marketRepo,
+        playerRepo,
+        simulator,
+        meterRegistry,
+    )
 
     @Bean
     fun roundReadinessUseCase(

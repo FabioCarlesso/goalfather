@@ -6,7 +6,7 @@
 // MatchSimulator com Flow<MatchEvent>, esta engine é descartada. A app real
 // (src/api/, src/pages/) nunca sabe que esta engine existe.
 
-import type { Availability, MatchEvent } from '../domain/types'
+import type { Availability, MatchEvent, Player, Retirement } from '../domain/types'
 
 /** RNG seedável (mulberry32) — mesmo seed → mesma sequência de eventos. */
 export class MulberryRng {
@@ -192,6 +192,127 @@ export function startingEleven<T extends FitPlayer>(
   const starters = savedPlayerIds.filter((id) => byId.has(id))
   const substitutes = available.filter((p) => !starters.includes(p.id)).map((p) => p.id)
   return new Set([...starters, ...substitutes].slice(0, 11))
+}
+
+// ─── Envelhecimento de temporada (espelha AgingRules.kt, issue #55) ───────
+
+export const YOUNG_MAX_AGE = 23
+export const PEAK_MAX_AGE = 29
+export const RETIREMENT_MIN_AGE = 36
+export const RETIREMENT_MAX_OVERALL = 70
+export const FORCED_RETIREMENT_AGE = 41
+
+/**
+ * Variação de atributos sorteada por faixa etária. Assimétrica de propósito:
+ * jovem pode estagnar mas não desabar, veterano pode ter um último bom ano mas
+ * não vira craque aos 35. Mesmos números de `AgeBand` no Kotlin.
+ */
+export const AGE_BAND_DELTA = {
+  YOUNG: { min: -1, max: 3 },
+  PEAK: { min: -1, max: 1 },
+  VETERAN: { min: -3, max: 1 },
+} as const
+
+export type AgeBand = keyof typeof AGE_BAND_DELTA
+
+export const ageBandOf = (age: number): AgeBand =>
+  age <= YOUNG_MAX_AGE ? 'YOUNG' : age <= PEAK_MAX_AGE ? 'PEAK' : 'VETERAN'
+
+export const YOUTH_AGE_MIN = 17
+export const YOUTH_AGE_MAX = 19
+export const YOUTH_OVERALL_GAP_MIN = 8
+export const YOUTH_OVERALL_GAP_MAX = 18
+export const YOUTH_MIN_OVERALL = 40
+export const YOUTH_SALARY_CENTS = 3_000_00
+
+const shift = (value: number, delta: number): number => Math.min(99, Math.max(0, value + delta))
+
+const retires = (p: { age: number; overall: number }): boolean =>
+  p.age >= FORCED_RETIREMENT_AGE ||
+  (p.age >= RETIREMENT_MIN_AGE && p.overall < RETIREMENT_MAX_OVERALL)
+
+const drawInt = (rng: MulberryRng, min: number, max: number): number =>
+  min + Math.floor(rng.next() * (max - min + 1))
+
+/**
+ * Envelhece o elenco UMA temporada e promove a base no lugar de quem se
+ * aposentou. A reposição é 1:1 (mesma regra do backend): elenco que só encolhe
+ * acabaria em time incompleto.
+ *
+ * O backend modela o desfecho de cada jogador num `sealed interface
+ * AgingOutcome` (evoluiu/estagnou/regrediu/aposentou); aqui o mock só precisa
+ * do elenco resultante e da lista de aposentadorias.
+ *
+ * `youthId` gera o id do garoto promovido — no backend a fórmula é
+ * `youthPlayerId(clube, temporada, vaga)`; o mock tem um clube só.
+ */
+export function ageSquadOneSeason(
+  squad: Player[],
+  rng: MulberryRng,
+  clubId = 1,
+  youthId: (slot: number) => number = (slot) => 900_000 + slot,
+): { squad: Player[]; retirements: Retirement[] } {
+  const next: Player[] = []
+  const retirements: Retirement[] = []
+
+  const promote = (retired: Player): Player => {
+    const slot = retirements.length + 1
+    const overall = Math.max(
+      YOUTH_MIN_OVERALL,
+      Math.min(99, retired.overall - drawInt(rng, YOUTH_OVERALL_GAP_MIN, YOUTH_OVERALL_GAP_MAX)),
+    )
+    return {
+      ...retired,
+      id: youthId(slot),
+      name: `Cria da base ${slot}`,
+      overall,
+      pace: overall,
+      shooting: overall,
+      passing: overall,
+      defending: overall,
+      salary: YOUTH_SALARY_CENTS,
+      age: drawInt(rng, YOUTH_AGE_MIN, YOUTH_AGE_MAX),
+      goals: 0,
+      yellowCards: 0,
+      redCards: 0,
+      star: overall >= 82,
+    }
+  }
+
+  for (const p of squad) {
+    // Quem já bateu o teto de carreira sai sem sortear delta nenhum — mas ganha
+    // o ano, como no backend, para o extrato mostrar a idade em que parou.
+    if (p.age >= FORCED_RETIREMENT_AGE) {
+      const retired = { ...p, age: Math.min(50, p.age + 1) }
+      const promoted = promote(retired)
+      next.push(promoted)
+      retirements.push({ clubId, retired, promoted })
+      continue
+    }
+
+    const age = p.age + 1
+    const band = AGE_BAND_DELTA[ageBandOf(age)]
+    const delta = drawInt(rng, band.min, band.max)
+    const aged: Player = {
+      ...p,
+      age,
+      overall: shift(p.overall, delta),
+      pace: shift(p.pace, delta),
+      shooting: shift(p.shooting, delta),
+      passing: shift(p.passing, delta),
+      defending: shift(p.defending, delta),
+    }
+
+    if (retires(aged)) {
+      const promoted = promote(aged)
+      next.push(promoted)
+      retirements.push({ clubId, retired: aged, promoted })
+    } else {
+      next.push(aged)
+    }
+  }
+
+  return { squad: next, retirements }
 }
 
 /** Sessão do departamento médico — espelha `applyMedicalTreatment` do backend. */

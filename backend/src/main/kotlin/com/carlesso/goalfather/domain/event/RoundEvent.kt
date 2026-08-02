@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.event
 
+import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
@@ -43,6 +44,11 @@ sealed interface RoundEvent {
      * tabelas finais de todas as divisões para que o cliente celebre o
      * título. O backend já abriu a próxima temporada (promoção/rebaixamento
      * aplicados, rodada 1 + tabelas zeradas) antes de emitir.
+     *
+     * `retirements` conta a outra história da virada (issue #55): quem
+     * pendurou as chuteiras e qual garoto da base assumiu a vaga. Vem de TODOS
+     * os clubes — cabe ao cliente filtrar o que interessa ao técnico. Default
+     * vazio para não quebrar quem já consumia o evento.
      */
     @Serializable
     @SerialName("SeasonFinished")
@@ -50,5 +56,6 @@ sealed interface RoundEvent {
         val season: Int,
         val champion: StandingRow,
         val standings: List<Standings>,
+        val retirements: List<Retirement> = emptyList(),
     ) : RoundEvent
 }

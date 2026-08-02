@@ -415,7 +415,65 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   R$ 30.000 e devolve +30 de stamina / −1 rodada de lesão, com caixa
   insuficiente modelado como valor (`MedicalResult.InsufficientFunds`), não
   exception. Migration V8 troca a coluna `injured` por `injured_for_rounds`.)
+- [x] **6.2** Evolução e regressão de atributos por idade — issue #55
+  (regra pura em `domain/rules/AgingRules.kt`, aplicada na virada de temporada
+  dentro de `startNextSeasonClubs`: todo jogador ganha um ano, e a faixa etária
+  da idade NOVA decide o sorteio — jovem até 23 (`-1..3`), auge de 24 a 29
+  (`-1..1`), veterano dos 30 em diante (`-3..1`). O delta move `overall` e os
+  quatro atributos juntos. Veterano de 36+ com `overall < 70` se aposenta e sai
+  do elenco, liberando a folha; aos 41 a aposentadoria é compulsória — é ela que
+  protege o invariante `age in 15..50` do `Player` de uma carreira infinita. A
+  seed é `agingSeed(temporada, clube)`, com o mesmo empacotamento disjunto de
+  `fitnessSeed` mais um salt, para que temporada 7 e rodada 7 não sorteiem a
+  mesma sequência. **Reposição pela base:** quem se aposenta é substituído 1:1
+  por um garoto de 17–19 anos na mesma posição, 8–18 pontos de `overall` abaixo
+  do veterano e salário de R$ 3.000 — sem isso o elenco só encolhe e o clube da
+  IA, que não compra ninguém, chegaria a zero jogador em poucas temporadas. O id
+  do promovido sai de `youthPlayerId(clube, temporada, vaga)`, determinístico e
+  numa faixa disjunta da do seed. As aposentadorias viajam no
+  `RoundEvent.SeasonFinished` (`retirements`), então a UI conta a notícia. Quem
+  está no mercado também envelhece — com seed própria — e sai da lista ao se
+  aposentar; o aposentado é APAGADO do banco pelo novo port `PlayerRepository`,
+  em vez de virar linha órfã com `club_id = null`.)
 - [ ] Mercado dinâmico / variação de preços — *futuro*
+
+##### Por que `AgingOutcome` e não `Player?`
+
+A issue sugeria `fun Player.ageOneSeason(rng: Random): Player?`, com `null` para
+o aposentado. Funciona, mas o `null` só diz "sumiu": não distingue quem evoluiu
+de quem regrediu, e obriga cada caller a recalcular a diferença de `overall`
+para contar a história. O `sealed interface AgingOutcome`
+(`Evolved`/`Steady`/`Regressed`/`Retired`) devolve o desfecho **já
+interpretado**, o `when` que separa quem fica de quem sai é exaustivo sem
+`else`, e um desfecho novo (empréstimo, promoção da base) vira erro de compilação
+em cada ponto de uso em vez de um `null` mal tratado. Mesma lição de
+`Availability` na 6.1: quando o domínio tem N desfechos, o tipo diz quais são.
+
+##### Por que a base repõe o aposentado (e por que as idades do seed foram espalhadas)
+
+A primeira versão deixava o elenco apenas encolher. Simulando a regra sobre um
+elenco da IA — 11 jogadores, **todos com 25 anos**, como o seed criava —, o
+resultado era brusco: como a idade era uniforme, os onze cruzavam a barreira dos
+36 na MESMA virada e o clube ia de 11 jogadores a zero por volta da temporada
+11 (com `strength` 60; até os de 80 zeravam na 16ª). O jogo não quebrava — o
+`MatchSimulator` ignora elenco vazio —, mas a liga perdia sentido, e o técnico
+humano travava antes disso: com menos de 11 jogadores, `SaveLineupService`
+devolve `IncompleteLineup` para sempre.
+
+Duas correções, ambas baratas:
+
+1. **Promoção da base 1:1** na própria virada — o elenco nunca encolhe, e a
+   renovação vira parte do jogo (o garoto entra pior, mas na faixa que mais
+   evolui);
+2. **Idades espalhadas no seed** da IA (21–32 em vez de 25 para todos), o que
+   troca a aposentadoria em bloco por uma ou duas saídas por temporada.
+
+O teste `vinte temporadas seguidas nao esvaziam o elenco` (e o gêmeo no mock) é
+a regressão disso.
+
+*Follow-up que segue aberto:* a IA não compra nem vende — a base repõe o número,
+não a qualidade, então um elenco de IA tende a se estabilizar num nível mais
+baixo ao longo de muitas temporadas. Fecha junto do mercado dinâmico.
 
 ##### Por que `Availability` e não `injuredForRounds: Int`
 
