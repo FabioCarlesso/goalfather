@@ -415,7 +415,39 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   R$ 30.000 e devolve +30 de stamina / −1 rodada de lesão, com caixa
   insuficiente modelado como valor (`MedicalResult.InsufficientFunds`), não
   exception. Migration V8 troca a coluna `injured` por `injured_for_rounds`.)
+- [x] **6.2** Evolução e regressão de atributos por idade — issue #55
+  (regra pura em `domain/rules/AgingRules.kt`, aplicada na virada de temporada
+  dentro de `startNextSeasonClubs`: todo jogador ganha um ano, e a faixa etária
+  da idade NOVA decide o sorteio — jovem até 23 (`-1..3`), auge de 24 a 29
+  (`-1..1`), veterano dos 30 em diante (`-3..1`). O delta move `overall` e os
+  quatro atributos juntos. Veterano de 36+ com `overall < 70` se aposenta e sai
+  do elenco, liberando a folha; aos 41 a aposentadoria é compulsória — é ela que
+  protege o invariante `age in 15..50` do `Player` de uma carreira infinita. A
+  seed é `agingSeed(temporada, clube)`, com o mesmo empacotamento disjunto de
+  `fitnessSeed` mais um salt, para que temporada 7 e rodada 7 não sorteiem a
+  mesma sequência.)
 - [ ] Mercado dinâmico / variação de preços — *futuro*
+
+##### Por que `AgingOutcome` e não `Player?`
+
+A issue sugeria `fun Player.ageOneSeason(rng: Random): Player?`, com `null` para
+o aposentado. Funciona, mas o `null` só diz "sumiu": não distingue quem evoluiu
+de quem regrediu, e obriga cada caller a recalcular a diferença de `overall`
+para contar a história. O `sealed interface AgingOutcome`
+(`Evolved`/`Steady`/`Regressed`/`Retired`) devolve o desfecho **já
+interpretado**, o `when` que separa quem fica de quem sai é exaustivo sem
+`else`, e um desfecho novo (empréstimo, promoção da base) vira erro de compilação
+em cada ponto de uso em vez de um `null` mal tratado. Mesma lição de
+`Availability` na 6.1: quando o domínio tem N desfechos, o tipo diz quais são.
+
+*Follow-ups conhecidos:* elenco só encolhe — não há regeneração de base nem
+contratação automática da IA, então clubes perdem jogadores ao longo das
+temporadas (irrelevante no seed atual, cujos elencos têm 25–32 anos, mas é o
+próximo passo natural junto do mercado dinâmico). Quem está no mercado também
+não envelhece — a regra roda sobre o `squad` de cada clube, e a lista de
+transferências não pertence a nenhum. E o jogador aposentado
+continua como linha órfã em `players` com `club_id = null`: invisível no jogo
+(o mercado só lista quem tem entrada em `market_entries`), mas não apagado.
 
 ##### Por que `Availability` e não `injuredForRounds: Int`
 

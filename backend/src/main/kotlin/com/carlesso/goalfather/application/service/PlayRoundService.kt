@@ -23,6 +23,8 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.teamStrength
+import com.carlesso.goalfather.domain.rules.ageSquadOneSeason
+import com.carlesso.goalfather.domain.rules.agingSeed
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
@@ -32,6 +34,7 @@ import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
+import com.carlesso.goalfather.domain.rules.remainingSquad
 import com.carlesso.goalfather.domain.rules.seasonRounds
 import com.carlesso.goalfather.domain.rules.ticketRevenue
 import io.micrometer.core.instrument.MeterRegistry
@@ -257,7 +260,7 @@ class PlayRoundService(
         val nextSeason = endedSeason + 1
 
         val nextDivisions = applyPromotionRelegation(finalStandings)
-        val clubs = startNextSeasonClubs(nextDivisions)
+        val clubs = startNextSeasonClubs(nextSeason, nextDivisions)
         leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
         freshStandings(nextSeason, clubs).forEach { leagueRepo.saveStandings(it) }
 
@@ -266,15 +269,28 @@ class PlayRoundService(
 
     /**
      * Prepara os clubes para a nova temporada numa ÚNICA gravação por clube:
-     * zera gols/cartões, cura lesões e move quem subiu/desceu para a nova
-     * divisão (issue #47). Relê os clubes (já com o caixa pós-bilheteria)
-     * para não desfazer as finanças aplicadas na rodada. Devolve o estado
-     * atualizado, que alimenta o calendário e as tabelas da temporada nova.
+     * envelhece o elenco (issue #55), zera gols/cartões, cura lesões e move
+     * quem subiu/desceu para a nova divisão (issue #47). Relê os clubes (já
+     * com o caixa pós-bilheteria) para não desfazer as finanças aplicadas na
+     * rodada. Devolve o estado atualizado, que alimenta o calendário e as
+     * tabelas da temporada nova.
+     *
+     * O RNG do envelhecimento é semeado por `temporada + clube` — mesmo padrão
+     * determinístico do desgaste (`fitnessSeed`) e da partida (`matchId`):
+     * reprocessar a mesma virada com o mesmo elenco dá exatamente a mesma
+     * evolução. Os aposentados simplesmente saem do `squad`, e como a folha é
+     * somada a partir dele, o salário some junto.
      */
-    private suspend fun startNextSeasonClubs(nextDivisions: Map<ClubId, Division>): List<Club> =
+    private suspend fun startNextSeasonClubs(
+        nextSeason: Int,
+        nextDivisions: Map<ClubId, Division>,
+    ): List<Club> =
         clubRepo.findAll().map { club ->
+            val aged = ageSquadOneSeason(club.squad, Random(agingSeed(nextSeason, club.id)))
+                .remainingSquad()
+
             // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-            val reset = club.squad.map {
+            val reset = aged.map {
                 it.copy(
                     goals = 0,
                     yellowCards = 0,

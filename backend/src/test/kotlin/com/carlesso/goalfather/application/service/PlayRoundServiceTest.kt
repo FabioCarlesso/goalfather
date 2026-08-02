@@ -19,6 +19,7 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
 import com.carlesso.goalfather.test.makeClub
+import com.carlesso.goalfather.test.makePlayer
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -265,9 +266,14 @@ class PlayRoundServiceTest {
         val seasonFinished = events.filterIsInstance<RoundEvent.SeasonFinished>().single()
         assertEquals(ClubId(1), seasonFinished.champion.clubId)
 
-        // 3 e 4 caem, 5 e 6 sobem — só quem mudou de divisão é regravado.
+        // 3 e 4 caem, 5 e 6 sobem; os demais ficam onde estavam. Todos os clubes
+        // são regravados na virada — desde a issue #55 o elenco envelhece, então
+        // não existe mais clube "sem mudança" no fim de temporada.
         val divisionByClub = savedClubs.associate { it.id.value to it.division.value }
-        assertEquals(mapOf(3L to 2, 4L to 2, 5L to 1, 6L to 1), divisionByClub)
+        assertEquals(
+            mapOf(1L to 1, 2L to 1, 3L to 2, 4L to 2, 5L to 1, 6L to 1, 7L to 2, 8L to 2),
+            divisionByClub,
+        )
 
         // Rodada 1 da temporada nova respeita as divisões recompostas.
         val nextRound = savedRounds.last()
@@ -349,7 +355,11 @@ class PlayRoundServiceTest {
         assertEquals(0L, awayFinance.ticketRevenue, "Visitante não tem bilheteria")
 
         // O caixa do mandante salvo reflete o caixa inicial + bilheteria.
-        val savedHome = savedClubs.last { it.id == ClubId(1) }
+        // É a PRIMEIRA gravação do clube: esta liga de 2 clubes vira a temporada
+        // já na rodada 1, e a virada regrava o elenco envelhecido (issue #55) a
+        // partir de um `findAll` que, no mock, devolve sempre o clube original.
+        // Em produção esse re-read traz o caixa já atualizado.
+        val savedHome = savedClubs.first { it.id == ClubId(1) }
         assertEquals(homeClub.cash + homeFinance.ticketRevenue, savedHome.cash)
     }
 
@@ -544,6 +554,58 @@ class PlayRoundServiceTest {
             preSeason.squad.all { it.stamina == 100 && it.availability == Availability.Available },
             "pré-temporada deveria zerar fadiga e lesões",
         )
+    }
+
+    @Test
+    fun `virada de temporada envelhece o elenco e aposenta o veterano (issue 55)`() = runTest {
+        // Elenco padrão (25 anos) + um veterano em fim de linha: 38 anos e
+        // overall baixo, o caso de aposentadoria da issue.
+        val veteran = makePlayer(99, overall = 55, age = 38, salary = 20_000)
+        val base = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
+        val aging = base.copy(squad = base.squad + veteran)
+        val lastRound = Round(
+            number = 1,
+            season = 2026,
+            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+        )
+        coEvery { leagueRepo.findRound(1) } returns lastRound
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns aging
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        // 2 clubes → temporada de 1 rodada: a rodada 1 já é a última.
+        coEvery { clubRepo.findAll() } returns listOf(aging, awayClub)
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        service.stream(1).toList()
+
+        val preSeason = savedClubs.last { it.id == ClubId(1) }
+        assertTrue(
+            preSeason.squad.none { it.id == PlayerId(99) },
+            "veterano de 38 anos e overall baixo deveria se aposentar",
+        )
+        assertEquals(
+            base.squad.sumOf { it.salary.toLong() },
+            preSeason.squad.sumOf { it.salary.toLong() },
+            "a folha da temporada nova não deveria mais carregar o aposentado",
+        )
+        assertTrue(preSeason.squad.all { it.age == 26 }, "todo mundo ganha um ano na virada")
+
+        // O elenco muda de nível: o envelhecimento não é decorativo.
+        assertTrue(
+            preSeason.squad.map { it.overall } != base.squad.map { it.overall },
+            "algum atributo deveria ter variado na virada",
+        )
+
+        // Determinismo (critério de aceite): reprocessar a MESMA virada com o
+        // mesmo elenco dá exatamente a mesma evolução — a seed vem de
+        // temporada+clube, não de um `Random()` solto.
+        savedClubs.clear()
+        service.stream(1).toList()
+        assertEquals(preSeason.squad, savedClubs.last { it.id == ClubId(1) }.squad)
     }
 
     @Test

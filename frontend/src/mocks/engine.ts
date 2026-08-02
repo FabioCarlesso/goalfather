@@ -194,6 +194,76 @@ export function startingEleven<T extends FitPlayer>(
   return new Set([...starters, ...substitutes].slice(0, 11))
 }
 
+// ─── Envelhecimento de temporada (espelha AgingRules.kt, issue #55) ───────
+
+export const YOUNG_MAX_AGE = 23
+export const PEAK_MAX_AGE = 29
+export const RETIREMENT_MIN_AGE = 36
+export const RETIREMENT_MAX_OVERALL = 70
+export const FORCED_RETIREMENT_AGE = 41
+
+/**
+ * Variação de atributos sorteada por faixa etária. Assimétrica de propósito:
+ * jovem pode estagnar mas não desabar, veterano pode ter um último bom ano mas
+ * não vira craque aos 35. Mesmos números de `AgeBand` no Kotlin.
+ */
+export const AGE_BAND_DELTA = {
+  YOUNG: { min: -1, max: 3 },
+  PEAK: { min: -1, max: 1 },
+  VETERAN: { min: -3, max: 1 },
+} as const
+
+export type AgeBand = keyof typeof AGE_BAND_DELTA
+
+export const ageBandOf = (age: number): AgeBand =>
+  age <= YOUNG_MAX_AGE ? 'YOUNG' : age <= PEAK_MAX_AGE ? 'PEAK' : 'VETERAN'
+
+type AgingPlayer = {
+  age: number
+  overall: number
+  pace: number
+  shooting: number
+  passing: number
+  defending: number
+}
+
+const shift = (value: number, delta: number): number => Math.min(99, Math.max(0, value + delta))
+
+const retires = (p: { age: number; overall: number }): boolean =>
+  p.age >= FORCED_RETIREMENT_AGE ||
+  (p.age >= RETIREMENT_MIN_AGE && p.overall < RETIREMENT_MAX_OVERALL)
+
+/**
+ * Envelhece o elenco UMA temporada e devolve quem continua no clube — o
+ * aposentado simplesmente não volta na lista (e leva o salário junto).
+ *
+ * O backend modela o desfecho num `sealed interface AgingOutcome`
+ * (evoluiu/estagnou/regrediu/aposentou); aqui o mock só precisa do elenco
+ * resultante, então a lista basta.
+ */
+export function ageSquadOneSeason<T extends AgingPlayer>(squad: T[], rng: MulberryRng): T[] {
+  const remaining: T[] = []
+  for (const p of squad) {
+    // Quem já bateu o teto de carreira sai sem sortear nada.
+    if (p.age >= FORCED_RETIREMENT_AGE) continue
+
+    const age = p.age + 1
+    const band = AGE_BAND_DELTA[ageBandOf(age)]
+    const delta = band.min + Math.floor(rng.next() * (band.max - band.min + 1))
+    const aged: T = {
+      ...p,
+      age,
+      overall: shift(p.overall, delta),
+      pace: shift(p.pace, delta),
+      shooting: shift(p.shooting, delta),
+      passing: shift(p.passing, delta),
+      defending: shift(p.defending, delta),
+    }
+    if (!retires(aged)) remaining.push(aged)
+  }
+  return remaining
+}
+
 /** Sessão do departamento médico — espelha `applyMedicalTreatment` do backend. */
 export function applyMedicalTreatment<T extends FitPlayer>(squad: T[]): T[] {
   return squad.map((p) => ({

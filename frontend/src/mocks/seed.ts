@@ -10,6 +10,7 @@ import type {
   Round,
   RoundMatch,
 } from '../domain/types'
+import { MulberryRng, ageSquadOneSeason } from './engine'
 
 const player = (
   id: number,
@@ -455,23 +456,31 @@ export function materializeClub(id: number): void {
 }
 
 // Vira a temporada (issue #11): aplica promoção/rebaixamento às tabelas
-// finais (issue #47), zera estatísticas do elenco do usuário, cria tabelas
-// novas (uma por divisão) e gera a rodada 1 da próxima temporada. Espelha
-// startNextSeason do backend, mantendo a parity mock ↔ real.
+// finais (issue #47), envelhece e zera as estatísticas do elenco do usuário
+// (issue #55), cria tabelas novas (uma por divisão) e gera a rodada 1 da
+// próxima temporada. Espelha startNextSeason do backend, mantendo a parity
+// mock ↔ real.
 export function startNewSeason(season: number, finalTables: Standings[]): void {
   Object.assign(divisionAssignments, applyPromotionRelegation(finalTables))
   const my = state.clubs[1]
   if (my) {
+    // Envelhecimento (issue #55): +1 ano, evolução/regressão por faixa etária e
+    // aposentadoria do veterano que já não rende. O mock tem um clube só, então
+    // a temporada basta como seed (no backend é `agingSeed(temporada, clube)`).
+    const aged = ageSquadOneSeason(my.squad, new MulberryRng(season))
     state.clubs[1] = {
       ...my,
       // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-      squad: my.squad.map((p) => ({
+      squad: aged.map((p) => ({
         ...p,
         goals: 0,
         yellowCards: 0,
         redCards: 0,
         stamina: 100,
         availability: { type: 'Available' as const },
+        // `star` é derivado no backend; aqui o mock recalcula, já que o
+        // overall mudou na virada.
+        star: p.overall >= 82,
       })),
     }
   }

@@ -20,6 +20,8 @@ internal fun makePlayer(
     overall: Int = 75,
     stamina: Int = 100,
     availability: Availability = Availability.Available,
+    age: Int = 25,
+    salary: Int = 10_000,
 ): Player = Player(
     id = PlayerId(id),
     name = "Player$id",
@@ -30,8 +32,8 @@ internal fun makePlayer(
     passing = overall,
     defending = overall,
     stamina = stamina,
-    salary = 10_000,
-    age = 25,
+    salary = salary,
+    age = age,
     availability = availability,
 )
 

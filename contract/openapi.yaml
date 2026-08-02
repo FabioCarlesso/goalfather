@@ -714,7 +714,15 @@ components:
             40) e reservas recuperam. Abaixo de 70 o rendimento do jogador cai
             proporcionalmente — a UI não recalcula isso, só exibe.
         salary:     { type: integer, minimum: 0, description: Salário mensal }
-        age:        { type: integer, minimum: 15, maximum: 50 }
+        age:
+          type: integer
+          minimum: 15
+          maximum: 50
+          description: |
+            Idade (issue #55). Na virada de temporada todo jogador ganha um ano:
+            até 23 tende a evoluir, de 24 a 29 oscila pouco e a partir dos 30
+            tende a regredir. Veterano de overall baixo se aposenta e sai do
+            elenco — a UI não recalcula nada disso, só exibe.
         goals:      { type: integer, minimum: 0, description: Gols na temporada }
         yellowCards: { type: integer, minimum: 0, description: Cartões amarelos na temporada }
         redCards:    { type: integer, minimum: 0, description: Cartões vermelhos na temporada }
