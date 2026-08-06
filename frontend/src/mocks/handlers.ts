@@ -29,6 +29,7 @@ import {
   startingEleven,
   MulberryRng,
   MEDICAL_DEPARTMENT_COST_CENTS,
+  type TeamTactics,
 } from './engine'
 import type {
   TransferResult,
@@ -69,6 +70,21 @@ const attendanceRate = (strength: number) =>
   Math.min(1, Math.max(0.5, 0.5 + 0.5 * ((strength - 60) / 40)))
 const ticketRevenueOf = (capacity: number, strength: number) =>
   Math.floor(capacity * attendanceRate(strength)) * TICKET_PRICE_CENTS
+
+/**
+ * Tática com que um clube entra em campo (issue #56) — espelha
+ * `Club.startingLineup()` do backend: sai da escalação salva, e quem nunca
+ * escalou (todos os clubes da IA neste mock) entra EQUILIBRADO em 4-4-2.
+ */
+const DEFAULT_TACTICS: TeamTactics = { posture: 'BALANCED', formation: '4-4-2' }
+
+const tacticsOf = (clubId: number): TeamTactics => {
+  const lineup = state.clubs[clubId]?.lineup
+  return {
+    posture: lineup?.posture ?? DEFAULT_TACTICS.posture,
+    formation: lineup?.formation ?? DEFAULT_TACTICS.formation,
+  }
+}
 
 // Latência simulada para parecer com rede real (descomente em testes determinísticos)
 const SIMULATED_LATENCY_MS = 120
@@ -387,6 +403,8 @@ export const handlers = [
       awayStrength: 75,
       homeSquad:    myClub.squad.map((p) => p.id),
       awaySquad:    [1001, 1002, 1003, 1004, 1005],
+      homeTactics:  tacticsOf(1),
+      awayTactics:  DEFAULT_TACTICS,   // adversário mock: sempre equilibrado
     }
 
     let cancelled = false
@@ -493,6 +511,8 @@ export const handlers = [
         awayStrength: away.id === 1 ? averageOverall(state.clubs[1]!.squad) : away.strength,
         homeSquad:    home.squad,
         awaySquad:    away.squad,
+        homeTactics:  tacticsOf(home.id),
+        awayTactics:  tacticsOf(away.id),
       }
       for (const event of simulateMatch(setup)) {
         allEvents.push({ matchId: match.matchId, event })

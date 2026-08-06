@@ -4,7 +4,8 @@ import { useClub } from '../api/queries/useClub'
 import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { MatchEventFeed } from '../components/MatchEventFeed'
-import type { MatchEvent } from '../domain/types'
+import { POSTURE_LABEL } from '../domain/formations'
+import type { MatchEvent, Posture } from '../domain/types'
 
 type Status = 'connecting' | 'live' | 'finished' | 'error'
 
@@ -13,6 +14,8 @@ interface Teams {
   away: string
   homeStrength: number
   awayStrength: number
+  homePosture: Posture
+  awayPosture: Posture
 }
 
 /**
@@ -76,6 +79,10 @@ function MatchView({ matchId }: { matchId: string }) {
       away: kickOff.awayClubName,
       homeStrength: kickOff.homeStrength,
       awayStrength: kickOff.awayStrength,
+      // Obrigatórias no `KickOffEvent` do contrato (issue #56) — sem fallback:
+      // se faltarem, o defeito é do produtor do stream e deve aparecer.
+      homePosture: kickOff.homePosture,
+      awayPosture: kickOff.awayPosture,
     }
   }, [events])
 
@@ -148,7 +155,12 @@ function Scoreboard({
   return (
     <div className="rounded-lg border border-slate-800 bg-gradient-to-b from-slate-900/80 to-slate-950 p-5">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-        <TeamSide name={teams.home} strength={teams.homeStrength} align="right" />
+        <TeamSide
+          name={teams.home}
+          strength={teams.homeStrength}
+          posture={teams.homePosture}
+          align="right"
+        />
         <div className="flex min-w-[140px] flex-col items-center gap-1">
           <div className="font-mono text-5xl font-bold tabular-nums text-slate-100">
             {score.home} <span className="text-slate-600">×</span> {score.away}
@@ -158,7 +170,12 @@ function Scoreboard({
             {minuteLabel}
           </div>
         </div>
-        <TeamSide name={teams.away} strength={teams.awayStrength} align="left" />
+        <TeamSide
+          name={teams.away}
+          strength={teams.awayStrength}
+          posture={teams.awayPosture}
+          align="left"
+        />
       </div>
       <div className="mt-4 h-1 overflow-hidden rounded-full bg-slate-800">
         <div
@@ -170,11 +187,32 @@ function Scoreboard({
   )
 }
 
-function TeamSide({ name, strength, align }: { name: string; strength: number; align: 'left' | 'right' }) {
+const POSTURE_TONE: Record<Posture, string> = {
+  DEFENSIVE: 'border-sky-700/50 bg-sky-900/30 text-sky-300',
+  BALANCED: 'border-slate-700/60 bg-slate-800/40 text-slate-400',
+  OFFENSIVE: 'border-amber-700/50 bg-amber-900/30 text-amber-300',
+}
+
+function TeamSide({
+  name,
+  strength,
+  posture,
+  align,
+}: {
+  name: string
+  strength: number
+  posture: Posture
+  align: 'left' | 'right'
+}) {
   return (
     <div className={align === 'right' ? 'text-right' : 'text-left'}>
       <div className="truncate text-lg font-semibold text-slate-100">{name}</div>
       <div className="font-mono text-xs text-slate-500">OVR {strength.toFixed(1)}</div>
+      <span
+        className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${POSTURE_TONE[posture]}`}
+      >
+        {POSTURE_LABEL[posture]}
+      </span>
     </div>
   )
 }

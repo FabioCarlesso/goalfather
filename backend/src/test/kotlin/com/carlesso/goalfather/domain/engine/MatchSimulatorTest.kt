@@ -6,6 +6,8 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.Posture
+import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.rules.INJURY_DURATION
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -216,6 +218,101 @@ class MatchSimulatorTest {
         assertTrue(
             totalHomeGoals > totalAwayGoals,
             "Time muito mais forte deve marcar mais em 50 jogos. Home: $totalHomeGoals, Away: $totalAwayGoals",
+        )
+    }
+
+    // ─── Tática (issue #56) ────────────────────────────────────────────────
+
+    private fun MatchSetup.withPostures(home: Posture, away: Posture) = copy(
+        home = this.home.copy(tactics = Tactics(home)),
+        away = this.away.copy(tactics = Tactics(away)),
+    )
+
+    private suspend fun goalsIn(setup: MatchSetup, seeds: IntRange): Int =
+        seeds.sumOf { seed ->
+            val ft = MatchSimulator().simulate(setup, Random(seed.toLong())).toList()
+                .filterIsInstance<MatchEvent.FullTime>().single()
+            ft.homeGoals + ft.awayGoals
+        }
+
+    @Test
+    fun `KickOff carrega a postura de cada lado`() = runTest {
+        val tactical = setup.withPostures(Posture.OFFENSIVE, Posture.DEFENSIVE)
+        val kickOff = MatchSimulator().simulate(tactical, Random(42)).toList()
+            .filterIsInstance<MatchEvent.KickOff>().single()
+
+        assertEquals(Posture.OFFENSIVE, kickOff.homePosture)
+        assertEquals(Posture.DEFENSIVE, kickOff.awayPosture)
+    }
+
+    @Test
+    fun `mesma seed com posturas diferentes produz partidas diferentes`() = runTest {
+        val balanced = MatchSimulator().simulate(setup, Random(42)).toList()
+        val offensive = MatchSimulator()
+            .simulate(setup.withPostures(Posture.OFFENSIVE, Posture.OFFENSIVE), Random(42))
+            .toList()
+
+        assertNotEquals(balanced, offensive)
+
+        // ...e reprodutível: a mesma tática com a mesma seed repete o jogo.
+        val again = MatchSimulator()
+            .simulate(setup.withPostures(Posture.OFFENSIVE, Posture.OFFENSIVE), Random(42))
+            .toList()
+        assertEquals(offensive, again)
+    }
+
+    @Test
+    fun `EQUILIBRADA em 4-4-2 preserva a simulacao neutra`() = runTest {
+        // Regressão: a tática é uma CAMADA sobre a engine, não uma troca dela.
+        // O eixo neutro tem de dar exatamente a partida de antes da issue #56.
+        val explicit = setup.withPostures(Posture.BALANCED, Posture.BALANCED)
+        assertEquals(
+            MatchSimulator().simulate(setup, Random(7)).toList(),
+            MatchSimulator().simulate(explicit, Random(7)).toList(),
+        )
+    }
+
+    @Test
+    fun `jogo aberto rende mais gols que dois times fechados`() = runTest {
+        // Teste estatístico (100 partidas): o RNG manda numa partida isolada,
+        // mas o volume de gols tem de separar as posturas com folga.
+        val open = goalsIn(setup.withPostures(Posture.OFFENSIVE, Posture.OFFENSIVE), 1..100)
+        val closed = goalsIn(setup.withPostures(Posture.DEFENSIVE, Posture.DEFENSIVE), 1..100)
+
+        assertTrue(
+            open > closed,
+            "OFENSIVA×OFENSIVA deveria render mais gols que DEFENSIVA×DEFENSIVA. Aberto: $open, fechado: $closed",
+        )
+    }
+
+    @Test
+    fun `fechar o time reduz os gols do adversario`() = runTest {
+        // A postura do RIVAL pesa: o mesmo ataque produz menos contra um time
+        // fechado. É o que torna a escolha um confronto, e não um botão isolado.
+        suspend fun awayGoals(homePosture: Posture): Int = (1..100).sumOf { seed ->
+            MatchSimulator()
+                .simulate(setup.withPostures(homePosture, Posture.OFFENSIVE), Random(seed.toLong()))
+                .toList()
+                .filterIsInstance<MatchEvent.FullTime>()
+                .single().awayGoals
+        }
+
+        val vsClosed = awayGoals(Posture.DEFENSIVE)
+        val vsOpen = awayGoals(Posture.OFFENSIVE)
+        assertTrue(
+            vsClosed < vsOpen,
+            "Adversário ofensivo deveria marcar menos contra time fechado. Fechado: $vsClosed, aberto: $vsOpen",
+        )
+    }
+
+    @Test
+    fun `formacao inclina o placar mesmo com a mesma postura`() = runTest {
+        val attacking = setup.copy(home = homeLineup.copy(formation = Formation.F_4_3_3))
+        val defending = setup.copy(home = homeLineup.copy(formation = Formation.F_5_3_2))
+
+        assertTrue(
+            goalsIn(attacking, 1..100) > goalsIn(defending, 1..100),
+            "4-3-3 deveria render mais gols no agregado que 5-3-2",
         )
     }
 }

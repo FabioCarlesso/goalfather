@@ -127,6 +127,36 @@ class ClubStartingLineupTest {
     }
 
     @Test
+    fun `postura salva e preservada ao substituir`() {
+        // `startingLineup()` é o ÚNICO caminho pelo qual a tática chega à engine
+        // numa rodada (issue #56). Hoje ela sobrevive porque a reidratação usa
+        // `saved.copy(players = ...)`; reconstruir o Lineup aqui faria a postura
+        // voltar a BALANCED em silêncio — este teste é quem grita.
+        val base = makeClub(squadSize = 14)
+        val club = base
+            .copy(
+                lineup = Lineup(
+                    players = base.squad.take(11),
+                    formation = Formation.F_5_3_2,
+                    tactics = Tactics(Posture.DEFENSIVE),
+                ),
+            )
+            .injure(1L)
+
+        assertEquals(Posture.DEFENSIVE, club.startingLineup().tactics.posture)
+    }
+
+    @Test
+    fun `clube sem escalacao salva entra EQUILIBRADO`() {
+        // O caso do clube da IA, que nunca escala: o fallback tem de produzir a
+        // postura neutra, não uma escalação sem tática definida.
+        val club = makeClub(squadSize = 14).copy(lineup = null)
+
+        assertEquals(Posture.BALANCED, club.startingLineup().tactics.posture)
+        assertEquals(Formation.F_4_4_2, club.startingLineup().formation)
+    }
+
+    @Test
     fun `elenco inteiro lesionado resulta em time vazio, nao em lesionado escalado`() {
         val base = makeClub(squadSize = 11)
         val club = base

@@ -12,6 +12,7 @@ import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
 import com.carlesso.goalfather.domain.result.LineupResult
@@ -50,7 +51,7 @@ class ClubController(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
         } else {
-            ResponseEntity.ok(club)
+            ResponseEntity.ok(club.toDto())
         }
     }
 
@@ -82,7 +83,10 @@ class ClubController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
         // Posse é verificada dentro do use case (fetch único) — issue #18/#19.
-        when (val result = saveLineup.execute(ClubId(id), userId, req.formation, req.playerIds)) {
+        when (
+            val result =
+                saveLineup.execute(ClubId(id), userId, req.formation, req.playerIds, Tactics(req.posture))
+        ) {
             is LineupResult.Success -> ResponseEntity.noContent().build()
             is LineupResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube ${result.clubId.value} não encontrado"),
@@ -120,7 +124,7 @@ class ClubController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
         when (val result = treatSquad.execute(ClubId(id), userId)) {
-            is MedicalResult.Success -> ResponseEntity.ok(result.club)
+            is MedicalResult.Success -> ResponseEntity.ok(result.club.toDto())
             is MedicalResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
@@ -163,7 +167,7 @@ class ClubController(
             stadiumCapacity = club.stadiumCapacity + req.additionalSeats,
         )
         clubRepo.save(updated)
-        return ResponseEntity.ok(updated)
+        return ResponseEntity.ok(updated.toDto())
     }
 
     /**

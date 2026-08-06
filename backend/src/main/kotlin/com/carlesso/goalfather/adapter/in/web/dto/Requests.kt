@@ -2,20 +2,31 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Posture
 import kotlinx.serialization.Serializable
 
 /**
- * DTOs de request. Responses reusam tipos de domínio (já @Serializable)
- * — débito técnico aceito por ora (CLAUDE.md sugere DTOs separadas; o
- * trade-off é justificado pelo fato de o frontend gerar seus tipos do
- * MESMO contrato OpenAPI, então o acoplamento controle/contrato já é
- * implícito).
+ * DTOs de request. Os de RESPOSTA vivem em `Responses.kt`.
+ *
+ * O débito que estava anotado aqui — "responses reusam tipos de domínio" —
+ * foi pago: a premissa de que o acoplamento era inofensivo porque o frontend
+ * gera seus tipos do mesmo contrato estava errada justamente ao contrário. O
+ * frontend seguia o contrato e o backend seguia o domínio, e os dois
+ * divergiram em silêncio (`Lineup`, `Player.star`). Ver o KDoc de
+ * `Responses.kt`.
  */
 
+/**
+ * `posture` (issue #56) é opcional no contrato e cai em `BALANCED` quando
+ * ausente — o request achatado (postura solta, não `{"tactics":{...}}`)
+ * poupa um nível de aninhamento para um único campo; o controller reconstrói
+ * o `Tactics` do domínio.
+ */
 @Serializable
 data class LineupRequest(
     val formation: Formation,
     val playerIds: List<PlayerId>,
+    val posture: Posture = Posture.BALANCED,
 )
 
 @Serializable

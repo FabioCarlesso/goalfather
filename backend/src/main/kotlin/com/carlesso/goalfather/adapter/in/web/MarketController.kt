@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.`in`.web
 import com.carlesso.goalfather.adapter.`in`.web.dto.BuyPlayerRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.SellPlayerRequest
+import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
@@ -36,7 +37,7 @@ class MarketController(
     suspend fun listMarket(
         @RequestParam(required = false) position: Position?,
         @RequestParam(required = false) maxPrice: Long?,
-    ) = marketRepo.findAll(position, maxPrice)
+    ) = marketRepo.findAll(position, maxPrice).map { it.toDto() }
 
     @PostMapping("/buy")
     suspend fun buy(
@@ -49,7 +50,7 @@ class MarketController(
         // o `PlayerNotAvailable` — na prática, a perda do lock otimista do mercado
         // (#21) quando dois donos disputam o mesmo jogador.
         countTransfer(result)
-        return ResponseEntity.ok(result)
+        return ResponseEntity.ok(result.toDto())
     }
 
     private fun countTransfer(result: TransferResult) {
@@ -69,7 +70,7 @@ class MarketController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> {
         ownershipError(req.clubId, userId)?.let { return it }
-        return ResponseEntity.ok(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)))
+        return ResponseEntity.ok(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)).toDto())
     }
 
     /** 403 se o usuário não é dono do clube alvo da operação (issue #18). */

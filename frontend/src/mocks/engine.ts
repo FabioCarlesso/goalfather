@@ -6,7 +6,7 @@
 // MatchSimulator com Flow<MatchEvent>, esta engine é descartada. A app real
 // (src/api/, src/pages/) nunca sabe que esta engine existe.
 
-import type { Availability, MatchEvent, Player, Retirement } from '../domain/types'
+import type { Availability, Formation, MatchEvent, Player, Posture, Retirement } from '../domain/types'
 
 /** RNG seedável (mulberry32) — mesmo seed → mesma sequência de eventos. */
 export class MulberryRng {
@@ -26,6 +26,11 @@ export class MulberryRng {
   }
 }
 
+export interface TeamTactics {
+  posture?: Posture
+  formation?: Formation
+}
+
 export interface MatchSetup {
   matchId: number
   homeName: string
@@ -34,6 +39,10 @@ export interface MatchSetup {
   awayStrength: number
   homeSquad: number[]    // IDs dos jogadores para escolher autor de gol/cartão/lesão
   awaySquad: number[]
+  // Tática de cada lado (issue #56). Opcionais: ausentes valem EQUILIBRADA em
+  // 4-4-2, que é o eixo neutro e reproduz a engine anterior à tática.
+  homeTactics?: TeamTactics
+  awayTactics?: TeamTactics
 }
 
 const EVENT_RATE       = 0.12  // chance de algo acontecer por minuto
@@ -42,6 +51,32 @@ const P_SAVE_AT_EVENT  = 0.30
 const P_CARD_AT_EVENT  = 0.22
 const P_INJURY_AT_EVENT = 1.0 - P_GOAL_AT_EVENT - P_SAVE_AT_EVENT - P_CARD_AT_EVENT
 const P_RED_CARD       = 0.12
+
+// ─── Tática (issue #56) — espelha domain/model/Tactics.kt e Formation.kt ───
+// `attack` escala a chance de gol do PRÓPRIO time; `defense`, a do adversário
+// (< 1 = defende melhor). Ofensiva sobe as duas: jogo aberto faz e toma gol.
+export const POSTURE_MODS: Record<Posture, { attack: number; defense: number }> = {
+  DEFENSIVE: { attack: 0.82, defense: 0.88 },
+  BALANCED:  { attack: 1.00, defense: 1.00 },
+  OFFENSIVE: { attack: 1.20, defense: 1.12 },
+}
+
+// A formação inclina; a postura decide — por isso os desvios são menores.
+export const FORMATION_MODS: Record<Formation, { attack: number; defense: number }> = {
+  '4-4-2': { attack: 1.00, defense: 1.00 },
+  '4-3-3': { attack: 1.08, defense: 1.04 },
+  '3-5-2': { attack: 1.04, defense: 1.02 },
+  '5-3-2': { attack: 0.92, defense: 0.94 },
+}
+
+const modsOf = (t: TeamTactics | undefined) => {
+  const posture = POSTURE_MODS[t?.posture ?? 'BALANCED']
+  const formation = FORMATION_MODS[t?.formation ?? '4-4-2']
+  return {
+    attack: posture.attack * formation.attack,
+    defense: posture.defense * formation.defense,
+  }
+}
 
 // ─── Fadiga e lesões (issue #54) — espelham domain/rules/FitnessRules.kt ───
 export const INJURY_DURATION_MIN = 1
@@ -69,12 +104,30 @@ export function* simulateMatch(
     awayClubName: setup.awayName,
     homeStrength: setup.homeStrength,
     awayStrength: setup.awayStrength,
+    homePosture: setup.homeTactics?.posture ?? 'BALANCED',
+    awayPosture: setup.awayTactics?.posture ?? 'BALANCED',
   }
 
   let homeGoals = 0
   let awayGoals = 0
-  const totalStrength = setup.homeStrength + setup.awayStrength
-  const homeRatio = totalStrength > 0 ? setup.homeStrength / totalStrength : 0.5
+
+  // Peso de gol de cada lado = quanto ELE ataca × quanto o adversário deixa
+  // atacar. O que sai da chance de gol volta para a defesa, então cartão e
+  // lesão mantêm a frequência de sempre e 1.0/1.0 reproduz a engine antiga.
+  const homeMods = modsOf(setup.homeTactics)
+  const awayMods = modsOf(setup.awayTactics)
+  const homeGoalWeight = homeMods.attack * awayMods.defense
+  const awayGoalWeight = awayMods.attack * homeMods.defense
+
+  const goalP = Math.min(
+    P_GOAL_AT_EVENT + P_SAVE_AT_EVENT,
+    Math.max(0, (P_GOAL_AT_EVENT * (homeGoalWeight + awayGoalWeight)) / 2),
+  )
+  const saveP = P_GOAL_AT_EVENT + P_SAVE_AT_EVENT - goalP
+
+  const homeShare = setup.homeStrength * homeGoalWeight
+  const awayShare = setup.awayStrength * awayGoalWeight
+  const homeRatio = homeShare + awayShare > 0 ? homeShare / (homeShare + awayShare) : 0.5
 
   // Suprime o aviso de unused parameter quando os squads estão vazios (defensivo)
   void P_INJURY_AT_EVENT
@@ -83,15 +136,15 @@ export function* simulateMatch(
     if (rng.next() >= EVENT_RATE) continue
 
     const roll = rng.next()
-    if (roll < P_GOAL_AT_EVENT) {
+    if (roll < goalP) {
       const home = rng.next() < homeRatio
       const squad = home ? setup.homeSquad : setup.awaySquad
       const scorerId = squad.length > 0 ? rng.pick(squad) : 0
       if (home) homeGoals++; else awayGoals++
       yield { type: 'Goal', minute, scorerId, home }
-    } else if (roll < P_GOAL_AT_EVENT + P_SAVE_AT_EVENT) {
+    } else if (roll < goalP + saveP) {
       yield { type: 'Save', minute }
-    } else if (roll < P_GOAL_AT_EVENT + P_SAVE_AT_EVENT + P_CARD_AT_EVENT) {
+    } else if (roll < goalP + saveP + P_CARD_AT_EVENT) {
       const home = rng.next() < 0.5
       const squad = home ? setup.homeSquad : setup.awaySquad
       const playerId = squad.length > 0 ? rng.pick(squad) : 0

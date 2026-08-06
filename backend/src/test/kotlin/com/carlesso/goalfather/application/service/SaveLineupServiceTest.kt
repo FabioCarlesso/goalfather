@@ -6,6 +6,8 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Posture
+import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.result.LineupResult
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.coEvery
@@ -39,6 +41,32 @@ class SaveLineupServiceTest {
         assertEquals(Formation.F_4_4_2, saved.captured.lineup?.formation)
         // Ordem preservada
         assertEquals(ids, saved.captured.lineup?.players?.map { it.id })
+        // Sem postura informada, entra EQUILIBRADA (issue #56).
+        assertEquals(Posture.BALANCED, saved.captured.lineup?.tactics?.posture)
+    }
+
+    @Test
+    fun `postura viaja junto da escalacao e e persistida (issue 56)`() = runTest {
+        val club = makeClub(squadSize = 15, ownerId = owner)
+        val ids = club.squad.take(11).map { it.id }
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+        val saved = slot<Club>()
+        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+
+        val result = service.execute(
+            ClubId(1),
+            owner,
+            Formation.F_5_3_2,
+            ids,
+            Tactics(Posture.DEFENSIVE),
+        )
+
+        assertIs<LineupResult.Success>(result)
+        // Uma gravação só: escalação e tática nunca ficam fora de sincronia
+        // entre réplicas no início da rodada (issue #46).
+        coVerify(exactly = 1) { clubRepo.save(any()) }
+        assertEquals(Posture.DEFENSIVE, saved.captured.lineup?.tactics?.posture)
+        assertEquals(Formation.F_5_3_2, saved.captured.lineup?.formation)
     }
 
     @Test
