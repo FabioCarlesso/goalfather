@@ -3,8 +3,11 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.MarketEntry
+import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Posture
 import com.carlesso.goalfather.domain.model.Tactics
+import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -125,5 +128,76 @@ class ResponsesTest {
             setOf("id", "name", "cash", "stadiumCapacity", "squad", "lineup", "ownerId"),
             encoded.keys,
         )
+    }
+
+    // ─── Mercado e transferências ─────────────────────────────────────────
+
+    private fun encode(dto: TransferResultDto): JsonObject =
+        json.parseToJsonElement(json.encodeToString(TransferResultDto.serializer(), dto)).jsonObject
+
+    @Test
+    fun `market entry expoe player e price`() {
+        val entry = MarketEntry(player = club.squad.first().copy(overall = 88), price = 12_345_00)
+
+        val dto = entry.toDto()
+        val encoded = json
+            .parseToJsonElement(json.encodeToString(MarketEntryDto.serializer(), dto))
+            .jsonObject
+
+        assertEquals(setOf("player", "price"), encoded.keys)
+        assertEquals(12_345_00, encoded.getValue("price").jsonPrimitive.content.toLong())
+        // O jogador do mercado passa pelo MESMO mapeamento do elenco — inclusive
+        // `star`, que é derivado e não sobreviveria à serialização do domínio.
+        assertTrue(encoded.getValue("player").jsonObject.getValue("star").jsonPrimitive.content.toBoolean())
+    }
+
+    @Test
+    fun `transfer Success carrega club e player mapeados`() {
+        val result: TransferResult =
+            TransferResult.Success(club = club, player = club.squad.first())
+
+        val encoded = encode(result.toDto())
+
+        assertEquals("Success", encoded.getValue("type").jsonPrimitive.content)
+        // Prova que o clube embutido também passou pelo DTO, e não vazou o
+        // domínio por dentro do resultado da transferência.
+        assertTrue("star" in encoded.getValue("player").jsonObject)
+        assertTrue(
+            encoded.getValue("club").jsonObject.getValue("squad").jsonArray
+                .all { "star" in it.jsonObject },
+        )
+    }
+
+    @Test
+    fun `transfer InsufficientFunds nao troca available por required`() {
+        // Dois Long adjacentes e trocáveis: valores propositalmente distintos,
+        // porque um swap no mapeamento passaria por compilador e por um teste
+        // que usasse o mesmo número nos dois campos.
+        val result: TransferResult =
+            TransferResult.InsufficientFunds(available = 1_000_00, required = 9_999_00)
+
+        val encoded = encode(result.toDto())
+
+        assertEquals("InsufficientFunds", encoded.getValue("type").jsonPrimitive.content)
+        assertEquals(1_000_00, encoded.getValue("available").jsonPrimitive.content.toLong())
+        assertEquals(9_999_00, encoded.getValue("required").jsonPrimitive.content.toLong())
+    }
+
+    @Test
+    fun `transfer SquadFull carrega maxSize`() {
+        val encoded = encode((TransferResult.SquadFull(maxSize = 25) as TransferResult).toDto())
+
+        assertEquals("SquadFull", encoded.getValue("type").jsonPrimitive.content)
+        assertEquals(25, encoded.getValue("maxSize").jsonPrimitive.content.toInt())
+    }
+
+    @Test
+    fun `transfer PlayerNotAvailable serializa o id como numero`() {
+        val result: TransferResult = TransferResult.PlayerNotAvailable(PlayerId(42))
+
+        val encoded = encode(result.toDto())
+
+        assertEquals("PlayerNotAvailable", encoded.getValue("type").jsonPrimitive.content)
+        assertEquals(42, encoded.getValue("playerId").jsonPrimitive.content.toLong())
     }
 }
