@@ -36,4 +36,40 @@ test.describe('Lineup flow', () => {
     await expect(page.getByRole('heading', { name: 'Escalação' })).toBeVisible()
     await expect(page.getByText('11/11 titulares')).toBeVisible({ timeout: 10_000 })
   })
+
+  // Postura tática (issue #56): a escolha é salva junto da escalação e chega à
+  // partida — o KickOff a exibe no placar.
+  test('escolher a postura, salvar e vê-la na partida', async ({ page }) => {
+    await page.goto('/lineup')
+    await expect(page.getByRole('heading', { name: 'Escalação' })).toBeVisible()
+
+    const posture = page.locator('#posture')
+    await expect(posture).toHaveValue('BALANCED')
+    await posture.selectOption('DEFENSIVE')
+    await expect(page.getByText(/concede bem menos/)).toBeVisible()
+
+    const slots = page.locator('div.grid select')
+    for (let i = 0; i < 11; i++) {
+      await slots.nth(i).selectOption({ index: 1 })
+    }
+    await page.getByRole('button', { name: 'Salvar escalação' }).click()
+    await expect(page.getByText('Escalação salva ✓')).toBeVisible({ timeout: 10_000 })
+
+    // Sai e volta: a postura salva é recarregada do servidor.
+    await page.getByRole('link', { name: 'Clube' }).click()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await page.getByRole('link', { name: 'Escalação' }).click()
+    await expect(page.locator('#posture')).toHaveValue('DEFENSIVE', { timeout: 10_000 })
+
+    // E chega à engine: o placar da partida do usuário mostra a postura de
+    // cada lado (o adversário é a IA, sempre EQUILIBRADA). A navegação é
+    // client-side de propósito — um `goto` reinicia o estado in-memory do MSW
+    // e a postura salva se perderia.
+    await page.getByRole('link', { name: 'Rodada' }).click()
+    await expect(page).toHaveURL(/\/round$/)
+    await page.locator('a[href^="/round/match/"]').filter({ hasText: 'SEU JOGO' }).first().click()
+    await expect(page).toHaveURL(/\/round\/match\/\d+$/)
+    await expect(page.getByText('Defensiva')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('Equilibrada')).toBeVisible()
+  })
 })

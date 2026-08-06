@@ -127,7 +127,21 @@ data class Player(
     val injured: Boolean get() = availability is Availability.Injured
 }
 
-data class Lineup(val players: List<Player>, val formation: Formation) {
+// Postura da partida (issue #56). Os modificadores são PROPRIEDADES do valor
+// do enum: `attackMod` escala a chance de gol do próprio time, `defenseMod` a
+// do adversário. Sem `when` espalhado pela engine — o comportamento mora junto
+// do valor, e uma postura nova não obriga a caçar branches pelo código.
+enum class Posture(val attackMod: Double, val defenseMod: Double) {
+    DEFENSIVE(0.82, 0.88), BALANCED(1.0, 1.0), OFFENSIVE(1.20, 1.12)
+}
+
+data class Tactics(val posture: Posture = Posture.BALANCED)
+
+data class Lineup(
+    val players: List<Player>,
+    val formation: Formation,
+    val tactics: Tactics = Tactics(),   // decisão da partida, salva com a escalação
+) {
     init { require(players.size <= 11) { "Escalação não pode ter mais que 11 jogadores" } }
     val isComplete: Boolean get() = players.size == 11
 }
@@ -216,6 +230,25 @@ fun Lineup.teamStrength(): Double =
 ```
 
 > **Conceitos exercitados aqui:** `Flow` (cold stream), coroutines (`delay`, `suspend`), extension functions, `companion object`, e injeção de `Random` para testes determinísticos (passe uma seed fixa).
+
+**Tática entra como modificador, não como novo caminho de código (issue #56).** As constantes de probabilidade viraram uma BASE que cada partida escala:
+
+```kotlin
+// Peso de gol de um lado = quanto ELE ataca × quanto o adversário DEIXA atacar.
+// É o produto que faz a postura do rival pesar: atacar contra um time fechado
+// rende menos que contra um time aberto.
+val homeGoalWeight = setup.home.attackFactor() * setup.away.defenseFactor()
+val awayGoalWeight = setup.away.attackFactor() * setup.home.defenseFactor()
+
+val goalP = (P_GOAL * (homeGoalWeight + awayGoalWeight) / 2).coerceIn(0.0, P_GOAL + P_SAVE)
+val saveP = P_GOAL + P_SAVE - goalP   // o que sai do gol vira defesa, não some
+
+// extension functions compondo postura + formação, cada uma com seus mods
+fun Lineup.attackFactor(): Double = tactics.posture.attackMod * formation.attackMod
+fun Lineup.defenseFactor(): Double = tactics.posture.defenseMod * formation.defenseMod
+```
+
+Duas propriedades caem de graça dessa formulação: cartão e lesão mantêm a frequência de sempre (só gol e defesa trocam massa entre si), e o eixo neutro — `BALANCED` em 4-4-2, fatores 1.0 — reproduz byte a byte a engine de antes da tática, o que vira um teste de regressão em `MatchSimulatorTest`.
 
 ### DSL para montar cenários de teste/seed
 
@@ -435,6 +468,30 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   está no mercado também envelhece — com seed própria — e sai da lista ao se
   aposentar; o aposentado é APAGADO do banco pelo novo port `PlayerRepository`,
   em vez de virar linha órfã com `club_id = null`.)
+- [x] **6.3** Instruções táticas afetando a engine — issue #56
+  (nova `Posture` — `DEFENSIVE`/`BALANCED`/`OFFENSIVE` — em
+  `domain/model/Tactics.kt`, com os multiplicadores como propriedades do enum.
+  `attackMod` escala a chance de gol do PRÓPRIO time, `defenseMod` a do
+  adversário: ofensiva sobe as duas (jogo aberto faz e toma gol), defensiva
+  baixa as duas cedendo menos do que deixa de criar — é esse desequilíbrio, e
+  não o valor absoluto, que torna "fechar o time" racional contra adversário
+  mais forte. A `Formation` ganhou os mesmos dois modificadores, com peso
+  menor: a formação inclina, a postura decide. O `MatchSimulator` deriva as
+  probabilidades por partida — o peso de gol de cada lado é `ataque dele ×
+  defesa do rival`, e o que sai da chance de gol volta para a defesa, então
+  cartão e lesão mantêm a frequência de sempre e o eixo neutro
+  (EQUILIBRADA + 4-4-2) reproduz EXATAMENTE a engine anterior. Determinismo
+  preservado: mesma seed + mesma tática = mesmos eventos.)
+
+  **Por que a tática mora na `Lineup` e não no `Club`.** É a mesma decisão —
+  quem joga, em que desenho, com que postura — e sai numa gravação só do
+  `SaveLineupService`. Como a escalação já é persistida como JSON na coluna
+  `clubs.lineup_json`, a postura viaja junto: nenhuma migração Flyway, e o
+  estado fica completo ANTES da rodada começar, que é o que a issue #46 exige
+  para réplicas simularem com os mesmos inputs. Escalação gravada antes da
+  tática existir desserializa no default (`BALANCED`), sem backfill —
+  coberto por `LineupSerializationTest`. O clube da IA, que nunca escala,
+  cai no mesmo default.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`

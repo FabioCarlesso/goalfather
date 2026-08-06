@@ -187,10 +187,15 @@ paths:
     post:
       tags: [Club]
       operationId: saveLineup
-      summary: Salvar escalação e formação
+      summary: Salvar escalação, formação e postura
       description: |
-        Define os 11 titulares e a formação tática. A ordem do array `playerIds`
-        deve corresponder aos slots da formação escolhida (ver `Formation`).
+        Define os 11 titulares, a formação e a postura da partida. A ordem do
+        array `playerIds` deve corresponder aos slots da formação escolhida
+        (ver `Formation`).
+
+        A postura (issue #56) é gravada JUNTO da escalação, numa única
+        operação — a engine da rodada lê as duas do mesmo estado persistido.
+        Omitir `posture` mantém `BALANCED`.
       parameters:
         - $ref: '#/components/parameters/ClubIdPath'
       requestBody:
@@ -674,8 +679,30 @@ components:
 
     Formation:
       type: string
-      description: Esquema tático (define ordem das posições nos slots)
+      description: |
+        Esquema tático (define ordem das posições nos slots). Desde a issue #56
+        a formação também pesa na simulação: 4-3-3 e 3-5-2 inclinam o time ao
+        ataque, 5-3-2 à defesa e 4-4-2 é o eixo neutro. O peso é menor que o da
+        `Posture` — a formação inclina, a postura decide.
       enum: ['4-4-2', '4-3-3', '3-5-2', '5-3-2']
+
+    Posture:
+      type: string
+      description: |
+        Postura do time na partida (issue #56) — a decisão tática por rodada,
+        salva junto da escalação.
+
+        `OFFENSIVE` aumenta a chance de gol dos DOIS times (jogo aberto);
+        `DEFENSIVE` reduz as duas, cedendo menos do que deixa de criar — é o
+        que torna "fechar o time" racional contra adversário mais forte.
+        Os multiplicadores vivem no backend (`enum class Posture`); o cliente
+        só escolhe e exibe.
+      enum: [DEFENSIVE, BALANCED, OFFENSIVE]
+      default: BALANCED
+      x-labels:
+        DEFENSIVE: Defensiva
+        BALANCED: Equilibrada
+        OFFENSIVE: Ofensiva
 
     # ─── Player & Club ────────────────────────────────────────────────────
     Player:
@@ -776,6 +803,12 @@ components:
           items: { type: integer, format: int64 }
           description: |
             IDs dos titulares em ordem correspondente aos slots da formação.
+        posture:
+          allOf:
+            - $ref: '#/components/schemas/Posture'
+          description: |
+            Postura salva com a escalação (issue #56). Ausente em escalações
+            gravadas antes da tática existir — trate como `BALANCED`.
 
     Club:
       type: object
@@ -815,6 +848,10 @@ components:
           minItems: 11
           maxItems: 11
           items: { type: integer, format: int64 }
+        posture:
+          allOf:
+            - $ref: '#/components/schemas/Posture'
+          description: Postura da partida; omitida, o backend assume `BALANCED`.
 
     ExpandStadiumRequest:
       type: object
@@ -931,19 +968,36 @@ components:
 
     KickOffEvent:
       description: |
-        Primeiro evento do stream. Carrega metadados da partida (nome e
-        força agregada dos times) para que o cliente possa renderizar o
+        Primeiro evento do stream. Carrega metadados da partida (nome, força
+        agregada e postura dos times) para que o cliente possa renderizar o
         placar antes que outros eventos cheguem.
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
         - type: object
-          required: [type, homeClubName, awayClubName, homeStrength, awayStrength]
+          required:
+            - type
+            - homeClubName
+            - awayClubName
+            - homeStrength
+            - awayStrength
+            - homePosture
+            - awayPosture
           properties:
             type:         { type: string, enum: [KickOff] }
             homeClubName: { type: string }
             awayClubName: { type: string }
             homeStrength: { type: number, minimum: 0, maximum: 99 }
             awayStrength: { type: number, minimum: 0, maximum: 99 }
+            homePosture:
+              allOf:
+                - $ref: '#/components/schemas/Posture'
+              description: |
+                Postura com que o mandante entrou em campo (issue #56) — é como
+                o técnico descobre que o adversário se fechou contra ele.
+            awayPosture:
+              allOf:
+                - $ref: '#/components/schemas/Posture'
+              description: Postura com que o visitante entrou em campo.
 
     GoalEvent:
       allOf:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { simulateMatch, MulberryRng, averageOverall, type MatchSetup } from './engine'
+import type { Posture } from '../domain/types'
 
 const baseSetup: MatchSetup = {
   matchId: 12345,
@@ -79,6 +80,78 @@ describe('simulateMatch', () => {
       expect(e.minute).toBeGreaterThanOrEqual(0)
       expect(e.minute).toBeLessThanOrEqual(90)
     }
+  })
+})
+
+// ─── Tática (issue #56) — espelha MatchSimulatorTest.kt ────────────────────
+describe('simulateMatch com postura', () => {
+  const withPostures = (home: Posture, away: Posture): MatchSetup => ({
+    ...baseSetup,
+    homeTactics: { posture: home, formation: '4-4-2' },
+    awayTactics: { posture: away, formation: '4-4-2' },
+  })
+
+  const totalGoals = (setup: MatchSetup, seeds: number): number => {
+    let goals = 0
+    for (let seed = 1; seed <= seeds; seed++) {
+      const events = collect(setup, seed)
+      const last = events[events.length - 1]
+      if (last?.type === 'FullTime') goals += last.homeGoals + last.awayGoals
+    }
+    return goals
+  }
+
+  it('KickOff carrega a postura de cada lado', () => {
+    const [first] = collect(withPostures('OFFENSIVE', 'DEFENSIVE'))
+    expect(first?.type).toBe('KickOff')
+    if (first?.type === 'KickOff') {
+      expect(first.homePosture).toBe('OFFENSIVE')
+      expect(first.awayPosture).toBe('DEFENSIVE')
+    }
+  })
+
+  it('EQUILIBRADA em 4-4-2 preserva a simulacao neutra', () => {
+    // Regressão: a tática é camada sobre a engine, não troca dela.
+    expect(collect(withPostures('BALANCED', 'BALANCED'), 7)).toEqual(collect(baseSetup, 7))
+  })
+
+  it('mesma seed com posturas diferentes produz partidas diferentes', () => {
+    expect(collect(withPostures('OFFENSIVE', 'OFFENSIVE'), 42))
+      .not.toEqual(collect(baseSetup, 42))
+    // ...e reprodutível.
+    expect(collect(withPostures('OFFENSIVE', 'OFFENSIVE'), 42))
+      .toEqual(collect(withPostures('OFFENSIVE', 'OFFENSIVE'), 42))
+  })
+
+  it('jogo aberto rende mais gols que dois times fechados', () => {
+    const open = totalGoals(withPostures('OFFENSIVE', 'OFFENSIVE'), 100)
+    const closed = totalGoals(withPostures('DEFENSIVE', 'DEFENSIVE'), 100)
+    expect(open).toBeGreaterThan(closed)
+  })
+
+  it('fechar o time reduz os gols do adversario ofensivo', () => {
+    const awayGoals = (home: Posture): number => {
+      let goals = 0
+      for (let seed = 1; seed <= 100; seed++) {
+        const events = collect(withPostures(home, 'OFFENSIVE'), seed)
+        const last = events[events.length - 1]
+        if (last?.type === 'FullTime') goals += last.awayGoals
+      }
+      return goals
+    }
+    expect(awayGoals('DEFENSIVE')).toBeLessThan(awayGoals('OFFENSIVE'))
+  })
+
+  it('formacao inclina o placar mesmo com a mesma postura', () => {
+    const attacking: MatchSetup = {
+      ...baseSetup,
+      homeTactics: { posture: 'BALANCED', formation: '4-3-3' },
+    }
+    const defending: MatchSetup = {
+      ...baseSetup,
+      homeTactics: { posture: 'BALANCED', formation: '5-3-2' },
+    }
+    expect(totalGoals(attacking, 100)).toBeGreaterThan(totalGoals(defending, 100))
   })
 })
 

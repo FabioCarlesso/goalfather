@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.event
 
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Posture
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -21,6 +22,11 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 sealed interface MatchEvent {
     val minute: Int
 
+    /**
+     * Apito inicial. Além de nome e força, carrega a postura com que cada
+     * time entrou em campo (issue #56) — é o que permite ao técnico ver, no
+     * placar, que o adversário se fechou (ou se abriu) contra ele.
+     */
     @Serializable
     @SerialName("KickOff")
     data class KickOff(
@@ -29,6 +35,8 @@ sealed interface MatchEvent {
         val awayClubName: String,
         val homeStrength: Double,
         val awayStrength: Double,
+        val homePosture: Posture = Posture.BALANCED,
+        val awayPosture: Posture = Posture.BALANCED,
     ) : MatchEvent
 
     @Serializable

@@ -199,6 +199,8 @@ enableMocks().then(() => ReactDOM.createRoot(...).render(<App />))
 
 `src/mocks/engine.ts` é uma porta JS *simplificada* da engine Kotlin (mesma matemática de força + RNG). Vive só nos mocks — quando o backend chegar, é descartada. **Não duplicar regras na pasta `src/` da app.**
 
+Isso vale também para a **tática** (issue #56): `POSTURE_MODS` e `FORMATION_MODS` espelham `Posture`/`Formation` do Kotlin e ficam confinados a `src/mocks/engine.ts`. A pasta `src/domain/` só guarda o que é apresentação — `POSTURE_LABEL` e `POSTURE_HINT` em `formations.ts`, rótulo e texto de ajuda. Nenhum componente calcula chance de gol.
+
 ---
 
 ## 6. WebSocket de partida ao vivo

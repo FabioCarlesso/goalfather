@@ -7,9 +7,12 @@ import {
   FORMATION_SLOTS,
   POSITION_ABBR,
   POSITION_LABEL,
+  POSTURES,
+  POSTURE_HINT,
+  POSTURE_LABEL,
 } from '../domain/formations'
 import { isInjured } from '../domain/players'
-import type { Club, Formation, Player } from '../domain/types'
+import type { Club, Formation, Player, Posture } from '../domain/types'
 
 /**
  * Carrega o clube e só então monta o formulário. O `key={club.id}` remonta
@@ -31,6 +34,9 @@ function LineupForm({ club }: { club: Club }) {
   // Estado inicializado a partir da escalação salva (estado derivado só na
   // montagem); edições subsequentes ficam locais ao formulário.
   const [formation, setFormation] = useState<Formation>(club.lineup?.formation ?? '4-4-2')
+  // Escalação salva antes da issue #56 não tem postura — cai em EQUILIBRADA,
+  // o mesmo default do backend.
+  const [posture, setPosture] = useState<Posture>(club.lineup?.posture ?? 'BALANCED')
   const [slots, setSlots] = useState<(number | null)[]>(() => {
     const ids = club.lineup?.playerIds ?? []
     return Array.from({ length: 11 }, (_, i) => ids[i] ?? null)
@@ -60,7 +66,7 @@ function LineupForm({ club }: { club: Club }) {
 
   const onSubmit = () => {
     if (!complete) return
-    save.mutate({ formation, playerIds: slots as number[] })
+    save.mutate({ formation, playerIds: slots as number[], posture })
   }
 
   return (
@@ -73,8 +79,9 @@ function LineupForm({ club }: { club: Club }) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <label className="text-sm text-slate-400">Formação</label>
+          <label className="text-sm text-slate-400" htmlFor="formation">Formação</label>
           <select
+            id="formation"
             value={formation}
             onChange={(e) => onFormationChange(e.target.value as Formation)}
             className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
@@ -83,8 +90,24 @@ function LineupForm({ club }: { club: Club }) {
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
+
+          <label className="text-sm text-slate-400" htmlFor="posture">Postura</label>
+          <select
+            id="posture"
+            value={posture}
+            onChange={(e) => setPosture(e.target.value as Posture)}
+            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+          >
+            {POSTURES.map((p) => (
+              <option key={p} value={p}>{POSTURE_LABEL[p]}</option>
+            ))}
+          </select>
         </div>
       </header>
+
+      <p className="mb-4 rounded-md border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-400">
+        {POSTURE_HINT[posture]}
+      </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
         {positions.map((pos, i) => (

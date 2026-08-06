@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Posture
 import kotlinx.serialization.Serializable
 
 /**
@@ -12,10 +13,17 @@ import kotlinx.serialization.Serializable
  * implícito).
  */
 
+/**
+ * `posture` (issue #56) é opcional no contrato e cai em `BALANCED` quando
+ * ausente — o request achatado (postura solta, não `{"tactics":{...}}`)
+ * poupa um nível de aninhamento para um único campo; o controller reconstrói
+ * o `Tactics` do domínio.
+ */
 @Serializable
 data class LineupRequest(
     val formation: Formation,
     val playerIds: List<PlayerId>,
+    val posture: Posture = Posture.BALANCED,
 )
 
 @Serializable

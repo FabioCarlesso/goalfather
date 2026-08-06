@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.result.LineupResult
 
 /**
@@ -14,6 +15,9 @@ import com.carlesso.goalfather.domain.result.LineupResult
  * 2. Exatamente 11 jogadores;
  * 3. Todos os IDs estão no elenco do clube;
  * 4. Nenhum deles está lesionado (issue #54).
+ *
+ * A postura (issue #56) não tem o que validar — o enum já é o conjunto
+ * fechado de valores aceitos —, só viaja junto e é gravada com a escalação.
  *
  * Validação posicional (jogador certo no slot certo da formação)
  * fica para o backend num refinamento futuro — frontend já faz UI-
@@ -29,6 +33,7 @@ class SaveLineupService(
         requesterId: Long,
         formation: Formation,
         playerIds: List<PlayerId>,
+        tactics: Tactics,
     ): LineupResult {
         // Carrega UMA vez: a checagem de posse (issue #18) e a validação da
         // escalação reusam o mesmo clube — sem o duplo fetch que existia quando
@@ -61,7 +66,9 @@ class SaveLineupService(
         if (injured.isNotEmpty()) {
             return LineupResult.InjuredPlayers(playerIds = injured)
         }
-        val lineup = Lineup(players = orderedPlayers, formation = formation)
+        // Postura entra na MESMA gravação da escalação (issue #56): quando a
+        // rodada começar, todas as réplicas leem a mesma tática do banco.
+        val lineup = Lineup(players = orderedPlayers, formation = formation, tactics = tactics)
         val updatedClub = clubRepo.save(club.copy(lineup = lineup))
 
         return LineupResult.Success(updatedClub)
