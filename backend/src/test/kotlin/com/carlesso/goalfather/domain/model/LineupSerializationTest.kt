@@ -15,6 +15,7 @@ import kotlin.test.assertEquals
  */
 class LineupSerializationTest {
 
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true

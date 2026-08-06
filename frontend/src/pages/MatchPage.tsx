@@ -79,10 +79,10 @@ function MatchView({ matchId }: { matchId: string }) {
       away: kickOff.awayClubName,
       homeStrength: kickOff.homeStrength,
       awayStrength: kickOff.awayStrength,
-      // Postura vem no KickOff (issue #56). O `?? 'BALANCED'` cobre um stream
-      // gravado antes do campo existir; o contrato o exige a partir de agora.
-      homePosture: kickOff.homePosture ?? 'BALANCED',
-      awayPosture: kickOff.awayPosture ?? 'BALANCED',
+      // Obrigatórias no `KickOffEvent` do contrato (issue #56) — sem fallback:
+      // se faltarem, o defeito é do produtor do stream e deve aparecer.
+      homePosture: kickOff.homePosture,
+      awayPosture: kickOff.awayPosture,
     }
   }, [events])
 

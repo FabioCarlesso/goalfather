@@ -316,6 +316,14 @@ class PlayMatchService(
 
 DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar o modelo interno na API e desacopla versionamento do contrato REST.
 
+> **Isto foi débito real até a issue #56.** Os controllers devolviam os tipos de domínio direto, e o argumento para aceitar o atalho era que "o frontend gera os tipos do MESMO contrato, então o acoplamento já é implícito". Estava exatamente ao contrário: o frontend seguia o contrato, o backend seguia o domínio, e os dois divergiram em silêncio.
+>
+> Duas divergências viviam nessa fresta: `Lineup` saía como `{players, formation, tactics:{posture}}` (forma do domínio) onde o contrato dizia `{playerIds, formation, posture}`; e `Player.star`, sendo *computed property*, nunca era serializado — o campo existia no contrato, a UI o lia, e nunca chegava. Nenhuma das duas aparecia no CI, porque o E2E roda contra o MSW, que implementa o **contrato**, não o backend.
+>
+> Hoje os DTOs de resposta vivem em `adapter/in/web/dto/Responses.kt` (`ClubDto`/`LineupDto`/`PlayerDto`/`MarketEntryDto`/`TransferResultDto`), e `ResponsesTest` compara o **JSON literal** com o que o spec declara. Enums e sealed types do domínio cuja forma JSON já é a do contrato (`Position`, `Formation`, `Posture`, `Availability`) são reusados de propósito — duplicá-los criaria duas fontes de verdade para o mesmo conjunto fechado de valores.
+>
+> **Lição para o resto do projeto:** um contrato só é fonte de verdade se algo o comparar com as DUAS implementações. Mock que implementa o spec testa o spec, não o backend.
+
 ### Persistência
 
 - **Banco:** PostgreSQL

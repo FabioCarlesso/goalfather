@@ -804,11 +804,12 @@ components:
           description: |
             IDs dos titulares em ordem correspondente aos slots da formação.
         posture:
-          allOf:
-            - $ref: '#/components/schemas/Posture'
+          $ref: '#/components/schemas/Posture'
           description: |
-            Postura salva com a escalação (issue #56). Ausente em escalações
-            gravadas antes da tática existir — trate como `BALANCED`.
+            Postura salva com a escalação (issue #56). O backend sempre a
+            devolve — escalação gravada antes da tática existir desserializa
+            no default. Opcional no schema porque o cliente pode ter omitido
+            ao salvar; ausente, trate como `BALANCED`.
 
     Club:
       type: object
@@ -849,8 +850,7 @@ components:
           maxItems: 11
           items: { type: integer, format: int64 }
         posture:
-          allOf:
-            - $ref: '#/components/schemas/Posture'
+          $ref: '#/components/schemas/Posture'
           description: Postura da partida; omitida, o backend assume `BALANCED`.
 
     ExpandStadiumRequest:
@@ -989,14 +989,12 @@ components:
             homeStrength: { type: number, minimum: 0, maximum: 99 }
             awayStrength: { type: number, minimum: 0, maximum: 99 }
             homePosture:
-              allOf:
-                - $ref: '#/components/schemas/Posture'
+              $ref: '#/components/schemas/Posture'
               description: |
                 Postura com que o mandante entrou em campo (issue #56) — é como
                 o técnico descobre que o adversário se fechou contra ele.
             awayPosture:
-              allOf:
-                - $ref: '#/components/schemas/Posture'
+              $ref: '#/components/schemas/Posture'
               description: Postura com que o visitante entrou em campo.
 
     GoalEvent:

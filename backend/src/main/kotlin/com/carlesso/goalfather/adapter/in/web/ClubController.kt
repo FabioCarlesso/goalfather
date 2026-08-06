@@ -51,7 +51,7 @@ class ClubController(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
         } else {
-            ResponseEntity.ok(club)
+            ResponseEntity.ok(club.toDto())
         }
     }
 
@@ -124,7 +124,7 @@ class ClubController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
         when (val result = treatSquad.execute(ClubId(id), userId)) {
-            is MedicalResult.Success -> ResponseEntity.ok(result.club)
+            is MedicalResult.Success -> ResponseEntity.ok(result.club.toDto())
             is MedicalResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
@@ -167,7 +167,7 @@ class ClubController(
             stadiumCapacity = club.stadiumCapacity + req.additionalSeats,
         )
         clubRepo.save(updated)
-        return ResponseEntity.ok(updated)
+        return ResponseEntity.ok(updated.toDto())
     }
 
     /**
