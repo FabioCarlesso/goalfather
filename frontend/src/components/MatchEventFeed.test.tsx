@@ -4,10 +4,17 @@ import { MatchEventFeed } from './MatchEventFeed'
 import type { MatchEvent } from '../domain/types'
 
 const events: MatchEvent[] = [
-  { type: 'KickOff', minute: 0, homeClubName: 'A', awayClubName: 'B', homeStrength: 80, awayStrength: 70 },
+  {
+    type: 'KickOff', minute: 0,
+    homeClubName: 'A', awayClubName: 'B',
+    homeStrength: 80, awayStrength: 70,
+    // Obrigatórias desde a issue #56; faltavam aqui porque o tsc não cobre
+    // arquivos de teste — mesma causa do fixture de fitness.test.ts.
+    homePosture: 'BALANCED', awayPosture: 'BALANCED',
+  },
   { type: 'Goal', minute: 23, scorerId: 10, home: true },
   { type: 'Card', minute: 40, playerId: 7, red: false, home: true },
-  { type: 'Injury', minute: 55, playerId: 999 },
+  { type: 'Injury', minute: 55, playerId: 999, roundsOut: 2 },   // obrigatório desde a issue #54
 ]
 
 describe('MatchEventFeed', () => {

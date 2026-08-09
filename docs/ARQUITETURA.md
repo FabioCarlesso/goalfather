@@ -546,19 +546,6 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   diferentes**: o sorteio ponderado consome o RNG de outra forma; nenhum teste
   dependia de placares fixos, só de propriedades, então o ajuste foi só de
   expectativas de posição/autoria.)
-
-  **Fidelidade do replay.** A re-simulação por seed é uma reconstrução, e ela
-  só vale como replay enquanto reproduzir o placar GRAVADO — que é o que virou
-  pontos na tabela. Como esta issue mudou o consumo do RNG, rodadas encerradas
-  por uma engine anterior deixariam de bater. `PlayRoundService` compara o
-  placar re-simulado com o persistido (por PARTIDA, não por rodada) e **omite
-  do stream a partida irreproduzível**: ela fica só com o placar gravado, em
-  vez de terminar num resultado que contradiz a classificação logo abaixo.
-  `PlayMatchService` aplica a mesma regra no drill-down, recusando o stream
-  com uma razão explícita no close do WS. É a diferença entre "não tenho como
-  te mostrar" e "vou te mostrar uma partida que não aconteceu" — e a segunda é
-  pior. Nada disso toca efeitos: eles continuam aplicados uma única vez, sob o
-  claim da issue #46.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`
