@@ -31,7 +31,7 @@ import {
   applyMedicalTreatment,
   startingEleven,
   MulberryRng,
-  EMPTY_MATCH_STATS,
+  matchStats,
   MEDICAL_DEPARTMENT_COST_CENTS,
   type SquadMember,
   type TeamTactics,
@@ -41,6 +41,7 @@ import type {
   Club,
   ErrorResponse,
   MatchEvent,
+  MatchSummary,
   RoundEvent,
   RoundFinance,
   RoundMatch,
@@ -93,6 +94,9 @@ const squadInPlay = (meta: ClubMeta): SquadMember[] =>
 
 /** Adversário do drill-down standalone: 4-4-2 sintético, ids fora da liga. */
 const aiOpponentSquad: SquadMember[] = DEFAULT_POSITIONS.map((pos, i) => ({ id: 1001 + i, pos }))
+
+/** Autor dos gols do adversário no stub de `playMatch` (id fora da liga). */
+const AWAY_STUB_SCORER_ID = 1011
 
 const tacticsOf = (clubId: number): TeamTactics => {
   const lineup = state.clubs[clubId]?.lineup
@@ -378,6 +382,39 @@ export const handlers = [
     const homeGoals = Math.floor(Math.random() * 4)
     const awayGoals = Math.floor(Math.random() * 3)
 
+    // O resumo é montado a partir de eventos DE VERDADE, e as estatísticas
+    // saem deles pelo mesmo `matchStats` da engine (issue #57). Preencher o
+    // sumário à mão reintroduziria exatamente a divergência que a projeção
+    // existe para impedir — um 3×2 reportando zero finalizações.
+    const scorerId = (club.squad.find((p) => p.position === 'FW') ?? club.squad[0])?.id ?? 0
+    const goalsOf = (count: number, home: boolean, author: number): MatchEvent[] =>
+      Array.from({ length: count }, (_, i) => ({
+        type: 'Goal' as const,
+        minute: 10 + i * 15 + (home ? 0 : 7),
+        scorerId: author,
+        home,
+      }))
+
+    const played = [
+      ...goalsOf(homeGoals, true, scorerId),
+      ...goalsOf(awayGoals, false, AWAY_STUB_SCORER_ID),
+    ].sort((a, b) => a.minute - b.minute)
+
+    const events: MatchEvent[] = [
+      {
+        type: 'KickOff',
+        minute: 0,
+        homeClubName: club.name,
+        awayClubName: clubMeta[2]?.name ?? 'Adversário',
+        homeStrength: averageOverall(club.squad),
+        awayStrength: 75,
+        homePosture: 'BALANCED',
+        awayPosture: 'BALANCED',
+      },
+      ...played,
+      { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: matchStats(played) },
+    ]
+
     return HttpResponse.json({
       matchId: Date.now(),
       round,
@@ -385,14 +422,10 @@ export const handlers = [
       awayClubId: 2,
       homeGoals,
       awayGoals,
-      events: [
-        { type: 'KickOff',  minute: 0 },
-        // Resumo sem eventos intermediários: nada a somar, sumário zerado.
-        { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: EMPTY_MATCH_STATS },
-      ],
+      events,
       attendance: Math.min(club.stadiumCapacity, 12_000),
       ticketRevenue: 12_000 * 50_00,
-    })
+    } satisfies MatchSummary)
   }),
 
   // ─── getStandings ─────────────────────────────────────────────────────

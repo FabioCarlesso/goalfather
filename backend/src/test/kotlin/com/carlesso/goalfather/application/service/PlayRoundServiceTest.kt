@@ -5,6 +5,8 @@ import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
+import com.carlesso.goalfather.domain.engine.MatchSetup
+import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Availability
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -729,9 +732,38 @@ class PlayRoundServiceTest {
         assertEquals(0L, homeFinance.deficit, "Mandante com caixa folgado não fica no vermelho")
     }
 
+    /**
+     * Placar que a engine ATUAL produz para a partida 1001 — mesma seed e
+     * mesmas escalações que o service usa. Uma rodada encerrada realista tem
+     * este placar gravado; é o que separa "replay fiel" de "engine mudou".
+     */
+    private suspend fun currentEngineScore(): Pair<Int, Int> {
+        val setup = MatchSetup(
+            home = homeClub.startingLineup(),
+            away = awayClub.startingLineup(),
+            homeName = "Home FC",
+            awayName = "Away FC",
+        )
+        val fullTime = MatchSimulator().simulate(setup, Random(1001)).toList()
+            .filterIsInstance<MatchEvent.FullTime>().single()
+        return fullTime.homeGoals to fullTime.awayGoals
+    }
+
+    private suspend fun finishedRoundWith(score: Pair<Int, Int>) = round.copy(
+        status = RoundStatus.Finished,
+        matches = round.matches.map {
+            it.copy(
+                status = RoundStatus.Finished,
+                homeGoals = score.first,
+                awayGoals = score.second,
+                minute = 90,
+            )
+        },
+    )
+
     @Test
     fun `rodada ja finalizada faz replay sem re-aplicar efeitos (idempotencia)`() = runTest {
-        val finishedRound = round.copy(status = RoundStatus.Finished)
+        val finishedRound = finishedRoundWith(currentEngineScore())
         coEvery { leagueRepo.findRound(1) } returns finishedRound
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
@@ -751,6 +783,50 @@ class PlayRoundServiceTest {
         coVerify(exactly = 0) { clubRepo.findAll() }
         // Replay não pode zerar a prontidão — a rodada já foi consumida (issue #20).
         coVerify(exactly = 0) { readinessRepo.reset(any()) }
+    }
+
+    @Test
+    fun `replay omite a partida que a engine atual nao reproduz (issue 57)`() = runTest {
+        // Rodada encerrada por uma engine anterior: o placar gravado (o que
+        // virou pontos na tabela) não é o que a seed produz hoje. Emitir esse
+        // feed faria o card terminar contradizendo a classificação — então a
+        // partida sai do stream e fica só com o placar gravado.
+        val (home, away) = currentEngineScore()
+        val staleRound = finishedRoundWith(home + 3 to away + 3)
+        coEvery { leagueRepo.findRound(1) } returns staleRound
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+
+        val events = service.stream(1).toList()
+
+        assertTrue(
+            events.none { it is RoundEvent.MatchUpdate },
+            "feed irreproduzível não deve ser emitido",
+        )
+        // O encerramento continua sinalizado: o cliente recebe a tabela.
+        assertIs<RoundEvent.RoundFinished>(events.single())
+        coVerify(exactly = 0) { leagueRepo.finishRound(any()) }
+    }
+
+    @Test
+    fun `rodada em andamento nunca e filtrada pela fidelidade do replay`() = runTest {
+        // Guard: no fluxo normal o placar gravado ainda é 0x0 (a rodada nem
+        // rodou), e comparar com ele calaria o stream inteiro. A verificação
+        // só vale para rodada JÁ encerrada.
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        val events = service.stream(1).toList()
+
+        assertTrue(events.filterIsInstance<RoundEvent.MatchUpdate>().isNotEmpty())
     }
 
     @Test

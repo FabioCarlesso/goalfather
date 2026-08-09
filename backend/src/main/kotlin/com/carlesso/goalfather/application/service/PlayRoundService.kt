@@ -125,6 +125,25 @@ class PlayRoundService(
         }
         sample.stop(simulationTimer)
 
+        // Replay de rodada encerrada: o placar GRAVADO é a verdade — foi ele
+        // que virou pontos na tabela. A re-simulação por seed é uma
+        // reconstrução, e ela só é fiel enquanto a engine consumir o RNG do
+        // mesmo jeito de quando a rodada rodou (a issue #57 mudou isso). Se
+        // divergir, emitir o feed faria o card terminar num placar que
+        // contradiz a classificação exibida logo abaixo dele — então a partida
+        // irreproduzível sai do stream e fica só com o placar gravado, que o
+        // cliente já carregou em `GET /api/league/round/current`.
+        //
+        // A fidelidade é aferida por PARTIDA, não por rodada: uma engine nova
+        // pode reproduzir umas e não outras, e não há razão para calar as que
+        // ainda batem.
+        if (round.status == RoundStatus.Finished) {
+            val faithful = round.matches
+                .filter { finalScores[it.matchId] == (it.homeGoals to it.awayGoals) }
+                .mapTo(mutableSetOf()) { it.matchId }
+            tagged.retainAll { (matchId, _) -> matchId in faithful }
+        }
+
         // Estável por minuto: eventos de minuto igual saem juntos
         // (sensação de "vários estádios ao mesmo tempo").
         tagged.sortBy { it.second.minute }

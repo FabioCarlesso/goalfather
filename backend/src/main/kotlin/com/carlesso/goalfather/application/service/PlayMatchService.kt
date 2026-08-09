@@ -9,6 +9,7 @@ import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.RoundStatus
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -58,6 +59,21 @@ class PlayMatchService(
         val sample = Timer.start(meterRegistry)
         val events = simulator.simulate(setup, Random(matchId)).toList()
         sample.stop(simulationTimer)
+
+        // Mesma regra de fidelidade do `PlayRoundService`: numa partida já
+        // encerrada o placar gravado é o que virou pontos, e a re-simulação só
+        // vale como replay enquanto a reproduzir. Quando a engine muda (issue
+        // #57), narrar uma partida que contradiz a tabela é pior do que dizer
+        // que o replay não está disponível — a mensagem viaja no close do WS e
+        // a página da partida a exibe.
+        val fullTime = events.filterIsInstance<MatchEvent.FullTime>().lastOrNull()
+        if (match.status == RoundStatus.Finished &&
+            (fullTime?.homeGoals != match.homeGoals || fullTime.awayGoals != match.awayGoals)
+        ) {
+            throw IllegalArgumentException(
+                "Partida $matchId foi jogada por uma versão anterior da engine — replay indisponível",
+            )
+        }
 
         for (event in events) emit(event)
     }
