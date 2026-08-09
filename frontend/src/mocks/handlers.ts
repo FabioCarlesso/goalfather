@@ -20,6 +20,9 @@ import {
   readinessStatus,
   markRoundReady,
   resetRoundReadiness,
+  squadOf,
+  DEFAULT_POSITIONS,
+  type ClubMeta,
 } from './seed'
 import {
   simulateMatch,
@@ -28,7 +31,9 @@ import {
   applyMedicalTreatment,
   startingEleven,
   MulberryRng,
+  EMPTY_MATCH_STATS,
   MEDICAL_DEPARTMENT_COST_CENTS,
+  type SquadMember,
   type TeamTactics,
 } from './engine'
 import type {
@@ -77,6 +82,17 @@ const ticketRevenueOf = (capacity: number, strength: number) =>
  * escalou (todos os clubes da IA neste mock) entra EQUILIBRADO em 4-4-2.
  */
 const DEFAULT_TACTICS: TeamTactics = { posture: 'BALANCED', formation: '4-4-2' }
+
+/**
+ * Elenco que a engine enxerga (id + posição — issue #57). Para o clube do
+ * usuário vale o elenco VIVO, que compras e vendas alteram; para os da IA, a
+ * escalação sintética do seed.
+ */
+const squadInPlay = (meta: ClubMeta): SquadMember[] =>
+  meta.id === 1 && state.clubs[1] ? squadOf(state.clubs[1].squad) : meta.squad
+
+/** Adversário do drill-down standalone: 4-4-2 sintético, ids fora da liga. */
+const aiOpponentSquad: SquadMember[] = DEFAULT_POSITIONS.map((pos, i) => ({ id: 1001 + i, pos }))
 
 const tacticsOf = (clubId: number): TeamTactics => {
   const lineup = state.clubs[clubId]?.lineup
@@ -371,7 +387,8 @@ export const handlers = [
       awayGoals,
       events: [
         { type: 'KickOff',  minute: 0 },
-        { type: 'FullTime', minute: 90, homeGoals, awayGoals },
+        // Resumo sem eventos intermediários: nada a somar, sumário zerado.
+        { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: EMPTY_MATCH_STATS },
       ],
       attendance: Math.min(club.stadiumCapacity, 12_000),
       ticketRevenue: 12_000 * 50_00,
@@ -401,8 +418,8 @@ export const handlers = [
       awayName:     'Atlético Bonsucesso', // adversário mock para exibição standalone
       homeStrength: averageOverall(myClub.squad),
       awayStrength: 75,
-      homeSquad:    myClub.squad.map((p) => p.id),
-      awaySquad:    [1001, 1002, 1003, 1004, 1005],
+      homeSquad:    squadOf(myClub.squad),
+      awaySquad:    aiOpponentSquad,
       homeTactics:  tacticsOf(1),
       awayTactics:  DEFAULT_TACTICS,   // adversário mock: sempre equilibrado
     }
@@ -420,6 +437,12 @@ export const handlers = [
         client.send(JSON.stringify(event satisfies MatchEvent))
         lastMinute = event.minute
       }
+      // Gap antes do close para o cliente processar o FullTime — o MSW pode
+      // engolir o último send se o close vier colado (mesmo cuidado do
+      // roundStream). Passou a importar quando o FullTime virou portador do
+      // sumário da partida (issue #57).
+      await delay(50)
+      if (cancelled) return
       client.close(1000, 'Partida encerrada')
     })()
   }),
@@ -509,8 +532,8 @@ export const handlers = [
         awayName:     away.name,
         homeStrength: home.id === 1 ? averageOverall(state.clubs[1]!.squad) : home.strength,
         awayStrength: away.id === 1 ? averageOverall(state.clubs[1]!.squad) : away.strength,
-        homeSquad:    home.squad,
-        awaySquad:    away.squad,
+        homeSquad:    squadInPlay(home),
+        awaySquad:    squadInPlay(away),
         homeTactics:  tacticsOf(home.id),
         awayTactics:  tacticsOf(away.id),
       }

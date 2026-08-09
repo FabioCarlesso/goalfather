@@ -6,12 +6,13 @@ import type {
   Club,
   Player,
   MarketEntry,
+  Position,
   Standings,
   Retirement,
   Round,
   RoundMatch,
 } from '../domain/types'
-import { MulberryRng, ageSquadOneSeason } from './engine'
+import { MulberryRng, ageSquadOneSeason, type SquadMember } from './engine'
 
 const player = (
   id: number,
@@ -72,20 +73,32 @@ export const marketEntries: MarketEntry[] = [
 export interface ClubMeta {
   id: number
   name: string
-  strength: number    // overall agregado (mock)
-  squad: number[]     // IDs sintéticos para autoria de gols/cartões
-  division: number    // divisão INICIAL (a corrente vive em state.divisions)
+  strength: number         // overall agregado (mock)
+  squad: SquadMember[]     // id + posição: autoria de gols/cartões e peso de quem finaliza
+  division: number         // divisão INICIAL (a corrente vive em state.divisions)
 }
 
-const aiSquad = (offset: number): number[] =>
-  Array.from({ length: 11 }, (_, i) => offset + i + 1)
+/**
+ * Escalação padrão de um clube da IA. As posições importam desde a issue #57:
+ * a engine pondera o autor da finalização por posição, então um elenco só de
+ * ids faria o sorteio perder a referência (e o goleiro voltaria a marcar).
+ */
+export const DEFAULT_POSITIONS: Position[] =
+  ['GK', 'CB', 'CB', 'CB', 'CB', 'MF', 'MF', 'MF', 'MF', 'FW', 'FW']
+
+const aiSquad = (offset: number): SquadMember[] =>
+  DEFAULT_POSITIONS.map((pos, i) => ({ id: offset + i + 1, pos }))
+
+/** Elenco real → o que a engine precisa saber dele (id + posição). */
+export const squadOf = (squad: Player[]): SquadMember[] =>
+  squad.map((p) => ({ id: p.id, pos: p.position }))
 
 const myClubStrength =
   initialSquad.reduce((sum, p) => sum + p.overall, 0) / initialSquad.length
 
 // 2 divisões (issue #47) — espelha o seed do backend (DataInitializer).
 export const clubMeta: Record<number, ClubMeta> = {
-  1:  { id: 1,  name: 'Goal Father FC',        strength: myClubStrength, squad: initialSquad.map((p) => p.id), division: 1 },
+  1:  { id: 1,  name: 'Goal Father FC',        strength: myClubStrength, squad: squadOf(initialSquad), division: 1 },
   2:  { id: 2,  name: 'Atlético Bonsucesso',   strength: 76, squad: aiSquad(2000),  division: 1 },
   3:  { id: 3,  name: 'Esporte Clube Vargem',  strength: 72, squad: aiSquad(3000),  division: 1 },
   4:  { id: 4,  name: 'Tupinambás FC',         strength: 70, squad: aiSquad(4000),  division: 1 },
@@ -443,7 +456,7 @@ export function materializeClub(id: number): void {
   }
   const meta = clubMeta[id]
   if (!meta) return
-  const positions: Player['position'][] = ['GK', 'CB', 'CB', 'CB', 'CB', 'MF', 'MF', 'MF', 'MF', 'FW', 'FW']
+  const positions = DEFAULT_POSITIONS
   state.clubs[id] = {
     id,
     name: meta.name,

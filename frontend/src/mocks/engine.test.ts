@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { simulateMatch, MulberryRng, averageOverall, type MatchSetup } from './engine'
-import type { Posture } from '../domain/types'
+import {
+  simulateMatch,
+  MulberryRng,
+  averageOverall,
+  drawShooter,
+  matchStats,
+  EMPTY_MATCH_STATS,
+  type MatchSetup,
+  type SquadMember,
+} from './engine'
+import type { MatchEvent, Position, Posture } from '../domain/types'
+
+// 4-4-2: as posições importam desde a issue #57 (peso de quem finaliza).
+const FORMATION_4_4_2: Position[] =
+  ['GK', 'CB', 'CB', 'CB', 'CB', 'MF', 'MF', 'MF', 'MF', 'FW', 'FW']
+
+const squad = (offset: number): SquadMember[] =>
+  FORMATION_4_4_2.map((pos, i) => ({ id: offset + i, pos }))
 
 const baseSetup: MatchSetup = {
   matchId: 12345,
@@ -8,8 +24,8 @@ const baseSetup: MatchSetup = {
   awayName: 'Atlético Bonsucesso',
   homeStrength: 78,
   awayStrength: 75,
-  homeSquad: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-  awaySquad: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111],
+  homeSquad: squad(1),
+  awaySquad: squad(101),
 }
 
 const collect = (setup: MatchSetup, seed = setup.matchId) =>
@@ -152,6 +168,119 @@ describe('simulateMatch com postura', () => {
       homeTactics: { posture: 'BALANCED', formation: '5-3-2' },
     }
     expect(totalGoals(attacking, 100)).toBeGreaterThan(totalGoals(defending, 100))
+  })
+})
+
+// ─── Artilheiro ponderado, Miss e sumário (issue #57) ─────────────────────
+// Espelha os testes de MatchSimulatorTest.kt / MatchStatsTest.kt.
+describe('simulateMatch: finalizações e sumário', () => {
+  const overSeeds = (seeds: number): MatchEvent[] => {
+    const all: MatchEvent[] = []
+    for (let seed = 1; seed <= seeds; seed++) all.push(...collect(baseSetup, seed))
+    return all
+  }
+
+  const positionOf = (id: number): Position =>
+    [...baseSetup.homeSquad, ...baseSetup.awaySquad].find((p) => p.id === id)!.pos
+
+  it('distribuicao de artilheiros respeita o peso da posicao', () => {
+    const scorers = overSeeds(200)
+      .filter((e) => e.type === 'Goal')
+      .map((e) => positionOf(e.scorerId))
+
+    const count = (pos: Position) => scorers.filter((p) => p === pos).length
+    expect(count('GK')).toBe(0)
+    expect(count('FW')).toBeGreaterThan(0)
+    expect(count('FW')).toBeGreaterThan(count('CB'))
+  })
+
+  it('chute para fora sai com autor apto do squad correto', () => {
+    const misses = overSeeds(50).filter((e) => e.type === 'Miss')
+    expect(misses.length).toBeGreaterThan(0)
+    for (const miss of misses) {
+      const roster = miss.home ? baseSetup.homeSquad : baseSetup.awaySquad
+      expect(roster.some((p) => p.id === miss.playerId)).toBe(true)
+      expect(positionOf(miss.playerId)).not.toBe('GK')
+    }
+  })
+
+  it('defesa identifica o goleiro do lado que defendeu', () => {
+    const saves = overSeeds(50).filter((e) => e.type === 'Save')
+    expect(saves.length).toBeGreaterThan(0)
+    for (const save of saves) {
+      const roster = save.home ? baseSetup.homeSquad : baseSetup.awaySquad
+      expect(save.goalkeeperId).toBe(roster.find((p) => p.pos === 'GK')!.id)
+    }
+  })
+
+  it('estatisticas do FullTime batem com os eventos emitidos', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const events = collect(baseSetup, seed)
+      const last = events[events.length - 1]!
+      expect(last.type).toBe('FullTime')
+      if (last.type !== 'FullTime') continue
+      expect(last.stats).toEqual(matchStats(events.slice(0, -1)))
+      expect(last.stats.home.shotsOnTarget).toBeGreaterThanOrEqual(last.homeGoals)
+      expect(last.stats.away.shotsOnTarget).toBeGreaterThanOrEqual(last.awayGoals)
+    }
+  })
+
+  it('escalacao so de goleiros nao produz finalizacao', () => {
+    const keepersOnly: MatchSetup = {
+      ...baseSetup,
+      homeSquad: Array.from({ length: 11 }, (_, i) => ({ id: 900 + i, pos: 'GK' as Position })),
+    }
+    const events = Array.from({ length: 30 }, (_, i) => collect(keepersOnly, i + 1)).flat()
+    expect(events.some((e) => e.type === 'Goal' && e.home)).toBe(false)
+    expect(events.some((e) => e.type === 'Miss' && e.home)).toBe(false)
+  })
+})
+
+describe('drawShooter', () => {
+  it('nunca sorteia goleiro e favorece o atacante', () => {
+    const rng = new MulberryRng(7)
+    const roster: SquadMember[] = [
+      { id: 1, pos: 'GK' },
+      { id: 2, pos: 'CB' },
+      { id: 3, pos: 'MF' },
+      { id: 4, pos: 'FW' },
+    ]
+    const draws = Array.from({ length: 5_000 }, () => drawShooter(roster, rng)!.pos)
+    const count = (pos: Position) => draws.filter((p) => p === pos).length
+
+    expect(count('GK')).toBe(0)
+    expect(count('FW')).toBeGreaterThan(count('MF'))
+    expect(count('MF')).toBeGreaterThan(count('CB'))
+  })
+
+  it('devolve null quando ninguem pode finalizar', () => {
+    expect(drawShooter([], new MulberryRng(1))).toBeNull()
+    expect(drawShooter([{ id: 1, pos: 'GK' }], new MulberryRng(1))).toBeNull()
+  })
+})
+
+describe('matchStats', () => {
+  it('uma defesa conta para os dois lados', () => {
+    const stats = matchStats([{ type: 'Save', minute: 5, goalkeeperId: 1, home: true }])
+    expect(stats.home.saves).toBe(1)
+    expect(stats.home.shots).toBe(0)
+    expect(stats.away.shots).toBe(1)
+    expect(stats.away.shotsOnTarget).toBe(1)
+  })
+
+  it('separa cartoes por time e ignora eventos neutros', () => {
+    const stats = matchStats([
+      { type: 'Card', minute: 10, playerId: 2, red: false, home: true },
+      { type: 'Card', minute: 20, playerId: 3, red: true, home: false },
+      { type: 'Injury', minute: 30, playerId: 4, roundsOut: 2 },
+    ])
+    expect(stats.home.yellowCards).toBe(1)
+    expect(stats.home.redCards).toBe(0)
+    expect(stats.away.redCards).toBe(1)
+  })
+
+  it('stream vazio produz sumario zerado', () => {
+    expect(matchStats([])).toEqual(EMPTY_MATCH_STATS)
   })
 })
 

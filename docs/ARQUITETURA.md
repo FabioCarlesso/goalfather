@@ -164,22 +164,35 @@ sealed interface MatchEvent {
 
     data class KickOff(override val minute: Int = 0) : MatchEvent
     data class Goal(override val minute: Int, val scorer: PlayerId, val home: Boolean) : MatchEvent
-    data class Card(override val minute: Int, val player: PlayerId, val red: Boolean) : MatchEvent
+    data class Miss(override val minute: Int, val player: PlayerId, val home: Boolean) : MatchEvent
+    data class Card(override val minute: Int, val player: PlayerId, val red: Boolean, val home: Boolean) : MatchEvent
     data class Injury(override val minute: Int, val player: PlayerId) : MatchEvent
-    data class Save(override val minute: Int) : MatchEvent
-    data class FullTime(override val minute: Int = 90, val homeGoals: Int, val awayGoals: Int) : MatchEvent
+    data class Save(override val minute: Int, val goalkeeperId: PlayerId?, val home: Boolean) : MatchEvent
+    data class FullTime(
+        override val minute: Int = 90,
+        val homeGoals: Int,
+        val awayGoals: Int,
+        val stats: MatchStats,      // sumário derivado dos próprios eventos (issue #57)
+    ) : MatchEvent
 }
 
 // consumo com when exaustivo — sem else, o compilador garante cobertura
 fun describe(e: MatchEvent): String = when (e) {
     is MatchEvent.KickOff  -> "⚡ Bola rolando!"
     is MatchEvent.Goal     -> "⚽ GOL no minuto ${e.minute}!"
+    is MatchEvent.Miss     -> "💨 Chute para fora"
     is MatchEvent.Card     -> if (e.red) "🟥 Vermelho!" else "🟨 Amarelo"
     is MatchEvent.Injury   -> "🚑 Lesão no minuto ${e.minute}"
     is MatchEvent.Save     -> "🧤 Defesa difícil"
     is MatchEvent.FullTime -> "🏁 Fim: ${e.homeGoals} × ${e.awayGoals}"
 }
 ```
+
+> **O valor prático do `sealed` apareceu na issue #57:** ao entrar a variante
+> `Miss`, TODO `when` exaustivo do projeto parou de compilar de uma vez —
+> engine, agregação de estatísticas e `PlayRoundService`. Nenhum ponto de
+> consumo ficou para trás em silêncio, que é exatamente o que um `else`
+> genérico (ou um `switch` com `default`) teria escondido.
 
 ### Resultados de operação sem exceptions
 
@@ -247,6 +260,28 @@ val saveP = P_GOAL + P_SAVE - goalP   // o que sai do gol vira defesa, não some
 fun Lineup.attackFactor(): Double = tactics.posture.attackMod * formation.attackMod
 fun Lineup.defenseFactor(): Double = tactics.posture.defenseMod * formation.defenseMod
 ```
+
+**Quem finaliza é sorteado por peso de posição (issue #57).** Antes, o autor do
+gol saía de um sorteio uniforme sobre o elenco — o goleiro marcava tanto quanto
+o centroavante. O peso é uma propriedade do próprio enum, então a regra fica em
+um lugar só e o teste consegue verificar a distribuição:
+
+```kotlin
+enum class Position(val abbr: String, val scoringWeight: Double) {
+    GK("GL", 0.0), CB("ZG", 1.0), MF("MC", 3.0), FW("AT", 6.0)
+}
+
+// roleta ponderada — consome UM nextDouble(), null quando ninguém pode finalizar
+fun List<Player>.drawShooter(rng: Random): Player? { /* domain/rules/ScoringRules.kt */ }
+```
+
+**Estatísticas são projeção, não estado.** O `FullTime` carrega `MatchStats`
+(finalizações, chutes no gol, defesas e cartões por time), calculado por
+`Iterable<MatchEvent>.matchStats()` sobre os eventos que a própria partida
+emitiu. Nada é contado em paralelo, então o sumário não tem como divergir do
+feed — e a propriedade "recalcular a partir do stream dá o mesmo resultado" é
+verificável em teste. Uma defesa conta para os dois lados: defesa de quem pegou,
+finalização no gol de quem chutou.
 
 Duas propriedades caem de graça dessa formulação: cartão e lesão mantêm a frequência de sempre (só gol e defesa trocam massa entre si), e o eixo neutro — `BALANCED` em 4-4-2, fatores 1.0 — reproduz byte a byte a engine de antes da tática, o que vira um teste de regressão em `MatchSimulatorTest`.
 
@@ -500,6 +535,17 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   tática existir desserializa no default (`BALANCED`), sem backfill —
   coberto por `LineupSerializationTest`. O clube da IA, que nunca escala,
   cai no mesmo default.
+- [x] **6.4** Engine mais rica e fiel ao protótipo — issue #57
+  (artilheiro ponderado por `Position.scoringWeight` — FW 6, MF 3, CB 1, GK 0 —
+  sorteado em `domain/rules/ScoringRules.kt`; novo evento `Miss` (chute para
+  fora) e `Save` identificando o goleiro que defendeu; `Card` ganhou `home`
+  para as estatísticas separarem os times; e o `FullTime` passou a carregar
+  `MatchStats`, projeção dos próprios eventos via `Iterable<MatchEvent>.matchStats()`.
+  A fatia de probabilidade do `Miss` saiu da do `Save` — cartão e lesão
+  mantiveram a frequência de sempre. **Seeds antigas produzem partidas
+  diferentes**: o sorteio ponderado consome o RNG de outra forma; nenhum teste
+  dependia de placares fixos, só de propriedades, então o ajuste foi só de
+  expectativas de posição/autoria.)
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`
