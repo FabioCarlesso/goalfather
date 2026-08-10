@@ -73,8 +73,20 @@ function EventLine({ event, nameOf }: { event: MatchEvent; nameOf: (id: number) 
       )
     case 'Injury':
       return <Line minute={event.minute} color="text-orange-300">🚑 Lesão — {nameOf(event.playerId)}</Line>
+    // Chute para fora e defesa nomeiam quem participou do lance (issue #57):
+    // é o que transforma um "algo aconteceu" em narração de jogo.
+    case 'Miss':
+      return (
+        <Line minute={event.minute} color="text-slate-400">
+          💨 Para fora — {nameOf(event.playerId)} ({event.home ? 'mandante' : 'visitante'})
+        </Line>
+      )
     case 'Save':
-      return <Line minute={event.minute} color="text-slate-300">🧤 Defesa difícil</Line>
+      return (
+        <Line minute={event.minute} color="text-slate-300">
+          🧤 Defesa{event.goalkeeperId != null ? ` de ${nameOf(event.goalkeeperId)}` : ' difícil'}
+        </Line>
+      )
     case 'FullTime':
       return (
         <Line minute={event.minute} color="text-slate-100 font-semibold">

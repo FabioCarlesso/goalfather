@@ -21,6 +21,11 @@ test.describe('Match drill-down', () => {
     // O KickOff chega quase imediato → "Bola rolando" no feed.
     await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
 
+    // Ao apito final o sumário aparece com os números do jogo (issue #57).
+    // A partida inteira leva ~7s de stream (80ms por minuto simulado).
+    await expect(page.getByText(/Estatísticas da partida/i)).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByText('Finalizações')).toBeVisible()
+
     // Volta para a rodada.
     await page.getByRole('link', { name: /Voltar para a rodada/i }).click()
     await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()

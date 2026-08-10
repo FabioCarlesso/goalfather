@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.engine
 
 import com.carlesso.goalfather.domain.event.MatchEvent
+import com.carlesso.goalfather.domain.event.matchStats
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
@@ -153,6 +154,7 @@ class MatchSimulatorTest {
                 is MatchEvent.Card -> "card"
                 is MatchEvent.Injury -> "injury"
                 is MatchEvent.Save -> "save"
+                is MatchEvent.Miss -> "miss"
                 is MatchEvent.FullTime -> "end"
             }
             assertTrue(label.isNotBlank())
@@ -314,5 +316,97 @@ class MatchSimulatorTest {
             goalsIn(attacking, 1..100) > goalsIn(defending, 1..100),
             "4-3-3 deveria render mais gols no agregado que 5-3-2",
         )
+    }
+
+    // ─── Artilheiro ponderado, novos eventos e sumário (issue #57) ─────────
+
+    private suspend fun eventsOver(seeds: IntRange): List<MatchEvent> =
+        seeds.flatMap { seed -> MatchSimulator().simulate(setup, Random(seed.toLong())).toList() }
+
+    @Test
+    fun `distribuicao de artilheiros respeita o peso da posicao`() = runTest {
+        // 200 partidas: numa isolada o RNG manda, mas no agregado os pesos
+        // têm de aparecer. Só o lado da casa entra na conta — o visitante
+        // deste setup é todo MF de propósito (serve de controle).
+        val byPosition = eventsOver(1..200)
+            .filterIsInstance<MatchEvent.Goal>()
+            .filter { it.home }
+            .groupingBy { homeLineup.players.first { p -> p.id == it.scorerId }.position }
+            .eachCount()
+
+        assertEquals(0, byPosition[Position.GK] ?: 0, "goleiro não marca (peso 0)")
+        val forwards = byPosition[Position.FW] ?: 0
+        val defenders = byPosition[Position.CB] ?: 0
+        assertTrue(forwards > 0, "atacantes deveriam marcar em 200 partidas")
+        assertTrue(
+            forwards > defenders,
+            "atacante (2 em campo, peso 6) deve marcar mais que zagueiro (4 em campo, peso 1). FW: $forwards, CB: $defenders",
+        )
+    }
+
+    @Test
+    fun `chute para fora sai com autor do squad correto`() = runTest {
+        val misses = eventsOver(1..50).filterIsInstance<MatchEvent.Miss>()
+        val homeIds = homeLineup.players.map { it.id }.toSet()
+        val awayIds = awayLineup.players.map { it.id }.toSet()
+
+        assertTrue(misses.isNotEmpty(), "50 partidas deveriam produzir algum chute para fora")
+        for (miss in misses) {
+            val squad = if (miss.home) homeIds else awayIds
+            assertTrue(miss.playerId in squad, "Miss com autor fora do squad: ${miss.playerId}")
+        }
+        // O chute para fora usa o mesmo sorteio ponderado do gol: goleiro fora.
+        val homeKeeper = homeLineup.players.first { it.position == Position.GK }.id
+        assertTrue(misses.none { it.playerId == homeKeeper }, "goleiro não finaliza")
+    }
+
+    @Test
+    fun `defesa identifica o goleiro do lado que defendeu`() = runTest {
+        val saves = eventsOver(1..50).filterIsInstance<MatchEvent.Save>()
+        val homeKeeper = homeLineup.players.first { it.position == Position.GK }.id
+
+        assertTrue(saves.isNotEmpty(), "50 partidas deveriam produzir alguma defesa")
+        for (save in saves) {
+            if (save.home) {
+                assertEquals(homeKeeper, save.goalkeeperId, "defesa do mandante é do goleiro do mandante")
+            } else {
+                // O visitante deste setup não tem goleiro escalado (11 MF):
+                // ausência modelada como null, sem id inventado.
+                assertEquals(null, save.goalkeeperId)
+            }
+        }
+    }
+
+    @Test
+    fun `estatisticas do FullTime batem com os eventos emitidos`() = runTest {
+        // Propriedade, não valor fixo: o sumário é uma projeção do stream, então
+        // recalculá-lo a partir dos eventos tem de dar exatamente o mesmo.
+        for (seed in 1..30) {
+            val events = MatchSimulator().simulate(setup, Random(seed.toLong())).toList()
+            val fullTime = events.filterIsInstance<MatchEvent.FullTime>().single()
+
+            assertEquals(events.dropLast(1).matchStats(), fullTime.stats, "seed $seed")
+            // Sanidade cruzada com o placar: todo gol é uma finalização no gol.
+            assertTrue(fullTime.stats.home.shotsOnTarget >= fullTime.homeGoals)
+            assertTrue(fullTime.stats.away.shotsOnTarget >= fullTime.awayGoals)
+        }
+    }
+
+    @Test
+    fun `escalacao so de goleiros nao produz finalizacao`() = runTest {
+        // Caso limite do sorteio ponderado: sem ninguém com peso, o lance não
+        // acontece em vez de estourar ou eleger o goleiro na marra.
+        val keepersOnly = setup.copy(
+            home = Lineup(
+                formation = Formation.F_4_4_2,
+                players = (1L..11L).map { player(it, Position.GK, 70) },
+            ),
+        )
+
+        val events = (1..30).flatMap {
+            MatchSimulator().simulate(keepersOnly, Random(it.toLong())).toList()
+        }
+        assertTrue(events.filterIsInstance<MatchEvent.Goal>().none { it.home })
+        assertTrue(events.filterIsInstance<MatchEvent.Miss>().none { it.home })
     }
 }

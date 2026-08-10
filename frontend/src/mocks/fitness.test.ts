@@ -11,6 +11,7 @@ import {
   effectiveOverall,
   averageOverall,
   simulateMatch,
+  type MatchSetup,
   BENCH_STAMINA_RECOVERY,
   INJURY_DURATION_MIN,
   INJURY_DURATION_MAX,
@@ -102,17 +103,28 @@ describe('lesões com duração', () => {
   })
 
   it('engine sorteia a duração dentro da faixa', () => {
-    const setup = {
+    // Escalação com POSIÇÃO (issue #57): a engine pondera quem finaliza por
+    // `pos`, então um elenco só de ids degenera em silêncio — nenhum gol,
+    // nenhum chute para fora e lesões com `playerId: undefined`. O `tsc` não
+    // pega: tsconfig.app.json exclui os arquivos de teste.
+    const setup: MatchSetup = {
       matchId: 1,
       homeName: 'A', awayName: 'B',
       homeStrength: 75, awayStrength: 75,
-      homeSquad: [1, 2, 3], awaySquad: [4, 5, 6],
+      homeSquad: [{ id: 1, pos: 'GK' }, { id: 2, pos: 'MF' }, { id: 3, pos: 'FW' }],
+      awaySquad: [{ id: 4, pos: 'GK' }, { id: 5, pos: 'MF' }, { id: 6, pos: 'FW' }],
     }
-    const injuries = Array.from({ length: 60 }, (_, i) => i + 1).flatMap((matchId) =>
-      [...simulateMatch({ ...setup, matchId })].filter((e) => e.type === 'Injury'),
+    const squadIds = [...setup.homeSquad, ...setup.awaySquad].map((p) => p.id)
+    const events = Array.from({ length: 60 }, (_, i) => i + 1).flatMap((matchId) =>
+      [...simulateMatch({ ...setup, matchId })],
     )
+    const injuries = events.filter((e) => e.type === 'Injury')
 
     expect(injuries.length).toBeGreaterThan(0)
+    // Guarda contra o fixture degenerar de novo: com posições válidas a engine
+    // produz finalizações e atribui autoria a jogador do elenco.
+    expect(events.some((e) => e.type === 'Goal' || e.type === 'Miss')).toBe(true)
+    for (const injury of injuries) expect(squadIds).toContain(injury.playerId)
     for (const injury of injuries) {
       expect(injury.roundsOut).toBeGreaterThanOrEqual(INJURY_DURATION_MIN)
       expect(injury.roundsOut).toBeLessThanOrEqual(INJURY_DURATION_MAX)

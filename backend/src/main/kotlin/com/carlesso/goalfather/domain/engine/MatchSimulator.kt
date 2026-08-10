@@ -1,11 +1,14 @@
 package com.carlesso.goalfather.domain.engine
 
 import com.carlesso.goalfather.domain.event.MatchEvent
+import com.carlesso.goalfather.domain.event.matchStats
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.attackFactor
 import com.carlesso.goalfather.domain.model.defenseFactor
 import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.drawInjuryDuration
+import com.carlesso.goalfather.domain.rules.drawShooter
+import com.carlesso.goalfather.domain.rules.goalkeeper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.random.Random
@@ -52,7 +55,18 @@ class MatchSimulator {
         val homeStrength = setup.home.teamStrength()
         val awayStrength = setup.away.teamStrength()
 
-        emit(
+        // Súmula da partida: tudo que já foi emitido. O FullTime resume o jogo
+        // a partir DAQUI (issue #57), então as estatísticas nunca divergem do
+        // feed — são a mesma informação lida de outro jeito. `emitting` é o
+        // único ponto de emissão justamente para não existir evento fora da
+        // súmula. São ~30 eventos por partida: cabe folgado na memória.
+        val sheet = mutableListOf<MatchEvent>()
+        suspend fun emitting(event: MatchEvent) {
+            sheet += event
+            emit(event)
+        }
+
+        emitting(
             MatchEvent.KickOff(
                 minute = 0,
                 homeClubName = setup.homeName,
@@ -96,24 +110,46 @@ class MatchSimulator {
                 roll < goalP -> {
                     val isHome = rng.nextDouble() < homeRatio
                     val squad = if (isHome) setup.home.players else setup.away.players
-                    if (squad.isEmpty()) continue
-                    val scorer = squad[rng.nextInt(squad.size)]
+                    // Autor ponderado por posição (issue #57): atacante marca
+                    // muito, zagueiro pouco, goleiro nunca. `null` = ninguém
+                    // apto em campo, então o lance simplesmente não acontece.
+                    val scorer = squad.drawShooter(rng) ?: continue
                     if (isHome) homeGoals++ else awayGoals++
-                    emit(MatchEvent.Goal(minute = minute, scorerId = scorer.id, home = isHome))
+                    emitting(MatchEvent.Goal(minute = minute, scorerId = scorer.id, home = isHome))
                 }
                 roll < goalP + saveP -> {
-                    emit(MatchEvent.Save(minute = minute))
+                    // Defesa é o outro desfecho de uma finalização: quem chuta
+                    // segue o mesmo viés do gol, e quem defende é o goleiro do
+                    // lado oposto — daí `home = !shooterIsHome`.
+                    val shooterIsHome = rng.nextDouble() < homeRatio
+                    val keeper = (if (shooterIsHome) setup.away else setup.home).players.goalkeeper()
+                    emitting(
+                        MatchEvent.Save(
+                            minute = minute,
+                            goalkeeperId = keeper?.id,
+                            home = !shooterIsHome,
+                        ),
+                    )
                 }
-                roll < goalP + saveP + P_CARD -> {
+                roll < goalP + saveP + P_MISS -> {
+                    val isHome = rng.nextDouble() < homeRatio
+                    val squad = if (isHome) setup.home.players else setup.away.players
+                    val shooter = squad.drawShooter(rng) ?: continue
+                    emitting(MatchEvent.Miss(minute = minute, playerId = shooter.id, home = isHome))
+                }
+                roll < goalP + saveP + P_MISS + P_CARD -> {
                     val isHome = rng.nextDouble() < 0.5
                     val squad = if (isHome) setup.home.players else setup.away.players
                     if (squad.isEmpty()) continue
+                    // Cartão e lesão continuam UNIFORMES: qualquer um leva uma
+                    // entrada dura — não há razão para ponderar por posição.
                     val player = squad[rng.nextInt(squad.size)]
-                    emit(
+                    emitting(
                         MatchEvent.Card(
                             minute = minute,
                             playerId = player.id,
                             red = rng.nextDouble() < P_RED_CARD,
+                            home = isHome,
                         ),
                     )
                 }
@@ -124,7 +160,7 @@ class MatchSimulator {
                     val player = squad[rng.nextInt(squad.size)]
                     // Duração sorteada aqui, com o RNG da partida (issue #54):
                     // o evento já sai completo e o serviço só aplica.
-                    emit(
+                    emitting(
                         MatchEvent.Injury(
                             minute = minute,
                             playerId = player.id,
@@ -135,7 +171,14 @@ class MatchSimulator {
             }
         }
 
-        emit(MatchEvent.FullTime(minute = 90, homeGoals = homeGoals, awayGoals = awayGoals))
+        emit(
+            MatchEvent.FullTime(
+                minute = 90,
+                homeGoals = homeGoals,
+                awayGoals = awayGoals,
+                stats = sheet.matchStats(),
+            ),
+        )
     }
 
     companion object {
@@ -143,10 +186,19 @@ class MatchSimulator {
 
         /** Chance BASE de um lance virar gol; a tática a escala por partida. */
         const val P_GOAL: Double = 0.32
-        const val P_SAVE: Double = 0.30
+
+        /**
+         * Defesa e chute para fora saem da MESMA fatia que a defesa ocupava
+         * sozinha (0.30) antes da issue #57 — cartão (0.22) e lesão (0.16)
+         * ficam com a frequência de sempre. O chute para fora é o desfecho
+         * mais comum de uma finalização ruim, mas a defesa segue mais
+         * frequente porque a engine só sorteia lances "importantes".
+         */
+        const val P_SAVE: Double = 0.18
+        const val P_MISS: Double = 0.12
         const val P_CARD: Double = 0.22
 
-        // P_INJURY = 1.0 - P_GOAL - P_SAVE - P_CARD = 0.16 (implícito no else)
+        // P_INJURY = 1.0 - P_GOAL - P_SAVE - P_MISS - P_CARD = 0.16 (implícito no else)
         const val P_RED_CARD: Double = 0.12
     }
 }

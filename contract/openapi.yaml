@@ -945,6 +945,7 @@ components:
       oneOf:
         - $ref: '#/components/schemas/KickOffEvent'
         - $ref: '#/components/schemas/GoalEvent'
+        - $ref: '#/components/schemas/MissEvent'
         - $ref: '#/components/schemas/CardEvent'
         - $ref: '#/components/schemas/InjuryEvent'
         - $ref: '#/components/schemas/SaveEvent'
@@ -954,6 +955,7 @@ components:
         mapping:
           KickOff:  '#/components/schemas/KickOffEvent'
           Goal:     '#/components/schemas/GoalEvent'
+          Miss:     '#/components/schemas/MissEvent'
           Card:     '#/components/schemas/CardEvent'
           Injury:   '#/components/schemas/InjuryEvent'
           Save:     '#/components/schemas/SaveEvent'
@@ -1009,15 +1011,36 @@ components:
               type: boolean
               description: true = gol do mandante; false = visitante
 
+    MissEvent:
+      description: |
+        Chute para fora (issue #57). Autor sorteado com o mesmo peso por
+        posição do gol — goleiro não finaliza.
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type, playerId, home]
+          properties:
+            type:     { type: string, enum: [Miss] }
+            playerId: { type: integer, format: int64 }
+            home:
+              type: boolean
+              description: true = finalização do mandante; false = do visitante
+
     CardEvent:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
         - type: object
-          required: [type, playerId, red]
+          required: [type, playerId, red, home]
           properties:
             type:     { type: string, enum: [Card] }
             playerId: { type: integer, format: int64 }
             red:      { type: boolean, description: true = vermelho; false = amarelo }
+            home:
+              type: boolean
+              description: |
+                Lado do jogador advertido (issue #57). Necessário para as
+                estatísticas de disciplina do `FullTime`, já que o `playerId`
+                sozinho não diz a que elenco ele pertence.
 
     InjuryEvent:
       allOf:
@@ -1036,22 +1059,69 @@ components:
                 reproduza exatamente a mesma lesão.
 
     SaveEvent:
+      description: |
+        Defesa do goleiro. `home` é o lado de QUEM DEFENDEU — a finalização
+        veio do outro time (issue #57).
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
         - type: object
-          required: [type]
+          required: [type, home]
           properties:
             type: { type: string, enum: [Save] }
+            goalkeeperId:
+              type: integer
+              format: int64
+              nullable: true
+              description: |
+                Goleiro que defendeu. Ausente/nulo apenas quando o time entrou
+                em campo sem goleiro escalado (elenco incompleto).
+            home:
+              type: boolean
+              description: true = defesa do goleiro do mandante
 
     FullTimeEvent:
+      description: |
+        Apito final. Além do placar, carrega o sumário da partida (issue #57)
+        — derivado dos próprios eventos emitidos, nunca calculado à parte.
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
         - type: object
-          required: [type, homeGoals, awayGoals]
+          required: [type, homeGoals, awayGoals, stats]
           properties:
             type:      { type: string, enum: [FullTime] }
             homeGoals: { type: integer, minimum: 0 }
             awayGoals: { type: integer, minimum: 0 }
+            stats:     { $ref: '#/components/schemas/MatchStats' }
+
+    MatchStats:
+      description: Estatísticas dos dois lados, na mesma orientação do placar.
+      type: object
+      required: [home, away]
+      properties:
+        home: { $ref: '#/components/schemas/TeamStats' }
+        away: { $ref: '#/components/schemas/TeamStats' }
+
+    TeamStats:
+      description: |
+        Números de um time na partida. Projeção do stream de eventos: nada
+        aqui é estado próprio, então o sumário nunca diverge do feed.
+      type: object
+      required: [shots, shotsOnTarget, saves, yellowCards, redCards]
+      properties:
+        shots:
+          type: integer
+          minimum: 0
+          description: 'Finalizações: gols + defesas do goleiro adversário + chutes para fora'
+        shotsOnTarget:
+          type: integer
+          minimum: 0
+          description: 'Delas, as que foram no gol: gols + defesas do goleiro adversário'
+        saves:
+          type: integer
+          minimum: 0
+          description: Defesas feitas pelo goleiro DESTE time
+        yellowCards: { type: integer, minimum: 0 }
+        redCards:    { type: integer, minimum: 0 }
 
     MatchSummary:
       type: object

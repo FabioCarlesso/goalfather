@@ -9,6 +9,7 @@ import { useMyClubId } from '../auth/useMyClubId'
 import { useAuth } from '../auth/AuthContext'
 import { standingsKey } from '../api/queries/useStandings'
 import { MatchEventFeed } from '../components/MatchEventFeed'
+import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { ReadinessCard } from '../components/ReadinessCard'
 import { formatMoney } from '../domain/formatters'
 import type {
@@ -110,7 +111,7 @@ export function RoundPage() {
           next.awayGoals = evt.event.awayGoals
           next.status = 'Finished'
           break
-        // Card, Injury, Save não afetam placar/status
+        // Card, Injury, Save e Miss não afetam placar/status
       }
       init.set(evt.matchId, next)
     }
@@ -141,6 +142,12 @@ export function RoundPage() {
     }
     return out
   }, [events, myMatch])
+
+  // Sumário da partida do usuário, pronto no FullTime (issue #57).
+  const myMatchStats = useMemo(() => {
+    const fullTime = myMatchEvents.find((e) => e.type === 'FullTime')
+    return fullTime?.type === 'FullTime' ? fullTime.stats : null
+  }, [myMatchEvents])
 
   // ─── Ciclo de vida do WebSocket ──────────────────────────────────────
   const startRound = useCallback(async () => {
@@ -285,6 +292,13 @@ export function RoundPage() {
             emptyLabel={status === 'idle' ? 'Clique em "Jogar rodada" para começar.' : 'Aguardando início…'}
             className="h-72"
           />
+          {myMatchStats && (
+            <MatchStatsSummary
+              stats={myMatchStats}
+              homeName={myMatch.homeClubName}
+              awayName={myMatch.awayClubName}
+            />
+          )}
         </div>
       )}
 

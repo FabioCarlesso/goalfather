@@ -4,8 +4,9 @@ import { useClub } from '../api/queries/useClub'
 import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { MatchEventFeed } from '../components/MatchEventFeed'
+import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { POSTURE_LABEL } from '../domain/formations'
-import type { MatchEvent, Posture } from '../domain/types'
+import type { MatchEvent, MatchStats, Posture } from '../domain/types'
 
 type Status = 'connecting' | 'live' | 'finished' | 'error'
 
@@ -103,6 +104,13 @@ function MatchView({ matchId }: { matchId: string }) {
 
   const lastMinute = events.length > 0 ? events[events.length - 1]!.minute : 0
 
+  // Sumário só existe depois do apito final — vem pronto no FullTime
+  // (issue #57), a UI não conta nada.
+  const stats = useMemo<MatchStats | null>(() => {
+    const fullTime = events.find((e) => e.type === 'FullTime')
+    return fullTime?.type === 'FullTime' ? fullTime.stats : null
+  }, [events])
+
   return (
     <section className="space-y-4">
       <header className="flex items-center justify-between">
@@ -126,6 +134,10 @@ function MatchView({ matchId }: { matchId: string }) {
         emptyLabel={status === 'connecting' ? 'Conectando…' : 'Aguardando início…'}
         className="h-80"
       />
+
+      {stats && teams && (
+        <MatchStatsSummary stats={stats} homeName={teams.home} awayName={teams.away} />
+      )}
     </section>
   )
 }

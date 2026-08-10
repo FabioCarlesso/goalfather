@@ -6,7 +6,17 @@
 // MatchSimulator com Flow<MatchEvent>, esta engine é descartada. A app real
 // (src/api/, src/pages/) nunca sabe que esta engine existe.
 
-import type { Availability, Formation, MatchEvent, Player, Posture, Retirement } from '../domain/types'
+import type {
+  Availability,
+  Formation,
+  MatchEvent,
+  MatchStats,
+  Player,
+  Position,
+  Posture,
+  Retirement,
+  TeamStats,
+} from '../domain/types'
 
 /** RNG seedável (mulberry32) — mesmo seed → mesma sequência de eventos. */
 export class MulberryRng {
@@ -31,14 +41,24 @@ export interface TeamTactics {
   formation?: Formation
 }
 
+/**
+ * Jogador em campo, do ponto de vista da engine: id (autoria dos eventos) e
+ * posição (peso no sorteio de quem finaliza — issue #57). Antes bastava o id,
+ * mas com o artilheiro ponderado a posição virou entrada obrigatória.
+ */
+export interface SquadMember {
+  id: number
+  pos: Position
+}
+
 export interface MatchSetup {
   matchId: number
   homeName: string
   awayName: string
   homeStrength: number   // média de overall (0–99)
   awayStrength: number
-  homeSquad: number[]    // IDs dos jogadores para escolher autor de gol/cartão/lesão
-  awaySquad: number[]
+  homeSquad: SquadMember[]
+  awaySquad: SquadMember[]
   // Tática de cada lado (issue #56). Opcionais: ausentes valem EQUILIBRADA em
   // 4-4-2, que é o eixo neutro e reproduz a engine anterior à tática.
   homeTactics?: TeamTactics
@@ -47,10 +67,46 @@ export interface MatchSetup {
 
 const EVENT_RATE       = 0.12  // chance de algo acontecer por minuto
 const P_GOAL_AT_EVENT  = 0.32
-const P_SAVE_AT_EVENT  = 0.30
+// Defesa e chute para fora dividem a fatia que era só da defesa (0.30) antes
+// da issue #57 — cartão e lesão mantêm a frequência de sempre.
+const P_SAVE_AT_EVENT  = 0.18
+const P_MISS_AT_EVENT  = 0.12
 const P_CARD_AT_EVENT  = 0.22
-const P_INJURY_AT_EVENT = 1.0 - P_GOAL_AT_EVENT - P_SAVE_AT_EVENT - P_CARD_AT_EVENT
+const P_INJURY_AT_EVENT =
+  1.0 - P_GOAL_AT_EVENT - P_SAVE_AT_EVENT - P_MISS_AT_EVENT - P_CARD_AT_EVENT
 const P_RED_CARD       = 0.12
+
+// ─── Finalizador ponderado (issue #57) — espelha domain/model/Position.kt ───
+// Peso relativo da posição no sorteio de quem chuta. Goleiro em 0 é literal:
+// não é sorteado. A diferença entre atacante e zagueiro é de FREQUÊNCIA, não
+// de permissão — daí pesos, e não uma lista de "quem pode chutar".
+export const SCORING_WEIGHT: Record<Position, number> = {
+  GK: 0,
+  CB: 1,
+  MF: 3,
+  FW: 6,
+}
+
+/**
+ * Roleta ponderada — espelha `drawShooter` de domain/rules/ScoringRules.kt.
+ * Consome exatamente UM `next()`. `null` quando ninguém pode finalizar
+ * (elenco vazio ou só goleiros): ausência no tipo, sem id inventado.
+ */
+export function drawShooter(squad: SquadMember[], rng: MulberryRng): SquadMember | null {
+  const total = squad.reduce((sum, p) => sum + SCORING_WEIGHT[p.pos], 0)
+  if (total <= 0) return null
+
+  let ticket = rng.next() * total
+  for (const p of squad) {
+    ticket -= SCORING_WEIGHT[p.pos]
+    if (ticket < 0) return p
+  }
+  return squad.filter((p) => SCORING_WEIGHT[p.pos] > 0).at(-1) ?? null
+}
+
+/** Goleiro escalado — o primeiro na posição, `null` em escalação sem GK. */
+export const goalkeeperOf = (squad: SquadMember[]): SquadMember | null =>
+  squad.find((p) => p.pos === 'GK') ?? null
 
 // ─── Tática (issue #56) — espelha domain/model/Tactics.kt e Formation.kt ───
 // `attack` escala a chance de gol do PRÓPRIO time; `defense`, a do adversário
@@ -97,7 +153,15 @@ export function* simulateMatch(
   setup: MatchSetup,
   rng: MulberryRng = new MulberryRng(setup.matchId),
 ): Generator<MatchEvent> {
-  yield {
+  // Súmula: tudo que já saiu. O FullTime resume o jogo a partir DAQUI
+  // (issue #57), então estatísticas e feed nunca contam histórias diferentes.
+  const sheet: MatchEvent[] = []
+  function* emit(event: MatchEvent): Generator<MatchEvent> {
+    sheet.push(event)
+    yield event
+  }
+
+  yield* emit({
     type: 'KickOff',
     minute: 0,
     homeClubName: setup.homeName,
@@ -106,7 +170,7 @@ export function* simulateMatch(
     awayStrength: setup.awayStrength,
     homePosture: setup.homeTactics?.posture ?? 'BALANCED',
     awayPosture: setup.awayTactics?.posture ?? 'BALANCED',
-  }
+  })
 
   let homeGoals = 0
   let awayGoals = 0
@@ -139,29 +203,97 @@ export function* simulateMatch(
     if (roll < goalP) {
       const home = rng.next() < homeRatio
       const squad = home ? setup.homeSquad : setup.awaySquad
-      const scorerId = squad.length > 0 ? rng.pick(squad) : 0
+      // Autor ponderado por posição (issue #57): sem ninguém apto o lance
+      // simplesmente não acontece.
+      const scorer = drawShooter(squad, rng)
+      if (!scorer) continue
       if (home) homeGoals++; else awayGoals++
-      yield { type: 'Goal', minute, scorerId, home }
+      yield* emit({ type: 'Goal', minute, scorerId: scorer.id, home })
     } else if (roll < goalP + saveP) {
-      yield { type: 'Save', minute }
-    } else if (roll < goalP + saveP + P_CARD_AT_EVENT) {
+      // Defesa é o outro desfecho de uma finalização: quem chuta segue o mesmo
+      // viés do gol e quem defende é o goleiro do lado oposto.
+      const shooterIsHome = rng.next() < homeRatio
+      const keeper = goalkeeperOf(shooterIsHome ? setup.awaySquad : setup.homeSquad)
+      yield* emit({ type: 'Save', minute, goalkeeperId: keeper?.id ?? null, home: !shooterIsHome })
+    } else if (roll < goalP + saveP + P_MISS_AT_EVENT) {
+      const home = rng.next() < homeRatio
+      const shooter = drawShooter(home ? setup.homeSquad : setup.awaySquad, rng)
+      if (!shooter) continue
+      yield* emit({ type: 'Miss', minute, playerId: shooter.id, home })
+    } else if (roll < goalP + saveP + P_MISS_AT_EVENT + P_CARD_AT_EVENT) {
       const home = rng.next() < 0.5
       const squad = home ? setup.homeSquad : setup.awaySquad
-      const playerId = squad.length > 0 ? rng.pick(squad) : 0
-      yield { type: 'Card', minute, playerId, red: rng.next() < P_RED_CARD }
+      // Cartão e lesão seguem UNIFORMES: qualquer um leva uma entrada dura.
+      const playerId = squad.length > 0 ? rng.pick(squad).id : 0
+      yield* emit({ type: 'Card', minute, playerId, red: rng.next() < P_RED_CARD, home })
     } else {
       const home = rng.next() < 0.5
       const squad = home ? setup.homeSquad : setup.awaySquad
-      const playerId = squad.length > 0 ? rng.pick(squad) : 0
+      const playerId = squad.length > 0 ? rng.pick(squad).id : 0
       // Duração sorteada com o RNG da própria partida (issue #54) — espelha
       // drawInjuryDuration do MatchSimulator.kt.
       const roundsOut = INJURY_DURATION_MIN
         + Math.floor(rng.next() * (INJURY_DURATION_MAX - INJURY_DURATION_MIN + 1))
-      yield { type: 'Injury', minute, playerId, roundsOut }
+      yield* emit({ type: 'Injury', minute, playerId, roundsOut })
     }
   }
 
-  yield { type: 'FullTime', minute: 90, homeGoals, awayGoals }
+  yield { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: matchStats(sheet) }
+}
+
+// ─── Sumário da partida (issue #57) — espelha domain/event/MatchStats.kt ───
+
+const EMPTY_TEAM_STATS: TeamStats = {
+  shots: 0,
+  shotsOnTarget: 0,
+  saves: 0,
+  yellowCards: 0,
+  redCards: 0,
+}
+
+export const EMPTY_MATCH_STATS: MatchStats = { home: EMPTY_TEAM_STATS, away: EMPTY_TEAM_STATS }
+
+/**
+ * Projeta o stream em estatísticas. `switch` exaustivo sobre o discriminated
+ * union — variante nova de `MatchEvent` quebra o TS aqui, como o `when` do
+ * sealed interface quebra o Kotlin.
+ */
+export function matchStats(events: MatchEvent[]): MatchStats {
+  const onSide = (
+    stats: MatchStats,
+    home: boolean,
+    update: (t: TeamStats) => TeamStats,
+  ): MatchStats =>
+    home ? { ...stats, home: update(stats.home) } : { ...stats, away: update(stats.away) }
+
+  return events.reduce<MatchStats>((stats, event) => {
+    switch (event.type) {
+      case 'Goal':
+        return onSide(stats, event.home, (t) => ({
+          ...t,
+          shots: t.shots + 1,
+          shotsOnTarget: t.shotsOnTarget + 1,
+        }))
+      case 'Miss':
+        return onSide(stats, event.home, (t) => ({ ...t, shots: t.shots + 1 }))
+      // Uma defesa conta para os DOIS lados: defesa de quem pegou, finalização
+      // no gol de quem chutou. `Save.home` é o lado do goleiro.
+      case 'Save':
+        return onSide(
+          onSide(stats, event.home, (t) => ({ ...t, saves: t.saves + 1 })),
+          !event.home,
+          (t) => ({ ...t, shots: t.shots + 1, shotsOnTarget: t.shotsOnTarget + 1 }),
+        )
+      case 'Card':
+        return onSide(stats, event.home, (t) =>
+          event.red ? { ...t, redCards: t.redCards + 1 } : { ...t, yellowCards: t.yellowCards + 1 },
+        )
+      case 'KickOff':
+      case 'Injury':
+      case 'FullTime':
+        return stats
+    }
+  }, EMPTY_MATCH_STATS)
 }
 
 /**

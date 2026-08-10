@@ -455,7 +455,13 @@ class PlayRoundService(
                     if (event.red) red.merge(event.playerId.value, 1, Int::plus)
                     else yellow.merge(event.playerId.value, 1, Int::plus)
                 is MatchEvent.Injury -> injuries.merge(event.playerId, event.roundsOut, ::maxOf)
-                is MatchEvent.KickOff, is MatchEvent.Save, is MatchEvent.FullTime -> Unit
+                // Miss e Save não mexem na ficha do jogador — vivem só no feed
+                // e no sumário do FullTime (issue #57).
+                is MatchEvent.KickOff,
+                is MatchEvent.Miss,
+                is MatchEvent.Save,
+                is MatchEvent.FullTime,
+                -> Unit
             }
         }
 
