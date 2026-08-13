@@ -20,6 +20,7 @@ import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
@@ -437,8 +438,11 @@ class PlayRoundServiceTest {
         service.stream(1).toList()
 
         val savedResting = savedClubs.last { it.id == ClubId(3) }
+        // Recuperação de banco + a do treino da semana (issue #58): quem não
+        // escolhe foco — e todo clube da IA — treina no default `DESCANSO`.
+        val expected = 60 + BENCH_STAMINA_RECOVERY + TrainingFocus.DESCANSO.staminaRecovery
         assertTrue(
-            savedResting.squad.all { it.stamina == 60 + BENCH_STAMINA_RECOVERY },
+            savedResting.squad.all { it.stamina == expected },
             "elenco inteiro do clube que folgou deveria recuperar",
         )
     }

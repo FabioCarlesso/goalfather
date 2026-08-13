@@ -16,6 +16,9 @@ import type {
   Posture,
   Retirement,
   TeamStats,
+  TrainedAttribute,
+  TrainingEvent,
+  TrainingFocus,
 } from '../domain/types'
 
 /** RNG seedável (mulberry32) — mesmo seed → mesma sequência de eventos. */
@@ -508,3 +511,109 @@ export function applyMedicalTreatment<T extends FitPlayer>(squad: T[]): T[] {
     availability: advanceInjury(p.availability),
   }))
 }
+
+// ─── Treino semanal (espelha TrainingRules.kt, issue #58) ─────────────────
+
+/**
+ * Efeitos de cada foco — mesmos números de `enum class TrainingFocus` no
+ * backend. A recuperação fica entre 1 e `STARTER_STAMINA_LOSS_MIN - 1`: nunca
+ * apaga o desgaste da partida (senão a fadiga da issue #54 sumia), mas
+ * também nunca é zero — com zero o titular ficava preso no piso de partida
+ * enquanto a IA se estabilizava acima dele.
+ */
+export const TRAINING_FOCUS_EFFECTS: Record<
+  TrainingFocus,
+  { trains: TrainedAttribute | null; staminaRecovery: number; injuryRisk: number }
+> = {
+  ATAQUE:   { trains: 'SHOOTING',  staminaRecovery: 3, injuryRisk: 0.04 },
+  DEFESA:   { trains: 'DEFENDING', staminaRecovery: 3, injuryRisk: 0.04 },
+  FISICO:   { trains: 'PACE',      staminaRecovery: 6, injuryRisk: 0.06 },
+  DESCANSO: { trains: null,        staminaRecovery: 8, injuryRisk: 0 },
+}
+
+/** Chance de +1 por faixa etária — espelha `AgeBand.trainingUpgradeChance`. */
+export const TRAINING_UPGRADE_CHANCE: Record<AgeBand, number> = {
+  YOUNG: 0.25,
+  PEAK: 0.12,
+  VETERAN: 0.05,
+}
+
+export const TRAINING_ATTRIBUTE_GAIN = 1
+export const TRAINING_INJURY_ROUNDS = 1
+
+/**
+ * Uma semana de treino no foco escolhido — espelha `train()` do backend.
+ * Lesionado não treina (a semana dele é de recuperação) e o contador de
+ * lesão não é tocado aqui: quem o faz andar é `applyRoundFitness`.
+ *
+ * Consome DOIS sorteios por jogador apto, sempre na mesma ordem (evolução,
+ * depois lesão), para que a sequência dependa só do elenco e do foco.
+ */
+export function trainSquad(
+  squad: Player[],
+  focus: TrainingFocus,
+  rng: MulberryRng,
+): { squad: Player[]; events: TrainingEvent[] } {
+  const weeks = squad.map((p) => trainOneWeek(p, focus, rng))
+  return {
+    squad: weeks.map((w) => w.player),
+    events: weeks.flatMap((w) => w.events),
+  }
+}
+
+/**
+ * A semana de UM jogador. Os eventos são montados no fim, a partir do estado
+ * FINAL — quem evolui e se machuca na mesma semana gera dois eventos que
+ * concordam entre si (mesma correção do backend).
+ */
+function trainOneWeek(
+  p: Player,
+  focus: TrainingFocus,
+  rng: MulberryRng,
+): { player: Player; events: TrainingEvent[] } {
+  const effect = TRAINING_FOCUS_EFFECTS[focus]
+  const rested: Player = { ...p, stamina: Math.min(100, p.stamina + effect.staminaRecovery) }
+  if (effect.trains === null || p.availability.type === 'Injured') {
+    return { player: rested, events: [] }
+  }
+
+  const improves = rng.next() < TRAINING_UPGRADE_CHANCE[ageBandOf(p.age)]
+  const hurts = rng.next() < effect.injuryRisk
+
+  const better = improves ? improve(rested, effect.trains) : rested
+  // Jogador no teto do invariante não "evolui": nada mudou.
+  const key = ATTRIBUTE_KEY[effect.trains]
+  const evolved = better.overall !== rested.overall || better[key] !== rested[key]
+  const player: Player = hurts
+    ? { ...better, availability: { type: 'Injured', roundsOut: TRAINING_INJURY_ROUNDS } }
+    : better
+
+  const events: TrainingEvent[] = []
+  if (evolved) events.push({ type: 'Improved', player, attribute: effect.trains })
+  if (hurts) events.push({ type: 'Injured', player, roundsOut: TRAINING_INJURY_ROUNDS })
+  return { player, events }
+}
+
+/**
+ * Atributo do contrato → campo do `Player`. `Record` e não ternário aninhado:
+ * um `TrainedAttribute` novo vira erro de tipo aqui, do mesmo jeito que o
+ * `when` exaustivo do Kotlin cobra o caso novo em `TrainingRules.improve`.
+ */
+const ATTRIBUTE_KEY: Record<TrainedAttribute, 'shooting' | 'defending' | 'pace'> = {
+  SHOOTING: 'shooting',
+  DEFENDING: 'defending',
+  PACE: 'pace',
+}
+
+/**
+ * O ganho move o atributo do foco E o `overall` — é o `overall` que decide a
+ * força do time, então um ganho que não o tocasse seria decorativo (mesma
+ * decisão do backend). `star` é derivado lá; aqui o mock recalcula.
+ */
+function improve(p: Player, attribute: TrainedAttribute): Player {
+  const key = ATTRIBUTE_KEY[attribute]
+  const overall = grow(p.overall)
+  return { ...p, [key]: grow(p[key]), overall, star: overall >= 82 }
+}
+
+const grow = (value: number): number => Math.min(99, value + TRAINING_ATTRIBUTE_GAIN)

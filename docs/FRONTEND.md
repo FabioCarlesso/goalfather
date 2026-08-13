@@ -202,6 +202,8 @@ enableMocks().then(() => ReactDOM.createRoot(...).render(<App />))
 
 Isso vale também para a **tática** (issue #56): `POSTURE_MODS` e `FORMATION_MODS` espelham `Posture`/`Formation` do Kotlin e ficam confinados a `src/mocks/engine.ts`. A pasta `src/domain/` só guarda o que é apresentação — `POSTURE_LABEL` e `POSTURE_HINT` em `formations.ts`, rótulo e texto de ajuda. Nenhum componente calcula chance de gol.
 
+E vale de novo para o **treino semanal (issue #58)**: `TRAINING_FOCUS_EFFECTS` (recuperação de stamina, risco de lesão e atributo de cada foco), `TRAINING_UPGRADE_CHANCE` (chance de +1 por faixa etária) e `trainSquad()` espelham `TrainingFocus`/`TrainingRules.kt` e ficam em `src/mocks/engine.ts`. Em `src/domain/training.ts` moram só rótulo e texto de ajuda (`TRAINING_FOCUS_LABEL`, `TRAINING_FOCUS_HINT`, `TRAINED_ATTRIBUTE_LABEL`). O card da Dashboard **escolhe**, não calcula; a página da rodada só desenha o `TrainingReport` que chegou pronto no `RoundFinished`.
+
 O mesmo confinamento vale para a **issue #57**: `SCORING_WEIGHT` (peso de cada posição no sorteio de quem finaliza) e `matchStats()` (projeção do stream em finalizações/defesas/cartões) espelham `Position.scoringWeight` e `domain/event/MatchStats.kt`, e vivem só em `src/mocks/engine.ts`. O componente `MatchStatsSummary` **não conta nada**: recebe o `MatchStats` que veio pronto no evento `FullTime` e só desenha. Como o elenco agora pesa por posição, a engine de mock recebe `SquadMember[]` (`{ id, pos }`) em vez de uma lista de ids.
 
 ---

@@ -344,6 +344,7 @@ class PlayMatchService(
 | `POST` | `/api/market/sell` | Vender jogador |
 | `POST` | `/api/clubs/{id}/stadium/expand` | Ampliar estádio |
 | `POST` | `/api/clubs/{id}/medical` | Departamento médico: recupera stamina e encurta lesões — issue #54 |
+| `POST` | `/api/clubs/{id}/training` | Foco de treino da semana (`ATAQUE`/`DEFESA`/`FISICO`/`DESCANSO`) — issue #58 |
 | `GET` | `/api/league/standings` | Tabela de classificação |
 | `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
 | `POST` | `/api/league/round/ready` | Técnico sinaliza "estou pronto" — issue #20 |
@@ -546,6 +547,44 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   diferentes**: o sorteio ponderado consome o RNG de outra forma; nenhum teste
   dependia de placares fixos, só de propriedades, então o ajuste foi só de
   expectativas de posição/autoria.)
+- [x] **6.5** Treino semanal com foco escolhido pelo técnico — issue #58
+  (regra pura em `domain/rules/TrainingRules.kt`, aplicada na virada da rodada
+  dentro de `persistRoundEffects`: o técnico escolhe um foco por semana —
+  `ATAQUE`, `DEFESA`, `FISICO` ou `DESCANSO` — e o `enum class TrainingFocus`
+  carrega os efeitos como propriedades do valor, no mesmo idioma de `Posture` e
+  `AgeBand`. Foco técnico dá a cada jogador APTO uma chance de +1 no atributo
+  correspondente — 25% para quem está na faixa `YOUNG`, 12% no auge, 5% no
+  veterano, via a *extension property* `AgeBand.trainingUpgradeChance`, que
+  reusa a faixa etária da issue #55 sem acoplar o enum dela a constantes de
+  treino. O ganho move o atributo E o `overall`, porque é o `overall` que a
+  engine lê: um +1 só no `shooting` seria decorativo, e o critério da issue é
+  que o efeito chegue à partida SEM mexer na engine. Quem está lesionado não
+  treina — a semana dele é de recuperação —, e o contador de lesão continua
+  sendo movido só por `applyRoundFitness`, para a rodada não descontar duas
+  vezes.
+
+  **Calibragem, nas duas pontas** (a segunda saiu da review do PR #74): a
+  recuperação de todo foco fica no intervalo `1..9` — `DESCANSO` devolve 8,
+  `FISICO` 6, `ATAQUE`/`DEFESA` 3. No teto, nada alcança o desgaste MÍNIMO de
+  um titular (`STARTER_STAMINA_LOSS.first`, 10): se uma semana de descanso
+  zerasse o cansaço de quem jogou, a issue #54 deixaria de existir junto com o
+  sentido de rodar o elenco e de pagar o departamento médico. No piso, nada
+  recupera ZERO — com 0 (como os focos técnicos nasceram) o titular ficava
+  preso exatamente em `STAMINA_MATCH_FLOOR` rodada após rodada enquanto todo
+  clube da IA, sempre em `DESCANSO`, se estabilizava em 48: escolher `ATAQUE`
+  significava jogar ~17% mais fraco em `effectiveOverall` pelo resto da
+  temporada, o que é autossabotagem e não trade-off. `TrainingRulesTest` guarda
+  o intervalo, não os números.
+
+  O foco é estado do **clube** (migration V9, coluna `training_focus`), não da
+  `Lineup`: vale ENTRE rodadas e para o elenco inteiro, enquanto a escalação é
+  a decisão da partida. Fica valendo até o técnico trocar; quem nunca escolheu
+  — e todo clube da IA — treina em `DESCANSO`. O treino roda DEPOIS do
+  desgaste da rodada (a semana sucede a partida) e dentro do bloco que só o
+  vencedor do claim da issue #46 executa, então é aplicado exatamente uma vez
+  por rodada: o replay de uma rodada já encerrada não treina de novo. O
+  extrato (`TrainingReport` com os `TrainingEvent` de quem evoluiu e de quem
+  se machucou) viaja no `RoundEvent.RoundFinished`, como as finanças.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`

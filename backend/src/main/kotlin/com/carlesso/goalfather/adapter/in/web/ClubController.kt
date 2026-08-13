@@ -4,10 +4,12 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.AvailableClubDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.ExpandStadiumRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.LineupRequest
+import com.carlesso.goalfather.adapter.`in`.web.dto.TrainingFocusRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.toAvailableDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
+import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.Club
@@ -17,6 +19,7 @@ import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
 import com.carlesso.goalfather.domain.result.LineupResult
 import com.carlesso.goalfather.domain.result.MedicalResult
+import com.carlesso.goalfather.domain.result.TrainingFocusResult
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -33,6 +36,7 @@ class ClubController(
     private val saveLineup: SaveLineupUseCase,
     private val claimClub: ClaimClubUseCase,
     private val treatSquad: TreatSquadUseCase,
+    private val setTrainingFocus: SetTrainingFocusUseCase,
 ) {
 
     /**
@@ -139,6 +143,27 @@ class ClubController(
                     message = "Caixa insuficiente para o departamento médico " +
                         "(necessário ${result.required}, disponível ${result.available})",
                 ),
+            )
+        }
+
+    /**
+     * Foco de treino da semana (issue #58). Só registra a decisão — o efeito
+     * (evolução, lesão, recuperação) entra na virada da rodada, dentro do
+     * claim que garante uma aplicação por rodada.
+     */
+    @PostMapping("/{id}/training")
+    suspend fun setTrainingFocus(
+        @PathVariable id: Long,
+        @RequestBody req: TrainingFocusRequest,
+        @AuthenticationPrincipal userId: Long,
+    ): ResponseEntity<Any> =
+        when (val result = setTrainingFocus.execute(ClubId(id), userId, req.focus)) {
+            is TrainingFocusResult.Success -> ResponseEntity.ok(result.club.toDto())
+            is TrainingFocusResult.ClubNotFound -> ResponseEntity.status(404).body(
+                ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
+            )
+            is TrainingFocusResult.NotOwner -> ResponseEntity.status(403).body(
+                ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
             )
         }
 

@@ -58,6 +58,9 @@ export const myClub: Club = {
   stadiumCapacity: 15_000,
   squad: initialSquad,
   ownerId: null,
+  // Foco de treino da semana (issue #58): quem nunca escolheu começa poupando
+  // o elenco, igual ao default do backend.
+  trainingFocus: 'DESCANSO',
 }
 
 export const marketEntries: MarketEntry[] = [
@@ -463,6 +466,7 @@ export function materializeClub(id: number): void {
     cash: 500_000_00,
     stadiumCapacity: 12_000,
     ownerId: clubOwners[id] ?? null,
+    trainingFocus: 'DESCANSO',
     squad: positions.map((pos, i) =>
       player(id * 1000 + i + 1, `${meta.name} ${i + 1}`, pos, meta.strength, 10_000_00, 25),
     ),

@@ -30,12 +30,19 @@ sealed interface RoundEvent {
     /**
      * `standings` traz UMA tabela por divisão (issue #47), ordenadas da
      * elite para baixo — todas jogam na mesma rodada global.
+     *
+     * `training` (issue #58) conta a semana de treino de cada clube: o foco
+     * aplicado e quem evoluiu ou se machucou nele. Vem de TODOS os clubes,
+     * como `finances` — cabe ao cliente filtrar o do técnico. Default vazio
+     * para não quebrar quem já consumia o evento (e é o que o replay de uma
+     * rodada já encerrada emite: os efeitos não são reaplicados).
      */
     @Serializable
     @SerialName("RoundFinished")
     data class RoundFinished(
         val standings: List<Standings>,
         val finances: List<RoundFinance> = emptyList(),
+        val training: List<TrainingReport> = emptyList(),
     ) : RoundEvent
 
     /**

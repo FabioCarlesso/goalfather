@@ -41,6 +41,27 @@ describe('DashboardPage', () => {
     expect(screen.getByText(/0 lesionados · 0 desgastados/)).toBeInTheDocument()
   })
 
+  it('escolhe o foco de treino da semana (issue #58)', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
+    })
+
+    // Clube do seed começa poupando o elenco — o default do backend.
+    const rest = screen.getByRole('button', { name: 'Descanso' })
+    expect(rest).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Ataque' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Ataque' })).toHaveAttribute('aria-pressed', 'true')
+    })
+    expect(screen.getByRole('button', { name: 'Descanso' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText(/evoluir a finalização/i)).toBeInTheDocument()
+  })
+
   it('trata o elenco e debita o caixa via endpoint do mock', async () => {
     const user = userEvent.setup()
     renderWithProviders(<DashboardPage />)

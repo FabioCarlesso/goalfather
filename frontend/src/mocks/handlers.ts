@@ -32,6 +32,7 @@ import {
   startingEleven,
   MulberryRng,
   matchStats,
+  trainSquad,
   MEDICAL_DEPARTMENT_COST_CENTS,
   type SquadMember,
   type TeamTactics,
@@ -45,6 +46,7 @@ import type {
   RoundEvent,
   RoundFinance,
   RoundMatch,
+  TrainingReport,
   AuthResponse,
   AuthUser,
   AvailableClub,
@@ -55,6 +57,7 @@ type BuyPlayerRequest      = components['schemas']['BuyPlayerRequest']
 type SellPlayerRequest     = components['schemas']['SellPlayerRequest']
 type LineupRequest         = components['schemas']['LineupRequest']
 type ExpandStadiumRequest  = components['schemas']['ExpandStadiumRequest']
+type TrainingFocusRequest  = components['schemas']['TrainingFocusRequest']
 
 // ─── WebSocket de partida e rodada ────────────────────────────────────────
 // MSW intercepta o construtor global de WebSocket. Quando MatchPage/RoundPage
@@ -283,6 +286,21 @@ export const handlers = [
       cash: club.cash - MEDICAL_DEPARTMENT_COST_CENTS,
       squad: applyMedicalTreatment(club.squad),
     }
+    state.clubs[clubId] = updated
+    return HttpResponse.json(updated)
+  }),
+
+  // ─── setTrainingFocus (treino semanal, issue #58) ─────────────────────
+  http.post('/api/clubs/:id/training', async ({ params, request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const clubId = Number(params.id)
+    const club = state.clubs[clubId]
+    if (!club) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
+
+    // Só registra a decisão — o efeito entra na virada da rodada, como no
+    // backend (`SetTrainingFocusService` grava, `PlayRoundService` aplica).
+    const body = (await request.json()) as TrainingFocusRequest
+    const updated: Club = { ...club, trainingFocus: body.focus }
     state.clubs[clubId] = updated
     return HttpResponse.json(updated)
   }),
@@ -636,6 +654,11 @@ export const handlers = [
           }
         })
 
+      // Extrato do treino da semana (issue #58). O mock só acompanha o elenco
+      // do clube do usuário, então os demais entram com o relatório vazio do
+      // default — no backend cada clube tem o seu.
+      let myTraining: TrainingReport | null = null
+
       // Acumula estatísticas dos jogadores do clube do usuário a partir dos
       // eventos da rodada — espelha o PlayRoundService do backend (issue #2),
       // mantendo a parity mock ↔ real. Aplica também o caixa (issue #4).
@@ -668,15 +691,24 @@ export const handlers = [
           new MulberryRng(round.number * 1000 + 1),
           injuries,
         )
-        state.clubs[1] = {
-          ...myClub,
-          cash: Math.max(0, myClub.cash + cashDelta),
-          squad: rested.map((p) => ({
+        // Semana de treino no foco escolhido (issue #58), DEPOIS do desgaste:
+        // o elenco cansa na rodada e é o foco que decide se a semana repõe
+        // forma física ou desenvolve atributo. Seed própria, como no backend.
+        const trained = trainSquad(
+          rested.map((p) => ({
             ...p,
             goals: p.goals + (goals.get(p.id) ?? 0),
             yellowCards: p.yellowCards + (yellow.get(p.id) ?? 0),
             redCards: p.redCards + (red.get(p.id) ?? 0),
           })),
+          myClub.trainingFocus,
+          new MulberryRng(round.number * 7919 + 1),
+        )
+        myTraining = { clubId: 1, focus: myClub.trainingFocus, events: trained.events }
+        state.clubs[1] = {
+          ...myClub,
+          cash: Math.max(0, myClub.cash + cashDelta),
+          squad: trained.squad,
         }
       }
 
@@ -711,7 +743,17 @@ export const handlers = [
         state.currentRound = state.nextRound()
       }
 
-      const finished: RoundEvent = { type: 'RoundFinished', standings: finalStandings, finances }
+      const training: TrainingReport[] = finances.map((f) =>
+        f.clubId === 1 && myTraining
+          ? myTraining
+          : { clubId: f.clubId, focus: 'DESCANSO', events: [] },
+      )
+      const finished: RoundEvent = {
+        type: 'RoundFinished',
+        standings: finalStandings,
+        finances,
+        training,
+      }
       client.send(JSON.stringify(finished))
 
       // Gap para o cliente processar RoundFinished antes do close

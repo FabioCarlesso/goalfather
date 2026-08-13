@@ -41,6 +41,15 @@ class ClubEntity(
     var division: Int = 1,
 
     /**
+     * Foco de treino da semana (issue #58). Gravado como texto — o enum de
+     * domínio não desce até a camada JPA (regra de ouro do CLAUDE.md); a
+     * tradução acontece no mapper, e um valor desconhecido no banco cai no
+     * default em vez de derrubar a leitura do clube.
+     */
+    @Column(name = "training_focus", nullable = false, length = 16)
+    var trainingFocus: String = "DESCANSO",
+
+    /**
      * Lock otimista (issue #19): o Hibernate incrementa `version` a cada
      * update e rejeita o save se a versão lida não bate com a do banco. Dois
      * `claim` simultâneos no mesmo clube → o segundo leva

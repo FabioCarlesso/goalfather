@@ -73,6 +73,7 @@ class ClubPersistenceAdapter(
         entity.lineupJson = club.lineup?.let { json.encodeToString(Lineup.serializer(), it) }
         entity.ownerId = club.ownerId
         entity.division = club.division.value
+        entity.trainingFocus = club.trainingFocus.name
         clubRepo.save(entity)
 
         // Sincroniza o elenco. Players que estavam no clube e nao estao

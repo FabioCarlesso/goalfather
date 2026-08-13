@@ -11,6 +11,7 @@ import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
+import com.carlesso.goalfather.domain.event.TrainingReport
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
@@ -42,6 +43,8 @@ import com.carlesso.goalfather.domain.rules.promotionSpotsFor
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
 import com.carlesso.goalfather.domain.rules.seasonRounds
 import com.carlesso.goalfather.domain.rules.ticketRevenue
+import com.carlesso.goalfather.domain.rules.train
+import com.carlesso.goalfather.domain.rules.trainingSeed
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -216,7 +219,7 @@ class PlayRoundService(
         // Uma leitura só, reusada no calendário lá embaixo: `persistRoundEffects`
         // não mexe em id/nome/divisão, que é tudo que o agendamento consulta.
         val clubs = clubRepo.findAll().ifEmpty { involvedClubs.toList() }
-        persistRoundEffects(round.number, events, clubs, involvedClubs, finances)
+        val training = persistRoundEffects(round.number, events, clubs, involvedClubs, finances)
 
         // A MESMA rodada é aplicada à tabela de cada divisão: só os jogos da
         // divisão em questão contam (clubes fora da tabela são ignorados pela
@@ -248,7 +251,7 @@ class PlayRoundService(
 
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
         // encerrada"); SeasonFinished, quando há, vem logo antes dele.
-        tail += RoundEvent.RoundFinished(newStandings, finances)
+        tail += RoundEvent.RoundFinished(newStandings, finances, training)
         return tail
     }
 
@@ -417,8 +420,17 @@ class PlayRoundService(
     /**
      * Aplica, numa ÚNICA gravação por clube, o incremento de estatísticas
      * dos jogadores (gols/cartões — issue #2), a variação de caixa da rodada
-     * (bilheteria − salários — issue #4) e o desgaste físico: titulares
-     * cansam, reservas recuperam e as lesões andam uma rodada (issue #54).
+     * (bilheteria − salários — issue #4), o desgaste físico: titulares
+     * cansam, reservas recuperam e as lesões andam uma rodada (issue #54) —
+     * e, por fim, a semana de treino no foco escolhido pelo técnico
+     * (issue #58), devolvida como relatório por clube.
+     *
+     * O treino roda DEPOIS do desgaste porque é a semana que sucede a
+     * partida: o elenco entra em campo cansado da rodada e é aí que o foco
+     * decide se a semana repõe forma física ou desenvolve atributo. Rodar
+     * antes daria ao técnico uma recuperação que a própria rodada apagaria.
+     * Como este bloco só executa para quem venceu o claim da rodada
+     * (issue #46), o treino é aplicado exatamente uma vez por rodada.
      *
      * A atribuição de estatísticas é por `playerId`: cada clube só atualiza
      * jogadores do próprio elenco (ids únicos), sem ambiguidade entre
@@ -439,7 +451,7 @@ class PlayRoundService(
         clubs: Collection<Club>,
         playedClubs: Collection<Club>,
         finances: List<RoundFinance>,
-    ) {
+    ): List<TrainingReport> {
         val playedIds = playedClubs.map { it.id }.toSet()
         val goals = mutableMapOf<Long, Int>()
         val yellow = mutableMapOf<Long, Int>()
@@ -466,6 +478,7 @@ class PlayRoundService(
         }
 
         val financeByClub = finances.associateBy { it.clubId.value }
+        val training = mutableListOf<TrainingReport>()
 
         for (club in clubs) {
             // Quem entrou em campo — mesma escalação que a engine usou. Clube
@@ -497,14 +510,28 @@ class PlayRoundService(
                 }
             }
 
+            // Semana de treino no foco escolhido (issue #58). Seed própria
+            // (`trainingSeed`) para não repetir a sequência do desgaste desta
+            // mesma rodada/clube. O relatório sai daqui pronto para o evento
+            // de fim de rodada, mesmo vazio — "treinei e ninguém evoluiu"
+            // também é notícia.
+            val trained = train(
+                squad = updatedSquad,
+                focus = club.trainingFocus,
+                rng = Random(trainingSeed(roundNumber, club.id)),
+            )
+            training += TrainingReport(club.id, club.trainingFocus, trained.events)
+
             val finance = financeByClub[club.id.value]
             val newCash = if (finance == null) club.cash
                 else (club.cash + finance.ticketRevenue - finance.salariesPaid).coerceAtLeast(0)
 
-            if (updatedSquad != club.squad || newCash != club.cash) {
-                clubRepo.save(club.copy(squad = updatedSquad, cash = newCash))
+            if (trained.squad != club.squad || newCash != club.cash) {
+                clubRepo.save(club.copy(squad = trained.squad, cash = newCash))
             }
         }
+
+        return training
     }
 
     private fun RoundMatch.finish(score: Pair<Int, Int>?): RoundMatch =
