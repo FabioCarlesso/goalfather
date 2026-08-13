@@ -3,10 +3,12 @@ import { useClub } from '../api/queries/useClub'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
 import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
 import { useTreatSquad, MEDICAL_COST_CENTS } from '../api/queries/useTreatSquad'
+import { useSetTrainingFocus } from '../api/queries/useSetTrainingFocus'
 import { ApiError } from '../api/client'
 import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney, formatSeats } from '../domain/formatters'
+import { TRAINING_FOCUSES, TRAINING_FOCUS_HINT, TRAINING_FOCUS_LABEL } from '../domain/training'
 import { isInjured, injuryRoundsOut, staminaLevel } from '../domain/players'
 import type { Availability, Club, TransferResult } from '../domain/types'
 
@@ -45,6 +47,8 @@ export function DashboardPage() {
         <SaleFeedback result={lastResult} onDismiss={() => setLastResult(null)} />
       )}
 
+      <TrainingPanel club={club} />
+
       <StadiumExpandPanel club={club} />
 
       <MedicalDepartmentPanel club={club} />
@@ -77,6 +81,47 @@ export function DashboardPage() {
         </ul>
       </div>
     </section>
+  )
+}
+
+/**
+ * Foco de treino da semana (issue #58). O card só escolhe: o efeito acontece
+ * na virada da rodada e é reportado na página da rodada.
+ */
+function TrainingPanel({ club }: { club: Club }) {
+  const setFocus = useSetTrainingFocus(club.id)
+  // Otimismo local só para o feedback do clique: a fonte de verdade continua
+  // sendo `club.trainingFocus`, que o mutation atualiza no cache.
+  const selected = setFocus.isPending ? setFocus.variables : club.trainingFocus
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-100">Treino da semana</h2>
+        <span className="text-xs text-slate-500">aplicado na próxima rodada</span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {TRAINING_FOCUSES.map((focus) => (
+          <button
+            key={focus}
+            onClick={() => setFocus.mutate(focus)}
+            disabled={setFocus.isPending}
+            aria-pressed={selected === focus}
+            className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+              selected === focus
+                ? 'border-emerald-500 bg-emerald-900/30 text-emerald-200'
+                : 'border-slate-700 text-slate-300 hover:border-emerald-600/60'
+            }`}
+          >
+            {TRAINING_FOCUS_LABEL[focus]}
+          </button>
+        ))}
+      </div>
+      <p className="text-sm text-slate-400">{TRAINING_FOCUS_HINT[selected]}</p>
+      {setFocus.isError && (
+        <p className="text-sm text-red-400">{errorMessage(setFocus.error)}</p>
+      )}
+    </div>
   )
 }
 

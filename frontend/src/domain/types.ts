@@ -26,6 +26,11 @@ export type RoundStatus   = components['schemas']['RoundStatus']
 export type RoundEvent    = components['schemas']['RoundEvent']
 export type RoundFinance  = components['schemas']['RoundFinance']
 export type Retirement    = components['schemas']['Retirement']
+// Treino semanal (issue #58)
+export type TrainingFocus     = components['schemas']['TrainingFocus']
+export type TrainedAttribute  = components['schemas']['TrainedAttribute']
+export type TrainingReport    = components['schemas']['TrainingReport']
+export type TrainingEvent     = components['schemas']['TrainingEvent']
 export type ReadinessStatus = components['schemas']['ReadinessStatus']
 
 // Auth (issue #18) + seleção de clube (issue #19)

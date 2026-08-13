@@ -8,6 +8,7 @@ import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
+import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
@@ -27,6 +28,7 @@ import com.carlesso.goalfather.application.service.RegisterUserService
 import com.carlesso.goalfather.application.service.RoundReadinessService
 import com.carlesso.goalfather.application.service.SaveLineupService
 import com.carlesso.goalfather.application.service.SellPlayerService
+import com.carlesso.goalfather.application.service.SetTrainingFocusService
 import com.carlesso.goalfather.application.service.TreatSquadService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import io.micrometer.core.instrument.MeterRegistry
@@ -80,6 +82,12 @@ class BeanConfig {
     fun treatSquadUseCase(
         clubRepo: ClubRepository,
     ): TreatSquadUseCase = TreatSquadService(clubRepo)
+
+    /** Foco de treino da semana (issue #58). */
+    @Bean
+    fun setTrainingFocusUseCase(
+        clubRepo: ClubRepository,
+    ): SetTrainingFocusUseCase = SetTrainingFocusService(clubRepo)
 
     @Bean
     fun playRoundUseCase(

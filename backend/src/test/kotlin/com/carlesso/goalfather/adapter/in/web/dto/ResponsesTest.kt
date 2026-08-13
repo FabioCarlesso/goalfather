@@ -125,7 +125,11 @@ class ResponsesTest {
         )
 
         assertEquals(
-            setOf("id", "name", "cash", "stadiumCapacity", "squad", "lineup", "ownerId"),
+            setOf(
+                "id", "name", "cash", "stadiumCapacity", "squad", "lineup", "ownerId",
+                // Foco de treino (issue #58) — declarado no schema `Club`.
+                "trainingFocus",
+            ),
             encoded.keys,
         )
     }

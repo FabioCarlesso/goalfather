@@ -20,6 +20,11 @@ value class ClubId(val value: Long)
  * `ownerId == null` significa controlado pela IA (preparado para
  * multiplayer da Fase 5). `division` é o tier em que o clube disputa a
  * temporada corrente (issue #47) — muda na virada via promoção/rebaixamento.
+ *
+ * `trainingFocus` (issue #58) é a decisão da SEMANA, e por isso mora no clube
+ * e não na `Lineup`: ela vale entre rodadas, para o elenco inteiro, enquanto a
+ * escalação é a decisão da PARTIDA. Fica valendo até o técnico trocar — quem
+ * nunca escolheu (e todo clube da IA) treina no default, `DESCANSO`.
  */
 @Serializable
 data class Club(
@@ -31,6 +36,7 @@ data class Club(
     val lineup: Lineup? = null,
     val ownerId: Long? = null,
     val division: Division = Division.FIRST,
+    val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
 ) {
     init {
         require(cash >= 0) { "cash não pode ser negativo: $cash" }

@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Posture
+import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.result.TransferResult
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -85,6 +86,8 @@ data class ClubDto(
     val squad: List<PlayerDto>,
     val lineup: LineupDto? = null,
     val ownerId: Long? = null,
+    /** Foco de treino em vigor (issue #58) — o card da Dashboard o pré-seleciona. */
+    val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
 )
 
 @Serializable
@@ -155,6 +158,7 @@ fun Club.toDto(): ClubDto = ClubDto(
     squad = squad.map { it.toDto() },
     lineup = lineup?.toDto(),
     ownerId = ownerId,
+    trainingFocus = trainingFocus,
 )
 
 fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto(), price = price)

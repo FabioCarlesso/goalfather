@@ -32,6 +32,10 @@ test.describe('Round flow', () => {
       timeout: 30_000,
     })
 
+    // Extrato do treino da semana (issue #58) — o foco aplicado aparece
+    // mesmo quando ninguem evoluiu.
+    await expect(page.getByRole('heading', { name: /Treino da semana —/ })).toBeVisible()
+
     // Tabela por divisao (issue #47): as duas divisoes aparecem, com a zona
     // de promocao/rebaixamento indicada na legenda.
     await page.getByRole('link', { name: 'Tabela' }).click()

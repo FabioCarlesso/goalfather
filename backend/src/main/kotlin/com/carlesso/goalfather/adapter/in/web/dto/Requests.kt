@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Posture
+import com.carlesso.goalfather.domain.model.TrainingFocus
 import kotlinx.serialization.Serializable
 
 /**
@@ -31,6 +32,14 @@ data class LineupRequest(
 
 @Serializable
 data class ExpandStadiumRequest(val additionalSeats: Int)
+
+/**
+ * Foco de treino da semana (issue #58). Sem default: escolher treino é um
+ * comando explícito — um corpo vazio virando `DESCANSO` silenciosamente
+ * esconderia um cliente quebrado.
+ */
+@Serializable
+data class TrainingFocusRequest(val focus: TrainingFocus)
 
 @Serializable
 data class BuyPlayerRequest(val clubId: Long, val playerId: Long)

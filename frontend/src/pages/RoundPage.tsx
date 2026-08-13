@@ -12,6 +12,7 @@ import { MatchEventFeed } from '../components/MatchEventFeed'
 import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { ReadinessCard } from '../components/ReadinessCard'
 import { formatMoney } from '../domain/formatters'
+import { TRAINED_ATTRIBUTE_LABEL, TRAINING_FOCUS_LABEL } from '../domain/training'
 import type {
   MatchEvent,
   Retirement,
@@ -20,6 +21,7 @@ import type {
   RoundMatch,
   StandingRow,
   Standings,
+  TrainingReport,
 } from '../domain/types'
 
 // Variante do union RoundEvent — fim de temporada (issue #11).
@@ -55,6 +57,7 @@ export function RoundPage() {
   const [error, setError] = useState<string | null>(null)
   const [finalStandings, setFinalStandings] = useState<Standings[] | null>(null)
   const [finalFinance, setFinalFinance] = useState<RoundFinance | null>(null)
+  const [training, setTraining] = useState<TrainingReport | null>(null)
   const [champion, setChampion] = useState<SeasonFinishedEvent | null>(null)
 
   // Prontidão da liga compartilhada (issue #20). Durante a partida ao vivo o
@@ -157,6 +160,7 @@ export function RoundPage() {
     setError(null)
     setFinalStandings(null)
     setFinalFinance(null)
+    setTraining(null)
     setChampion(null)
     setStatus('connecting')
 
@@ -179,6 +183,9 @@ export function RoundPage() {
         if (event.type === 'RoundFinished') {
           setFinalStandings(event.standings)
           setFinalFinance(event.finances.find((f) => f.clubId === myClubId) ?? null)
+          // Treino da semana (issue #58): o evento traz o extrato de todos os
+          // clubes; só o do técnico interessa aqui.
+          setTraining(event.training.find((t) => t.clubId === myClubId) ?? null)
           // Empurra a nova tabela direto no cache (sem refetch desnecessário)
           qc.setQueryData(standingsKey, event.standings)
           // Próxima rodada já está pronta no backend mock — invalida para buscar
@@ -311,6 +318,9 @@ export function RoundPage() {
         <RetirementsCard retirements={champion.retirements.filter((r) => r.clubId === myClubId)} />
       )}
 
+      {/* Resultado do treino da semana no clube do usuário (issue #58). */}
+      {training && status === 'finished' && <TrainingCard report={training} />}
+
       {finalStandings && status === 'finished' && (
         <FinalBanner
           standings={myDivisionTable(finalStandings, myClubId)}
@@ -374,6 +384,52 @@ function RetirementsCard({ retirements }: { retirements: Retirement[] }) {
           </li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+/**
+ * O que a semana de treino produziu (issue #58): quem evoluiu e quem saiu
+ * machucado. O card aparece mesmo sem eventos — "treinei e ninguém evoluiu"
+ * é a informação que fecha o ciclo da decisão tomada na Dashboard.
+ */
+function TrainingCard({ report }: { report: TrainingReport }) {
+  return (
+    <div className="rounded-lg border border-sky-800/60 bg-sky-950/30 p-4">
+      <h2 className="text-sm font-semibold text-sky-200">
+        Treino da semana — {TRAINING_FOCUS_LABEL[report.focus]}
+      </h2>
+      {report.events.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-400">
+          Semana sem novidades: ninguém evoluiu nem saiu machucado.
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-1 text-sm text-slate-300">
+          {report.events.map((event, i) => (
+            <li key={`${event.type}-${event.player.id}-${i}`}>
+              {event.type === 'Improved' ? (
+                <>
+                  <span className="text-emerald-300">▲</span>{' '}
+                  <span className="text-slate-100">{event.player.name}</span>
+                  <span className="text-slate-400">
+                    {' '}evoluiu {TRAINED_ATTRIBUTE_LABEL[event.attribute]} · OVR{' '}
+                    {event.player.overall}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-orange-300">🚑</span>{' '}
+                  <span className="text-slate-100">{event.player.name}</span>
+                  <span className="text-slate-400">
+                    {' '}se machucou no treino · fora por {event.roundsOut} rodada
+                    {event.roundsOut === 1 ? '' : 's'}
+                  </span>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

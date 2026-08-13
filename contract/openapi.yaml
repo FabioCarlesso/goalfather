@@ -41,6 +41,8 @@ tags:
     description: Infraestrutura do clube
   - name: Medical
     description: Departamento médico — recuperação de fadiga e lesões
+  - name: Training
+    description: Treino semanal — foco escolhido pelo técnico entre rodadas
   - name: League
     description: Tabela e calendário do campeonato
 
@@ -295,6 +297,37 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: Usuário não é dono do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/clubs/{id}/training:
+    post:
+      tags: [Training]
+      operationId: setTrainingFocus
+      summary: Escolher o foco de treino da semana
+      description: |
+        Registra o foco de treino do clube (issue #58). O efeito não acontece
+        aqui: ele entra na virada da rodada, junto do desgaste físico — e
+        exatamente uma vez, sob o mesmo claim que protege os demais efeitos.
+        Quem nunca escolheu (e todo clube da IA) treina em `DESCANSO`.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrainingFocusRequest' }
+      responses:
+        '200':
+          description: Foco registrado — devolve o clube já atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Club' }
         '403':
           description: Usuário não é dono do clube
           content:
@@ -704,6 +737,36 @@ components:
         BALANCED: Equilibrada
         OFFENSIVE: Ofensiva
 
+    TrainingFocus:
+      type: string
+      description: |
+        Foco do treino da semana (issue #58) — a decisão de gestão ENTRE
+        rodadas, diferente da `Posture`, que é a decisão da partida.
+
+        `ATAQUE`/`DEFESA` dão a alguns jogadores uma chance pequena de +1 no
+        atributo correspondente (jovens aproveitam mais), sem devolver forma
+        física e com risco pequeno de lesão leve. `FISICO` fica no meio:
+        recupera parte da stamina, desenvolve velocidade e é o que mais
+        machuca. `DESCANSO` é o único sem risco, e o que mais recupera —
+        ainda assim nunca apaga o desgaste de quem jogou. Os números vivem no
+        backend (`enum class TrainingFocus`); o cliente só escolhe e exibe.
+      enum: [ATAQUE, DEFESA, FISICO, DESCANSO]
+      default: DESCANSO
+      x-labels:
+        ATAQUE: Ataque
+        DEFESA: Defesa
+        FISICO: Físico
+        DESCANSO: Descanso
+
+    TrainedAttribute:
+      type: string
+      description: Atributo desenvolvido por um foco de treino (issue #58).
+      enum: [SHOOTING, DEFENDING, PACE]
+      x-labels:
+        SHOOTING: Finalização
+        DEFENDING: Marcação
+        PACE: Velocidade
+
     # ─── Player & Club ────────────────────────────────────────────────────
     Player:
       type: object
@@ -819,6 +882,9 @@ components:
         - cash
         - stadiumCapacity
         - squad
+        # Sempre presente: quem nunca escolheu vem com o default `DESCANSO`,
+        # então o cliente nunca precisa adivinhar o foco em vigor.
+        - trainingFocus
       properties:
         id:               { type: integer, format: int64 }
         name:             { type: string }
@@ -837,6 +903,11 @@ components:
           description: |
             Dono humano do clube; `null` significa controlado pela IA.
             Preparado para multiplayer (Fase 5).
+        trainingFocus:
+          $ref: '#/components/schemas/TrainingFocus'
+          description: |
+            Foco de treino em vigor (issue #58). Vale entre rodadas e para o
+            elenco inteiro — fica valendo até o técnico trocar.
 
     # ─── Requests ─────────────────────────────────────────────────────────
     LineupRequest:
@@ -852,6 +923,12 @@ components:
         posture:
           $ref: '#/components/schemas/Posture'
           description: Postura da partida; omitida, o backend assume `BALANCED`.
+
+    TrainingFocusRequest:
+      type: object
+      required: [focus]
+      properties:
+        focus: { $ref: '#/components/schemas/TrainingFocus' }
 
     ExpandStadiumRequest:
       type: object
@@ -1281,7 +1358,7 @@ components:
 
     RoundFinishedEvent:
       type: object
-      required: [type, standings, finances]
+      required: [type, standings, finances, training]
       properties:
         type: { type: string, enum: [RoundFinished] }
         standings:
@@ -1292,6 +1369,59 @@ components:
           type: array
           description: Balanço financeiro de cada clube na rodada (bilheteria − salários).
           items: { $ref: '#/components/schemas/RoundFinance' }
+        training:
+          type: array
+          description: |
+            Extrato do treino da semana (issue #58) de TODOS os clubes — cabe
+            ao cliente filtrar o do técnico. Vem vazio no replay de uma rodada
+            já encerrada: os efeitos não são reaplicados.
+          items: { $ref: '#/components/schemas/TrainingReport' }
+
+    TrainingReport:
+      description: |
+        O que a semana de treino de um clube produziu (issue #58). Existe
+        mesmo sem eventos — "treinei FISICO e ninguém evoluiu" é informação.
+      type: object
+      required: [clubId, focus, events]
+      properties:
+        clubId: { type: integer, format: int64 }
+        focus:  { $ref: '#/components/schemas/TrainingFocus' }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/TrainingEvent' }
+
+    TrainingEvent:
+      description: |
+        Mapeia o `sealed interface TrainingEvent` do domínio Kotlin.
+        Discriminado por `type` — o TS desambigua com `switch` exaustivo.
+        Cada variante carrega o jogador JÁ com o efeito aplicado.
+      oneOf:
+        - $ref: '#/components/schemas/PlayerImprovedEvent'
+        - $ref: '#/components/schemas/PlayerTrainingInjuryEvent'
+      discriminator:
+        propertyName: type
+        mapping:
+          Improved: '#/components/schemas/PlayerImprovedEvent'
+          Injured:  '#/components/schemas/PlayerTrainingInjuryEvent'
+
+    PlayerImprovedEvent:
+      type: object
+      required: [type, player, attribute]
+      properties:
+        type:      { type: string, enum: [Improved] }
+        player:    { $ref: '#/components/schemas/Player' }
+        attribute: { $ref: '#/components/schemas/TrainedAttribute' }
+
+    PlayerTrainingInjuryEvent:
+      type: object
+      required: [type, player, roundsOut]
+      properties:
+        type:      { type: string, enum: [Injured] }
+        player:    { $ref: '#/components/schemas/Player' }
+        roundsOut:
+          type: integer
+          minimum: 1
+          description: Rodadas de afastamento da lesão de treino.
 
     SeasonFinishedEvent:
       description: |
