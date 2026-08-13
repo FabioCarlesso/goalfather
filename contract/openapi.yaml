@@ -744,12 +744,14 @@ components:
         rodadas, diferente da `Posture`, que é a decisão da partida.
 
         `ATAQUE`/`DEFESA` dão a alguns jogadores uma chance pequena de +1 no
-        atributo correspondente (jovens aproveitam mais), sem devolver forma
-        física e com risco pequeno de lesão leve. `FISICO` fica no meio:
-        recupera parte da stamina, desenvolve velocidade e é o que mais
-        machuca. `DESCANSO` é o único sem risco, e o que mais recupera —
-        ainda assim nunca apaga o desgaste de quem jogou. Os números vivem no
-        backend (`enum class TrainingFocus`); o cliente só escolhe e exibe.
+        atributo correspondente (jovens aproveitam mais), devolvem pouca forma
+        física e cobram risco pequeno de lesão leve. `FISICO` fica no meio:
+        recupera bem a stamina, desenvolve velocidade e é o que mais machuca.
+        `DESCANSO` é o único sem risco, e o que mais recupera. Nenhum foco
+        apaga o desgaste de quem jogou (a fadiga continua acumulando), e
+        nenhum recupera zero — foco técnico custa forma física, mas não deixa
+        o time preso no piso. Os números vivem no backend
+        (`enum class TrainingFocus`); o cliente só escolhe e exibe.
       enum: [ATAQUE, DEFESA, FISICO, DESCANSO]
       default: DESCANSO
       x-labels:

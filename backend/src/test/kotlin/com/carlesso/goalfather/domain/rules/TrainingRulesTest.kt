@@ -43,15 +43,46 @@ class TrainingRulesTest {
     }
 
     @Test
-    fun `nenhum foco devolve tudo o que uma partida cansa`() {
-        // Invariante de calibragem: se uma semana de descanso zerasse o
-        // desgaste de quem jogou, a fadiga da issue #54 (e o sentido de rodar
-        // o elenco) desapareceria. O treino alivia, não apaga.
+    fun `recuperacao de todo foco fica entre 1 e o desgaste minimo de um titular`() {
+        // Invariante de calibragem, nas DUAS pontas:
+        //
+        // - No teto: se uma semana de descanso zerasse o desgaste de quem
+        //   jogou, a fadiga da issue #54 (e o sentido de rodar o elenco)
+        //   desapareceria.
+        // - No piso: com recuperação ZERO o titular ficava preso exatamente em
+        //   STAMINA_MATCH_FLOOR rodada após rodada, enquanto a IA (sempre em
+        //   DESCANSO) se estabilizava acima dele — escolher foco técnico
+        //   viraria autossabotagem permanente, não trade-off.
         for (focus in TrainingFocus.entries) {
             assertTrue(
-                focus.staminaRecovery < STARTER_STAMINA_LOSS.first,
-                "$focus recupera ${focus.staminaRecovery}, o piso de desgaste é ${STARTER_STAMINA_LOSS.first}",
+                focus.staminaRecovery in 1 until STARTER_STAMINA_LOSS.first,
+                "$focus recupera ${focus.staminaRecovery}, fora de 1..${STARTER_STAMINA_LOSS.first - 1}",
             )
+        }
+    }
+
+    @Test
+    fun `titular de foco tecnico nao fica preso no piso de partida`() {
+        // Regressão da review do PR #74: a rodada leva o titular ao piso, e é
+        // o treino que decide se ele SAI de lá. Qualquer foco tem que somar
+        // algo — a diferença entre focos é de quanto, não de "zero ou algo".
+        val atFloor = listOf(makePlayer(1, stamina = STAMINA_MATCH_FLOOR))
+
+        for (focus in TrainingFocus.entries) {
+            val after = train(atFloor, focus, Random(1)).squad.single()
+            assertTrue(
+                after.stamina > STAMINA_MATCH_FLOOR,
+                "$focus deixou o titular parado no piso ($STAMINA_MATCH_FLOOR)",
+            )
+        }
+    }
+
+    @Test
+    fun `foco sem atributo nao pode declarar risco de lesao`() {
+        // `train` só sorteia lesão para foco que treina atributo; um foco sem
+        // atributo com risco declarado teria o risco ignorado em silêncio.
+        for (focus in TrainingFocus.entries) {
+            if (focus.trains == null) assertEquals(0.0, focus.injuryRisk, "$focus")
         }
     }
 
@@ -165,6 +196,33 @@ class TrainingRulesTest {
         }
 
     // ─── Lesão de treino ─────────────────────────────────────────────────
+
+    @Test
+    fun `quem evolui e se machuca na mesma semana gera eventos que concordam`() {
+        // Regressão da review do PR #74: o `Improved` carregava a foto ANTES
+        // da lesão, então os dois eventos do mesmo jogador discordavam sobre a
+        // disponibilidade — e o contrato promete "player já com o efeito
+        // aplicado". Elenco jovem e grande para o par acontecer em alguma seed.
+        val squad = squadAged(age = 18, size = 40)
+        var pairs = 0
+
+        for (seed in 1L..80L) {
+            val events = train(squad, TrainingFocus.FISICO, Random(seed)).events
+            val byPlayer = events.groupBy { it.player.id }
+
+            for ((_, ofPlayer) in byPlayer.filter { it.value.size > 1 }) {
+                pairs++
+                assertEquals(
+                    1,
+                    ofPlayer.map { it.player }.distinct().size,
+                    "eventos do mesmo jogador devem carregar o MESMO estado final",
+                )
+                assertTrue(ofPlayer.all { it.player.injured })
+            }
+        }
+
+        assertTrue(pairs > 0, "nenhuma seed produziu evolução + lesão no mesmo jogador")
+    }
 
     @Test
     fun `treino intenso machuca de vez em quando e o afastamento e curto`() {

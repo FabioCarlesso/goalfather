@@ -516,16 +516,18 @@ export function applyMedicalTreatment<T extends FitPlayer>(squad: T[]): T[] {
 
 /**
  * Efeitos de cada foco — mesmos números de `enum class TrainingFocus` no
- * backend. Nenhuma recuperação alcança o desgaste mínimo de um titular
- * (`STARTER_STAMINA_LOSS_MIN`): o treino alivia a fadiga, não a apaga.
+ * backend. A recuperação fica entre 1 e `STARTER_STAMINA_LOSS_MIN - 1`: nunca
+ * apaga o desgaste da partida (senão a fadiga da issue #54 sumia), mas
+ * também nunca é zero — com zero o titular ficava preso no piso de partida
+ * enquanto a IA se estabilizava acima dele.
  */
 export const TRAINING_FOCUS_EFFECTS: Record<
   TrainingFocus,
   { trains: TrainedAttribute | null; staminaRecovery: number; injuryRisk: number }
 > = {
-  ATAQUE:   { trains: 'SHOOTING',  staminaRecovery: 0, injuryRisk: 0.04 },
-  DEFESA:   { trains: 'DEFENDING', staminaRecovery: 0, injuryRisk: 0.04 },
-  FISICO:   { trains: 'PACE',      staminaRecovery: 5, injuryRisk: 0.06 },
+  ATAQUE:   { trains: 'SHOOTING',  staminaRecovery: 3, injuryRisk: 0.04 },
+  DEFESA:   { trains: 'DEFENDING', staminaRecovery: 3, injuryRisk: 0.04 },
+  FISICO:   { trains: 'PACE',      staminaRecovery: 6, injuryRisk: 0.06 },
   DESCANSO: { trains: null,        staminaRecovery: 8, injuryRisk: 0 },
 }
 
@@ -552,41 +554,56 @@ export function trainSquad(
   focus: TrainingFocus,
   rng: MulberryRng,
 ): { squad: Player[]; events: TrainingEvent[] } {
-  const effect = TRAINING_FOCUS_EFFECTS[focus]
-  const events: TrainingEvent[] = []
-
-  const next = squad.map((p) => {
-    const rested: Player = {
-      ...p,
-      stamina: Math.min(100, p.stamina + effect.staminaRecovery),
-    }
-    if (effect.trains === null || p.availability.type === 'Injured') return rested
-
-    const improves = rng.next() < TRAINING_UPGRADE_CHANCE[ageBandOf(p.age)]
-    const hurts = rng.next() < effect.injuryRisk
-
-    let result = rested
-    if (improves) {
-      const key = attributeKey(effect.trains)
-      const better = improve(result, effect.trains)
-      // Jogador no teto do invariante não "evolui": nada mudou.
-      if (better.overall !== result.overall || better[key] !== result[key]) {
-        result = better
-        events.push({ type: 'Improved', player: better, attribute: effect.trains })
-      }
-    }
-    if (hurts) {
-      result = { ...result, availability: { type: 'Injured', roundsOut: TRAINING_INJURY_ROUNDS } }
-      events.push({ type: 'Injured', player: result, roundsOut: TRAINING_INJURY_ROUNDS })
-    }
-    return result
-  })
-
-  return { squad: next, events }
+  const weeks = squad.map((p) => trainOneWeek(p, focus, rng))
+  return {
+    squad: weeks.map((w) => w.player),
+    events: weeks.flatMap((w) => w.events),
+  }
 }
 
-const attributeKey = (a: TrainedAttribute): 'shooting' | 'defending' | 'pace' =>
-  a === 'SHOOTING' ? 'shooting' : a === 'DEFENDING' ? 'defending' : 'pace'
+/**
+ * A semana de UM jogador. Os eventos são montados no fim, a partir do estado
+ * FINAL — quem evolui e se machuca na mesma semana gera dois eventos que
+ * concordam entre si (mesma correção do backend).
+ */
+function trainOneWeek(
+  p: Player,
+  focus: TrainingFocus,
+  rng: MulberryRng,
+): { player: Player; events: TrainingEvent[] } {
+  const effect = TRAINING_FOCUS_EFFECTS[focus]
+  const rested: Player = { ...p, stamina: Math.min(100, p.stamina + effect.staminaRecovery) }
+  if (effect.trains === null || p.availability.type === 'Injured') {
+    return { player: rested, events: [] }
+  }
+
+  const improves = rng.next() < TRAINING_UPGRADE_CHANCE[ageBandOf(p.age)]
+  const hurts = rng.next() < effect.injuryRisk
+
+  const better = improves ? improve(rested, effect.trains) : rested
+  // Jogador no teto do invariante não "evolui": nada mudou.
+  const key = ATTRIBUTE_KEY[effect.trains]
+  const evolved = better.overall !== rested.overall || better[key] !== rested[key]
+  const player: Player = hurts
+    ? { ...better, availability: { type: 'Injured', roundsOut: TRAINING_INJURY_ROUNDS } }
+    : better
+
+  const events: TrainingEvent[] = []
+  if (evolved) events.push({ type: 'Improved', player, attribute: effect.trains })
+  if (hurts) events.push({ type: 'Injured', player, roundsOut: TRAINING_INJURY_ROUNDS })
+  return { player, events }
+}
+
+/**
+ * Atributo do contrato → campo do `Player`. `Record` e não ternário aninhado:
+ * um `TrainedAttribute` novo vira erro de tipo aqui, do mesmo jeito que o
+ * `when` exaustivo do Kotlin cobra o caso novo em `TrainingRules.improve`.
+ */
+const ATTRIBUTE_KEY: Record<TrainedAttribute, 'shooting' | 'defending' | 'pace'> = {
+  SHOOTING: 'shooting',
+  DEFENDING: 'defending',
+  PACE: 'pace',
+}
 
 /**
  * O ganho move o atributo do foco E o `overall` — é o `overall` que decide a
@@ -594,7 +611,7 @@ const attributeKey = (a: TrainedAttribute): 'shooting' | 'defending' | 'pace' =>
  * decisão do backend). `star` é derivado lá; aqui o mock recalcula.
  */
 function improve(p: Player, attribute: TrainedAttribute): Player {
-  const key = attributeKey(attribute)
+  const key = ATTRIBUTE_KEY[attribute]
   const overall = grow(p.overall)
   return { ...p, [key]: grow(p[key]), overall, star: overall >= 82 }
 }

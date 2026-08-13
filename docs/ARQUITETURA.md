@@ -563,12 +563,18 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   sendo movido só por `applyRoundFitness`, para a rodada não descontar duas
   vezes.
 
-  **Calibragem que preserva a fadiga:** nenhuma recuperação de foco alcança o
-  desgaste MÍNIMO de um titular (`STARTER_STAMINA_LOSS.first`, 10) —
-  `DESCANSO` devolve 8 e `FISICO` 5. Se uma semana de descanso zerasse o
-  cansaço de quem jogou, a issue #54 deixaria de existir junto com o sentido
-  de rodar o elenco e de pagar o departamento médico. `TrainingRulesTest`
-  guarda esse invariante, não só os números.
+  **Calibragem, nas duas pontas** (a segunda saiu da review do PR #74): a
+  recuperação de todo foco fica no intervalo `1..9` — `DESCANSO` devolve 8,
+  `FISICO` 6, `ATAQUE`/`DEFESA` 3. No teto, nada alcança o desgaste MÍNIMO de
+  um titular (`STARTER_STAMINA_LOSS.first`, 10): se uma semana de descanso
+  zerasse o cansaço de quem jogou, a issue #54 deixaria de existir junto com o
+  sentido de rodar o elenco e de pagar o departamento médico. No piso, nada
+  recupera ZERO — com 0 (como os focos técnicos nasceram) o titular ficava
+  preso exatamente em `STAMINA_MATCH_FLOOR` rodada após rodada enquanto todo
+  clube da IA, sempre em `DESCANSO`, se estabilizava em 48: escolher `ATAQUE`
+  significava jogar ~17% mais fraco em `effectiveOverall` pelo resto da
+  temporada, o que é autossabotagem e não trade-off. `TrainingRulesTest` guarda
+  o intervalo, não os números.
 
   O foco é estado do **clube** (migration V9, coluna `training_focus`), não da
   `Lineup`: vale ENTRE rodadas e para o elenco inteiro, enquanto a escalação é

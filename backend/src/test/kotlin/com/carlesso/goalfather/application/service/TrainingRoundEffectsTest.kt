@@ -130,6 +130,34 @@ class TrainingRoundEffectsTest {
     }
 
     @Test
+    fun `o que o relatorio anuncia esta no elenco gravado`() = runTest {
+        // Regressão da review do PR #74: o relatório sai de `train(...)` e o
+        // `save` recebe o elenco treinado — mas eram duas leituras
+        // independentes. Se o save voltasse a persistir o elenco PRÉ-treino,
+        // todo o resto do arquivo continuaria verde e o técnico veria uma
+        // evolução que o elenco não teria.
+        stubRound()
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+
+        val finished = service.stream(1).toList()
+            .filterIsInstance<RoundEvent.RoundFinished>()
+            .single()
+
+        val report = finished.training.single { it.clubId == ClubId(1) }
+        assertTrue(
+            report.events.isNotEmpty(),
+            "seed fixa da rodada 1/clube 1 deveria render eventos — sem eles o teste não prova nada",
+        )
+
+        val persisted = savedClubs.last { it.id == ClubId(1) }.squad.associateBy { it.id }
+        for (event in report.events) {
+            val onSquad = persisted.getValue(event.player.id)
+            assertEquals(event.player, onSquad, "evento anunciou estado que não foi gravado")
+        }
+    }
+
+    @Test
     fun `replay de rodada ja encerrada nao treina de novo`() = runTest {
         // Reconexão ao WS (issue #46): a rodada já consta `Finished`, então os
         // efeitos não são reaplicados — nem o treino.

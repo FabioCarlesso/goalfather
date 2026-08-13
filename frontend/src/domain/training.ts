@@ -18,9 +18,9 @@ export const TRAINING_FOCUS_LABEL: Record<TrainingFocus, string> = {
 }
 
 export const TRAINING_FOCUS_HINT: Record<TrainingFocus, string> = {
-  ATAQUE: 'Chance de evoluir a finalização. Não devolve forma física e machuca de vez em quando.',
-  DEFESA: 'Chance de evoluir a marcação. Não devolve forma física e machuca de vez em quando.',
-  FISICO: 'Recupera parte da forma física e evolui velocidade — mas é o treino que mais lesiona.',
+  ATAQUE: 'Chance de evoluir a finalização. Quase não devolve forma física e machuca de vez em quando.',
+  DEFESA: 'Chance de evoluir a marcação. Quase não devolve forma física e machuca de vez em quando.',
+  FISICO: 'Recupera bem a forma física e evolui velocidade — mas é o treino que mais lesiona.',
   DESCANSO: 'Ninguém evolui, ninguém se machuca: a semana de poupar o elenco.',
 }
 

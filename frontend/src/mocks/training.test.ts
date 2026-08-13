@@ -63,12 +63,38 @@ describe('treino semanal', () => {
     expect(squad[0]!.stamina).toBe(100)
   })
 
-  it('nenhum foco devolve tudo o que uma partida cansa', () => {
-    // Se o descanso zerasse o desgaste, a fadiga da issue #54 sumiria — o
-    // treino alivia a conta, não a apaga. Mesmo invariante do backend.
+  it('recuperação de todo foco fica entre 1 e o desgaste mínimo de um titular', () => {
+    // As duas pontas, como no backend: se o descanso zerasse o desgaste a
+    // fadiga da #54 sumiria; com recuperação ZERO o titular ficava preso no
+    // piso de partida enquanto a IA se estabilizava acima dele.
     for (const effect of Object.values(TRAINING_FOCUS_EFFECTS)) {
+      expect(effect.staminaRecovery).toBeGreaterThan(0)
       expect(effect.staminaRecovery).toBeLessThan(STARTER_STAMINA_LOSS_MIN)
     }
+  })
+
+  it('eventos do mesmo jogador carregam o mesmo estado final', () => {
+    // Quem evolui e se machuca na mesma semana: os dois eventos têm de
+    // concordar sobre a disponibilidade (regressão da review do PR #74).
+    const squad = squadAged(18, 40)
+    let pairs = 0
+
+    for (let seed = 1; seed <= 80; seed++) {
+      const { events } = trainSquad(squad, 'FISICO', new MulberryRng(seed))
+      const byPlayer = new Map<number, typeof events>()
+      for (const e of events) byPlayer.set(e.player.id, [...(byPlayer.get(e.player.id) ?? []), e])
+
+      for (const ofPlayer of byPlayer.values()) {
+        if (ofPlayer.length < 2) continue
+        pairs++
+        for (const e of ofPlayer) {
+          expect(e.player).toEqual(ofPlayer[0]!.player)
+          expect(e.player.availability.type).toBe('Injured')
+        }
+      }
+    }
+
+    expect(pairs).toBeGreaterThan(0)
   })
 
   it('foco técnico evolui o atributo do foco e o overall', () => {

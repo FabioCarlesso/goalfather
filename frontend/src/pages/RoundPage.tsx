@@ -182,16 +182,20 @@ export function RoundPage() {
         setEvents((prev) => [...prev, event])
         if (event.type === 'RoundFinished') {
           setFinalStandings(event.standings)
-          setFinalFinance(event.finances.find((f) => f.clubId === myClubId) ?? null)
-          // Treino da semana (issue #58): o evento traz o extrato de todos os
-          // clubes; só o do técnico interessa aqui.
-          setTraining(event.training.find((t) => t.clubId === myClubId) ?? null)
+          setFinalFinance(event.finances?.find((f) => f.clubId === myClubId) ?? null)
           // Empurra a nova tabela direto no cache (sem refetch desnecessário)
           qc.setQueryData(standingsKey, event.standings)
           // Próxima rodada já está pronta no backend mock — invalida para buscar
           qc.invalidateQueries({ queryKey: currentRoundKey })
           // A prontidão foi resetada no servidor — rebusca para a próxima rodada (issue #20)
           qc.invalidateQueries({ queryKey: roundReadinessKey })
+          // Treino da semana (issue #58): o evento traz o extrato de todos os
+          // clubes; só o do técnico interessa aqui. Fica DEPOIS das
+          // invalidações e com acesso opcional de propósito: um payload sem
+          // `training`/`finances` (backend fora de sincronia com o contrato)
+          // custa o card, não o avanço da rodada — o `catch` do onmessage só
+          // loga, então o que estivesse abaixo do throw nunca rodaria.
+          setTraining(event.training?.find((t) => t.clubId === myClubId) ?? null)
         } else if (event.type === 'SeasonFinished') {
           // Fim de temporada (issue #11): celebra o campeão. O backend já
           // abriu a próxima temporada; a invalidação do RoundFinished (que vem

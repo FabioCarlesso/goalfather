@@ -69,42 +69,58 @@ data class TrainingOutcome(
  * O RNG é consumido em DOIS sorteios por jogador apto, sempre na mesma ordem
  * (evolução, depois lesão) mesmo quando o primeiro já decidiu o desfecho: com
  * consumo fixo, a sequência depende só do elenco e do foco — dois elencos
- * iguais com a mesma seed produzem exatamente a mesma semana. [TrainingFocus.DESCANSO]
- * não sorteia nada, porque não há o que sortear.
+ * iguais com a mesma seed produzem exatamente a mesma semana. Um foco sem
+ * atributo a treinar ([TrainingFocus.DESCANSO]) não sorteia nada, porque não
+ * há o que sortear — e o `init` de [TrainingFocus] recusa um foco desses com
+ * risco de lesão declarado, para o risco não virar letra morta aqui.
  */
 fun train(squad: List<Player>, focus: TrainingFocus, rng: Random): TrainingOutcome {
-    val events = mutableListOf<TrainingEvent>()
+    // Uma semana POR JOGADOR e depois a agregação — em vez de acumular eventos
+    // mutando uma lista de dentro do `map`. Mesmo desenho de `AgingRules`, que
+    // devolve um `AgingOutcome` por jogador e junta em `ageSquadForSeason`: a
+    // função por jogador fica pura e os eventos saem do resultado, não de um
+    // efeito colateral do mapeamento.
+    val weeks = squad.map { it.trainOneWeek(focus, rng) }
+    return TrainingOutcome(
+        squad = weeks.map { it.player },
+        events = weeks.flatMap { it.events },
+    )
+}
 
-    val trained = squad.map { player ->
-        val rested = player.copy(
-            stamina = (player.stamina + focus.staminaRecovery).coerceAtMost(MAX_STAMINA),
-        )
+/** Jogador depois da semana + o que ela rendeu a ele. */
+private data class PlayerWeek(val player: Player, val events: List<TrainingEvent> = emptyList())
 
-        val attribute = focus.trains
-        if (attribute == null || player.injured) return@map rested
+/**
+ * A semana de UM jogador. Os eventos são montados no fim, a partir do estado
+ * FINAL: quem evolui e se machuca na mesma semana gera dois eventos que
+ * concordam entre si — o contrato promete que cada variante carrega o jogador
+ * já com o efeito aplicado, e um `Improved` com a foto pré-lesão faria um
+ * cliente que atualiza o elenco por evento ressuscitar o lesionado.
+ */
+private fun Player.trainOneWeek(focus: TrainingFocus, rng: Random): PlayerWeek {
+    val rested = copy(stamina = (stamina + focus.staminaRecovery).coerceAtMost(MAX_STAMINA))
 
-        val improves = rng.nextDouble() < AgeBand.of(player.age).trainingUpgradeChance
-        val hurts = rng.nextDouble() < focus.injuryRisk
+    val attribute = focus.trains
+    if (attribute == null || injured) return PlayerWeek(rested)
 
-        var result = rested
-        if (improves) {
-            val better = result.improve(attribute)
-            // Quem já está no teto do invariante não "evolui": sem a
-            // comparação, um craque de 99 geraria um evento de evolução que
-            // não mudou nada.
-            if (better != result) {
-                result = better
-                events += TrainingEvent.Improved(better, attribute)
-            }
-        }
-        if (hurts) {
-            result = result.copy(availability = Availability.Injured(TRAINING_INJURY_ROUNDS))
-            events += TrainingEvent.Injured(result, TRAINING_INJURY_ROUNDS)
-        }
-        result
-    }
+    val improves = rng.nextDouble() < AgeBand.of(age).trainingUpgradeChance
+    val hurts = rng.nextDouble() < focus.injuryRisk
 
-    return TrainingOutcome(trained, events)
+    // Quem já está no teto do invariante não "evolui": sem a comparação, um
+    // craque de 99 geraria um evento de evolução que não mudou nada.
+    val better = if (improves) rested.improve(attribute) else rested
+    val evolved = better != rested
+    val result =
+        if (hurts) better.copy(availability = Availability.Injured(TRAINING_INJURY_ROUNDS))
+        else better
+
+    return PlayerWeek(
+        player = result,
+        events = buildList {
+            if (evolved) add(TrainingEvent.Improved(result, attribute))
+            if (hurts) add(TrainingEvent.Injured(result, TRAINING_INJURY_ROUNDS))
+        },
+    )
 }
 
 /**
