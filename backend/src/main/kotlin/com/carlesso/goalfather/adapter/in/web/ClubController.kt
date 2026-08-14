@@ -4,11 +4,13 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.AvailableClubDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.ExpandStadiumRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.LineupRequest
+import com.carlesso.goalfather.adapter.`in`.web.dto.TicketPriceRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.TrainingFocusRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.toAvailableDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
+import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
@@ -19,12 +21,14 @@ import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
 import com.carlesso.goalfather.domain.result.LineupResult
 import com.carlesso.goalfather.domain.result.MedicalResult
+import com.carlesso.goalfather.domain.result.TicketPriceResult
 import com.carlesso.goalfather.domain.result.TrainingFocusResult
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -37,6 +41,7 @@ class ClubController(
     private val claimClub: ClaimClubUseCase,
     private val treatSquad: TreatSquadUseCase,
     private val setTrainingFocus: SetTrainingFocusUseCase,
+    private val setTicketPrice: SetTicketPriceUseCase,
 ) {
 
     /**
@@ -164,6 +169,35 @@ class ClubController(
             )
             is TrainingFocusResult.NotOwner -> ResponseEntity.status(403).body(
                 ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
+            )
+        }
+
+    /**
+     * Preço do ingresso do estádio (issue #59). `PUT`, e não `POST` como os
+     * comandos vizinhos, porque aqui não há AÇÃO com efeito acumulado (treinar,
+     * tratar, ampliar): é a substituição idempotente de um ajuste do clube —
+     * mandar o mesmo preço duas vezes deixa o mundo igual.
+     */
+    @PutMapping("/{id}/ticket-price")
+    suspend fun setTicketPrice(
+        @PathVariable id: Long,
+        @RequestBody req: TicketPriceRequest,
+        @AuthenticationPrincipal userId: Long,
+    ): ResponseEntity<Any> =
+        when (val result = setTicketPrice.execute(ClubId(id), userId, req.ticketPriceCents)) {
+            is TicketPriceResult.Success -> ResponseEntity.ok(result.club.toDto())
+            is TicketPriceResult.ClubNotFound -> ResponseEntity.status(404).body(
+                ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
+            )
+            is TicketPriceResult.NotOwner -> ResponseEntity.status(403).body(
+                ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
+            )
+            is TicketPriceResult.PriceOutOfRange -> ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    code = "TICKET_PRICE_OUT_OF_RANGE",
+                    message = "Preço ${result.price} fora da faixa permitida " +
+                        "(${result.min}..${result.max} centavos)",
+                ),
             )
         }
 

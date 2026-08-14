@@ -16,6 +16,7 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
@@ -369,6 +370,49 @@ class PlayRoundServiceTest {
         // Em produção esse re-read traz o caixa já atualizado.
         val savedHome = savedClubs.first { it.id == ClubId(1) }
         assertEquals(homeClub.cash + homeFinance.ticketRevenue, savedHome.cash)
+    }
+
+    @Test
+    fun `bilheteria da rodada usa o preco configurado pelo tecnico (issue 59)`() = runTest {
+        suspend fun financesAt(priceCents: Long): List<RoundFinance> {
+            val home = homeClub.copy(ticketPriceCents = priceCents)
+            coEvery { leagueRepo.findRound(1) } returns round
+            coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+            coEvery { clubRepo.findById(ClubId(1)) } returns home
+            coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+            coEvery { clubRepo.findAll() } returns listOf(home, awayClub)
+            coEvery { clubRepo.save(any()) } answers { firstArg() }
+            coEvery { leagueRepo.saveRound(any()) } just Runs
+            coEvery { leagueRepo.finishRound(any()) } returns true
+            coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+            val finished = service.stream(1).toList().last()
+            assertIs<RoundEvent.RoundFinished>(finished)
+            return finished.finances
+        }
+
+        val barato = financesAt(20_00).first { it.clubId == ClubId(1) }
+        val caro = financesAt(150_00)
+
+        // O extrato reporta a conta inteira, não só o total (issue #59).
+        val caroHome = caro.first { it.clubId == ClubId(1) }
+        assertEquals(20_00, barato.ticketPrice)
+        assertEquals(150_00, caroHome.ticketPrice)
+        assertEquals(barato.attendance * 20_00L, barato.ticketRevenue)
+        assertEquals(caroHome.attendance * 150_00L, caroHome.ticketRevenue)
+
+        // Ingresso caro esvazia o estádio — é o trade-off da curva de demanda.
+        assertTrue(
+            caroHome.attendance < barato.attendance,
+            "Ingresso caro deveria esvaziar (${caroHome.attendance} vs ${barato.attendance})",
+        )
+
+        // Visitante não tem bilheteria nesta rodada, mas o preço que ele cobra
+        // em casa continua reportado.
+        val visitante = caro.first { it.clubId == ClubId(2) }
+        assertEquals(0, visitante.attendance)
+        assertEquals(0L, visitante.ticketRevenue)
+        assertEquals(awayClub.ticketPriceCents, visitante.ticketPrice)
     }
 
     @Test

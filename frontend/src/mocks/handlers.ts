@@ -33,6 +33,12 @@ import {
   MulberryRng,
   matchStats,
   trainSquad,
+  gateOf,
+  isTicketPriceAllowed,
+  DEFAULT_TICKET_PRICE_CENTS,
+  MIN_TICKET_PRICE_CENTS,
+  MAX_TICKET_PRICE_CENTS,
+  SALARY_EVERY_N_ROUNDS,
   MEDICAL_DEPARTMENT_COST_CENTS,
   type SquadMember,
   type TeamTactics,
@@ -58,6 +64,7 @@ type SellPlayerRequest     = components['schemas']['SellPlayerRequest']
 type LineupRequest         = components['schemas']['LineupRequest']
 type ExpandStadiumRequest  = components['schemas']['ExpandStadiumRequest']
 type TrainingFocusRequest  = components['schemas']['TrainingFocusRequest']
+type TicketPriceRequest    = components['schemas']['TicketPriceRequest']
 
 // ─── WebSocket de partida e rodada ────────────────────────────────────────
 // MSW intercepta o construtor global de WebSocket. Quando MatchPage/RoundPage
@@ -70,15 +77,11 @@ const roundStream = ws.link(`${wsProtocol}//${wsHost}/ws/round/:number`)
 
 const MS_PER_MINUTE = 80   // 90 minutos simulados em ~7s reais
 
-// ─── Regras financeiras (espelham domain/rules/FinanceRules.kt) ───────────
-const TICKET_PRICE_CENTS = 50_00
-const SALARY_EVERY_N_ROUNDS = 2
+// ─── Parâmetros financeiros do mock ───────────────────────────────────────
+// A CURVA (ocupação, preço justo, receita) mora em engine.ts, espelhando
+// domain/rules/FinanceRules.kt. Aqui ficam só os números do cenário mockado.
 const AI_DEFAULT_CAPACITY = 12_000   // seed dos clubes da IA
 const AI_SALARY_PER_PLAYER = 10_000_00
-const attendanceRate = (strength: number) =>
-  Math.min(1, Math.max(0.5, 0.5 + 0.5 * ((strength - 60) / 40)))
-const ticketRevenueOf = (capacity: number, strength: number) =>
-  Math.floor(capacity * attendanceRate(strength)) * TICKET_PRICE_CENTS
 
 /**
  * Tática com que um clube entra em campo (issue #56) — espelha
@@ -305,6 +308,34 @@ export const handlers = [
     return HttpResponse.json(updated)
   }),
 
+  // ─── setTicketPrice (preço do ingresso, issue #59) ────────────────────
+  // PUT, não POST: é a substituição idempotente de um ajuste do clube.
+  http.put('/api/clubs/:id/ticket-price', async ({ params, request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const clubId = Number(params.id)
+    const club = state.clubs[clubId]
+    if (!club) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
+
+    const body = (await request.json()) as TicketPriceRequest
+    if (!isTicketPriceAllowed(body.ticketPriceCents)) {
+      return HttpResponse.json(
+        {
+          code: 'TICKET_PRICE_OUT_OF_RANGE',
+          message: `Preço ${body.ticketPriceCents} fora da faixa permitida ` +
+            `(${MIN_TICKET_PRICE_CENTS}..${MAX_TICKET_PRICE_CENTS} centavos)`,
+        } satisfies ErrorResponse,
+        { status: 400 },
+      )
+    }
+
+    // Só registra o preço — o efeito entra na bilheteria da próxima rodada em
+    // casa, como no backend (`SetTicketPriceService` grava, `PlayRoundService`
+    // aplica).
+    const updated: Club = { ...club, ticketPriceCents: body.ticketPriceCents }
+    state.clubs[clubId] = updated
+    return HttpResponse.json(updated)
+  }),
+
   // ─── listMarket ───────────────────────────────────────────────────────
   http.get('/api/market', async ({ request }) => {
     await delay(SIMULATED_LATENCY_MS)
@@ -433,6 +464,10 @@ export const handlers = [
       { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: matchStats(played) },
     ]
 
+    // Bilheteria do drill-down standalone: mesma curva da rodada, com o preço
+    // configurado pelo clube (issue #59).
+    const home = gateOf(club.stadiumCapacity, averageOverall(club.squad), club.ticketPriceCents)
+
     return HttpResponse.json({
       matchId: Date.now(),
       round,
@@ -441,8 +476,8 @@ export const handlers = [
       homeGoals,
       awayGoals,
       events,
-      attendance: Math.min(club.stadiumCapacity, 12_000),
-      ticketRevenue: 12_000 * 50_00,
+      attendance: home.attendance,
+      ticketRevenue: home.revenue,
     } satisfies MatchSummary)
   }),
 
@@ -642,15 +677,25 @@ export const handlers = [
           const salaries = isSalaryRound
             ? (clubId === 1 ? state.clubs[1]!.squad.reduce((s, p) => s + p.salary, 0) : 11 * AI_SALARY_PER_PLAYER)
             : 0
-          const revenue = homeIds.has(clubId) ? ticketRevenueOf(capacity, strength) : 0
+          // Preço do ingresso do clube (issue #59). Diferente de capacidade e
+          // caixa, o preço é lido de QUALQUER clube materializado: quem
+          // reivindicou o clube 3 e definiu R$ 120 precisa ver esses R$ 120 no
+          // extrato, senão o loop de feedback que a issue abre não existe para
+          // ninguém além do clube 1. Quem não foi materializado (IA) cobra o
+          // default.
+          const price = state.clubs[clubId]?.ticketPriceCents ?? DEFAULT_TICKET_PRICE_CENTS
+          const home = homeIds.has(clubId) ? gateOf(capacity, strength, price) : null
           const cash = clubId === 1 ? (state.clubs[1]?.cash ?? 0) : Number.MAX_SAFE_INTEGER
           // Rombo da folha não coberto pelo caixa+bilheteria (issue #23). Só o
           // clube do usuário tem caixa rastreado; a IA nunca fica no vermelho.
+          const revenue = home?.revenue ?? 0
           return {
             clubId,
             ticketRevenue: revenue,
             salariesPaid: salaries,
             deficit: Math.max(0, salaries - revenue - cash),
+            ticketPrice: price,
+            attendance: home?.attendance ?? 0,
           }
         })
 

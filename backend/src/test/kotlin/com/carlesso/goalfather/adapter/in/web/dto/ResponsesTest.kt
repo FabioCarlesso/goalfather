@@ -129,6 +129,8 @@ class ResponsesTest {
                 "id", "name", "cash", "stadiumCapacity", "squad", "lineup", "ownerId",
                 // Foco de treino (issue #58) — declarado no schema `Club`.
                 "trainingFocus",
+                // Preço do ingresso (issue #59) — idem.
+                "ticketPriceCents",
             ),
             encoded.keys,
         )

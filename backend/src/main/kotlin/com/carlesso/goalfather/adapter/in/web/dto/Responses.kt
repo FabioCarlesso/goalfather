@@ -10,6 +10,7 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Posture
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.result.TransferResult
+import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -88,6 +89,8 @@ data class ClubDto(
     val ownerId: Long? = null,
     /** Foco de treino em vigor (issue #58) — o card da Dashboard o pré-seleciona. */
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
+    /** Preço do ingresso em vigor, em centavos (issue #59). */
+    val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
 )
 
 @Serializable
@@ -159,6 +162,7 @@ fun Club.toDto(): ClubDto = ClubDto(
     lineup = lineup?.toDto(),
     ownerId = ownerId,
     trainingFocus = trainingFocus,
+    ticketPriceCents = ticketPriceCents,
 )
 
 fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto(), price = price)

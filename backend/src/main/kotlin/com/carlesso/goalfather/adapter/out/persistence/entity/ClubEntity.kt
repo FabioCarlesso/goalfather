@@ -50,6 +50,15 @@ class ClubEntity(
     var trainingFocus: String = "DESCANSO",
 
     /**
+     * Preço do ingresso em centavos (issue #59). Default = R$ 50, o preço fixo
+     * de antes da issue: clube seedado sem passar pela coluna cobra o de
+     * sempre. A FAIXA permitida é regra de domínio e não desce até aqui — o
+     * mapper acomoda um valor fora dela na leitura (ver `ClubMapper`).
+     */
+    @Column(name = "ticket_price_cents", nullable = false)
+    var ticketPriceCents: Long = 50_00,
+
+    /**
      * Lock otimista (issue #19): o Hibernate incrementa `version` a cada
      * update e rejeita o save se a versão lida não bate com a do banco. Dois
      * `claim` simultâneos no mesmo clube → o segundo leva

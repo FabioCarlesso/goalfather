@@ -63,4 +63,7 @@ async function request<T>(
 export const api = {
   get:  <T>(path: string)                  => request<T>('GET',  path),
   post: <T>(path: string, body?: unknown)  => request<T>('POST', path, body),
+  // PUT existe para ajustes idempotentes do clube (preço do ingresso, issue
+  // #59) — comandos com efeito acumulado continuam em POST.
+  put:  <T>(path: string, body?: unknown)  => request<T>('PUT',  path, body),
 }

@@ -20,6 +20,14 @@ import type {
   TrainingEvent,
   TrainingFocus,
 } from '../domain/types'
+// A faixa de preço do ingresso (issue #59) NÃO é redefinida aqui: é a mesma
+// que o formulário da Dashboard usa para validar antes de mandar. Duas cópias
+// com o mesmo nome deixariam o mock aceitando um preço que o app bloqueia (ou
+// vice-versa) sem nenhum teste reclamar. A direção do import é a permitida —
+// o mock conhece a app, a app nunca importa de `mocks/`.
+import { MIN_TICKET_PRICE_CENTS, MAX_TICKET_PRICE_CENTS } from '../api/queries/useSetTicketPrice'
+
+export { MIN_TICKET_PRICE_CENTS, MAX_TICKET_PRICE_CENTS }
 
 /** RNG seedável (mulberry32) — mesmo seed → mesma sequência de eventos. */
 export class MulberryRng {
@@ -617,3 +625,75 @@ function improve(p: Player, attribute: TrainedAttribute): Player {
 }
 
 const grow = (value: number): number => Math.min(99, value + TRAINING_ATTRIBUTE_GAIN)
+
+// ─── Bilheteria (espelha FinanceRules.kt, issues #4 e #59) ────────────────
+//
+// Estas regras viviam soltas em handlers.ts. Com a curva de demanda da issue
+// #59 elas passaram a ser regra de simulação de verdade — e regra de mock vive
+// em engine.ts (CLAUDE.md), onde dá para testá-la sem subir um handler.
+
+export const DEFAULT_TICKET_PRICE_CENTS = 50_00
+export const SALARY_EVERY_N_ROUNDS = 2
+
+const STRENGTH_FLOOR = 60
+const STRENGTH_CEILING = 100
+const FAIR_PRICE_AT_FLOOR = 40_00
+const FAIR_PRICE_AT_CEILING = 60_00
+const PRICE_SENSITIVITY = 0.5
+const CHEAP_TICKET_BOOST = 0.5
+
+const strengthRatio = (strength: number): number =>
+  Math.min(1, Math.max(0, (strength - STRENGTH_FLOOR) / (STRENGTH_CEILING - STRENGTH_FLOOR)))
+
+/** Ocupação no preço justo: 50% (time fraco) a 100% (time forte). */
+export const baseAttendanceRate = (strength: number): number => 0.5 + 0.5 * strengthRatio(strength)
+
+/** Preço que a torcida deste time considera justo — sobe com a força. */
+export const fairTicketPriceCents = (strength: number): number =>
+  FAIR_PRICE_AT_FLOOR +
+  Math.trunc((FAIR_PRICE_AT_CEILING - FAIR_PRICE_AT_FLOOR) * strengthRatio(strength))
+
+/**
+ * Multiplicador de demanda do preço relativo ao justo: 1.0 no preço justo,
+ * até 1.5 quando o ingresso tende a zero, e decaindo (sem nunca zerar) quando
+ * o técnico cobra caro.
+ */
+export function ticketPriceDemandFactor(priceCents: number, strength: number): number {
+  const ratio = priceCents / fairTicketPriceCents(strength)
+  if (ratio <= 1) return 1 + CHEAP_TICKET_BOOST * (1 - ratio)
+  const excess = ratio - 1
+  return 1 / (1 + PRICE_SENSITIVITY * excess * excess)
+}
+
+/** Ocupação do estádio: base da força corrigida pelo preço, com teto em 100%. */
+export const attendanceRate = (strength: number, priceCents: number): number =>
+  Math.min(1, baseAttendanceRate(strength) * ticketPriceDemandFactor(priceCents, strength))
+
+/** Público pagante = capacidade × ocupação. */
+export const attendanceOf = (capacity: number, strength: number, priceCents: number): number =>
+  Math.trunc(capacity * attendanceRate(strength, priceCents))
+
+/**
+ * Bilheteria do mandante — público e receita da MESMA conta, espelhando
+ * `gate()` do backend. Quem precisa dos dois números chama isto: pedir público
+ * e receita em duas chamadas recalcularia a ocupação e abriria espaço para as
+ * duas respostas divergirem.
+ */
+export const gateOf = (
+  capacity: number,
+  strength: number,
+  priceCents: number,
+): { attendance: number; revenue: number } => {
+  const crowd = attendanceOf(capacity, strength, priceCents)
+  return { attendance: crowd, revenue: crowd * priceCents }
+}
+
+/** Só a receita de [gateOf] — atalho para quem não precisa do público. */
+export const ticketRevenueOf = (capacity: number, strength: number, priceCents: number): number =>
+  gateOf(capacity, strength, priceCents).revenue
+
+/** O preço está na faixa que o técnico pode praticar? */
+export const isTicketPriceAllowed = (priceCents: number): boolean =>
+  Number.isInteger(priceCents) &&
+  priceCents >= MIN_TICKET_PRICE_CENTS &&
+  priceCents <= MAX_TICKET_PRICE_CENTS

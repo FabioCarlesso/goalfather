@@ -12,7 +12,12 @@ import type {
   Round,
   RoundMatch,
 } from '../domain/types'
-import { MulberryRng, ageSquadOneSeason, type SquadMember } from './engine'
+import {
+  MulberryRng,
+  ageSquadOneSeason,
+  DEFAULT_TICKET_PRICE_CENTS,
+  type SquadMember,
+} from './engine'
 
 const player = (
   id: number,
@@ -61,6 +66,8 @@ export const myClub: Club = {
   // Foco de treino da semana (issue #58): quem nunca escolheu começa poupando
   // o elenco, igual ao default do backend.
   trainingFocus: 'DESCANSO',
+  // Preço do ingresso (issue #59): o default do backend, R$ 50.
+  ticketPriceCents: DEFAULT_TICKET_PRICE_CENTS,
 }
 
 export const marketEntries: MarketEntry[] = [
@@ -467,6 +474,7 @@ export function materializeClub(id: number): void {
     stadiumCapacity: 12_000,
     ownerId: clubOwners[id] ?? null,
     trainingFocus: 'DESCANSO',
+    ticketPriceCents: DEFAULT_TICKET_PRICE_CENTS,
     squad: positions.map((pos, i) =>
       player(id * 1000 + i + 1, `${meta.name} ${i + 1}`, pos, meta.strength, 10_000_00, 25),
     ),

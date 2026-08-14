@@ -336,6 +336,51 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/clubs/{id}/ticket-price:
+    put:
+      tags: [Stadium]
+      operationId: setTicketPrice
+      summary: Definir o preço do ingresso do estádio
+      description: |
+        Define quanto o clube cobra por ingresso (issue #59). `PUT`, e não
+        `POST` como os comandos vizinhos, porque é a substituição idempotente
+        de um ajuste do clube, não uma ação com efeito acumulado.
+
+        O preço alimenta a curva de demanda da bilheteria: acima do "preço
+        justo" do time o estádio esvazia progressivamente, abaixo dele a
+        ocupação se aproxima do teto de 100%. Como a ocupação satura, a receita
+        tem um máximo em preço intermediário — e o preço justo sobe com a força
+        do elenco, então time melhor suporta ingresso mais caro.
+
+        Fora da faixa `10_00..200_00` (centavos) o comando falha com
+        `TICKET_PRICE_OUT_OF_RANGE`. Quem nunca mexeu — e todo clube da IA —
+        cobra R$ 50 (`5000`).
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TicketPriceRequest' }
+      responses:
+        '200':
+          description: Preço registrado — devolve o clube já atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Club' }
+        '400':
+          description: Preço fora da faixa permitida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: Usuário não é dono do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/market:
     get:
       tags: [Market]
@@ -887,6 +932,8 @@ components:
         # Sempre presente: quem nunca escolheu vem com o default `DESCANSO`,
         # então o cliente nunca precisa adivinhar o foco em vigor.
         - trainingFocus
+        # Idem: quem nunca mexeu no ingresso vem com R$ 50 (`5000`).
+        - ticketPriceCents
       properties:
         id:               { type: integer, format: int64 }
         name:             { type: string }
@@ -910,6 +957,14 @@ components:
           description: |
             Foco de treino em vigor (issue #58). Vale entre rodadas e para o
             elenco inteiro — fica valendo até o técnico trocar.
+        ticketPriceCents:
+          type: integer
+          format: int64
+          minimum: 1000
+          maximum: 20000
+          description: |
+            Preço do ingresso em vigor, em centavos (issue #59). Vale até o
+            técnico trocar; quem nunca mexeu cobra `5000` (R$ 50).
 
     # ─── Requests ─────────────────────────────────────────────────────────
     LineupRequest:
@@ -931,6 +986,21 @@ components:
       required: [focus]
       properties:
         focus: { $ref: '#/components/schemas/TrainingFocus' }
+
+    TicketPriceRequest:
+      type: object
+      required: [ticketPriceCents]
+      properties:
+        ticketPriceCents:
+          type: integer
+          format: int64
+          minimum: 1000
+          maximum: 20000
+          description: |
+            Novo preço do ingresso em centavos (issue #59). Fora de
+            `1000..20000` o backend responde 400 `TICKET_PRICE_OUT_OF_RANGE` —
+            a faixa é regra de domínio, o `minimum`/`maximum` aqui só documenta
+            e ajuda o cliente a validar antes de mandar.
 
     ExpandStadiumRequest:
       type: object
@@ -1462,14 +1532,22 @@ components:
         promoted: { $ref: '#/components/schemas/Player' }
 
     RoundFinance:
-      description: Receita/despesa de um clube em uma rodada (valores em centavos).
+      description: |
+        Receita/despesa de um clube em uma rodada (valores em centavos).
+
+        `ticketPrice` e `attendance` (issue #59) abrem a conta da bilheteria:
+        com o preço sob controle do técnico, só o total não diz se a rodada
+        rendeu por estádio cheio ou por ingresso caro. O preço é o do clube
+        mesmo quando ele jogou fora — nesse caso público e receita são zero.
       type: object
-      required: [clubId, ticketRevenue, salariesPaid, deficit]
+      required: [clubId, ticketRevenue, salariesPaid, deficit, ticketPrice, attendance]
       properties:
         clubId:        { type: integer, format: int64 }
         ticketRevenue: { type: integer, format: int64, description: Bilheteria do mandante (0 para visitante) }
         salariesPaid:  { type: integer, format: int64, description: Folha salarial paga na rodada (0 fora do "mês") }
         deficit:       { type: integer, format: int64, description: Parte da folha não coberta pelo caixa (> 0 ⇒ clube no vermelho) }
+        ticketPrice:   { type: integer, format: int64, description: Preço do ingresso cobrado pelo clube na rodada }
+        attendance:    { type: integer, minimum: 0, description: Público pagante do mandante (0 para visitante) }
 
     ReadinessStatus:
       description: |

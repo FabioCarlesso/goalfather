@@ -13,6 +13,13 @@ import kotlinx.serialization.Serializable
  * pode ser negativo (invariante do agregado), o saldo é truncado em zero e o
  * rombo seria perdido silenciosamente. Registramos aqui para sinalizar "no
  * vermelho" na UI (issue #23). `deficit > 0` ⇒ clube ficou sem caixa.
+ *
+ * `ticketPrice` e `attendance` (issue #59) abrem a conta da bilheteria: com o
+ * preço definido pelo técnico, `ticketRevenue` sozinho não diz se a rodada
+ * rendeu por estádio cheio ou por ingresso caro — e é exatamente essa leitura
+ * que o técnico precisa para corrigir o preço na rodada seguinte. O preço é o
+ * do clube mesmo quando ele jogou FORA (é o que ele cobra em casa); nesse caso
+ * `attendance` e `ticketRevenue` são zero, porque não houve bilheteria dele.
  */
 @Serializable
 data class RoundFinance(
@@ -20,4 +27,6 @@ data class RoundFinance(
     val ticketRevenue: Long,
     val salariesPaid: Long,
     val deficit: Long = 0,
+    val ticketPrice: Long = 0,
+    val attendance: Int = 0,
 )
