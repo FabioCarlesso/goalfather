@@ -32,6 +32,7 @@ import com.carlesso.goalfather.domain.rules.AgingOutcome
 import com.carlesso.goalfather.domain.rules.ageOneSeason
 import com.carlesso.goalfather.domain.rules.ageSquadForSeason
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
+import com.carlesso.goalfather.domain.rules.attendance
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.canScheduleSeason
@@ -42,7 +43,6 @@ import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
 import com.carlesso.goalfather.domain.rules.seasonRounds
-import com.carlesso.goalfather.domain.rules.ticketRevenue
 import com.carlesso.goalfather.domain.rules.train
 import com.carlesso.goalfather.domain.rules.trainingSeed
 import io.micrometer.core.instrument.MeterRegistry
@@ -396,24 +396,37 @@ class PlayRoundService(
     }
 
     /**
-     * Calcula o balanço financeiro de cada clube na rodada: bilheteria (só
-     * o mandante, em função da capacidade e da força do time) e folha
-     * salarial (a cada N rodadas). Função sem efeitos colaterais — a
-     * gravação fica em [persistRoundEffects].
+     * Calcula o balanço financeiro de cada clube na rodada: bilheteria (só o
+     * mandante, em função da capacidade, da força do time e do preço que o
+     * técnico cobra — issue #59) e folha salarial (a cada N rodadas). Função
+     * sem efeitos colaterais — a gravação fica em [persistRoundEffects].
+     *
+     * Público e preço viajam no `RoundFinance` junto da receita: com o preço
+     * sob controle do técnico, só o total não diz se a rodada rendeu por
+     * estádio cheio ou por ingresso caro.
      */
     private fun computeFinances(round: Round, clubs: Collection<Club>): List<RoundFinance> {
         val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
         val salaryRound = isSalaryRound(round.number)
         return clubs.map { club ->
-            val revenue =
-                if (club.id.value in homeClubIds)
-                    ticketRevenue(club.stadiumCapacity, club.startingLineup().teamStrength())
-                else 0L
+            val playedAtHome = club.id.value in homeClubIds
+            val strength = club.startingLineup().teamStrength()
+            val crowd =
+                if (playedAtHome) attendance(club.stadiumCapacity, strength, club.ticketPriceCents)
+                else 0
+            val revenue = if (playedAtHome) crowd * club.ticketPriceCents else 0L
             val salaries = if (salaryRound) club.squad.sumOf { it.salary.toLong() } else 0L
             // Rombo = quanto da folha o caixa+bilheteria não cobriram. Espelha o
             // truncamento em zero de [persistRoundEffects] (issue #23).
             val deficit = (salaries - revenue - club.cash).coerceAtLeast(0)
-            RoundFinance(club.id, ticketRevenue = revenue, salariesPaid = salaries, deficit = deficit)
+            RoundFinance(
+                clubId = club.id,
+                ticketRevenue = revenue,
+                salariesPaid = salaries,
+                deficit = deficit,
+                ticketPrice = club.ticketPriceCents,
+                attendance = crowd,
+            )
         }
     }
 

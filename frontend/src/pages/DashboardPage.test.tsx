@@ -62,6 +62,44 @@ describe('DashboardPage', () => {
     expect(screen.getByText(/evoluir a finalização/i)).toBeInTheDocument()
   })
 
+  it('define o preço do ingresso (issue #59)', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
+    })
+
+    // Clube do seed começa no default do backend (R$ 50).
+    expect(screen.getByText(/em vigor: R\$\s?50/)).toBeInTheDocument()
+
+    const input = screen.getByLabelText(/preço \(r\$\)/i)
+    await user.clear(input)
+    await user.type(input, '90')
+    await user.click(screen.getByRole('button', { name: 'Definir preço' }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/em vigor: R\$\s?90/)).toBeInTheDocument()
+    })
+    expect(screen.getByText('Preço atualizado ✓')).toBeInTheDocument()
+  })
+
+  it('recusa preço fora da faixa antes de mandar (issue #59)', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
+    })
+
+    const input = screen.getByLabelText(/preço \(r\$\)/i)
+    await user.clear(input)
+    await user.type(input, '500')
+
+    expect(screen.getByText(/informe um valor entre/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Definir preço' })).toBeDisabled()
+  })
+
   it('trata o elenco e debita o caixa via endpoint do mock', async () => {
     const user = userEvent.setup()
     renderWithProviders(<DashboardPage />)

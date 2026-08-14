@@ -4,6 +4,11 @@ import { useSellPlayer } from '../api/queries/useSellPlayer'
 import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
 import { useTreatSquad, MEDICAL_COST_CENTS } from '../api/queries/useTreatSquad'
 import { useSetTrainingFocus } from '../api/queries/useSetTrainingFocus'
+import {
+  useSetTicketPrice,
+  MIN_TICKET_PRICE_CENTS,
+  MAX_TICKET_PRICE_CENTS,
+} from '../api/queries/useSetTicketPrice'
 import { ApiError } from '../api/client'
 import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
@@ -37,9 +42,10 @@ export function DashboardPage() {
         <p className="text-sm text-slate-400">ID #{club.id}</p>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat label="Caixa"              value={formatMoney(club.cash)} />
         <Stat label="Capacidade estádio" value={formatSeats(club.stadiumCapacity)} />
+        <Stat label="Ingresso"           value={formatMoney(club.ticketPriceCents)} />
         <Stat label="Elenco"             value={`${club.squad.length} jogadores`} />
       </div>
 
@@ -48,6 +54,8 @@ export function DashboardPage() {
       )}
 
       <TrainingPanel club={club} />
+
+      <TicketPricePanel club={club} />
 
       <StadiumExpandPanel club={club} />
 
@@ -120,6 +128,72 @@ function TrainingPanel({ club }: { club: Club }) {
       <p className="text-sm text-slate-400">{TRAINING_FOCUS_HINT[selected]}</p>
       {setFocus.isError && (
         <p className="text-sm text-red-400">{errorMessage(setFocus.error)}</p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Preço do ingresso (issue #59). O painel só ESCOLHE o preço: quanta gente
+ * aparece e quanto isso rende é curva de demanda do backend, reportada no
+ * extrato da rodada. Fica ao lado da ampliação de propósito — as duas decisões
+ * mexem na mesma conta (mais assentos × quanto cada assento rende).
+ */
+function TicketPricePanel({ club }: { club: Club }) {
+  const setPrice = useSetTicketPrice(club.id)
+  const [reais, setReais] = useState(club.ticketPriceCents / 100)
+
+  const cents = Math.round(reais * 100)
+  const valid = Number.isFinite(reais) &&
+    cents >= MIN_TICKET_PRICE_CENTS &&
+    cents <= MAX_TICKET_PRICE_CENTS
+  const changed = cents !== club.ticketPriceCents
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-100">Preço do ingresso</h2>
+        <span className="text-xs text-slate-500">
+          em vigor: {formatMoney(club.ticketPriceCents)}
+        </span>
+      </div>
+      <p className="text-sm text-slate-400">
+        Ingresso caro rende mais por torcedor e esvazia o estádio; barato lota
+        mas rende pouco. Time melhor suporta preço maior — vale entre{' '}
+        {formatMoney(MIN_TICKET_PRICE_CENTS)} e {formatMoney(MAX_TICKET_PRICE_CENTS)}.
+      </p>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="text-sm text-slate-400">
+          Preço (R$)
+          <input
+            type="number"
+            min={MIN_TICKET_PRICE_CENTS / 100}
+            max={MAX_TICKET_PRICE_CENTS / 100}
+            step={5}
+            value={reais}
+            onChange={(e) => setReais(Number(e.target.value))}
+            className="mt-1 block w-32 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+          />
+        </label>
+        <button
+          onClick={() => valid && setPrice.mutate(cents)}
+          disabled={!valid || !changed || setPrice.isPending}
+          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
+        >
+          {setPrice.isPending ? 'Salvando…' : 'Definir preço'}
+        </button>
+      </div>
+      {!valid && (
+        <p className="text-xs text-amber-300">
+          Informe um valor entre {formatMoney(MIN_TICKET_PRICE_CENTS)} e{' '}
+          {formatMoney(MAX_TICKET_PRICE_CENTS)}.
+        </p>
+      )}
+      {setPrice.isError && (
+        <p className="text-sm text-red-400">{errorMessage(setPrice.error)}</p>
+      )}
+      {setPrice.isSuccess && !changed && (
+        <p className="text-sm text-emerald-400">Preço atualizado ✓</p>
       )}
     </div>
   )

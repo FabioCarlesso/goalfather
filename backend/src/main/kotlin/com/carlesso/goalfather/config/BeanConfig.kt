@@ -8,6 +8,7 @@ import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
+import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
@@ -28,6 +29,7 @@ import com.carlesso.goalfather.application.service.RegisterUserService
 import com.carlesso.goalfather.application.service.RoundReadinessService
 import com.carlesso.goalfather.application.service.SaveLineupService
 import com.carlesso.goalfather.application.service.SellPlayerService
+import com.carlesso.goalfather.application.service.SetTicketPriceService
 import com.carlesso.goalfather.application.service.SetTrainingFocusService
 import com.carlesso.goalfather.application.service.TreatSquadService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
@@ -88,6 +90,12 @@ class BeanConfig {
     fun setTrainingFocusUseCase(
         clubRepo: ClubRepository,
     ): SetTrainingFocusUseCase = SetTrainingFocusService(clubRepo)
+
+    /** Preço do ingresso do estádio (issue #59). */
+    @Bean
+    fun setTicketPriceUseCase(
+        clubRepo: ClubRepository,
+    ): SetTicketPriceUseCase = SetTicketPriceService(clubRepo)
 
     @Bean
     fun playRoundUseCase(

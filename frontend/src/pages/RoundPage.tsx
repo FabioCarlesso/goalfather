@@ -11,7 +11,7 @@ import { standingsKey } from '../api/queries/useStandings'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { ReadinessCard } from '../components/ReadinessCard'
-import { formatMoney } from '../domain/formatters'
+import { formatMoney, formatSeats } from '../domain/formatters'
 import { TRAINED_ATTRIBUTE_LABEL, TRAINING_FOCUS_LABEL } from '../domain/training'
 import type {
   MatchEvent,
@@ -534,6 +534,13 @@ function FinalBanner({
       {finance && (
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-mono">
           <span className="text-emerald-300">+{formatMoney(finance.ticketRevenue)} bilheteria</span>
+          {/* Detalhe da bilheteria (issue #59): sem público × preço, o total
+              não diz se rendeu por estádio cheio ou por ingresso caro. */}
+          {finance.attendance > 0 && (
+            <span className="text-slate-400">
+              ({formatSeats(finance.attendance)} pagantes × {formatMoney(finance.ticketPrice)})
+            </span>
+          )}
           <span className="text-red-300">−{formatMoney(finance.salariesPaid)} salários</span>
           <span className="text-slate-200">
             saldo {finance.ticketRevenue - finance.salariesPaid >= 0 ? '+' : '−'}

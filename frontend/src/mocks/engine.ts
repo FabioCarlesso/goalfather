@@ -617,3 +617,62 @@ function improve(p: Player, attribute: TrainedAttribute): Player {
 }
 
 const grow = (value: number): number => Math.min(99, value + TRAINING_ATTRIBUTE_GAIN)
+
+// ─── Bilheteria (espelha FinanceRules.kt, issues #4 e #59) ────────────────
+//
+// Estas regras viviam soltas em handlers.ts. Com a curva de demanda da issue
+// #59 elas passaram a ser regra de simulação de verdade — e regra de mock vive
+// em engine.ts (CLAUDE.md), onde dá para testá-la sem subir um handler.
+
+export const DEFAULT_TICKET_PRICE_CENTS = 50_00
+export const MIN_TICKET_PRICE_CENTS = 10_00
+export const MAX_TICKET_PRICE_CENTS = 200_00
+export const SALARY_EVERY_N_ROUNDS = 2
+
+const STRENGTH_FLOOR = 60
+const STRENGTH_CEILING = 100
+const FAIR_PRICE_AT_FLOOR = 40_00
+const FAIR_PRICE_AT_CEILING = 60_00
+const PRICE_SENSITIVITY = 0.5
+const CHEAP_TICKET_BOOST = 0.5
+
+const strengthRatio = (strength: number): number =>
+  Math.min(1, Math.max(0, (strength - STRENGTH_FLOOR) / (STRENGTH_CEILING - STRENGTH_FLOOR)))
+
+/** Ocupação no preço justo: 50% (time fraco) a 100% (time forte). */
+export const baseAttendanceRate = (strength: number): number => 0.5 + 0.5 * strengthRatio(strength)
+
+/** Preço que a torcida deste time considera justo — sobe com a força. */
+export const fairTicketPriceCents = (strength: number): number =>
+  FAIR_PRICE_AT_FLOOR +
+  Math.trunc((FAIR_PRICE_AT_CEILING - FAIR_PRICE_AT_FLOOR) * strengthRatio(strength))
+
+/**
+ * Multiplicador de demanda do preço relativo ao justo: 1.0 no preço justo,
+ * até 1.5 quando o ingresso tende a zero, e decaindo (sem nunca zerar) quando
+ * o técnico cobra caro.
+ */
+export function ticketPriceDemandFactor(priceCents: number, strength: number): number {
+  const ratio = priceCents / fairTicketPriceCents(strength)
+  if (ratio <= 1) return 1 + CHEAP_TICKET_BOOST * (1 - ratio)
+  const excess = ratio - 1
+  return 1 / (1 + PRICE_SENSITIVITY * excess * excess)
+}
+
+/** Ocupação do estádio: base da força corrigida pelo preço, com teto em 100%. */
+export const attendanceRate = (strength: number, priceCents: number): number =>
+  Math.min(1, baseAttendanceRate(strength) * ticketPriceDemandFactor(priceCents, strength))
+
+/** Público pagante = capacidade × ocupação. */
+export const attendanceOf = (capacity: number, strength: number, priceCents: number): number =>
+  Math.trunc(capacity * attendanceRate(strength, priceCents))
+
+/** Receita de bilheteria do mandante = público × preço. */
+export const ticketRevenueOf = (capacity: number, strength: number, priceCents: number): number =>
+  attendanceOf(capacity, strength, priceCents) * priceCents
+
+/** O preço está na faixa que o técnico pode praticar? */
+export const isTicketPriceAllowed = (priceCents: number): boolean =>
+  Number.isInteger(priceCents) &&
+  priceCents >= MIN_TICKET_PRICE_CENTS &&
+  priceCents <= MAX_TICKET_PRICE_CENTS

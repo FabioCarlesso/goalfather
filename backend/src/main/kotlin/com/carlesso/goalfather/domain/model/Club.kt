@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
 import com.carlesso.goalfather.domain.serialization.ClubIdSerializer
 import kotlinx.serialization.Serializable
 
@@ -25,6 +26,10 @@ value class ClubId(val value: Long)
  * e não na `Lineup`: ela vale entre rodadas, para o elenco inteiro, enquanto a
  * escalação é a decisão da PARTIDA. Fica valendo até o técnico trocar — quem
  * nunca escolheu (e todo clube da IA) treina no default, `DESCANSO`.
+ *
+ * `ticketPriceCents` (issue #59) é a decisão de BILHETERIA, do mesmo tipo:
+ * vale até o técnico mexer e alimenta a curva de demanda em `FinanceRules`.
+ * Quem nunca mexeu — e todo clube da IA — cobra `DEFAULT_TICKET_PRICE_CENTS`.
  */
 @Serializable
 data class Club(
@@ -37,10 +42,18 @@ data class Club(
     val ownerId: Long? = null,
     val division: Division = Division.FIRST,
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
+    val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
 ) {
     init {
         require(cash >= 0) { "cash não pode ser negativo: $cash" }
         require(stadiumCapacity >= 0) { "stadiumCapacity não pode ser negativo: $stadiumCapacity" }
+        // A FAIXA de preço (`TICKET_PRICE_RANGE`) NÃO é checada aqui de
+        // propósito: ela é regra de balanceamento, não invariante estrutural do
+        // agregado. Vive no comando que aceita a decisão do técnico
+        // (`SetTicketPriceService`, que a devolve como valor — issue #59), e o
+        // mapper de leitura acomoda uma linha antiga fora da faixa em vez de
+        // derrubar o carregamento do clube. Um `require` aqui transformaria a
+        // regra de negócio em exception, contra o CLAUDE.md.
     }
 
     /**

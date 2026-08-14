@@ -345,6 +345,7 @@ class PlayMatchService(
 | `POST` | `/api/clubs/{id}/stadium/expand` | Ampliar estádio |
 | `POST` | `/api/clubs/{id}/medical` | Departamento médico: recupera stamina e encurta lesões — issue #54 |
 | `POST` | `/api/clubs/{id}/training` | Foco de treino da semana (`ATAQUE`/`DEFESA`/`FISICO`/`DESCANSO`) — issue #58 |
+| `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (R$ 10–200, em centavos) — issue #59 |
 | `GET` | `/api/league/standings` | Tabela de classificação |
 | `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
 | `POST` | `/api/league/round/ready` | Técnico sinaliza "estou pronto" — issue #20 |
@@ -585,6 +586,45 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   por rodada: o replay de uma rodada já encerrada não treina de novo. O
   extrato (`TrainingReport` com os `TrainingEvent` de quem evoluiu e de quem
   se machucou) viaja no `RoundEvent.RoundFinished`, como as finanças.
+- [x] **6.6** Preço de ingresso definido pelo técnico, com demanda elástica — issue #59
+  (a bilheteria era passiva: `FinanceRules` fixava o ingresso em R$ 50 e a
+  ocupação dependia só da força do mandante. Agora o técnico define o preço
+  — faixa `TICKET_PRICE_RANGE`, R$ 10 a R$ 200 — e a ocupação passa a ser
+  `ocupação-base(força) × fator(preço / preço justo)`, com teto em 100%:
+  o estádio não estica. O preço justo NÃO é constante: vai de R$ 40 (time
+  fraco) a R$ 60 (time forte), então evoluir o elenco aumenta o que a torcida
+  aceita pagar — sem isso o ingresso ótimo seria o mesmo número para todo
+  mundo e a decisão viraria algo a decorar uma vez.)
+
+  **Por que a cauda é hiperbólica.** Acima do justo o fator é
+  `1 / (1 + k·(r−1)²)` com `k = 0.5`, e não um decaimento linear. Linear
+  chegaria a ZERO dentro da faixa praticável, e dali para cima uma faixa
+  inteira de preços renderia exatamente R$ 0 — receita plana onde deveria
+  haver escolha. Com a hipérbole sempre sobra a torcida fiel, e a receita
+  `público × preço` tem máximo único em `r = √(1 + 1/k) ≈ 1.73` vezes o preço
+  justo (~R$ 69 para o time mais fraco, ~R$ 104 para o mais forte). Abaixo do
+  justo o fator é linear e sobe até 1.5 — quem já lota no preço justo não
+  ganha nada baratear, e é o teto de 100% que faz a receita voltar a subir
+  depois de um certo desconto. `FinanceRulesTest` varre a faixa inteira e
+  guarda as duas propriedades — monotonicidade (preço maior nunca aumenta
+  ocupação) e máximo interior —, não os números.
+
+  O preço é estado do **clube** (migration V10, coluna `ticket_price_cents`,
+  default = os R$ 50 de antes para não mexer em save existente), como o foco
+  de treino da 6.5. Fora da faixa, o comando devolve
+  `TicketPriceResult.PriceOutOfRange` — VALOR, não exception: o técnico
+  digitando um número fora do permitido é entrada normal de usuário, não um
+  acidente. Por isso também não há `require` de faixa no `Club`: faixa é
+  regra de balanceamento, não invariante estrutural do agregado, e um
+  `require` derrubaria a leitura de uma linha antiga se a faixa fosse
+  reapertada depois (o mapper acomoda com `coerceIn`). O endpoint é `PUT`
+  `/api/clubs/{id}/ticket-price`, e não `POST` como os comandos vizinhos,
+  porque é substituição idempotente de um ajuste — mandar o mesmo preço duas
+  vezes deixa o mundo igual. `RoundFinance` passou a carregar `ticketPrice` e
+  `attendance` além da receita: com o preço sob controle do técnico, só o
+  total não diz se a rodada rendeu por estádio cheio ou por ingresso caro.
+  **A engine de partida não mudou** — bilheteria é regra financeira de rodada,
+  aplicada em `computeFinances`.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`
