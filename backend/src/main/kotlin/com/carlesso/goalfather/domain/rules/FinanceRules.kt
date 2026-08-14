@@ -119,7 +119,16 @@ fun attendance(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Lon
     (stadiumCapacity * attendanceRate(homeStrength, ticketPriceCents)).toInt()
 
 /**
- * Receita de bilheteria do mandante, em centavos: público × preço.
+ * Bilheteria de uma partida em casa: público pagante e receita, na MESMA
+ * conta. Existe para que o chamador não precise escolher entre pedir os dois
+ * números (e calcular a ocupação duas vezes) ou multiplicar por fora — que é
+ * como a regra de receita perde o único chamador de produção e passa a poder
+ * mudar sem que nada quebre.
+ */
+data class Gate(val attendance: Int, val revenue: Long)
+
+/**
+ * Bilheteria do mandante: quanta gente pagou e quanto isso rendeu.
  *
  * O trade-off que a issue #59 abre vive aqui. Ingresso barato enche o estádio
  * mas rende pouco por torcedor; ingresso caro esvazia. Como a ocupação satura
@@ -128,8 +137,14 @@ fun attendance(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Lon
  * `r = √(1 + 1/PRICE_SENSITIVITY) ≈ 1.73` vezes o preço justo, ou seja ~R$ 69
  * para o time mais fraco e ~R$ 104 para o mais forte.
  */
+fun gate(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Long): Gate {
+    val crowd = attendance(stadiumCapacity, homeStrength, ticketPriceCents)
+    return Gate(attendance = crowd, revenue = crowd * ticketPriceCents)
+}
+
+/** Só a receita de [gate], em centavos — atalho para quem não precisa do público. */
 fun ticketRevenue(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Long): Long =
-    attendance(stadiumCapacity, homeStrength, ticketPriceCents) * ticketPriceCents
+    gate(stadiumCapacity, homeStrength, ticketPriceCents).revenue
 
 /** O preço está na faixa que o técnico pode praticar? */
 fun isTicketPriceAllowed(ticketPriceCents: Long): Boolean = ticketPriceCents in TICKET_PRICE_RANGE

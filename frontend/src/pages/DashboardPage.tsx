@@ -143,8 +143,11 @@ function TicketPricePanel({ club }: { club: Club }) {
   const setPrice = useSetTicketPrice(club.id)
   const [reais, setReais] = useState(club.ticketPriceCents / 100)
 
-  const cents = Math.round(reais * 100)
-  const valid = Number.isFinite(reais) &&
+  // Preço em reais inteiros: é o que o `step={1}` do input permite digitar e
+  // percorrer no spinner. Validador e input precisam concordar — com step={5}
+  // o browser marcava R$ 12 como inválido enquanto o botão seguia habilitado.
+  const cents = reais * 100
+  const valid = Number.isInteger(reais) &&
     cents >= MIN_TICKET_PRICE_CENTS &&
     cents <= MAX_TICKET_PRICE_CENTS
   const changed = cents !== club.ticketPriceCents
@@ -169,7 +172,7 @@ function TicketPricePanel({ club }: { club: Club }) {
             type="number"
             min={MIN_TICKET_PRICE_CENTS / 100}
             max={MAX_TICKET_PRICE_CENTS / 100}
-            step={5}
+            step={1}
             value={reais}
             onChange={(e) => setReais(Number(e.target.value))}
             className="mt-1 block w-32 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"

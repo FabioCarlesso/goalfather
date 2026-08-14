@@ -7,6 +7,7 @@ import {
   attendanceOf,
   attendanceRate,
   fairTicketPriceCents,
+  gateOf,
   isTicketPriceAllowed,
   ticketPriceDemandFactor,
   ticketRevenueOf,
@@ -79,6 +80,28 @@ describe('curva de demanda da bilheteria (issue #59)', () => {
         )
       }
     }
+  })
+
+  it('gateOf devolve público e receita da mesma conta', () => {
+    // `gateOf` é o que os handlers usam; se ele divergir dos helpers, o
+    // extrato da rodada deixa de fechar sem nenhum outro teste reclamar.
+    for (const strength of strengths) {
+      for (const price of prices) {
+        const gate = gateOf(20_000, strength, price)
+        expect(gate.attendance).toBe(attendanceOf(20_000, strength, price))
+        expect(gate.revenue).toBe(gate.attendance * price)
+      }
+    }
+  })
+
+  it('magnitude da bilheteria bate com a do backend', () => {
+    // Âncora absoluta, espelhando `FinanceRulesTest`: os demais testes são de
+    // forma e sobreviveriam a um erro de escala. Força 60 ⇒ ocupação-base 0.5
+    // e preço justo R$ 40; a R$ 50 o multiplicador é ≈ 0.9697 ⇒ 4.848
+    // pagantes de 10.000 lugares × R$ 50 = R$ 242.400.
+    expect(attendanceRate(60, DEFAULT_TICKET_PRICE_CENTS)).toBeCloseTo(0.4848, 4)
+    expect(attendanceOf(10_000, 60, DEFAULT_TICKET_PRICE_CENTS)).toBe(4_848)
+    expect(ticketRevenueOf(10_000, 60, DEFAULT_TICKET_PRICE_CENTS)).toBe(242_400_00)
   })
 
   it('faixa aceita as bordas e recusa o que passa delas', () => {

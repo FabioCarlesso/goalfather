@@ -33,8 +33,7 @@ import {
   MulberryRng,
   matchStats,
   trainSquad,
-  attendanceOf,
-  ticketRevenueOf,
+  gateOf,
   isTicketPriceAllowed,
   DEFAULT_TICKET_PRICE_CENTS,
   MIN_TICKET_PRICE_CENTS,
@@ -465,6 +464,10 @@ export const handlers = [
       { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: matchStats(played) },
     ]
 
+    // Bilheteria do drill-down standalone: mesma curva da rodada, com o preço
+    // configurado pelo clube (issue #59).
+    const home = gateOf(club.stadiumCapacity, averageOverall(club.squad), club.ticketPriceCents)
+
     return HttpResponse.json({
       matchId: Date.now(),
       round,
@@ -473,10 +476,8 @@ export const handlers = [
       homeGoals,
       awayGoals,
       events,
-      // Bilheteria do drill-down standalone: mesma curva da rodada, com o
-      // preço configurado pelo clube (issue #59).
-      attendance: attendanceOf(club.stadiumCapacity, averageOverall(club.squad), club.ticketPriceCents),
-      ticketRevenue: ticketRevenueOf(club.stadiumCapacity, averageOverall(club.squad), club.ticketPriceCents),
+      attendance: home.attendance,
+      ticketRevenue: home.revenue,
     } satisfies MatchSummary)
   }),
 
@@ -676,24 +677,25 @@ export const handlers = [
           const salaries = isSalaryRound
             ? (clubId === 1 ? state.clubs[1]!.squad.reduce((s, p) => s + p.salary, 0) : 11 * AI_SALARY_PER_PLAYER)
             : 0
-          // Preço do ingresso do clube (issue #59). Só o do usuário é
-          // configurável no mock; a IA cobra o default.
-          const price = clubId === 1
-            ? (state.clubs[1]?.ticketPriceCents ?? DEFAULT_TICKET_PRICE_CENTS)
-            : DEFAULT_TICKET_PRICE_CENTS
-          const playedAtHome = homeIds.has(clubId)
-          const crowd = playedAtHome ? attendanceOf(capacity, strength, price) : 0
-          const revenue = playedAtHome ? ticketRevenueOf(capacity, strength, price) : 0
+          // Preço do ingresso do clube (issue #59). Diferente de capacidade e
+          // caixa, o preço é lido de QUALQUER clube materializado: quem
+          // reivindicou o clube 3 e definiu R$ 120 precisa ver esses R$ 120 no
+          // extrato, senão o loop de feedback que a issue abre não existe para
+          // ninguém além do clube 1. Quem não foi materializado (IA) cobra o
+          // default.
+          const price = state.clubs[clubId]?.ticketPriceCents ?? DEFAULT_TICKET_PRICE_CENTS
+          const home = homeIds.has(clubId) ? gateOf(capacity, strength, price) : null
           const cash = clubId === 1 ? (state.clubs[1]?.cash ?? 0) : Number.MAX_SAFE_INTEGER
           // Rombo da folha não coberto pelo caixa+bilheteria (issue #23). Só o
           // clube do usuário tem caixa rastreado; a IA nunca fica no vermelho.
+          const revenue = home?.revenue ?? 0
           return {
             clubId,
             ticketRevenue: revenue,
             salariesPaid: salaries,
             deficit: Math.max(0, salaries - revenue - cash),
             ticketPrice: price,
-            attendance: crowd,
+            attendance: home?.attendance ?? 0,
           }
         })
 

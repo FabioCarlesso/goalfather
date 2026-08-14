@@ -32,11 +32,11 @@ import com.carlesso.goalfather.domain.rules.AgingOutcome
 import com.carlesso.goalfather.domain.rules.ageOneSeason
 import com.carlesso.goalfather.domain.rules.ageSquadForSeason
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
-import com.carlesso.goalfather.domain.rules.attendance
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.canScheduleSeason
 import com.carlesso.goalfather.domain.rules.fitnessSeed
+import com.carlesso.goalfather.domain.rules.gate
 import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryRound
 import com.carlesso.goalfather.domain.rules.marketAgingSeed
@@ -403,18 +403,30 @@ class PlayRoundService(
      *
      * Público e preço viajam no `RoundFinance` junto da receita: com o preço
      * sob controle do técnico, só o total não diz se a rodada rendeu por
-     * estádio cheio ou por ingresso caro.
+     * estádio cheio ou por ingresso caro. Os dois números saem de UMA chamada
+     * a `gate` — a regra de domínio continua sendo quem calcula dinheiro.
+     *
+     * O `gate` só é montado para quem jogou EM CASA: `startingLineup()`
+     * reconstrói a escalação (mapa por id + filtro de lesionados + reservas),
+     * e fazer isso para a liga inteira seria jogar fora metade do trabalho a
+     * cada rodada.
      */
     private fun computeFinances(round: Round, clubs: Collection<Club>): List<RoundFinance> {
         val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
         val salaryRound = isSalaryRound(round.number)
         return clubs.map { club ->
-            val playedAtHome = club.id.value in homeClubIds
-            val strength = club.startingLineup().teamStrength()
-            val crowd =
-                if (playedAtHome) attendance(club.stadiumCapacity, strength, club.ticketPriceCents)
-                else 0
-            val revenue = if (playedAtHome) crowd * club.ticketPriceCents else 0L
+            val homeGate =
+                if (club.id.value in homeClubIds) {
+                    gate(
+                        stadiumCapacity = club.stadiumCapacity,
+                        homeStrength = club.startingLineup().teamStrength(),
+                        ticketPriceCents = club.ticketPriceCents,
+                    )
+                } else {
+                    null
+                }
+            val crowd = homeGate?.attendance ?: 0
+            val revenue = homeGate?.revenue ?: 0L
             val salaries = if (salaryRound) club.squad.sumOf { it.salary.toLong() } else 0L
             // Rombo = quanto da folha o caixa+bilheteria não cobriram. Espelha o
             // truncamento em zero de [persistRoundEffects] (issue #23).

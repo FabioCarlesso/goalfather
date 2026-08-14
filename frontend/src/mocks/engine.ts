@@ -20,6 +20,14 @@ import type {
   TrainingEvent,
   TrainingFocus,
 } from '../domain/types'
+// A faixa de preço do ingresso (issue #59) NÃO é redefinida aqui: é a mesma
+// que o formulário da Dashboard usa para validar antes de mandar. Duas cópias
+// com o mesmo nome deixariam o mock aceitando um preço que o app bloqueia (ou
+// vice-versa) sem nenhum teste reclamar. A direção do import é a permitida —
+// o mock conhece a app, a app nunca importa de `mocks/`.
+import { MIN_TICKET_PRICE_CENTS, MAX_TICKET_PRICE_CENTS } from '../api/queries/useSetTicketPrice'
+
+export { MIN_TICKET_PRICE_CENTS, MAX_TICKET_PRICE_CENTS }
 
 /** RNG seedável (mulberry32) — mesmo seed → mesma sequência de eventos. */
 export class MulberryRng {
@@ -625,8 +633,6 @@ const grow = (value: number): number => Math.min(99, value + TRAINING_ATTRIBUTE_
 // em engine.ts (CLAUDE.md), onde dá para testá-la sem subir um handler.
 
 export const DEFAULT_TICKET_PRICE_CENTS = 50_00
-export const MIN_TICKET_PRICE_CENTS = 10_00
-export const MAX_TICKET_PRICE_CENTS = 200_00
 export const SALARY_EVERY_N_ROUNDS = 2
 
 const STRENGTH_FLOOR = 60
@@ -667,9 +673,24 @@ export const attendanceRate = (strength: number, priceCents: number): number =>
 export const attendanceOf = (capacity: number, strength: number, priceCents: number): number =>
   Math.trunc(capacity * attendanceRate(strength, priceCents))
 
-/** Receita de bilheteria do mandante = público × preço. */
+/**
+ * Bilheteria do mandante — público e receita da MESMA conta, espelhando
+ * `gate()` do backend. Quem precisa dos dois números chama isto: pedir público
+ * e receita em duas chamadas recalcularia a ocupação e abriria espaço para as
+ * duas respostas divergirem.
+ */
+export const gateOf = (
+  capacity: number,
+  strength: number,
+  priceCents: number,
+): { attendance: number; revenue: number } => {
+  const crowd = attendanceOf(capacity, strength, priceCents)
+  return { attendance: crowd, revenue: crowd * priceCents }
+}
+
+/** Só a receita de [gateOf] — atalho para quem não precisa do público. */
 export const ticketRevenueOf = (capacity: number, strength: number, priceCents: number): number =>
-  attendanceOf(capacity, strength, priceCents) * priceCents
+  gateOf(capacity, strength, priceCents).revenue
 
 /** O preço está na faixa que o técnico pode praticar? */
 export const isTicketPriceAllowed = (priceCents: number): boolean =>

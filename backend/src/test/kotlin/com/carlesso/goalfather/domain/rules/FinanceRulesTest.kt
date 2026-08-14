@@ -36,6 +36,38 @@ class FinanceRulesTest {
     }
 
     @Test
+    fun `bilheteria tem a MAGNITUDE esperada, nao so a forma`() {
+        // Âncora absoluta. Todo o resto desta classe testa FORMA (monotonia,
+        // máximo interior, continuidade, proporcionalidade) — propriedades que
+        // sobrevivem intactas a um erro de escala: dividir a economia por dez
+        // passaria por todos eles. Aqui a conta é conferida no detalhe:
+        // força 60 ⇒ ocupação-base 0.5 e preço justo R$ 40; a R$ 50 o
+        // multiplicador é 1/(1 + 0.5·0.25²) ≈ 0.9697, logo 48.48% de 10.000 =
+        // 4.848 pagantes × R$ 50 = R$ 242.400.
+        assertEquals(0.4848, attendanceRate(60.0, DEFAULT_TICKET_PRICE_CENTS), absoluteTolerance = 1e-4)
+        assertEquals(4_848, attendance(10_000, 60.0, DEFAULT_TICKET_PRICE_CENTS))
+        assertEquals(242_400_00L, ticketRevenue(10_000, 60.0, DEFAULT_TICKET_PRICE_CENTS))
+        // E no preço justo, onde o multiplicador vale exatamente 1: metade do
+        // estádio a R$ 40.
+        assertEquals(200_000_00L, ticketRevenue(10_000, 60.0, fairTicketPriceCents(60.0)))
+    }
+
+    @Test
+    fun `gate devolve publico e receita da mesma conta`() {
+        // `gate` é o que a rodada usa; `ticketRevenue` é o atalho. Se os dois
+        // divergirem, o extrato da rodada deixa de fechar (público × preço ≠
+        // receita) sem nenhum outro teste reclamar.
+        for (strength in strengths) {
+            for (price in prices) {
+                val g = gate(20_000, strength, price)
+                assertEquals(attendance(20_000, strength, price), g.attendance)
+                assertEquals(ticketRevenue(20_000, strength, price), g.revenue)
+                assertEquals(g.attendance * price, g.revenue)
+            }
+        }
+    }
+
+    @Test
     fun `folha salarial cobrada a cada 2 rodadas`() {
         assertFalse(isSalaryRound(1))
         assertTrue(isSalaryRound(2))
