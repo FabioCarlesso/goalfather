@@ -8,6 +8,7 @@ import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { useAuth } from '../auth/AuthContext'
 import { standingsKey } from '../api/queries/useStandings'
+import { seasonHistoryKey, clubCareerKey } from '../api/queries/useSeasonHistory'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { ReadinessCard } from '../components/ReadinessCard'
@@ -203,6 +204,10 @@ export function RoundPage() {
           setChampion(event)
           setFinalStandings(event.standings)
           qc.setQueryData(standingsKey, event.standings)
+          // A temporada que acabou virou história (issue #60): o record já foi
+          // gravado no servidor, então a tela de Histórico precisa rebuscar.
+          qc.invalidateQueries({ queryKey: seasonHistoryKey })
+          qc.invalidateQueries({ queryKey: clubCareerKey(myClubId) })
         }
       } catch (err) {
         console.error('Falha ao parsear RoundEvent', err)

@@ -477,6 +477,80 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /api/league/history:
+    get:
+      tags: [League]
+      operationId: getSeasonHistory
+      summary: Temporadas encerradas (histórico da liga)
+      description: |
+        Snapshot de cada temporada já encerrada — campeão, artilheiro e
+        classificação final de todas as divisões —, da mais recente para a
+        mais antiga. Os records são gravados na virada de temporada, ANTES
+        de a tabela e as estatísticas dos jogadores serem zeradas, e nunca
+        são reescritos.
+
+        Lista vazia enquanto a primeira temporada não terminou: liga nova
+        sem história é estado normal, não erro.
+      responses:
+        '200':
+          description: Temporadas encerradas, da mais recente para a mais antiga
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SeasonRecord' }
+
+  /api/league/history/{season}:
+    get:
+      tags: [League]
+      operationId: getSeasonRecord
+      summary: Uma temporada do histórico
+      parameters:
+        - name: season
+          in: path
+          required: true
+          description: Ano da temporada encerrada
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Snapshot da temporada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SeasonRecord' }
+        '404':
+          description: Temporada não encerrada (ou inexistente)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/league/history/club/{clubId}:
+    get:
+      tags: [League]
+      operationId: getClubCareer
+      summary: Perfil do técnico — carreira do clube
+      description: |
+        Projeção do histórico para um clube: temporadas disputadas, em quais
+        foi campeão e qual foi a melhor campanha. Derivada dos `SeasonRecord`
+        no backend, para o cliente não reimplementar o critério de "melhor
+        campanha" (divisão pesa mais que posição).
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Carreira do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClubCareer' }
+        '404':
+          description: Clube sem nenhuma temporada encerrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /api/league/round/current:
     get:
       tags: [League]
@@ -1355,6 +1429,92 @@ components:
         rows:
           type: array
           items: { $ref: '#/components/schemas/StandingRow' }
+
+    SeasonStanding:
+      description: |
+        Campanha de um clube numa temporada encerrada. A linha da tabela viaja
+        inteira em `row` — o que a história acrescenta é a divisão (a linha
+        sozinha não diz em que tier aquele 1º lugar valeu) e o aproveitamento
+        já calculado, gravado no snapshot em vez de derivado na leitura: se o
+        critério de pontuação mudar, as temporadas antigas continuam contando
+        a verdade da época delas.
+      type: object
+      required: [division, row, pointsPercentage]
+      properties:
+        division: { type: integer, minimum: 1, description: 'Divisão (1 = elite)' }
+        row:      { $ref: '#/components/schemas/StandingRow' }
+        pointsPercentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Aproveitamento — pontos conquistados sobre os disputados
+
+    SeasonTopScorer:
+      description: |
+        Artilheiro da liga na temporada — o jogador com mais gols entre TODOS
+        os clubes, humanos ou da IA. Nome e clube são copiados, não
+        referenciados por id: o artilheiro pode se aposentar na mesma virada
+        que grava o snapshot e sumir da base de jogadores.
+      type: object
+      required: [playerId, playerName, clubId, clubName, goals]
+      properties:
+        playerId:   { type: integer, format: int64 }
+        playerName: { type: string }
+        clubId:     { type: integer, format: int64 }
+        clubName:   { type: string }
+        goals:      { type: integer, minimum: 1 }
+
+    SeasonRecord:
+      description: |
+        Snapshot imutável de uma temporada encerrada. Gravado na virada,
+        ANTES de a tabela e as estatísticas dos jogadores serem zeradas, e
+        nunca reescrito (append-only, uma linha por temporada).
+
+        `finalStandings` já vem na ordem de exibição: elite primeiro e, dentro
+        de cada divisão, da 1ª à última posição. `champion` é a primeira linha
+        da elite, repetida para a listagem não precisar reabrir a
+        classificação. `topScorer` é omitido quando ninguém marcou na
+        temporada inteira.
+      type: object
+      required: [season, champion, finalStandings]
+      properties:
+        season:    { type: integer, description: Ano da temporada encerrada }
+        champion:  { $ref: '#/components/schemas/SeasonStanding' }
+        finalStandings:
+          type: array
+          description: Classificação final de todas as divisões, da elite para baixo
+          items: { $ref: '#/components/schemas/SeasonStanding' }
+        topScorer: { $ref: '#/components/schemas/SeasonTopScorer' }
+
+    CareerCampaign:
+      description: Uma temporada da carreira — em que ano foi e como o clube terminou.
+      type: object
+      required: [season, standing]
+      properties:
+        season:   { type: integer }
+        standing: { $ref: '#/components/schemas/SeasonStanding' }
+
+    ClubCareer:
+      description: |
+        Perfil do técnico visto pelo clube que ele comanda. É uma PROJEÇÃO dos
+        `SeasonRecord`, não um agregado persistido — o backend a deriva para
+        que o cliente não reimplemente o critério de "melhor campanha"
+        (divisão pesa mais que posição, que pesa mais que pontos).
+
+        `titles` guarda as temporadas do título, não um contador: o número sai
+        do tamanho da lista e "campeão em 2027 e 2031" é o que o técnico quer
+        ler. `bestCampaign` só falta se a carreira estiver vazia.
+      type: object
+      required: [clubId, clubName, seasonsPlayed, titles]
+      properties:
+        clubId:        { type: integer, format: int64 }
+        clubName:      { type: string }
+        seasonsPlayed: { type: integer, minimum: 0 }
+        titles:
+          type: array
+          description: Temporadas em que o clube foi campeão (crescente)
+          items: { type: integer }
+        bestCampaign: { $ref: '#/components/schemas/CareerCampaign' }
 
     RoundStatus:
       type: string

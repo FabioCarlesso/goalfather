@@ -5,6 +5,7 @@ import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
+import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Availability
@@ -19,6 +20,7 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.SeasonRecord
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainingFocus
@@ -54,7 +56,11 @@ class PlayRoundServiceTest {
     // (issue #55); os testes que os verificam stubam explicitamente.
     private val marketRepo: MarketRepository = mockk(relaxed = true)
     private val playerRepo: PlayerRepository = mockk(relaxed = true)
-    private val service = PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo)
+    // relaxed: o histórico (issue #60) só é gravado na virada de temporada; os
+    // testes que o inspecionam capturam o record explicitamente.
+    private val historyRepo: SeasonHistoryRepository = mockk(relaxed = true)
+    private val service =
+        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo)
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
@@ -886,6 +892,67 @@ class PlayRoundServiceTest {
         assertThrows<IllegalArgumentException> {
             service.stream(999).toList()
         }
+    }
+
+    @Test
+    fun `virada de temporada grava a historia antes de zerar as estatisticas (issue 60)`() = runTest {
+        // Artilheiro plantado no elenco: é ele que só sobrevive no snapshot se
+        // o record for montado ANTES do reset de `goals`.
+        val base = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
+        val withScorer = base.copy(
+            squad = base.squad.dropLast(1) + base.squad.last().copy(goals = 14),
+        )
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns withScorer
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(withScorer, awayClub)
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val record = slot<SeasonRecord>()
+        coEvery { historyRepo.append(capture(record)) } returns true
+
+        val events = service.stream(1).toList()
+
+        val snapshot = record.captured
+        assertEquals(2026, snapshot.season)
+        // Campeão e classificação final batem com o evento emitido.
+        val seasonFinished = events.filterIsInstance<RoundEvent.SeasonFinished>().single()
+        assertEquals(seasonFinished.champion.clubId, snapshot.champion.row.clubId)
+        assertEquals(
+            standings.rows.map { it.clubId }.toSet(),
+            snapshot.finalStandings.map { it.row.clubId }.toSet(),
+        )
+        // O artilheiro sobreviveu ao reset — a ordem do snapshot é a regra.
+        assertEquals(14, assertNotNull(snapshot.topScorer).goals)
+
+        // ...e o reset de fato aconteceu: quem foi salvo na virada está zerado.
+        val preSeason = savedClubs.last { it.id == ClubId(1) }
+        assertTrue(
+            preSeason.squad.all { it.goals == 0 },
+            "as estatísticas devem ser zeradas DEPOIS do snapshot",
+        )
+    }
+
+    @Test
+    fun `rodada no meio da temporada nao grava historia (issue 60)`() = runTest {
+        // 4 clubes ⇒ turno de 3 rodadas: a rodada 1 não encerra nada.
+        val clubs = (1L..4L).map { makeClub(id = it, name = "C$it") }
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns clubs
+        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+
+        service.stream(1).toList()
+
+        coVerify(exactly = 0) { historyRepo.append(any()) }
     }
 
     @Test

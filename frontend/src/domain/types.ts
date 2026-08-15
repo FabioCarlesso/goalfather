@@ -33,6 +33,13 @@ export type TrainingReport    = components['schemas']['TrainingReport']
 export type TrainingEvent     = components['schemas']['TrainingEvent']
 export type ReadinessStatus = components['schemas']['ReadinessStatus']
 
+// Histórico de temporadas + carreira do técnico (issue #60)
+export type SeasonRecord    = components['schemas']['SeasonRecord']
+export type SeasonStanding  = components['schemas']['SeasonStanding']
+export type SeasonTopScorer = components['schemas']['SeasonTopScorer']
+export type ClubCareer      = components['schemas']['ClubCareer']
+export type CareerCampaign  = components['schemas']['CareerCampaign']
+
 // Auth (issue #18) + seleção de clube (issue #19)
 export type AuthUser        = components['schemas']['AuthUser']
 export type AuthResponse    = components['schemas']['AuthResponse']

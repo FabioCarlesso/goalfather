@@ -625,6 +625,51 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   total não diz se a rodada rendeu por estádio cheio ou por ingresso caro.
   **A engine de partida não mudou** — bilheteria é regra financeira de rodada,
   aplicada em `computeFinances`.
+- [x] **6.7** Histórico de carreira do técnico e da liga — issue #60
+  (a virada de temporada declarava um campeão e apagava tudo: tabela zerada,
+  `goals` de cada jogador resetado, nenhuma memória. Agora ela grava antes um
+  `SeasonRecord` — campeão, artilheiro da liga e a classificação final de
+  todas as divisões, com o aproveitamento de cada clube —, montado pela regra
+  pura `seasonRecordOf` em `domain/rules/SeasonHistoryRules.kt` e servido por
+  `GET /api/league/history`, `/history/{season}` e `/history/club/{clubId}`.)
+
+  **A ordem é a regra.** O snapshot é a PRIMEIRA coisa que `startNextSeason`
+  faz, antes de `startNextSeasonClubs` zerar `goals`/`yellowCards`: montar o
+  record depois daria um artilheiro sempre nulo. Os clubes passaram a ser
+  lidos UMA vez no início da virada e atravessam as duas etapas — a leitura
+  acontece depois de `persistRoundEffects`, então o caixa e os gols da última
+  rodada já estão no estado que a história registra. `PlayRoundServiceTest`
+  cobre a ordem plantando um artilheiro e exigindo que ele apareça no record
+  *e* que o elenco salvo saia zerado. O artilheiro sai da liga inteira de
+  graça: `persistRoundEffects` sempre acumulou `goals` para TODOS os clubes,
+  IA incluída — era o gap que a issue pedia para verificar.
+
+  **Append-only, no tipo e na tabela.** `SeasonRecord` é o único agregado do
+  domínio que nunca sofre `copy()` — é história. O port
+  `SeasonHistoryRepository` reflete isso: só tem `append`, sem `save` nem
+  `delete`. A migration V11 dá PK a `season`, então duas réplicas disputando
+  a virada (issue #46) não gravam dois campeões: o `existsById` resolve o
+  retardatário comum e a colisão de PK resolve a corrida real — daí o
+  `saveAndFlush` no adapter, porque com `save` o INSERT só sairia no commit,
+  fora do `try`, e a violação subiria como erro em vez de virar `false`. Na
+  prática o claim da rodada já garante uma execução só; a unicidade é a rede
+  de segurança.
+
+  **Por que `SeasonStanding` embrulha `StandingRow` em vez de repetir seus
+  campos.** Copiar as dez colunas criaria dois lugares para consertar quando
+  o critério de pontuação mudar. O que a história ACRESCENTA é a divisão (a
+  linha sozinha não diz em que tier aquele 1º lugar valeu) e o
+  `pointsPercentage` — gravado, não derivado na leitura, justamente porque é
+  história: se a liga passar a dar 2 pontos por vitória, as temporadas antigas
+  continuam contando a verdade da época delas.
+
+  **`ClubCareer` é projeção, não agregado.** Temporadas disputadas, títulos e
+  melhor campanha saem de `careerOf(clubId, records)` a cada leitura, em vez
+  de um contador persistido que pode divergir do histórico que resume. O
+  critério de "melhor" mora no backend (divisão pesa mais que posição, que
+  pesa mais que pontos) para o frontend não reimplementá-lo. Clube sem
+  temporada encerrada devolve 404 — quem nunca terminou um campeonato não tem
+  carreira, e isso é diferente de uma carreira zerada.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`

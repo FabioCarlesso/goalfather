@@ -3,10 +3,14 @@
 // Quando o backend Kotlin estiver pronto, esta pasta inteira (mocks/) é removida.
 
 import type {
+  CareerCampaign,
   Club,
+  ClubCareer,
   Player,
   MarketEntry,
   Position,
+  SeasonRecord,
+  SeasonTopScorer,
   Standings,
   Retirement,
   Round,
@@ -299,6 +303,8 @@ export const state = {
   clubs: { [myClub.id]: myClub } as Record<number, Club>,
   market: [...marketEntries] as MarketEntry[],
   standings: initialStandings.map((s) => ({ ...s, rows: [...s.rows] })) as Standings[],
+  // Temporadas encerradas, da mais recente para a mais antiga (issue #60).
+  history: [] as SeasonRecord[],
   currentRound: generateRound(1, 2026) as Round,
   nextRound: () => generateRound(state.currentRound.number + 1, state.currentRound.season),
 }
@@ -487,6 +493,11 @@ export function materializeClub(id: number): void {
 // próxima temporada. Espelha startNextSeason do backend, mantendo a parity
 // mock ↔ real.
 export function startNewSeason(season: number, finalTables: Standings[]): Retirement[] {
+  // História ANTES do reset (issue #60): o snapshot precisa dos gols da
+  // temporada, que o envelhecimento logo abaixo zera. Mesma ordem do backend
+  // — é ela que o critério de aceite da issue exige.
+  state.history = [seasonRecordOf(season - 1, finalTables), ...state.history]
+
   Object.assign(divisionAssignments, applyPromotionRelegation(finalTables))
   const my = state.clubs[1]
   let retirements: Retirement[] = []
@@ -516,4 +527,91 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
   state.standings = freshStandings(season, divisionAssignments)
   state.currentRound = generateRound(1, season)
   return retirements
+}
+
+// ─── Histórico de temporadas (issue #60) ─────────────────────────────────
+// Espelha domain/rules/SeasonHistoryRules.kt. Como o resto de mocks/, é
+// código descartável: quando o backend estiver ligado, o handler sai e esta
+// função vai junto.
+
+/**
+ * Snapshot da temporada encerrada: campeão, artilheiro e classificação final
+ * de todas as divisões, já na ordem de exibição (elite primeiro, por posição).
+ */
+export function seasonRecordOf(season: number, finalTables: Standings[]): SeasonRecord {
+  const standings = [...finalTables]
+    .sort((a, b) => a.division - b.division)
+    .flatMap((table) =>
+      [...table.rows]
+        .sort((a, b) => a.position - b.position)
+        .map((row) => ({
+          division: table.division,
+          row,
+          // Aproveitamento: pontos conquistados / disputados. Time sem jogo
+          // fica em 0 (e não numa divisão por zero).
+          pointsPercentage: row.played === 0 ? 0 : Math.round((row.points * 100) / (row.played * 3)),
+        })),
+    )
+  const topScorer = topScorerOf()
+  return {
+    season,
+    champion: standings[0]!,
+    finalStandings: standings,
+    ...(topScorer ? { topScorer } : {}),
+  }
+}
+
+/**
+ * Artilheiro entre os clubes MATERIALIZADOS. Limitação conhecida do mock: só
+ * quem tem elenco de verdade em `state.clubs` acumula gols (os demais são
+ * `clubMeta`, que guarda força e posições, não estatísticas). No backend a
+ * artilharia é da liga inteira, IA incluída.
+ */
+function topScorerOf(): SeasonTopScorer | null {
+  const scorers = Object.values(state.clubs).flatMap((club) =>
+    club.squad.filter((p) => p.goals > 0).map((p) => ({ club, player: p })),
+  )
+  if (scorers.length === 0) return null
+  // Mais gols; empate resolve pelo menor id, como no backend.
+  const best = scorers.reduce((a, b) =>
+    b.player.goals > a.player.goals || (b.player.goals === a.player.goals && b.player.id < a.player.id) ? b : a,
+  )
+  return {
+    playerId: best.player.id,
+    playerName: best.player.name,
+    clubId: best.club.id,
+    clubName: best.club.name,
+    goals: best.player.goals,
+  }
+}
+
+/**
+ * Carreira do clube ao longo das temporadas registradas, ou `null` se ele
+ * ainda não fechou nenhuma. Espelha `careerOf` do backend: "melhor" é
+ * primeiro a divisão, depois a posição, e só então os pontos.
+ */
+export function careerOf(clubId: number, records: SeasonRecord[]): ClubCareer | null {
+  const campaigns = records.flatMap((record) => {
+    const standing = record.finalStandings.find((s) => s.row.clubId === clubId)
+    return standing ? [{ season: record.season, standing }] : []
+  })
+  if (campaigns.length === 0) return null
+
+  const latest = campaigns.reduce((a, b) => (b.season > a.season ? b : a))
+  const best = campaigns.reduce((a, b) => (isBetterCampaign(b, a) ? b : a))
+  return {
+    clubId,
+    clubName: latest.standing.row.clubName,
+    seasonsPlayed: campaigns.length,
+    titles: records.filter((r) => r.champion.row.clubId === clubId).map((r) => r.season).sort((a, b) => a - b),
+    bestCampaign: best,
+  }
+}
+
+/** Divisão pesa mais que posição, que pesa mais que pontos; temporada desempata. */
+function isBetterCampaign(a: CareerCampaign, b: CareerCampaign): boolean {
+  if (a.standing.division !== b.standing.division) return a.standing.division < b.standing.division
+  if (a.standing.row.position !== b.standing.row.position) return a.standing.row.position < b.standing.row.position
+  if (a.standing.row.points !== b.standing.row.points) return a.standing.row.points > b.standing.row.points
+  return a.season < b.season
 }
