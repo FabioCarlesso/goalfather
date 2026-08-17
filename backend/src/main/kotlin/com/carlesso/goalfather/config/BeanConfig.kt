@@ -7,6 +7,7 @@ import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
+import com.carlesso.goalfather.application.port.`in`.SeasonHistoryUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
@@ -19,6 +20,7 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PasswordHasher
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
+import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BuyPlayerService
 import com.carlesso.goalfather.application.service.ClaimClubService
@@ -28,6 +30,7 @@ import com.carlesso.goalfather.application.service.PlayRoundService
 import com.carlesso.goalfather.application.service.RegisterUserService
 import com.carlesso.goalfather.application.service.RoundReadinessService
 import com.carlesso.goalfather.application.service.SaveLineupService
+import com.carlesso.goalfather.application.service.SeasonHistoryService
 import com.carlesso.goalfather.application.service.SellPlayerService
 import com.carlesso.goalfather.application.service.SetTicketPriceService
 import com.carlesso.goalfather.application.service.SetTrainingFocusService
@@ -105,6 +108,8 @@ class BeanConfig {
         // Virada de temporada (issue #55): mercado envelhece e aposentado sai do banco.
         marketRepo: MarketRepository,
         playerRepo: PlayerRepository,
+        // Histórico da liga (issue #60): snapshot da temporada antes do reset.
+        historyRepo: SeasonHistoryRepository,
         simulator: MatchSimulator,
         // MeterRegistry é provido pelo actuator; injetado para o timer da
         // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
@@ -115,9 +120,16 @@ class BeanConfig {
         readinessRepo,
         marketRepo,
         playerRepo,
+        historyRepo,
         simulator,
         meterRegistry,
     )
+
+    /** Leitura do histórico de temporadas e da carreira do técnico (issue #60). */
+    @Bean
+    fun seasonHistoryUseCase(
+        historyRepo: SeasonHistoryRepository,
+    ): SeasonHistoryUseCase = SeasonHistoryService(historyRepo)
 
     @Bean
     fun roundReadinessUseCase(

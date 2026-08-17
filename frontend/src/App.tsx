@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { DashboardPage } from './pages/DashboardPage'
 import { StandingsPage } from './pages/StandingsPage'
+import { HistoryPage } from './pages/HistoryPage'
 import { MarketPage } from './pages/MarketPage'
 import { LineupPage } from './pages/LineupPage'
 import { RoundPage } from './pages/RoundPage'
@@ -18,6 +19,7 @@ const nav = [
   { to: '/round',     label: 'Rodada' },
   { to: '/market',    label: 'Mercado' },
   { to: '/standings', label: 'Tabela' },
+  { to: '/history',   label: 'Histórico' },
   { to: '/welcome',   label: 'Tutorial' },
 ] as const
 
@@ -147,6 +149,7 @@ export function App() {
                   <Route path="/round/match/:matchId" element={<MatchPage />} />
                   <Route path="/market"    element={<MarketPage />} />
                   <Route path="/standings" element={<StandingsPage />} />
+                  <Route path="/history"   element={<HistoryPage />} />
                 </Route>
               </Route>
             </Route>

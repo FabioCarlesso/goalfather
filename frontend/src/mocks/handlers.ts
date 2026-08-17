@@ -8,6 +8,7 @@ import {
   state,
   clubMeta,
   applyRoundToStandings,
+  careerOf,
   SEASON_ROUNDS,
   startNewSeason,
   auth,
@@ -485,6 +486,39 @@ export const handlers = [
   http.get('/api/league/standings', async () => {
     await delay(SIMULATED_LATENCY_MS)
     return HttpResponse.json(state.standings)
+  }),
+
+  // ─── getSeasonHistory / getClubCareer / getSeasonRecord ───────────────
+  // A rota do clube vem ANTES de `/history/:season`: o MSW casa na ordem de
+  // registro, e `:season` engoliria o literal `club`.
+  http.get('/api/league/history', async () => {
+    await delay(SIMULATED_LATENCY_MS)
+    return HttpResponse.json(state.history)
+  }),
+
+  http.get('/api/league/history/club/:clubId', async ({ params }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const career = careerOf(Number(params.clubId), state.history)
+    if (!career) {
+      return HttpResponse.json(
+        { code: 'CAREER_NOT_FOUND', message: `Clube ${params.clubId} sem temporada encerrada` } satisfies ErrorResponse,
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(career)
+  }),
+
+  http.get('/api/league/history/:season', async ({ params }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const season = Number(params.season)
+    const record = state.history.find((r) => r.season === season)
+    if (!record) {
+      return HttpResponse.json(
+        { code: 'SEASON_RECORD_NOT_FOUND', message: `Temporada ${season} não encerrada` } satisfies ErrorResponse,
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(record)
   }),
 
   // ─── streamMatch (WebSocket) ──────────────────────────────────────────

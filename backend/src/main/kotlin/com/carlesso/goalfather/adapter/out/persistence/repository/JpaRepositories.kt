@@ -7,6 +7,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
+import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsId
 import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
@@ -95,6 +96,16 @@ interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, Roun
         "select min(r.readyAt) from RoundReadinessEntity r where r.id.roundNumber = :roundNumber",
     )
     fun findFirstReadyAt(@Param("roundNumber") roundNumber: Int): Instant?
+}
+
+/**
+ * Histórico de temporadas (issue #60). Sem `@Cacheable`: a leitura acontece
+ * quando o técnico abre a tela de histórico, não a cada rodada, e o cache só
+ * adicionaria um lugar para a temporada recém-gravada não aparecer.
+ */
+interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, Int> {
+    /** Da temporada mais recente para a mais antiga — ordem de exibição. */
+    fun findAllByOrderBySeasonDesc(): List<SeasonHistoryEntity>
 }
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, StandingsId> {

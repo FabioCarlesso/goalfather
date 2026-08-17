@@ -39,7 +39,14 @@ class TrainingRoundEffectsTest {
     private val leagueRepo: LeagueRepository = mockk()
     private val readinessRepo: RoundReadinessRepository = mockk(relaxed = true)
     private val service =
-        PlayRoundService(clubRepo, leagueRepo, readinessRepo, mockk(relaxed = true), mockk(relaxed = true))
+        PlayRoundService(
+            clubRepo,
+            leagueRepo,
+            readinessRepo,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+        )
 
     // Elenco jovem e cansado: o foco FISICO tem o que recuperar, e a chance de
     // evolução da faixa YOUNG é a mais alta — o efeito aparece sem depender de

@@ -7,6 +7,7 @@ import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
+import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
@@ -42,6 +43,7 @@ import com.carlesso.goalfather.domain.rules.isSalaryRound
 import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
+import com.carlesso.goalfather.domain.rules.seasonRecordOf
 import com.carlesso.goalfather.domain.rules.seasonRounds
 import com.carlesso.goalfather.domain.rules.train
 import com.carlesso.goalfather.domain.rules.trainingSeed
@@ -77,6 +79,9 @@ class PlayRoundService(
     // banco em vez de virar linha órfã.
     private val marketRepo: MarketRepository,
     private val playerRepo: PlayerRepository,
+    // Histórico da liga (issue #60): a virada de temporada grava o snapshot
+    // ANTES de zerar tabela e estatísticas.
+    private val historyRepo: SeasonHistoryRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
     // Default = registry isolado: mantém os testes existentes construindo o
     // service sem passar métrica; em produção o BeanConfig injeta o registry real
@@ -256,31 +261,46 @@ class PlayRoundService(
     }
 
     /**
-     * Encerra a temporada e abre a seguinte: aplica promoção/rebaixamento
-     * às tabelas finais (issue #47), zera as estatísticas de temporada dos
-     * jogadores, gera a rodada 1 e tabelas novas (uma por divisão). As
-     * tabelas encerradas NÃO são apagadas (PK por `season`+`division`),
-     * continuam consultáveis via `GET /api/league/standings?season=`.
-     * Devolve o `SeasonFinished` para o chamador emitir (nada é emitido
-     * aqui — roda sob `NonCancellable`).
+     * Encerra a temporada e abre a seguinte: grava a história (issue #60),
+     * aplica promoção/rebaixamento às tabelas finais (issue #47), zera as
+     * estatísticas de temporada dos jogadores, gera a rodada 1 e tabelas
+     * novas (uma por divisão). As tabelas encerradas NÃO são apagadas (PK por
+     * `season`+`division`), continuam consultáveis via
+     * `GET /api/league/standings?season=`. Devolve o `SeasonFinished` para o
+     * chamador emitir (nada é emitido aqui — roda sob `NonCancellable`).
+     *
+     * **A ORDEM AQUI É REGRA, não estilo.** O snapshot é a PRIMEIRA coisa que
+     * acontece porque `startNextSeasonClubs` zera `goals` logo abaixo: montar
+     * o record depois daria um artilheiro sempre nulo. Os clubes são lidos uma
+     * vez só e atravessam as duas etapas — a leitura acontece depois de
+     * `persistRoundEffects`, então o caixa e os gols da última rodada já estão
+     * no estado que a história registra.
      */
     private suspend fun startNextSeason(
         endedSeason: Int,
         finalStandings: List<Standings>,
     ): RoundEvent.SeasonFinished {
-        // Campeão = líder da elite (divisão 1).
-        val champion = finalStandings.minBy { it.division }.rows.first()
-        val nextSeason = endedSeason + 1
+        val clubsAtSeasonEnd = clubRepo.findAll()
 
+        // História ANTES do reset (issue #60). O `append` devolve `false` se a
+        // temporada já tinha record — ignorado de propósito: quem chega aqui
+        // venceu o claim da rodada (issue #46), então um `false` só pode vir de
+        // uma réplica retardatária, e o certo é não sobrescrever a história.
+        val record = seasonRecordOf(endedSeason, finalStandings, clubsAtSeasonEnd)
+        historyRepo.append(record)
+
+        val nextSeason = endedSeason + 1
         val nextDivisions = applyPromotionRelegation(finalStandings)
-        val (clubs, retirements) = startNextSeasonClubs(nextSeason, nextDivisions)
+        val (clubs, retirements) = startNextSeasonClubs(nextSeason, nextDivisions, clubsAtSeasonEnd)
         ageMarket(nextSeason)
         leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
         freshStandings(nextSeason, clubs).forEach { leagueRepo.saveStandings(it) }
 
         return RoundEvent.SeasonFinished(
             season = endedSeason,
-            champion = champion,
+            // Campeão = líder da elite, o mesmo que foi para a história: uma
+            // fonte só evita evento e record discordarem sobre quem levou.
+            champion = record.champion.row,
             standings = finalStandings,
             retirements = retirements,
         )
@@ -290,7 +310,7 @@ class PlayRoundService(
      * Prepara os clubes para a nova temporada numa ÚNICA gravação por clube:
      * envelhece o elenco e promove a base no lugar de quem se aposentou
      * (issue #55), zera gols/cartões, cura lesões e move quem subiu/desceu
-     * para a nova divisão (issue #47). Relê os clubes (já com o caixa
+     * para a nova divisão (issue #47). Recebe os clubes já relidos (com o caixa
      * pós-bilheteria) para não desfazer as finanças aplicadas na rodada.
      * Devolve o estado atualizado — que alimenta o calendário e as tabelas da
      * temporada nova — junto das aposentadorias, que viajam no `SeasonFinished`
@@ -306,11 +326,12 @@ class PlayRoundService(
     private suspend fun startNextSeasonClubs(
         nextSeason: Int,
         nextDivisions: Map<ClubId, Division>,
+        clubsAtSeasonEnd: List<Club>,
     ): SeasonTurnover {
         val clubs = mutableListOf<Club>()
         val retirements = mutableListOf<Retirement>()
 
-        for (club in clubRepo.findAll()) {
+        for (club in clubsAtSeasonEnd) {
             val turn = ageSquadForSeason(club.squad, club.id, nextSeason)
             retirements += turn.retirements
 

@@ -39,6 +39,7 @@ class SimulationMetricsTest {
         readinessRepo,
         mockk(relaxed = true),
         mockk(relaxed = true),
+        mockk(relaxed = true),
         meterRegistry = registry,
     )
 

@@ -64,7 +64,8 @@ goalfather/
 │       │       ├── useClub.ts
 │       │       ├── useMatch.ts
 │       │       ├── useMarket.ts
-│       │       └── useStandings.ts
+│       │       ├── useStandings.ts
+│       │       └── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
 │       ├── mocks/
 │       │   ├── browser.ts            # setupWorker do MSW
 │       │   ├── handlers.ts           # handlers HTTP
@@ -76,7 +77,8 @@ goalfather/
 │       │   ├── LineupPage.tsx
 │       │   ├── MatchPage.tsx         # consome WS
 │       │   ├── MarketPage.tsx
-│       │   └── StandingsPage.tsx
+│       │   ├── StandingsPage.tsx
+│       │   └── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
 │       ├── components/               # apresentação pura, sem fetch
 │       │   ├── PlayerCard.tsx
 │       │   ├── FormationGrid.tsx
