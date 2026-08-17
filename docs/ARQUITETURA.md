@@ -649,11 +649,25 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   `SeasonHistoryRepository` reflete isso: só tem `append`, sem `save` nem
   `delete`. A migration V11 dá PK a `season`, então duas réplicas disputando
   a virada (issue #46) não gravam dois campeões: o `existsById` resolve o
-  retardatário comum e a colisão de PK resolve a corrida real — daí o
-  `saveAndFlush` no adapter, porque com `save` o INSERT só sairia no commit,
-  fora do `try`, e a violação subiria como erro em vez de virar `false`. Na
-  prática o claim da rodada já garante uma execução só; a unicidade é a rede
-  de segurança.
+  retardatário comum e a colisão de PK resolve a corrida real, já que
+  `existsById` + gravação não é atômico. Na prática o claim da rodada já
+  garante uma execução só; a unicidade é a rede de segurança.
+
+  **Duas armadilhas que a rede de segurança tinha (achado da review do PR
+  #76).** A primeira: o `save` do Spring Data escolhe entre `persist` e
+  `merge` pelo `isNew()`, e o default olha para o id — `season` é atribuído
+  por nós e nunca é nulo, então a entidade parecia sempre existente e todo
+  `save` virava `merge` (SELECT + UPDATE). O resultado é que a PK JAMAIS era
+  violada: a segunda gravação sobrescrevia a primeira em silêncio e o `catch`
+  de `DataIntegrityViolationException` era código morto — exatamente o oposto
+  de append-only. Por isso `SeasonHistoryEntity` implementa `Persistable` com
+  `isNew() = true`, o que é honesto para um agregado cuja única escrita é a de
+  criação. A segunda: o `saveAndFlush` em vez de `save`, para o INSERT sair
+  DENTRO do `try` e não no commit, onde a violação subiria como erro em vez
+  de virar `false`. `SeasonHistoryIntegrationTest` guarda a primeira indo
+  direto ao JPA (o caminho que duas réplicas tomam quando ambas passam pelo
+  `existsById`) e exigindo a exceção; `SeasonHistoryPersistenceAdapterTest`
+  guarda a tradução dela em `false`.
 
   **Por que `SeasonStanding` embrulha `StandingRow` em vez de repetir seus
   campos.** Copiar as dez colunas criaria dois lugares para consertar quando

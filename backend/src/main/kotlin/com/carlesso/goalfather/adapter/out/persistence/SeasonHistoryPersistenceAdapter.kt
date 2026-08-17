@@ -30,10 +30,16 @@ class SeasonHistoryPersistenceAdapter(
      *
      * Duas defesas, como no claim da rodada (issue #46): o `existsById`
      * resolve o caso comum (retardatário chegando muito depois) sem escrever
-     * nada, e a colisão de PK resolve a corrida real entre duas réplicas. O
-     * `saveAndFlush` é obrigatório para a segunda funcionar — com `save`, o
-     * INSERT só sairia no commit, FORA deste `try`, e a violação subiria como
-     * erro em vez de virar `false`.
+     * nada, e a colisão de PK resolve a corrida real entre duas réplicas —
+     * `existsById` + gravação NÃO é atômico, então sozinho ele deixaria dois
+     * nós passarem e o segundo sobrescreveria o campeão do primeiro.
+     *
+     * Duas condições fazem a segunda defesa existir de fato:
+     * - `SeasonHistoryEntity` é `Persistable` com `isNew() = true`, senão o
+     *   Spring Data faria `merge` (UPDATE) em vez de INSERT e a PK nunca seria
+     *   violada — era o buraco que a review do PR #76 pegou;
+     * - `saveAndFlush` em vez de `save`, para o INSERT sair AQUI e não no
+     *   commit, fora deste `try` (aí a violação subiria como erro).
      */
     override suspend fun append(record: SeasonRecord): Boolean = withContext(Dispatchers.IO) {
         if (historyRepo.existsById(record.season)) return@withContext false
