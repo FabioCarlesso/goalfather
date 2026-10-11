@@ -74,6 +74,9 @@ export interface MatchSetup {
   // 4-4-2, que é o eixo neutro e reproduz a engine anterior à tática.
   homeTactics?: TeamTactics
   awayTactics?: TeamTactics
+  // Jogo de mata-mata (issue #61): empate no tempo normal vai aos pênaltis.
+  // Ausente = partida de liga, que aceita empate e consome o RNG como antes.
+  knockout?: boolean
 }
 
 const EVENT_RATE       = 0.12  // chance de algo acontecer por minuto
@@ -249,7 +252,105 @@ export function* simulateMatch(
     }
   }
 
+  // Mata-mata não termina empatado (issue #61): a disputa usa o MESMO RNG,
+  // depois dos 90' — o tempo normal fica idêntico ao de um jogo de liga.
+  if (setup.knockout && homeGoals === awayGoals) {
+    const shootout = penaltyShootout(
+      setup.homeSquad, setup.awaySquad, setup.homeStrength, setup.awayStrength, rng,
+    )
+    yield* emit({ type: 'PenaltyShootout', minute: 90, ...shootout })
+  }
+
   yield { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: matchStats(sheet) }
+}
+
+// ─── Pênaltis (issue #61) — espelha domain/rules/PenaltyRules.kt ──────────
+
+export const PENALTY_SERIES = 5
+export const PENALTY_CONVERSION_MIN = 0.55
+export const PENALTY_CONVERSION_MAX = 0.92
+const PENALTY_BASE_CONVERSION = 0.75
+const PENALTY_SKILL_WEIGHT = 0.005
+const MAX_SUDDEN_DEATH_PAIRS = 1_000
+
+type PenaltyKick = Extract<MatchEvent, { type: 'PenaltyShootout' }>['kicks'][number]
+
+export interface Shootout {
+  homeScore: number
+  awayScore: number
+  kicks: PenaltyKick[]
+}
+
+/** Quem mais finaliza bate primeiro; goleiro (peso 0) por último; id desempata. */
+export const penaltyTakers = (squad: SquadMember[]): SquadMember[] =>
+  [...squad].sort((a, b) => SCORING_WEIGHT[b.pos] - SCORING_WEIGHT[a.pos] || a.id - b.id)
+
+/**
+ * Chance de conversão. O mock não tem o overall de cada jogador da IA, então
+ * usa a força média de quem bate contra a de quem defende — mesma fórmula do
+ * backend, com o time no lugar do indivíduo.
+ */
+export const penaltyConversion = (takerStrength: number, keeperStrength: number): number =>
+  Math.min(
+    PENALTY_CONVERSION_MAX,
+    Math.max(PENALTY_CONVERSION_MIN, PENALTY_BASE_CONVERSION + (takerStrength - keeperStrength) * PENALTY_SKILL_WEIGHT),
+  )
+
+/**
+ * Série de 5 alternada (mandante primeiro), encerrada quando um lado não
+ * alcança mais o outro, depois morte súbita. Sempre devolve vencedor; lado sem
+ * ninguém perde as cobranças, e sem ninguém dos dois lados a vaga é sorteada.
+ */
+export function penaltyShootout(
+  home: SquadMember[],
+  away: SquadMember[],
+  homeStrength: number,
+  awayStrength: number,
+  rng: MulberryRng,
+): Shootout {
+  const homeTakers = penaltyTakers(home)
+  const awayTakers = penaltyTakers(away)
+  if (homeTakers.length === 0 && awayTakers.length === 0) {
+    const homeWins = rng.next() < 0.5
+    return { homeScore: homeWins ? 1 : 0, awayScore: homeWins ? 0 : 1, kicks: [] }
+  }
+
+  const kicks: PenaltyKick[] = []
+  const score = { home: 0, away: 0 }
+  const taken = { home: 0, away: 0 }
+
+  const kick = (isHome: boolean) => {
+    const side = isHome ? 'home' : 'away'
+    const takers = isHome ? homeTakers : awayTakers
+    const taker = takers.length > 0 ? takers[taken[side] % takers.length]! : null
+    const chance = isHome
+      ? penaltyConversion(homeStrength, awayStrength)
+      : penaltyConversion(awayStrength, homeStrength)
+    const scored = taker != null && rng.next() < chance
+    kicks.push({ playerId: taker?.id ?? null, home: isHome, scored })
+    taken[side]++
+    if (scored) score[side]++
+  }
+
+  const decidedInSeries = () =>
+    score.home > score.away + (PENALTY_SERIES - taken.away) ||
+    score.away > score.home + (PENALTY_SERIES - taken.home)
+
+  for (let i = 0; i < PENALTY_SERIES; i++) {
+    kick(true)
+    if (decidedInSeries()) break
+    kick(false)
+    if (decidedInSeries()) break
+  }
+
+  let pairs = 0
+  while (score.home === score.away) {
+    if (++pairs > MAX_SUDDEN_DEATH_PAIRS) throw new Error('Morte súbita sem fim')
+    kick(true)
+    kick(false)
+  }
+
+  return { homeScore: score.home, awayScore: score.away, kicks }
 }
 
 // ─── Sumário da partida (issue #57) — espelha domain/event/MatchStats.kt ───
@@ -299,8 +400,10 @@ export function matchStats(events: MatchEvent[]): MatchStats {
         return onSide(stats, event.home, (t) =>
           event.red ? { ...t, redCards: t.redCards + 1 } : { ...t, yellowCards: t.yellowCards + 1 },
         )
+      // Pênaltis não entram nas finalizações (issue #61): o sumário é dos 90'.
       case 'KickOff':
       case 'Injury':
+      case 'PenaltyShootout':
       case 'FullTime':
         return stats
     }

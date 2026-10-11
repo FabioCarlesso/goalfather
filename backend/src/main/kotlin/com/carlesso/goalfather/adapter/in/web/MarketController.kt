@@ -14,6 +14,7 @@ import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.result.TransferResult
 import io.micrometer.core.instrument.MeterRegistry
+import kotlinx.serialization.json.Json
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -31,6 +32,9 @@ class MarketController(
     private val buyUseCase: BuyPlayerUseCase,
     private val sellUseCase: SellPlayerUseCase,
     private val meterRegistry: MeterRegistry,
+    // `TransferResultDto` é sealed: sai pelo kotlinx (`okJson`) para levar o
+    // `type` do contrato — com `ResponseEntity<Any>` o Spring usaria o Jackson.
+    private val json: Json,
 ) {
 
     @GetMapping
@@ -50,7 +54,7 @@ class MarketController(
         // o `PlayerNotAvailable` — na prática, a perda do lock otimista do mercado
         // (#21) quando dois donos disputam o mesmo jogador.
         countTransfer(result)
-        return ResponseEntity.ok(result.toDto())
+        return json.okJson(result.toDto())
     }
 
     private fun countTransfer(result: TransferResult) {
@@ -70,7 +74,7 @@ class MarketController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> {
         ownershipError(req.clubId, userId)?.let { return it }
-        return ResponseEntity.ok(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)).toDto())
+        return json.okJson(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)).toDto())
     }
 
     /** 403 se o usuário não é dono do clube alvo da operação (issue #18). */

@@ -87,6 +87,17 @@ function EventLine({ event, nameOf }: { event: MatchEvent; nameOf: (id: number) 
           🧤 Defesa{event.goalkeeperId != null ? ` de ${nameOf(event.goalkeeperId)}` : ' difícil'}
         </Line>
       )
+    // Disputa de pênaltis (issue #61): sai antes do FullTime, que segue com
+    // o placar dos 90'. O placar da disputa vem pronto do backend.
+    case 'PenaltyShootout':
+      return (
+        <Line minute={event.minute} color="text-amber-300 font-semibold">
+          🥅 Pênaltis: {event.homeScore} × {event.awayScore}
+          <span className="ml-2 font-normal text-slate-400">
+            ({event.kicks.map((k) => (k.scored ? '●' : '○')).join('')})
+          </span>
+        </Line>
+      )
     case 'FullTime':
       return (
         <Line minute={event.minute} color="text-slate-100 font-semibold">

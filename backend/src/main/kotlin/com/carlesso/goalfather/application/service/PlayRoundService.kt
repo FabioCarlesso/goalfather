@@ -3,6 +3,7 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
@@ -16,15 +17,18 @@ import com.carlesso.goalfather.domain.event.TrainingReport
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
@@ -35,16 +39,22 @@ import com.carlesso.goalfather.domain.rules.ageSquadForSeason
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
+import com.carlesso.goalfather.domain.rules.canHoldCup
 import com.carlesso.goalfather.domain.rules.canScheduleSeason
+import com.carlesso.goalfather.domain.rules.cashDelta
+import com.carlesso.goalfather.domain.rules.cupDrawSeed
+import com.carlesso.goalfather.domain.rules.drawCup
 import com.carlesso.goalfather.domain.rules.fitnessSeed
 import com.carlesso.goalfather.domain.rules.gate
 import com.carlesso.goalfather.domain.rules.generateRound
-import com.carlesso.goalfather.domain.rules.isSalaryRound
+import com.carlesso.goalfather.domain.rules.isSalaryDate
 import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
+import com.carlesso.goalfather.domain.rules.recordRound
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
+import com.carlesso.goalfather.domain.rules.scheduleRound
+import com.carlesso.goalfather.domain.rules.seasonCalendar
 import com.carlesso.goalfather.domain.rules.seasonRecordOf
-import com.carlesso.goalfather.domain.rules.seasonRounds
 import com.carlesso.goalfather.domain.rules.train
 import com.carlesso.goalfather.domain.rules.trainingSeed
 import io.micrometer.core.instrument.MeterRegistry
@@ -69,6 +79,13 @@ import kotlin.random.Random
  * `frontend/src/mocks/handlers.ts`. Quando este service rodar dentro
  * do Spring (Fase 3), o handler MSW pode ser desligado e a UI
  * continua igual.
+ *
+ * **Copa (issue #61).** Uma data do calendário é rodada de liga OU fase de
+ * copa (`Round.stage`), e as duas passam por ESTE mesmo fluxo — prontidão,
+ * claim `finishRound`, stream e efeitos. Não existe um segundo mecanismo de
+ * sincronização para a copa, que é o ponto de atenção multiplayer da issue.
+ * O que muda numa data de copa: empate vai aos pênaltis, a tabela não mexe,
+ * a folha não é cobrada e o vencedor de cada confronto leva o prêmio da fase.
  */
 class PlayRoundService(
     private val clubRepo: ClubRepository,
@@ -82,6 +99,9 @@ class PlayRoundService(
     // Histórico da liga (issue #60): a virada de temporada grava o snapshot
     // ANTES de zerar tabela e estatísticas.
     private val historyRepo: SeasonHistoryRepository,
+    // Copa mata-mata (issue #61): o sorteio sai na virada de temporada e a
+    // chave avança a cada data de copa encerrada.
+    private val cupRepo: CupRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
     // Default = registry isolado: mantém os testes existentes construindo o
     // service sem passar métrica; em produção o BeanConfig injeta o registry real
@@ -101,6 +121,8 @@ class PlayRoundService(
         // eventos cabe folgado.)
         val tagged = mutableListOf<Pair<Long, MatchEvent>>()
         val finalScores = mutableMapOf<Long, Pair<Int, Int>>()
+        // Disputas de pênaltis da rodada de copa (issue #61), por partida.
+        val shootouts = mutableMapOf<Long, PenaltyScore>()
         // Clubes que entraram em campo nesta rodada — guardados para
         // persistir as estatísticas dos jogadores ao final (issue #2).
         val involvedClubs = mutableMapOf<Long, Club>()
@@ -119,6 +141,8 @@ class PlayRoundService(
                 away = away?.startingLineup() ?: emptyLineup(),
                 homeName = match.homeClubName,
                 awayName = match.awayClubName,
+                // Data de copa = mata-mata: empate decide nos pênaltis (issue #61).
+                knockout = round.isKnockout,
             )
         }
 
@@ -135,8 +159,11 @@ class PlayRoundService(
         for ((match, setup) in setups) {
             for (event in simulator.simulate(setup, Random(match.matchId)).toList()) {
                 tagged.add(match.matchId to event)
-                if (event is MatchEvent.FullTime) {
-                    finalScores[match.matchId] = event.homeGoals to event.awayGoals
+                when (event) {
+                    is MatchEvent.FullTime -> finalScores[match.matchId] = event.homeGoals to event.awayGoals
+                    is MatchEvent.PenaltyShootout ->
+                        shootouts[match.matchId] = PenaltyScore(event.homeScore, event.awayScore)
+                    else -> Unit
                 }
             }
         }
@@ -167,7 +194,7 @@ class PlayRoundService(
         //
         // Antes disto era um `Mutex` in-JVM, válido só com instância única: dois
         // nós liam `status != Finished` e dobravam caixa, estatísticas e tabela.
-        val finishedMatches = round.matches.map { m -> m.finish(finalScores[m.matchId]) }
+        val finishedMatches = round.matches.map { m -> m.finish(finalScores[m.matchId], shootouts[m.matchId]) }
         val finishedRound = round.copy(matches = finishedMatches, status = RoundStatus.Finished)
 
         if (!leagueRepo.finishRound(finishedRound)) {
@@ -214,9 +241,21 @@ class PlayRoundService(
         events: List<MatchEvent>,
         involvedClubs: Collection<Club>,
     ): List<RoundEvent> {
-        // Calcula o balanço financeiro da rodada — bilheteria (mandante) e
-        // folha salarial em rodadas de "mês" (issue #4).
-        val finances = computeFinances(round, involvedClubs)
+        // Copa da temporada (issue #61). Numa data de copa, os placares (com
+        // os pênaltis) vão para a chave ANTES das finanças: é o resultado que
+        // decide quem leva o prêmio da fase, e o prêmio entra no caixa na mesma
+        // gravação da bilheteria.
+        val seasonCup = cupRepo.findBySeason(round.season)
+        val cupOutcome = when (round.stage) {
+            is RoundStage.League -> null
+            is RoundStage.Cup -> seasonCup?.recordRound(finishedRound)
+        }
+        cupOutcome?.let { cupRepo.save(it.cup) }
+        val cup = cupOutcome?.cup ?: seasonCup
+
+        // Calcula o balanço financeiro da rodada — bilheteria (mandante),
+        // folha salarial em rodadas de "mês" (issue #4) e prêmio da copa.
+        val finances = computeFinances(round, involvedClubs, cupOutcome?.prizes.orEmpty())
 
         // Acumula estatísticas dos jogadores (issue #2), aplica o caixa
         // (issue #4) e o desgaste da rodada (issue #54) em uma única gravação
@@ -246,21 +285,25 @@ class PlayRoundService(
         // (issue #20). Os técnicos sinalizam de novo na rodada seguinte.
         readinessRepo.reset(round.number)
 
-        // Avança o calendário. Num turno único (Berger), a temporada dura o
-        // turno da MAIOR divisão (N-1 rodadas para N clubes). Enquanto não
-        // chega à última rodada, gera a próxima da MESMA temporada. Ao
-        // encerrar a última, vira a temporada (issue #11) com
-        // promoção/rebaixamento entre divisões (issue #47).
+        // Avança o calendário. Num turno único (Berger), a liga dura o turno
+        // da MAIOR divisão (N-1 rodadas para N clubes), e as fases da copa são
+        // intercaladas entre elas (issue #61) — `seasonCalendar` diz o que cada
+        // data disputa. Enquanto não chega à última data, gera a próxima da
+        // MESMA temporada. Ao encerrar a última, vira a temporada (issue #11)
+        // com promoção/rebaixamento entre divisões (issue #47).
         val canSchedule = canScheduleSeason(clubs)
-        val seasonEnded = canSchedule && round.number >= seasonRounds(clubs)
+        val calendar = if (canSchedule) seasonCalendar(clubs, cup) else emptyList()
+        val seasonEnded = canSchedule && round.number >= calendar.size
 
         val tail = mutableListOf<RoundEvent>()
         if (seasonEnded) {
-            tail += startNextSeason(round.season, newStandings)
+            tail += startNextSeason(round.season, newStandings, cup?.champion)
         } else if (canSchedule) {
-            // Gera a próxima rodada antes de sinalizar RoundFinished, para que
-            // `getCurrentRound` já encontre uma rodada Scheduled.
-            leagueRepo.saveRound(generateRound(round.number + 1, round.season, clubs))
+            // Gera a próxima data antes de sinalizar RoundFinished, para que
+            // `getCurrentRound` já encontre uma rodada Scheduled. `number` é
+            // 1-based e a lista 0-based: `calendar[number]` é a data seguinte.
+            val next = calendar[round.number]
+            leagueRepo.saveRound(scheduleRound(round.number + 1, round.season, next, clubs, cup))
         }
 
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
@@ -288,6 +331,7 @@ class PlayRoundService(
     private suspend fun startNextSeason(
         endedSeason: Int,
         finalStandings: List<Standings>,
+        cupChampion: CupClub?,
     ): RoundEvent.SeasonFinished {
         val clubsAtSeasonEnd = clubRepo.findAll()
 
@@ -295,13 +339,17 @@ class PlayRoundService(
         // temporada já tinha record — ignorado de propósito: quem chega aqui
         // venceu o claim da rodada (issue #46), então um `false` só pode vir de
         // uma réplica retardatária, e o certo é não sobrescrever a história.
-        val record = seasonRecordOf(endedSeason, finalStandings, clubsAtSeasonEnd)
+        val record = seasonRecordOf(endedSeason, finalStandings, clubsAtSeasonEnd, cupChampion)
         historyRepo.append(record)
 
         val nextSeason = endedSeason + 1
         val nextDivisions = applyPromotionRelegation(finalStandings)
         val (clubs, retirements) = startNextSeasonClubs(nextSeason, nextDivisions, clubsAtSeasonEnd)
         ageMarket(nextSeason)
+        // Sorteio da copa da temporada nova (issue #61), com os clubes JÁ nas
+        // divisões novas. Vem antes da rodada 1 só por legibilidade: o
+        // calendário garante que a data 1 é sempre de liga.
+        drawSeasonCup(nextSeason, clubs)
         leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
         freshStandings(nextSeason, clubs).forEach { leagueRepo.saveStandings(it) }
 
@@ -312,7 +360,18 @@ class PlayRoundService(
             champion = record.champion.row,
             standings = finalStandings,
             retirements = retirements,
+            cupChampion = cupChampion,
         )
+    }
+
+    /**
+     * Sorteia e grava a copa da temporada (issue #61). Liga fora da faixa de
+     * [canHoldCup] joga só o campeonato — e o calendário, sem copa, volta a
+     * ser só de liga. Seed por temporada: reprocessar a virada sorteia igual.
+     */
+    private suspend fun drawSeasonCup(season: Int, clubs: List<Club>) {
+        if (!canHoldCup(clubs)) return
+        cupRepo.save(drawCup(season, clubs, Random(cupDrawSeed(season))))
     }
 
     /**
@@ -441,9 +500,14 @@ class PlayRoundService(
      * e fazer isso para a liga inteira seria jogar fora metade do trabalho a
      * cada rodada.
      */
-    private fun computeFinances(round: Round, clubs: Collection<Club>): List<RoundFinance> {
+    private fun computeFinances(
+        round: Round,
+        clubs: Collection<Club>,
+        cupPrizes: Map<ClubId, Long>,
+    ): List<RoundFinance> {
         val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
-        val salaryRound = isSalaryRound(round.number)
+        // Folha segue as rodadas de LIGA; data de copa não cobra (issue #61).
+        val salaryRound = isSalaryDate(round.stage)
         return clubs.map { club ->
             val homeGate =
                 if (club.id.value in homeClubIds) {
@@ -458,9 +522,10 @@ class PlayRoundService(
             val crowd = homeGate?.attendance ?: 0
             val revenue = homeGate?.revenue ?: 0L
             val salaries = if (salaryRound) club.squad.sumOf { it.salary.toLong() } else 0L
-            // Rombo = quanto da folha o caixa+bilheteria não cobriram. Espelha o
-            // truncamento em zero de [persistRoundEffects] (issue #23).
-            val deficit = (salaries - revenue - club.cash).coerceAtLeast(0)
+            val prize = cupPrizes[club.id] ?: 0L
+            // Rombo = quanto da folha o caixa+bilheteria+prêmio não cobriram.
+            // Espelha o truncamento em zero de [persistRoundEffects] (issue #23).
+            val deficit = (salaries - revenue - prize - club.cash).coerceAtLeast(0)
             RoundFinance(
                 clubId = club.id,
                 ticketRevenue = revenue,
@@ -468,6 +533,7 @@ class PlayRoundService(
                 deficit = deficit,
                 ticketPrice = club.ticketPriceCents,
                 attendance = crowd,
+                cupPrize = prize,
             )
         }
     }
@@ -523,10 +589,13 @@ class PlayRoundService(
                     else yellow.merge(event.playerId.value, 1, Int::plus)
                 is MatchEvent.Injury -> injuries.merge(event.playerId, event.roundsOut, ::maxOf)
                 // Miss e Save não mexem na ficha do jogador — vivem só no feed
-                // e no sumário do FullTime (issue #57).
+                // e no sumário do FullTime (issue #57). Gol de pênalti na
+                // disputa também não conta para a artilharia (issue #61): a
+                // disputa desempata o confronto, não faz parte do jogo.
                 is MatchEvent.KickOff,
                 is MatchEvent.Miss,
                 is MatchEvent.Save,
+                is MatchEvent.PenaltyShootout,
                 is MatchEvent.FullTime,
                 -> Unit
             }
@@ -579,7 +648,7 @@ class PlayRoundService(
 
             val finance = financeByClub[club.id.value]
             val newCash = if (finance == null) club.cash
-                else (club.cash + finance.ticketRevenue - finance.salariesPaid).coerceAtLeast(0)
+                else (club.cash + finance.cashDelta()).coerceAtLeast(0)
 
             if (trained.squad != club.squad || newCash != club.cash) {
                 clubRepo.save(club.copy(squad = trained.squad, cash = newCash))
@@ -589,13 +658,14 @@ class PlayRoundService(
         return training
     }
 
-    private fun RoundMatch.finish(score: Pair<Int, Int>?): RoundMatch =
+    private fun RoundMatch.finish(score: Pair<Int, Int>?, penalties: PenaltyScore?): RoundMatch =
         if (score == null) this
         else copy(
             status = RoundStatus.Finished,
             homeGoals = score.first,
             awayGoals = score.second,
             minute = 90,
+            penalties = penalties,
         )
 
     private fun emptyLineup() =

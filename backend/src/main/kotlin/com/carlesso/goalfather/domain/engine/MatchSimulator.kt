@@ -9,6 +9,7 @@ import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.drawInjuryDuration
 import com.carlesso.goalfather.domain.rules.drawShooter
 import com.carlesso.goalfather.domain.rules.goalkeeper
+import com.carlesso.goalfather.domain.rules.penaltyShootout
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.random.Random
@@ -23,12 +24,17 @@ import kotlin.random.Random
  * A tática de cada lado (issue #56) vem DENTRO da própria `Lineup`
  * (`lineup.tactics`), junto da formação — não há campo separado aqui de
  * propósito: duas fontes para a mesma decisão só criariam divergência.
+ *
+ * `knockout` (issue #61) marca jogo de mata-mata: empate no tempo normal vai
+ * aos pênaltis. Default `false` — partida de liga continua aceitando empate e
+ * consumindo o RNG exatamente como antes da copa existir.
  */
 data class MatchSetup(
     val home: Lineup,
     val away: Lineup,
     val homeName: String,
     val awayName: String,
+    val knockout: Boolean = false,
 )
 
 /**
@@ -169,6 +175,21 @@ class MatchSimulator {
                     )
                 }
             }
+        }
+
+        // Mata-mata não termina empatado (issue #61): a disputa usa o MESMO RNG,
+        // já depois dos 90 minutos — então ela não altera nenhum evento do tempo
+        // normal, e mesma seed continua dando o mesmo jogo E a mesma disputa.
+        if (setup.knockout && homeGoals == awayGoals) {
+            val shootout = penaltyShootout(setup.home.players, setup.away.players, rng)
+            emitting(
+                MatchEvent.PenaltyShootout(
+                    minute = 90,
+                    homeScore = shootout.score.home,
+                    awayScore = shootout.score.away,
+                    kicks = shootout.kicks,
+                ),
+            )
         }
 
         emit(

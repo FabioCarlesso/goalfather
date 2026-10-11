@@ -3,9 +3,13 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
+import com.carlesso.goalfather.domain.engine.MatchSetup
+import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -14,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.random.Random
 import kotlin.test.assertIs
 
 class PlayMatchServiceTest {
@@ -58,5 +63,23 @@ class PlayMatchServiceTest {
         coEvery { leagueRepo.findLatest() } returns round
 
         assertThrows<IllegalArgumentException> { service.stream(9999).toList() }
+    }
+
+    @Test
+    fun `drill-down de jogo de copa simula em modo mata-mata (issue 61)`() = runTest {
+        // Mesmo matchId, mesma seed — o drill-down só bate com a rodada se
+        // também souber que é mata-mata, senão um empate perderia os pênaltis.
+        val cupDate = round.copy(number = 2, stage = RoundStage.Cup(KnockoutPhase.FINAL))
+        val home = makeClub(id = 1, overall = 75)
+        val away = makeClub(id = 2, overall = 75)
+        coEvery { leagueRepo.findLatest() } returns cupDate
+        coEvery { clubRepo.findById(ClubId(1)) } returns home
+        coEvery { clubRepo.findById(ClubId(2)) } returns away
+
+        val expected = MatchSimulator().simulate(
+            MatchSetup(home.startingLineup(), away.startingLineup(), "Home FC", "Away FC", knockout = true),
+            Random(1001),
+        ).toList()
+        assertEquals(expected, service.stream(1001).toList())
     }
 }

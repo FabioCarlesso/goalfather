@@ -4,6 +4,7 @@ import com.carlesso.goalfather.domain.model.CareerCampaign
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubCareer
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.SeasonRecord
@@ -34,11 +35,14 @@ fun StandingRow.pointsPercentage(): Int =
  *
  * @param clubs todos os clubes da liga, com as estatísticas da temporada que
  *   acabou — inclusive os da IA, que também acumulam gols.
+ * @param cupChampion vencedor da copa da temporada (issue #61), ou `null` se
+ *   não houve copa ou ela não terminou.
  */
 fun seasonRecordOf(
     season: Int,
     finalStandings: List<Standings>,
     clubs: Collection<Club>,
+    cupChampion: CupClub? = null,
 ): SeasonRecord {
     require(finalStandings.isNotEmpty()) { "Temporada $season sem tabela final" }
 
@@ -57,6 +61,7 @@ fun seasonRecordOf(
         champion = champion,
         finalStandings = standings,
         topScorer = clubs.topScorer(),
+        cupChampion = cupChampion,
     )
 }
 
@@ -80,6 +85,7 @@ fun careerOf(clubId: ClubId, records: List<SeasonRecord>): ClubCareer? {
         seasonsPlayed = campaigns.size,
         titles = records.filter { it.champion.row.clubId == clubId }.map { it.season }.sorted(),
         bestCampaign = campaigns.minWithOrNull(BY_BEST_CAMPAIGN),
+        cupTitles = records.filter { it.cupChampion?.id == clubId }.map { it.season }.sorted(),
     )
 }
 

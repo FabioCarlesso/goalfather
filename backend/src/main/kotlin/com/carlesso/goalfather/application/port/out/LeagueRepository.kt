@@ -6,7 +6,12 @@ import com.carlesso.goalfather.domain.model.Standings
 interface LeagueRepository {
     suspend fun findRound(number: Int): Round?
 
-    /** Rodada de maior número (a "atual" do calendário). `null` se não há rodadas. */
+    /**
+     * A "atual" do calendário: a data de maior número da temporada MAIS
+     * RECENTE. `null` se não há rodadas. Datas de temporadas encerradas
+     * continuam na tabela (a PK é só o número), então a temporada entra na
+     * ordenação antes do número.
+     */
     suspend fun findLatest(): Round?
 
     /**

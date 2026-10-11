@@ -65,20 +65,23 @@ goalfather/
 │       │       ├── useMatch.ts
 │       │       ├── useMarket.ts
 │       │       ├── useStandings.ts
-│       │       └── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
+│       │       ├── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
+│       │       └── useCup.ts          # chave da copa mata-mata; 404 vira `null` (issue #61)
 │       ├── mocks/
 │       │   ├── browser.ts            # setupWorker do MSW
 │       │   ├── handlers.ts           # handlers HTTP
 │       │   ├── ws.ts                 # mock de WebSocket para partida ao vivo
 │       │   ├── seed.ts               # dados iniciais (espelha protótipo)
-│       │   └── engine.ts             # simulação local de partida (porta JS da engine Kotlin)
+│       │   ├── engine.ts             # simulação local de partida (porta JS da engine Kotlin)
+│       │   └── cup.ts                # sorteio/avanço da copa + calendário (espelha CupRules.kt, issue #61)
 │       ├── pages/
 │       │   ├── DashboardPage.tsx
 │       │   ├── LineupPage.tsx
 │       │   ├── MatchPage.tsx         # consome WS
 │       │   ├── MarketPage.tsx
 │       │   ├── StandingsPage.tsx
-│       │   └── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
+│       │   ├── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
+│       │   └── CupPage.tsx           # chave (bracket) da copa mata-mata (issue #61)
 │       ├── components/               # apresentação pura, sem fetch
 │       │   ├── PlayerCard.tsx
 │       │   ├── FormationGrid.tsx
@@ -207,6 +210,8 @@ Isso vale também para a **tática** (issue #56): `POSTURE_MODS` e `FORMATION_MO
 E vale de novo para o **treino semanal (issue #58)**: `TRAINING_FOCUS_EFFECTS` (recuperação de stamina, risco de lesão e atributo de cada foco), `TRAINING_UPGRADE_CHANCE` (chance de +1 por faixa etária) e `trainSquad()` espelham `TrainingFocus`/`TrainingRules.kt` e ficam em `src/mocks/engine.ts`. Em `src/domain/training.ts` moram só rótulo e texto de ajuda (`TRAINING_FOCUS_LABEL`, `TRAINING_FOCUS_HINT`, `TRAINED_ATTRIBUTE_LABEL`). O card da Dashboard **escolhe**, não calcula; a página da rodada só desenha o `TrainingReport` que chegou pronto no `RoundFinished`.
 
 A **bilheteria (issues #4 e #59)** mudou de casa por causa dessa mesma regra: a ocupação, o preço justo e a receita viviam soltas em `src/mocks/handlers.ts` enquanto eram uma conta de duas linhas. Com a curva de demanda da issue #59 elas viraram regra de simulação de verdade e foram para `src/mocks/engine.ts` (`attendanceRate`, `fairTicketPriceCents`, `ticketPriceDemandFactor`, `ticketRevenueOf`), espelhando `domain/rules/FinanceRules.kt` e testadas em `src/mocks/ticketing.test.ts` com os mesmos invariantes do `FinanceRulesTest.kt`. Em `handlers.ts` ficaram só os números do cenário mockado (capacidade e folha da IA). O painel da Dashboard **escolhe** o preço; público e receita chegam prontos no `RoundFinance` do `RoundFinished`.
+
+A **copa mata-mata (issue #61)** segue a mesma linha. O sorteio da chave, o avanço dos vencedores, o prêmio por fase (`CUP_PRIZE_CENTS`) e o calendário que intercala fases de copa com rodadas de liga (`seasonCalendar`) espelham `CupRules.kt`/`SeasonCalendar.kt` em `src/mocks/cup.ts`; a disputa de pênaltis (`penaltyShootout`) espelha `PenaltyRules.kt` em `src/mocks/engine.ts`. A app não decide nada disso: a `CupPage` desenha o que chega em `GET /api/league/cup` — quem passou vem em `winnerId` (pênaltis incluídos), o prêmio em `phases[].prizeCents` — e a `RoundPage` lê da `Round.stage` (`oneOf` `League`/`Cup`, `switch` exaustivo em `domain/cup.ts`) se a data é rodada de liga ou fase de copa. Em `src/domain/cup.ts` moram só os rótulos das fases. A fase de copa usa o MESMO fluxo de prontidão, botão e WebSocket da rodada de liga — não existe "modo copa" na app.
 
 O mesmo confinamento vale para a **issue #57**: `SCORING_WEIGHT` (peso de cada posição no sorteio de quem finaliza) e `matchStats()` (projeção do stream em finalizações/defesas/cartões) espelham `Position.scoringWeight` e `domain/event/MatchStats.kt`, e vivem só em `src/mocks/engine.ts`. O componente `MatchStatsSummary` **não conta nada**: recebe o `MatchStats` que veio pronto no evento `FullTime` e só desenha. Como o elenco agora pesa por posição, a engine de mock recebe `SquadMember[]` (`{ id, pos }`) em vez de uma lista de ids.
 

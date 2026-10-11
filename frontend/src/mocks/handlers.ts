@@ -9,7 +9,8 @@ import {
   clubMeta,
   applyRoundToStandings,
   careerOf,
-  SEASON_ROUNDS,
+  calendar,
+  roundTrainingReports,
   startNewSeason,
   auth,
   clubOwners,
@@ -44,6 +45,7 @@ import {
   type SquadMember,
   type TeamTactics,
 } from './engine'
+import { recordCupRound } from './cup'
 import type {
   TransferResult,
   Club,
@@ -53,6 +55,7 @@ import type {
   RoundEvent,
   RoundFinance,
   RoundMatch,
+  PenaltyScore,
   TrainingReport,
   AuthResponse,
   AuthUser,
@@ -567,6 +570,22 @@ export const handlers = [
     })()
   }),
 
+  // ─── getCup (issue #61) ───────────────────────────────────────────────
+  // Só a copa da temporada corrente existe no mock; temporada anterior ou
+  // liga sem copa → 404, como no backend.
+  http.get('/api/league/cup', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const season = new URL(request.url).searchParams.get('season')
+    const cup = state.cup
+    if (!cup || (season != null && Number(season) !== cup.season)) {
+      return HttpResponse.json(
+        { code: 'CUP_NOT_FOUND', message: season ? `Temporada ${season} sem copa` : 'Nenhuma copa disputada' } satisfies ErrorResponse,
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(cup)
+  }),
+
   // ─── getCurrentRound ──────────────────────────────────────────────────
   http.get('/api/league/round/current', async () => {
     await delay(SIMULATED_LATENCY_MS)
@@ -641,6 +660,9 @@ export const handlers = [
     type Tagged = { matchId: number; event: MatchEvent }
     const allEvents: Tagged[] = []
     const finalScores = new Map<number, { home: number; away: number }>()
+    // Disputas de pênaltis da data de copa (issue #61), por partida.
+    const shootouts = new Map<number, PenaltyScore>()
+    const knockout = round.stage.type === 'Cup'
 
     for (const match of round.matches) {
       const home = clubMeta[match.homeClubId]
@@ -656,11 +678,14 @@ export const handlers = [
         awaySquad:    squadInPlay(away),
         homeTactics:  tacticsOf(home.id),
         awayTactics:  tacticsOf(away.id),
+        knockout,
       }
       for (const event of simulateMatch(setup)) {
         allEvents.push({ matchId: match.matchId, event })
         if (event.type === 'FullTime') {
           finalScores.set(match.matchId, { home: event.homeGoals, away: event.awayGoals })
+        } else if (event.type === 'PenaltyShootout') {
+          shootouts.set(match.matchId, { home: event.homeScore, away: event.awayScore })
         }
       }
     }
@@ -686,11 +711,24 @@ export const handlers = [
       // Atualiza estado da rodada com placares finais e fecha a tabela.
       const finishedMatches: RoundMatch[] = round.matches.map((m) => {
         const score = finalScores.get(m.matchId)
+        const penalties = shootouts.get(m.matchId)
         return score
-          ? { ...m, status: 'Finished', homeGoals: score.home, awayGoals: score.away, minute: 90 }
+          ? {
+              ...m, status: 'Finished', homeGoals: score.home, awayGoals: score.away, minute: 90,
+              ...(penalties ? { penalties } : {}),
+            }
           : m
       })
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
+
+      // Data de copa (issue #61): resultados (com pênaltis) vão para a chave,
+      // que avança e devolve o prêmio de quem passou em campo.
+      let cupPrizes = new Map<number, number>()
+      if (knockout && state.cup) {
+        const outcome = recordCupRound(state.cup, state.currentRound)
+        state.cup = outcome.cup
+        cupPrizes = outcome.prizes
+      }
       // A mesma rodada é aplicada à tabela de cada divisão — só os jogos da
       // divisão em questão contam (issue #47).
       state.standings = state.standings.map((table) =>
@@ -700,8 +738,10 @@ export const handlers = [
       resetRoundReadiness(round.number)
 
       // Balanço financeiro da rodada (issue #4) — espelha computeFinances do
-      // backend. Bilheteria só para mandantes; folha salarial a cada N rodadas.
-      const isSalaryRound = round.number % SALARY_EVERY_N_ROUNDS === 0
+      // backend. Bilheteria só para mandantes; folha salarial a cada N rodadas
+      // DE LIGA (data de copa não cobra — issue #61); prêmio da copa a quem avançou.
+      const isSalaryRound =
+        round.stage.type === 'League' && round.stage.matchday % SALARY_EVERY_N_ROUNDS === 0
       const homeIds = new Set(round.matches.map((m) => m.homeClubId))
       const finances: RoundFinance[] = round.matches
         .flatMap((m) => [m.homeClubId, m.awayClubId])
@@ -723,13 +763,15 @@ export const handlers = [
           // Rombo da folha não coberto pelo caixa+bilheteria (issue #23). Só o
           // clube do usuário tem caixa rastreado; a IA nunca fica no vermelho.
           const revenue = home?.revenue ?? 0
+          const cupPrize = cupPrizes.get(clubId) ?? 0
           return {
             clubId,
             ticketRevenue: revenue,
             salariesPaid: salaries,
-            deficit: Math.max(0, salaries - revenue - cash),
+            deficit: Math.max(0, salaries - revenue - cupPrize - cash),
             ticketPrice: price,
             attendance: home?.attendance ?? 0,
+            cupPrize,
           }
         })
 
@@ -760,10 +802,14 @@ export const handlers = [
           }
         }
         const myFinance = finances.find((f) => f.clubId === 1)
-        const cashDelta = myFinance ? myFinance.ticketRevenue - myFinance.salariesPaid : 0
+        const cashDelta = myFinance ? myFinance.ticketRevenue + myFinance.cupPrize - myFinance.salariesPaid : 0
         // Titulares = escalação salva revalidada (lesionado fora, reserva apto
-        // assume), exatamente como `Club.startingLineup()` do backend.
-        const starterIds = startingEleven(myClub.squad, myClub.lineup?.playerIds)
+        // assume), exatamente como `Club.startingLineup()` do backend. Quem não
+        // entrou em campo (eliminado ou de folga na copa) descansa o elenco todo.
+        const myClubPlayed = round.matches.some((m) => m.homeClubId === 1 || m.awayClubId === 1)
+        const starterIds = myClubPlayed
+          ? startingEleven(myClub.squad, myClub.lineup?.playerIds)
+          : new Set<number>()
         const rested = applyRoundFitness(
           myClub.squad,
           starterIds,
@@ -793,7 +839,8 @@ export const handlers = [
 
       // Tabelas finais desta temporada (capturadas antes de eventual reset).
       const finalStandings = state.standings
-      const seasonEnded = round.number >= SEASON_ROUNDS
+      // Fim da temporada = fim do CALENDÁRIO (liga + copa, issue #61).
+      const seasonEnded = round.number >= calendar().length
 
       // Pequeno gap antes do RoundFinished para o cliente processar os
       // ultimos FullTime (MSW WS pode entregar fora de ordem se close vier
@@ -806,6 +853,8 @@ export const handlers = [
         // RoundFinished (mesma ordem do backend) e abre a próxima temporada
         // com promoção/rebaixamento aplicados (issue #47).
         const elite = finalStandings.find((t) => t.division === 1) ?? finalStandings[0]!
+        // Campeão da copa capturado ANTES da virada, que sorteia a copa nova.
+        const cupChampion = state.cup?.champion
         // A virada roda ANTES do evento: é ela que produz as aposentadorias
         // (issue #55), que viajam junto do campeão.
         const retirements = startNewSeason(round.season + 1, finalStandings)
@@ -815,6 +864,7 @@ export const handlers = [
           champion: elite.rows[0]!,
           standings: finalStandings,
           retirements,
+          ...(cupChampion ? { cupChampion } : {}),
         }
         client.send(JSON.stringify(seasonFin))
       } else {
@@ -822,11 +872,9 @@ export const handlers = [
         state.currentRound = state.nextRound()
       }
 
-      const training: TrainingReport[] = finances.map((f) =>
-        f.clubId === 1 && myTraining
-          ? myTraining
-          : { clubId: f.clubId, focus: 'DESCANSO', events: [] },
-      )
+      // Extrato de TODOS os clubes da liga, como o backend — inclusive de
+      // quem folgou ou já caiu na copa (review do PR #78).
+      const training: TrainingReport[] = roundTrainingReports(myTraining)
       const finished: RoundEvent = {
         type: 'RoundFinished',
         standings: finalStandings,

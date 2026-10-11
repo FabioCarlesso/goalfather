@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.SeasonRecord
@@ -152,5 +153,30 @@ class SeasonHistoryRulesTest {
             else -> listOf(table(1, champion, mine))
         }
         return seasonRecordOf(season, tables.map { it.copy(season = season) }, emptyList())
+    }
+
+    // ─── Copa (issue #61) ─────────────────────────────────────────────────
+
+    @Test
+    fun `record guarda o campeao da copa e a carreira conta os titulos de copa`() {
+        val cupWinner = CupClub(ClubId(1), "Meu FC")
+        val withCup = seasonRecordOf(
+            season = 2026,
+            finalStandings = listOf(table(1, row(1, 2, points = 9, played = 3), row(2, 1, points = 6, played = 3))),
+            clubs = emptyList(),
+            cupChampion = cupWinner,
+        )
+        assertEquals(cupWinner, withCup.cupChampion)
+
+        val withoutCup = seasonRecordOf(
+            season = 2027,
+            finalStandings = listOf(table(1, row(1, 1, points = 9, played = 3), row(2, 2, points = 6, played = 3))),
+            clubs = emptyList(),
+        )
+        assertNull(withoutCup.cupChampion)
+
+        val career = assertNotNull(careerOf(ClubId(1), listOf(withoutCup, withCup)))
+        assertEquals(listOf(2026), career.cupTitles)
+        assertEquals(listOf(2027), career.titles)
     }
 }

@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.adapter.out.persistence.repository
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.CupEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
@@ -80,8 +81,21 @@ interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long> {
     override fun delete(entity: MarketEntryEntity)
 }
 
+/** Copa por temporada (issue #61). */
+interface CupJpaRepository : JpaRepository<CupEntity, Int> {
+    /** Copa da temporada mais recente — a que está em disputa. */
+    fun findTopByOrderBySeasonDesc(): CupEntity?
+}
+
 interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
-    fun findTopByOrderByNumberDesc(): RoundEntity?
+    /**
+     * Data corrente do calendário: a maior `number` da temporada MAIS RECENTE.
+     * Ordenar só por `number` estava errado (review do PR #78): a PK é só
+     * `number` e a virada reescreve apenas a linha 1, então as datas 2..N da
+     * temporada encerrada continuam na tabela — e a "atual" virava a última
+     * delas, já `Finished`, travando a liga depois da 1ª temporada.
+     */
+    fun findTopByOrderBySeasonDescNumberDesc(): RoundEntity?
 }
 
 interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, RoundReadinessId> {

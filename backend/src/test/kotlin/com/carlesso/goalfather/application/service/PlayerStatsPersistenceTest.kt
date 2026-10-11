@@ -11,6 +11,7 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
 import io.mockk.Runs
@@ -40,6 +41,7 @@ class PlayerStatsPersistenceTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
+            InMemoryCupRepository(),
         )
 
     private val home = makeClub(id = 1, name = "Home FC")

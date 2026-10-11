@@ -15,6 +15,7 @@ import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PasswordHasher
@@ -110,6 +111,8 @@ class BeanConfig {
         playerRepo: PlayerRepository,
         // Histórico da liga (issue #60): snapshot da temporada antes do reset.
         historyRepo: SeasonHistoryRepository,
+        // Copa mata-mata (issue #61): sorteio na virada, avanço a cada fase.
+        cupRepo: CupRepository,
         simulator: MatchSimulator,
         // MeterRegistry é provido pelo actuator; injetado para o timer da
         // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
@@ -121,6 +124,7 @@ class BeanConfig {
         marketRepo,
         playerRepo,
         historyRepo,
+        cupRepo,
         simulator,
         meterRegistry,
     )

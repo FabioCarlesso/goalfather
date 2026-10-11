@@ -155,6 +155,7 @@ class MatchSimulatorTest {
                 is MatchEvent.Injury -> "injury"
                 is MatchEvent.Save -> "save"
                 is MatchEvent.Miss -> "miss"
+                is MatchEvent.PenaltyShootout -> "penalties"
                 is MatchEvent.FullTime -> "end"
             }
             assertTrue(label.isNotBlank())
@@ -408,5 +409,62 @@ class MatchSimulatorTest {
         }
         assertTrue(events.filterIsInstance<MatchEvent.Goal>().none { it.home })
         assertTrue(events.filterIsInstance<MatchEvent.Miss>().none { it.home })
+    }
+
+    // ─── Mata-mata (issue #61) ────────────────────────────────────────────
+
+    /** Seeds de 0 a 199 com o jogo de copa: amostra larga com empates e não-empates. */
+    private suspend fun knockoutSample(): List<List<MatchEvent>> =
+        (0L until 200L).map { seed ->
+            MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+        }
+
+    @Test
+    fun `empate em jogo de mata-mata decide nos penaltis com vencedor unico`() = runTest {
+        val draws = knockoutSample().filter { events ->
+            val ft = events.filterIsInstance<MatchEvent.FullTime>().single()
+            ft.homeGoals == ft.awayGoals
+        }
+        assertTrue(draws.isNotEmpty(), "A amostra precisa ter ao menos um empate")
+
+        for (events in draws) {
+            val shootout = events.filterIsInstance<MatchEvent.PenaltyShootout>().single()
+            assertNotEquals(shootout.homeScore, shootout.awayScore, "Pênaltis não terminam empatados")
+            // O placar resume as cobranças — nunca diverge delas.
+            assertEquals(shootout.kicks.count { it.home && it.scored }, shootout.homeScore)
+            assertEquals(shootout.kicks.count { !it.home && it.scored }, shootout.awayScore)
+            // Sai antes do FullTime, que continua sendo o último evento.
+            assertIs<MatchEvent.FullTime>(events.last())
+            assertIs<MatchEvent.PenaltyShootout>(events[events.size - 2])
+        }
+    }
+
+    @Test
+    fun `mata-mata sem empate nao tem disputa de penaltis`() = runTest {
+        val decided = knockoutSample().filter { events ->
+            val ft = events.filterIsInstance<MatchEvent.FullTime>().single()
+            ft.homeGoals != ft.awayGoals
+        }
+        assertTrue(decided.isNotEmpty())
+        assertTrue(decided.none { events -> events.any { it is MatchEvent.PenaltyShootout } })
+    }
+
+    @Test
+    fun `jogo de liga empatado continua empatado`() = runTest {
+        val leagueEvents = (0L until 200L).map { MatchSimulator().simulate(setup, Random(it)).toList() }
+        assertTrue(leagueEvents.none { events -> events.any { it is MatchEvent.PenaltyShootout } })
+    }
+
+    @Test
+    fun `penaltis nao alteram o tempo normal e repetem com a mesma seed`() = runTest {
+        for (seed in 0L until 50L) {
+            val league = MatchSimulator().simulate(setup, Random(seed)).toList()
+            val cup = MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+            // A disputa consome o RNG DEPOIS dos 90': o jogo em si é idêntico.
+            assertEquals(league, cup.filterNot { it is MatchEvent.PenaltyShootout })
+
+            val again = MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+            assertEquals(cup, again, "Mesma seed = mesma disputa (seed $seed)")
+        }
     }
 }

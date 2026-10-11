@@ -25,6 +25,7 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
+import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
 import io.mockk.Runs
@@ -59,8 +60,11 @@ class PlayRoundServiceTest {
     // relaxed: o histórico (issue #60) só é gravado na virada de temporada; os
     // testes que o inspecionam capturam o record explicitamente.
     private val historyRepo: SeasonHistoryRepository = mockk(relaxed = true)
+    // Copa (issue #61): fake em memória, vazia por padrão — os testes de liga
+    // seguem sem copa; os de copa a semeiam.
+    private val cupRepo = InMemoryCupRepository()
     private val service =
-        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo)
+        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo)
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)

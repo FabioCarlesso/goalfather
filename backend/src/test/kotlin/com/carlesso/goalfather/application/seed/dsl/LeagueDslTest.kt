@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.application.seed.dsl
 
+import kotlin.test.assertNull
+import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -193,4 +195,26 @@ class LeagueDslTest {
     /** Clube mínimo para montar mapas do RoundBuilder sem passar por ClubBuilder. */
     private fun simpleClub(id: Long, name: String, division: Int = 1) =
         ClubBuilder(id, name, Division(division)).build()
+
+    @Test
+    fun `liga com 4 ou mais clubes nasce com a copa sorteada (issue 61)`() {
+        val league = league(season = 2026) {
+            for (id in 1L..6L) club(id, "C$id") { cash = 1 }
+        }
+        val cup = league.initialCup()
+        kotlin.test.assertNotNull(cup)
+        assertEquals(2026, cup.season)
+        // 6 clubes → chave de 8 (quartas) com 2 folgas; o mesmo seed sorteia igual.
+        assertEquals(KnockoutPhase.QUARTER_FINALS, cup.stages.single().phase)
+        assertEquals(cup, league.initialCup())
+    }
+
+    @Test
+    fun `liga pequena demais nasce sem copa`() {
+        val league = league(season = 2026) {
+            club(1, "A") { cash = 1 }
+            club(2, "B") { cash = 1 }
+        }
+        assertNull(league.initialCup())
+    }
 }

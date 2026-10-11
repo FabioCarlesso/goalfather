@@ -1,5 +1,9 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.domain.model.RoundFinance
+import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.ClubId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -181,5 +185,32 @@ class FinanceRulesTest {
         val esperado = 3 * attendance(10_000, 75.0, DEFAULT_TICKET_PRICE_CENTS)
         val obtido = attendance(30_000, 75.0, DEFAULT_TICKET_PRICE_CENTS)
         assertTrue(obtido - esperado in 0..3, "Público não escalou com a capacidade: $obtido vs ~$esperado")
+    }
+
+    // ─── Copa (issue #61) ─────────────────────────────────────────────────
+
+    @Test
+    fun `folha segue as rodadas da liga e data de copa nao cobra`() {
+        assertEquals(isSalaryRound(2), isSalaryDate(RoundStage.League(2)))
+        assertEquals(isSalaryRound(3), isSalaryDate(RoundStage.League(3)))
+        assertFalse(isSalaryDate(RoundStage.Cup(KnockoutPhase.FINAL)))
+    }
+
+    @Test
+    fun `caixa da rodada soma bilheteria e premio da copa e desconta a folha`() {
+        val finance = RoundFinance(
+            clubId = ClubId(1),
+            ticketRevenue = 1_000,
+            salariesPaid = 300,
+            cupPrize = 500,
+        )
+        assertEquals(1_200, finance.cashDelta())
+    }
+
+    @Test
+    fun `premio da copa cresce a cada fase`() {
+        val prizes = KnockoutPhase.entries.map { it.prizeCents }
+        assertEquals(prizes.sorted(), prizes)
+        assertTrue(prizes.zipWithNext().all { (a, b) -> a < b })
     }
 }
