@@ -122,7 +122,8 @@ class SimulationMetricsTest {
         val realSimulator = MatchSimulator()
         val simulator: MatchSimulator = mockk {
             every { simulate(any(), any()) } answers {
-                realSimulator.simulate(firstArg(), secondArg()).onStart { clock.add(ENGINE_COST_MS, TimeUnit.MILLISECONDS) }
+                realSimulator.simulate(firstArg(), secondArg())
+                    .onStart { clock.add(ENGINE_COST_MS, TimeUnit.MILLISECONDS) }
             }
         }
         val clockedService = PlayRoundService(

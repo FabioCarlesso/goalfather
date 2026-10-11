@@ -128,6 +128,9 @@ class PlayRoundService(
         // `findById` no meio contaria a latência do banco como "simulação".
         // Também não fica no WS handler: lá há delays de ~80ms/minuto para dar
         // sensação de "ao vivo" — cronometrar lá mediria a animação.
+        // Reconexão (replay de rodada já `Finished`) também gera amostra, de
+        // propósito: a engine roda de novo para re-emitir os eventos, então é
+        // trabalho de simulação real e entra na métrica.
         val sample = Timer.start(meterRegistry)
         for ((match, setup) in setups) {
             for (event in simulator.simulate(setup, Random(match.matchId)).toList()) {
