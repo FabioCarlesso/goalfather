@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.adapter.out.persistence.repository
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.CupEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
@@ -78,6 +79,12 @@ interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long> {
      */
     @CacheEvict("market", allEntries = true)
     override fun delete(entity: MarketEntryEntity)
+}
+
+/** Copa por temporada (issue #61). */
+interface CupJpaRepository : JpaRepository<CupEntity, Int> {
+    /** Copa da temporada mais recente — a que está em disputa. */
+    fun findTopByOrderBySeasonDesc(): CupEntity?
 }
 
 interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {

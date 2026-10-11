@@ -347,6 +347,7 @@ class PlayMatchService(
 | `POST` | `/api/clubs/{id}/training` | Foco de treino da semana (`ATAQUE`/`DEFESA`/`FISICO`/`DESCANSO`) — issue #58 |
 | `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (R$ 10–200, em centavos) — issue #59 |
 | `GET` | `/api/league/standings` | Tabela de classificação |
+| `GET` | `/api/league/cup?season=` | Chave da copa mata-mata (sem `season` = a mais recente) — issue #61 |
 | `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
 | `POST` | `/api/league/round/ready` | Técnico sinaliza "estou pronto" — issue #20 |
 | `POST` | `/api/league/round/play` | Inicia a rodada (409 `ROUND_NOT_READY` se faltar técnico) |
@@ -684,6 +685,69 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   pesa mais que pontos) para o frontend não reimplementá-lo. Clube sem
   temporada encerrada devolve 404 — quem nunca terminou um campeonato não tem
   carreira, e isso é diferente de uma carreira zerada.
+- [x] **6.8** Copa mata-mata paralela ao campeonato — issue #61
+  (copa da liga com os mesmos clubes, em jogo único. O sorteio é a regra pura
+  `drawCup` em `domain/rules/CupRules.kt`, com `Random(cupDrawSeed(temporada))`:
+  os clubes entram numa chave com a menor potência de 2 que os comporta, e as
+  vagas que sobram viram folgas — 12 clubes dão oitavas com 4 folgas. As folgas
+  ocupam primeiro os confrontos de índice par, porque os vencedores de `2k` e
+  `2k+1` se cruzam na fase seguinte: assim quem folga estreia contra quem venceu
+  um jogo, em vez de duas folgas se encontrarem. Não há novo sorteio por fase — o
+  caminho até a final sai inteiro do sorteio inicial, como numa copa de verdade.
+  O agregado é `Cup` → `CupStage` (fase) → `CupTie`, e o `CupTie` é `sealed`:
+  `Bye` não tem adversário nem placar, `Fixture` tem; "folga com placar" é
+  irrepresentável, a mesma lição de `Availability`. O `TieResult` recusa no
+  `init` um empate sem pênaltis — invariante estrutural do mata-mata, não regra
+  de balanceamento.)
+
+  **Pênaltis na engine.** `MatchSetup` ganhou `knockout`; em jogo de copa
+  empatado no minuto 90 a engine chama `penaltyShootout` (`PenaltyRules.kt`) com
+  o MESMO `Random` da partida e emite `MatchEvent.PenaltyShootout` antes do
+  `FullTime` (que segue sendo o último evento e segue com o placar dos 90'). Como
+  a disputa consome o RNG depois do tempo normal, um jogo de copa é byte a byte o
+  mesmo jogo de liga até o apito — e mesma seed dá a mesma disputa, inclusive no
+  drill-down `/ws/matches/{id}` e no replay. Série de 5 alternada, encerrada
+  quando um lado não alcança o outro, depois morte súbita; a conversão usa o
+  `effectiveOverall` de batedor e goleiro, então a fadiga de um calendário
+  apertado (issue #54) também erra pênalti.
+
+  **Calendário: data × rodada de liga.** A copa não ganhou um fluxo próprio: a
+  `Round` virou uma DATA do calendário, com `stage: RoundStage` — `sealed`
+  `League(matchday)` / `Cup(phase)`. É o mesmo `Round.number` de sempre (PK,
+  rota do WS, chave da prontidão), então prontidão (#20), escape hatch (#45) e o
+  claim `finishRound` (#46) valem para a copa sem uma linha nova — o ponto de
+  atenção multiplayer da issue. A sequência sai da regra pura `seasonCalendar`:
+  a fase `i` entra logo depois da rodada de liga `⌊i·L/(C+1)⌋`, o que dá "a cada
+  3 rodadas, 1 fase" com 15 rodadas e 4 fases, e uma fase depois de cada uma das
+  4 primeiras rodadas no seed de 5. A data 1 é sempre de liga e a final cai antes
+  da última rodada, então o campeão da copa chega à virada. O calendário NÃO é
+  persistido: é recalculado dos clubes e da copa a cada fim de data. Sem copa ele
+  é só a liga e `matchday == number`, exatamente o comportamento anterior — é
+  também o que acontece com um save de antes da issue, que só ganha copa na
+  próxima virada (migration V12: tabela `cups` + `rounds.stage_json`, nulo lido
+  como liga). Os pontos que dependiam de "rodada" passaram por um `when` sobre o
+  `sealed`: a tabela ignora data de copa e conta pela `matchday`; o Berger gira
+  pela `matchday` e o `matchId` usa a data; a folha (`isSalaryDate`) segue as
+  rodadas de liga, então a cadência de salário da temporada não mudou.
+
+  **Premiação e virada.** Quem vence um confronto leva `KnockoutPhase.prizeCents`
+  da fase (folga não premia). O prêmio entra no `RoundFinance.cupPrize` e no caixa
+  pela mesma conta da bilheteria (`RoundFinance.cashDelta()` em `FinanceRules`),
+  dentro do bloco que só o vencedor do claim executa — reaplicar a rodada não
+  premia duas vezes. Na virada, o campeão da copa vai para o `SeasonFinished`
+  (`cupChampion`) e para o `SeasonRecord` da issue #60, a carreira ganha
+  `cupTitles`, e a copa da temporada nova é sorteada com os clubes já nas
+  divisões novas. Liga com menos de 4 clubes não tem copa (`canHoldCup`).
+
+  **Achado de infraestrutura.** `ResponseEntity<Any>` faz o Spring procurar o
+  serializer do kotlinx pelo tipo DECLARADO (`Object`), não achar, e cair no
+  Jackson — que ignora `@JsonClassDiscriminator`. Para tipos planos passava
+  despercebido; para o `RoundStage` e o `CupTie` o `"type"` sumiria e o `oneOf`
+  do contrato ficaria impossível de desambiguar. `/round/current` e `/cup`
+  passaram a serializar com o `Json` do kotlinx explicitamente (`Json.okJson`,
+  com `reified`), e `LeagueCupMvcTest` trava o discriminador no JSON cru. Os
+  demais endpoints com `sealed` no corpo (ex.: `TransferResultDto`) seguem pelo
+  caminho antigo — fica como follow-up.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`

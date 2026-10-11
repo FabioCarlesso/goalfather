@@ -20,6 +20,11 @@ import kotlinx.serialization.Serializable
  * que o técnico precisa para corrigir o preço na rodada seguinte. O preço é o
  * do clube mesmo quando ele jogou FORA (é o que ele cobra em casa); nesse caso
  * `attendance` e `ticketRevenue` são zero, porque não houve bilheteria dele.
+ *
+ * `cupPrize` (issue #61) é o prêmio da copa ganho NESTA rodada — o clube que
+ * venceu um confronto de mata-mata leva o valor da fase. Entra no caixa junto
+ * da bilheteria (ver `cashDelta` em `FinanceRules`). Zero em rodada de liga e
+ * para quem perdeu, folgou ou não estava na copa.
  */
 @Serializable
 data class RoundFinance(
@@ -29,4 +34,5 @@ data class RoundFinance(
     val deficit: Long = 0,
     val ticketPrice: Long = 0,
     val attendance: Int = 0,
+    val cupPrize: Long = 0,
 )

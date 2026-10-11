@@ -20,6 +20,7 @@ data class CareerCampaign(
  *
  * `titles` guarda as temporadas do título em vez de um contador — o número sai
  * do tamanho da lista, e "campeão em 2027 e 2031" é o que o técnico quer ler.
+ * `cupTitles` (issue #61) faz o mesmo para a copa mata-mata.
  */
 @Serializable
 data class ClubCareer(
@@ -28,4 +29,5 @@ data class ClubCareer(
     val seasonsPlayed: Int,
     val titles: List<Int>,
     val bestCampaign: CareerCampaign? = null,
+    val cupTitles: List<Int> = emptyList(),
 )

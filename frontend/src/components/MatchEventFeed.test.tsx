@@ -67,4 +67,21 @@ describe('MatchEventFeed', () => {
     render(<MatchEventFeed events={[]} emptyLabel="Nada ainda." />)
     expect(screen.getByText('Nada ainda.')).toBeInTheDocument()
   })
+
+  // Pênaltis da copa (issue #61): o placar da disputa e a sequência de cobranças.
+  it('mostra a disputa de pênaltis com o placar', () => {
+    render(
+      <MatchEventFeed
+        events={[{
+          type: 'PenaltyShootout', minute: 90, homeScore: 4, awayScore: 3,
+          kicks: [
+            { playerId: 10, home: true, scored: true },
+            { playerId: 110, home: false, scored: false },
+          ],
+        }]}
+      />,
+    )
+    expect(screen.getByText(/Pênaltis: 4 × 3/)).toBeInTheDocument()
+    expect(screen.getByText('(●○)')).toBeInTheDocument()
+  })
 })

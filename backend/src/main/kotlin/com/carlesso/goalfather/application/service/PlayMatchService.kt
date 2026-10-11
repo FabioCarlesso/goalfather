@@ -49,6 +49,9 @@ class PlayMatchService(
             away = away?.startingLineup() ?: emptyLineup(),
             homeName = match.homeClubName,
             awayName = match.awayClubName,
+            // Mesmo modo da rodada: jogo de copa reproduz a mesma disputa de
+            // pênaltis no drill-down (issue #61).
+            knockout = round.isKnockout,
         )
 
         // Cronometra só a geração dos eventos da engine. Materializamos ANTES de

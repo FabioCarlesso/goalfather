@@ -45,6 +45,8 @@ tags:
     description: Treino semanal — foco escolhido pelo técnico entre rodadas
   - name: League
     description: Tabela e calendário do campeonato
+  - name: Cup
+    description: Copa mata-mata paralela ao campeonato
 
 paths:
   /api/auth/register:
@@ -551,6 +553,37 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /api/league/cup:
+    get:
+      tags: [Cup]
+      operationId: getCup
+      summary: Chave da copa mata-mata (issue #61)
+      description: |
+        Copa da liga em jogo único, sorteada no início de cada temporada com
+        seed determinística. Sem `season`, devolve a copa da temporada mais
+        recente (a que está em disputa). Os confrontos já trazem quem passou
+        (`winnerId`, pênaltis incluídos) — o cliente não recalcula nada.
+
+        404 `CUP_NOT_FOUND` quando a temporada não teve copa (liga com menos
+        de 4 clubes, ou save anterior à copa).
+      parameters:
+        - name: season
+          in: query
+          required: false
+          description: Ano da temporada (omitido = temporada mais recente)
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Chave da copa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cup' }
+        '404':
+          description: Temporada sem copa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /api/league/round/current:
     get:
       tags: [League]
@@ -560,6 +593,10 @@ paths:
         Retorna os pareamentos da rodada corrente. Cada partida tem seu
         próprio `matchId`. Para acompanhar ao vivo, conecte-se em
         `/ws/round/{number}` após chamar `playRound`.
+
+        Desde a issue #61 a "rodada" é uma DATA do calendário: `stage` diz se
+        ela é rodada de liga ou fase da copa. As duas passam pelo mesmo fluxo
+        de prontidão, início e WebSocket.
       responses:
         '200':
           content:
@@ -1172,6 +1209,7 @@ components:
         - $ref: '#/components/schemas/CardEvent'
         - $ref: '#/components/schemas/InjuryEvent'
         - $ref: '#/components/schemas/SaveEvent'
+        - $ref: '#/components/schemas/PenaltyShootoutEvent'
         - $ref: '#/components/schemas/FullTimeEvent'
       discriminator:
         propertyName: type
@@ -1182,6 +1220,7 @@ components:
           Card:     '#/components/schemas/CardEvent'
           Injury:   '#/components/schemas/InjuryEvent'
           Save:     '#/components/schemas/SaveEvent'
+          PenaltyShootout: '#/components/schemas/PenaltyShootoutEvent'
           FullTime: '#/components/schemas/FullTimeEvent'
 
     MatchEventBase:
@@ -1302,6 +1341,40 @@ components:
               type: boolean
               description: true = defesa do goleiro do mandante
 
+    PenaltyShootoutEvent:
+      description: |
+        Disputa de pênaltis (issue #61). Só existe em jogo de COPA que terminou
+        empatado no tempo normal, e chega ANTES do `FullTime` — que segue
+        sendo o último evento e carrega o placar dos 90 minutos. Sorteada com
+        o RNG da própria partida: mesma seed, mesma disputa. Os placares nunca
+        empatam e resumem `kicks`.
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [type, homeScore, awayScore, kicks]
+          properties:
+            type:      { type: string, enum: [PenaltyShootout] }
+            homeScore: { type: integer, minimum: 0 }
+            awayScore: { type: integer, minimum: 0 }
+            kicks:
+              type: array
+              description: Cobranças na ordem em que saíram (mandante bate primeiro)
+              items: { $ref: '#/components/schemas/PenaltyKick' }
+
+    PenaltyKick:
+      type: object
+      required: [home, scored]
+      properties:
+        playerId:
+          type: integer
+          format: int64
+          nullable: true
+          description: |
+            Batedor. Ausente/nulo só quando o lado não tinha ninguém em campo —
+            a cobrança conta como perdida.
+        home:   { type: boolean, description: true = cobrança do mandante }
+        scored: { type: boolean }
+
     FullTimeEvent:
       description: |
         Apito final. Além do placar, carrega o sumário da partida (issue #57)
@@ -1417,7 +1490,12 @@ components:
       properties:
         season:   { type: integer, description: Ano da temporada }
         division: { type: integer, minimum: 1, description: 'Divisão (1 = elite)' }
-        round:    { type: integer, minimum: 0, description: Rodada atual concluída }
+        round:
+          type: integer
+          minimum: 0
+          description: |
+            Rodada DE LIGA concluída. Com a copa no calendário (issue #61) ela
+            difere do número da data: a 3ª rodada de liga pode ser a data 5.
         promotionSpots:
           type: integer
           minimum: 0
@@ -1485,6 +1563,11 @@ components:
           description: Classificação final de todas as divisões, da elite para baixo
           items: { $ref: '#/components/schemas/SeasonStanding' }
         topScorer: { $ref: '#/components/schemas/SeasonTopScorer' }
+        cupChampion:
+          $ref: '#/components/schemas/CupClub'
+          description: |
+            Campeão da copa mata-mata da temporada (issue #61). Omitido quando
+            não houve copa ou ela não chegou à final.
 
     CareerCampaign:
       description: Uma temporada da carreira — em que ano foi e como o clube terminou.
@@ -1505,7 +1588,7 @@ components:
         do tamanho da lista e "campeão em 2027 e 2031" é o que o técnico quer
         ler. `bestCampaign` só falta se a carreira estiver vazia.
       type: object
-      required: [clubId, clubName, seasonsPlayed, titles]
+      required: [clubId, clubName, seasonsPlayed, titles, cupTitles]
       properties:
         clubId:        { type: integer, format: int64 }
         clubName:      { type: string }
@@ -1513,6 +1596,10 @@ components:
         titles:
           type: array
           description: Temporadas em que o clube foi campeão (crescente)
+          items: { type: integer }
+        cupTitles:
+          type: array
+          description: Temporadas em que o clube venceu a copa (crescente) — issue #61
           items: { type: integer }
         bestCampaign: { $ref: '#/components/schemas/CareerCampaign' }
 
@@ -1548,18 +1635,64 @@ components:
         homeGoals:     { type: integer, minimum: 0 }
         awayGoals:     { type: integer, minimum: 0 }
         minute:        { type: integer, minimum: 0, maximum: 120 }
-        division:      { type: integer, minimum: 1, description: 'Divisão da partida (1 = elite)' }
+        division:
+          type: integer
+          minimum: 1
+          description: |
+            Divisão da partida (1 = elite). Em data de copa, que mistura
+            divisões, é a divisão do mandante.
+        penalties:
+          $ref: '#/components/schemas/PenaltyScore'
+          description: |
+            Disputa de pênaltis (issue #61) — só em jogo de copa encerrado
+            empatado. Omitido nos demais.
 
     Round:
+      description: |
+        Uma DATA do calendário da temporada (issue #61). `number` é a posição
+        global da data (rota do WS e chave da prontidão) e `stage` diz o que se
+        disputa nela: rodada de liga ou fase da copa.
       type: object
-      required: [number, season, status, matches]
+      required: [number, season, status, matches, stage]
       properties:
         number:  { type: integer, minimum: 1 }
         season:  { type: integer }
         status:  { $ref: '#/components/schemas/RoundStatus' }
+        stage:   { $ref: '#/components/schemas/RoundStage' }
         matches:
           type: array
           items: { $ref: '#/components/schemas/RoundMatch' }
+
+    RoundStage:
+      description: |
+        Mapeia o `sealed interface RoundStage` do domínio Kotlin. Discriminado
+        por `type` — a UI usa `switch (stage.type)` exaustivo para decidir o
+        que mostrar (tabela × chave, rodada × fase).
+      oneOf:
+        - $ref: '#/components/schemas/LeagueRoundStage'
+        - $ref: '#/components/schemas/CupRoundStage'
+      discriminator:
+        propertyName: type
+        mapping:
+          League: '#/components/schemas/LeagueRoundStage'
+          Cup:    '#/components/schemas/CupRoundStage'
+
+    LeagueRoundStage:
+      type: object
+      required: [type, matchday]
+      properties:
+        type: { type: string, enum: [League] }
+        matchday:
+          type: integer
+          minimum: 1
+          description: Rodada DA LIGA (1..N-1 do turno) disputada nesta data
+
+    CupRoundStage:
+      type: object
+      required: [type, phase]
+      properties:
+        type:  { type: string, enum: [Cup] }
+        phase: { $ref: '#/components/schemas/KnockoutPhase' }
 
     RoundEvent:
       description: |
@@ -1678,6 +1811,12 @@ components:
             Aposentadorias da virada (issue #55), de TODOS os clubes — cabe ao
             cliente filtrar o que interessa ao técnico.
           items: { $ref: '#/components/schemas/Retirement' }
+        cupChampion:
+          $ref: '#/components/schemas/CupClub'
+          description: |
+            Vencedor da copa da temporada que acabou (issue #61) — o mesmo que
+            vai para o histórico. Omitido quando não houve copa ou ela não
+            chegou à final.
 
     Retirement:
       description: |
@@ -1700,14 +1839,135 @@ components:
         rendeu por estádio cheio ou por ingresso caro. O preço é o do clube
         mesmo quando ele jogou fora — nesse caso público e receita são zero.
       type: object
-      required: [clubId, ticketRevenue, salariesPaid, deficit, ticketPrice, attendance]
+      required: [clubId, ticketRevenue, salariesPaid, deficit, ticketPrice, attendance, cupPrize]
       properties:
         clubId:        { type: integer, format: int64 }
         ticketRevenue: { type: integer, format: int64, description: Bilheteria do mandante (0 para visitante) }
-        salariesPaid:  { type: integer, format: int64, description: Folha salarial paga na rodada (0 fora do "mês") }
+        salariesPaid:  { type: integer, format: int64, description: Folha salarial paga na rodada (0 fora do "mês" e em data de copa) }
         deficit:       { type: integer, format: int64, description: Parte da folha não coberta pelo caixa (> 0 ⇒ clube no vermelho) }
         ticketPrice:   { type: integer, format: int64, description: Preço do ingresso cobrado pelo clube na rodada }
         attendance:    { type: integer, minimum: 0, description: Público pagante do mandante (0 para visitante) }
+        cupPrize:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Prêmio da copa ganho nesta rodada (issue #61): o vencedor de um
+            confronto leva o valor da fase. 0 em rodada de liga e para quem
+            perdeu, folgou ou não estava na copa. Folha salarial não é cobrada
+            em data de copa.
+
+    # ─── Copa (issue #61) ────────────────────────────────────────────────
+    KnockoutPhase:
+      type: string
+      description: Fase do mata-mata, da mais larga para a final
+      enum: [ROUND_OF_32, ROUND_OF_16, QUARTER_FINALS, SEMI_FINALS, FINAL]
+
+    CupClub:
+      description: Clube como a copa o registra (nome copiado — é história).
+      type: object
+      required: [id, name]
+      properties:
+        id:   { type: integer, format: int64 }
+        name: { type: string }
+
+    PenaltyScore:
+      description: Placar de uma disputa de pênaltis (nunca empatado).
+      type: object
+      required: [home, away]
+      properties:
+        home: { type: integer, minimum: 0 }
+        away: { type: integer, minimum: 0 }
+
+    TieResult:
+      description: |
+        Resultado de um confronto em jogo único. Empate no placar sempre vem
+        com `penalties`; vitória no tempo normal nunca.
+      type: object
+      required: [homeGoals, awayGoals]
+      properties:
+        homeGoals: { type: integer, minimum: 0 }
+        awayGoals: { type: integer, minimum: 0 }
+        penalties: { $ref: '#/components/schemas/PenaltyScore' }
+
+    CupTie:
+      description: |
+        Mapeia o `sealed interface CupTie` do domínio: uma vaga da chave é
+        `Bye` (o clube passa sem jogar — chave que não é potência de 2) ou
+        `Fixture` (jogo único). Os vencedores de `index` 2k e 2k+1 se enfrentam
+        na fase seguinte.
+      oneOf:
+        - $ref: '#/components/schemas/CupByeTie'
+        - $ref: '#/components/schemas/CupFixtureTie'
+      discriminator:
+        propertyName: type
+        mapping:
+          Bye:     '#/components/schemas/CupByeTie'
+          Fixture: '#/components/schemas/CupFixtureTie'
+
+    CupByeTie:
+      type: object
+      required: [type, index, club]
+      properties:
+        type:  { type: string, enum: [Bye] }
+        index: { type: integer, minimum: 0 }
+        club:  { $ref: '#/components/schemas/CupClub' }
+
+    CupFixtureTie:
+      type: object
+      required: [type, index, home, away]
+      properties:
+        type:   { type: string, enum: [Fixture] }
+        index:  { type: integer, minimum: 0 }
+        home:   { $ref: '#/components/schemas/CupClub' }
+        away:   { $ref: '#/components/schemas/CupClub' }
+        result:
+          $ref: '#/components/schemas/TieResult'
+          description: Omitido enquanto o confronto não foi disputado
+        winnerId:
+          type: integer
+          format: int64
+          description: |
+            Quem passou (pênaltis incluídos), decidido no backend. Omitido
+            enquanto o confronto não foi disputado.
+
+    CupStage:
+      description: Uma fase já sorteada, com os confrontos na ordem da chave.
+      type: object
+      required: [phase, ties]
+      properties:
+        phase: { $ref: '#/components/schemas/KnockoutPhase' }
+        ties:
+          type: array
+          items: { $ref: '#/components/schemas/CupTie' }
+
+    CupPhaseInfo:
+      description: Uma fase da copa e o prêmio de quem vence um confronto dela.
+      type: object
+      required: [phase, prizeCents]
+      properties:
+        phase:      { $ref: '#/components/schemas/KnockoutPhase' }
+        prizeCents: { type: integer, format: int64, minimum: 0, description: Prêmio por confronto vencido (centavos) }
+
+    Cup:
+      description: |
+        Copa mata-mata da temporada (issue #61). `phases` lista a copa inteira
+        (com o prêmio de cada fase) para a UI desenhar a chave completa;
+        `stages` só as fases já sorteadas — a seguinte nasce quando a anterior
+        termina. `currentPhase` é omitido quando a copa acabou; `champion`,
+        enquanto ela não acabou.
+      type: object
+      required: [season, phases, stages]
+      properties:
+        season: { type: integer }
+        phases:
+          type: array
+          items: { $ref: '#/components/schemas/CupPhaseInfo' }
+        stages:
+          type: array
+          items: { $ref: '#/components/schemas/CupStage' }
+        currentPhase: { $ref: '#/components/schemas/KnockoutPhase' }
+        champion:     { $ref: '#/components/schemas/CupClub' }
 
     ReadinessStatus:
       description: |

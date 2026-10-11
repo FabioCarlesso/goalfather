@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.RoundFinance
+import com.carlesso.goalfather.domain.model.RoundStage
+
 /**
  * Regras financeiras de rodada (issues #4 e #59). Funções PURAS — sem estado,
  * determinísticas. A receita de bilheteria depende da capacidade do estádio,
@@ -152,3 +155,21 @@ fun isTicketPriceAllowed(ticketPriceCents: Long): Boolean = ticketPriceCents in 
 /** Há cobrança de folha salarial nesta rodada? */
 fun isSalaryRound(roundNumber: Int): Boolean =
     roundNumber % SALARY_EVERY_N_ROUNDS == 0
+
+/**
+ * Há folha nesta DATA do calendário (issue #61)? A folha segue as rodadas da
+ * LIGA — a cada [SALARY_EVERY_N_ROUNDS] delas —, então a cadência e o custo
+ * da temporada ficam iguais aos de antes da copa. A data de copa não cobra:
+ * ela é receita extra (bilheteria + prêmio), não um "mês" a mais de salário.
+ */
+fun isSalaryDate(stage: RoundStage): Boolean = when (stage) {
+    is RoundStage.League -> isSalaryRound(stage.matchday)
+    is RoundStage.Cup -> false
+}
+
+/**
+ * Variação do caixa do clube na rodada: bilheteria + prêmio da copa − folha.
+ * Uma regra só para a conta, para o serviço que grava o caixa e o cálculo do
+ * rombo não divergirem sobre o que entra (issue #61 somou o prêmio).
+ */
+fun RoundFinance.cashDelta(): Long = ticketRevenue + cupPrize - salariesPaid

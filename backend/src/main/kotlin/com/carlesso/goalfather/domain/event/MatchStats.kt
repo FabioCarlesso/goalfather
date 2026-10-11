@@ -65,7 +65,9 @@ fun Iterable<MatchEvent>.matchStats(): MatchStats = fold(MatchStats.EMPTY) { sta
                 else it.copy(yellowCards = it.yellowCards + 1)
             }
 
-        is MatchEvent.KickOff, is MatchEvent.Injury, is MatchEvent.FullTime -> stats
+        // Pênaltis não entram nas finalizações (issue #61): o sumário descreve
+        // os 90 minutos, como o placar do FullTime — a disputa tem placar próprio.
+        is MatchEvent.KickOff, is MatchEvent.Injury, is MatchEvent.PenaltyShootout, is MatchEvent.FullTime -> stats
     }
 }
 

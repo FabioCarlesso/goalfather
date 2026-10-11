@@ -1,5 +1,13 @@
 package com.carlesso.goalfather.adapter.`in`.web.dto
 
+import com.carlesso.goalfather.domain.model.TieResult
+import com.carlesso.goalfather.domain.model.PenaltyScore
+import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupTie
+import com.carlesso.goalfather.domain.model.CupStage
+import com.carlesso.goalfather.domain.model.CupClub
+import com.carlesso.goalfather.domain.model.Cup
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
@@ -205,5 +213,61 @@ class ResponsesTest {
 
         assertEquals("PlayerNotAvailable", encoded.getValue("type").jsonPrimitive.content)
         assertEquals(42, encoded.getValue("playerId").jsonPrimitive.content.toLong())
+    }
+
+    // ─── Copa (issue #61) ─────────────────────────────────────────────────
+
+    private fun club(id: Long) = CupClub(ClubId(id), "C$id")
+
+    private val semis = Cup(
+        season = 2026,
+        stages = listOf(
+            CupStage(
+                KnockoutPhase.SEMI_FINALS,
+                listOf(
+                    CupTie.Fixture(0, club(1), club(2), TieResult(1, 1, PenaltyScore(3, 4))),
+                    CupTie.Bye(1, club(3)),
+                ),
+            ),
+        ),
+    )
+
+    private fun encodeCup(cup: Cup): JsonObject =
+        json.parseToJsonElement(json.encodeToString(CupDto.serializer(), cup.toDto())).jsonObject
+
+    @Test
+    fun `cup expoe confrontos discriminados e o vencedor ja decidido pelos penaltis`() {
+        val encoded = encodeCup(semis)
+        val ties = encoded.getValue("stages").jsonArray.single().jsonObject.getValue("ties").jsonArray
+        val fixture = ties[0].jsonObject
+        assertEquals("Fixture", fixture.getValue("type").jsonPrimitive.content)
+        // O backend decide quem passou — a UI não recalcula pênaltis.
+        assertEquals(2, fixture.getValue("winnerId").jsonPrimitive.content.toInt())
+        assertEquals(
+            4,
+            fixture.getValue("result").jsonObject.getValue("penalties").jsonObject
+                .getValue("away").jsonPrimitive.content.toInt(),
+        )
+
+        val bye = ties[1].jsonObject
+        assertEquals("Bye", bye.getValue("type").jsonPrimitive.content)
+        assertEquals(3, bye.getValue("club").jsonObject.getValue("id").jsonPrimitive.content.toInt())
+    }
+
+    @Test
+    fun `cup lista todas as fases com o premio e omite o que ainda nao existe`() {
+        val encoded = encodeCup(semis)
+        assertEquals(
+            listOf("SEMI_FINALS", "FINAL"),
+            encoded.getValue("phases").jsonArray.map { it.jsonObject.getValue("phase").jsonPrimitive.content },
+        )
+        assertEquals(
+            KnockoutPhase.FINAL.prizeCents,
+            encoded.getValue("phases").jsonArray[1].jsonObject.getValue("prizeCents").jsonPrimitive.content.toLong(),
+        )
+        // Fase das semis completa (pênaltis + folga) e final ainda não sorteada:
+        // nem fase corrente nem campeão — ausentes, não `null`.
+        assertNull(encoded["currentPhase"])
+        assertNull(encoded["champion"])
     }
 }

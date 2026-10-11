@@ -6,6 +6,8 @@ import type {
   CareerCampaign,
   Club,
   ClubCareer,
+  Cup,
+  CupClub,
   Player,
   MarketEntry,
   Position,
@@ -15,6 +17,7 @@ import type {
   Retirement,
   Round,
   RoundMatch,
+  RoundStage,
 } from '../domain/types'
 import {
   MulberryRng,
@@ -22,6 +25,7 @@ import {
   DEFAULT_TICKET_PRICE_CENTS,
   type SquadMember,
 } from './engine'
+import { canHoldCup, cupRound, drawCup, seasonCalendar } from './cup'
 
 const player = (
   id: number,
@@ -205,19 +209,22 @@ export function applyPromotionRelegation(tables: Standings[]): Record<number, nu
 // Round-robin (Berger) POR DIVISÃO, mesclado numa rodada global. Para 6
 // clubes por divisão teremos 5 rodadas de 3 partidas por divisão.
 
-function generateRound(roundNumber: number, season: number): Round {
+// `roundNumber` é a DATA do calendário e `matchday` a rodada da LIGA (issue
+// #61): com a copa intercalada elas se descolam. O Berger gira pela matchday;
+// o matchId usa a data, como no backend.
+function generateRound(roundNumber: number, season: number, matchday: number = roundNumber): Round {
   const divisions = divisionAssignments
   const matches: RoundMatch[] = []
 
   for (const division of divisionsInPlay(divisions)) {
     const ids = clubsOfDivision(divisions, division).sort((a, b) => a - b)
     const n = ids.length
-    if (roundNumber > n - 1) continue // turno desta divisão já terminou
+    if (matchday > n - 1) continue // turno desta divisão já terminou
 
     // Algoritmo: clube de menor id fixo, os outros rotacionam (estilo Berger).
     const fixed = ids[0]!
     const rotating = ids.slice(1)
-    const offset = (roundNumber - 1) % (n - 1)
+    const offset = (matchday - 1) % (n - 1)
     const rotated = [...rotating.slice(offset), ...rotating.slice(0, offset)]
     const order = [fixed, ...rotated]
 
@@ -240,14 +247,18 @@ function generateRound(roundNumber: number, season: number): Round {
       })
     }
   }
-  return { number: roundNumber, season, status: 'Scheduled', matches }
+  return { number: roundNumber, season, status: 'Scheduled', stage: { type: 'League', matchday }, matches }
 }
 
 // ─── Atualização da tabela após uma rodada ───────────────────────────────
 // Aplica a rodada à tabela de UMA divisão: partidas de clubes fora de
 // `current.rows` são ignoradas, então a MESMA rodada global pode ser
 // aplicada a cada tabela (mesma semântica do backend, issue #47).
+// Rodada de COPA não mexe na tabela (issue #61), e a tabela conta a rodada
+// de liga (`matchday`), não a data — mesma regra do backend.
 export function applyRoundToStandings(round: Round, current: Standings): Standings {
+  if (round.stage.type === 'Cup') return current
+  const matchday = round.stage.matchday
   const byId = new Map(current.rows.map((r) => [r.clubId, { ...r }]))
 
   for (const m of round.matches) {
@@ -287,7 +298,7 @@ export function applyRoundToStandings(round: Round, current: Standings): Standin
   return {
     // Spread preserva divisão e vagas de promoção/rebaixamento da tabela.
     ...current,
-    round: round.number,
+    round: matchday,
     rows: sorted.map((r, i) => ({ ...r, position: i + 1 })),
   }
 }
@@ -298,6 +309,23 @@ export function applyRoundToStandings(round: Round, current: Standings): Standin
 export const SEASON_ROUNDS =
   Math.max(...divisionsInPlay(initialDivisions).map((d) => clubsOfDivision(initialDivisions, d).length)) - 1
 
+// ─── Copa (issue #61) ────────────────────────────────────────────────────
+// Sorteio da temporada com seed = temporada (no backend, `cupDrawSeed`). O
+// RNG é outro, então a chave do mock não coincide com a do backend — só as
+// regras (folgas, avanço, prêmio) coincidem.
+export function drawSeasonCup(season: number): Cup | null {
+  if (!canHoldCup(allClubIds.length)) return null
+  const clubs: CupClub[] = allClubIds.map((id) => ({ id, name: clubMeta[id]!.name }))
+  return drawCup(season, clubs, new MulberryRng(season * 7 + 61))
+}
+
+const divisionOf = (clubId: number): number => divisionAssignments[clubId] ?? 1
+
+/** Calendário da temporada: as rodadas de liga com as fases da copa intercaladas. */
+export function calendar(): RoundStage[] {
+  return seasonCalendar(SEASON_ROUNDS, state.cup?.phases.map((p) => p.phase) ?? [])
+}
+
 // Estado mutável — mocks alteram aqui para simular persistência durante a sessão.
 export const state = {
   clubs: { [myClub.id]: myClub } as Record<number, Club>,
@@ -305,8 +333,16 @@ export const state = {
   standings: initialStandings.map((s) => ({ ...s, rows: [...s.rows] })) as Standings[],
   // Temporadas encerradas, da mais recente para a mais antiga (issue #60).
   history: [] as SeasonRecord[],
+  // Copa da temporada corrente (issue #61).
+  cup: drawSeasonCup(2026) as Cup | null,
   currentRound: generateRound(1, 2026) as Round,
-  nextRound: () => generateRound(state.currentRound.number + 1, state.currentRound.season),
+  /** Próxima data do calendário — rodada de liga ou fase de copa. */
+  nextRound: (): Round => {
+    const { number, season } = state.currentRound
+    const next = calendar()[number]
+    if (next?.type === 'Cup' && state.cup) return cupRound(number + 1, season, state.cup, divisionOf)
+    return generateRound(number + 1, season, next?.type === 'League' ? next.matchday : number + 1)
+  },
 }
 
 // ─── Auth + seleção de clube (issues #18/#19) ─────────────────────────────
@@ -495,8 +531,9 @@ export function materializeClub(id: number): void {
 export function startNewSeason(season: number, finalTables: Standings[]): Retirement[] {
   // História ANTES do reset (issue #60): o snapshot precisa dos gols da
   // temporada, que o envelhecimento logo abaixo zera. Mesma ordem do backend
-  // — é ela que o critério de aceite da issue exige.
-  state.history = [seasonRecordOf(season - 1, finalTables), ...state.history]
+  // — é ela que o critério de aceite da issue exige. O campeão da copa
+  // (issue #61) entra no record antes do sorteio da copa nova.
+  state.history = [seasonRecordOf(season - 1, finalTables, state.cup?.champion), ...state.history]
 
   Object.assign(divisionAssignments, applyPromotionRelegation(finalTables))
   const my = state.clubs[1]
@@ -525,6 +562,7 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
     }
   }
   state.standings = freshStandings(season, divisionAssignments)
+  state.cup = drawSeasonCup(season)
   state.currentRound = generateRound(1, season)
   return retirements
 }
@@ -538,7 +576,7 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
  * Snapshot da temporada encerrada: campeão, artilheiro e classificação final
  * de todas as divisões, já na ordem de exibição (elite primeiro, por posição).
  */
-export function seasonRecordOf(season: number, finalTables: Standings[]): SeasonRecord {
+export function seasonRecordOf(season: number, finalTables: Standings[], cupChampion?: CupClub): SeasonRecord {
   const standings = [...finalTables]
     .sort((a, b) => a.division - b.division)
     .flatMap((table) =>
@@ -558,6 +596,7 @@ export function seasonRecordOf(season: number, finalTables: Standings[]): Season
     champion: standings[0]!,
     finalStandings: standings,
     ...(topScorer ? { topScorer } : {}),
+    ...(cupChampion ? { cupChampion } : {}),
   }
 }
 
@@ -604,6 +643,7 @@ export function careerOf(clubId: number, records: SeasonRecord[]): ClubCareer | 
     clubName: latest.standing.row.clubName,
     seasonsPlayed: campaigns.length,
     titles: records.filter((r) => r.champion.row.clubId === clubId).map((r) => r.season).sort((a, b) => a - b),
+    cupTitles: records.filter((r) => r.cupChampion?.id === clubId).map((r) => r.season).sort((a, b) => a - b),
     bestCampaign: best,
   }
 }

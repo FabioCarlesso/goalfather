@@ -56,6 +56,12 @@ data class SeasonTopScorer(
  *
  * `topScorer` é nulo quando ninguém marcou na temporada inteira (liga de
  * teste, temporada abortada) — ausência real, modelada no tipo.
+ *
+ * `cupChampion` (issue #61) é o vencedor da copa mata-mata da temporada. Nulo
+ * quando não houve copa (liga pequena demais, ou temporada anterior à copa) ou
+ * quando ela não chegou à final — de novo ausência real, não um "sem campeão"
+ * inventado. Default nulo: records gravados antes da copa desserializam sem
+ * migração do `record_json`.
  */
 @Serializable
 data class SeasonRecord(
@@ -63,4 +69,5 @@ data class SeasonRecord(
     val champion: SeasonStanding,
     val finalStandings: List<SeasonStanding>,
     val topScorer: SeasonTopScorer? = null,
+    val cupChampion: CupClub? = null,
 )

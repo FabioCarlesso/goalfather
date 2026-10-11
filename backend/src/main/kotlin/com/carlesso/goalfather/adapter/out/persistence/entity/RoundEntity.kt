@@ -30,6 +30,13 @@ class RoundEntity(
     var matchesJson: String = "[]",
 
     /**
+     * `RoundStage` serializado (issue #61): rodada de liga ou fase de copa.
+     * Nulo nas linhas anteriores à copa — o mapper as lê como liga.
+     */
+    @Column(name = "stage_json", columnDefinition = "TEXT")
+    var stageJson: String? = null,
+
+    /**
      * Lock otimista (issue #46): o Hibernate emite
      * `UPDATE ... WHERE number = ? AND version = ?` e rejeita o commit se
      * outra instância já avançou a versão. É o que torna a transição de status

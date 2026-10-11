@@ -1,8 +1,10 @@
 package com.carlesso.goalfather.test
 
+import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
@@ -57,3 +59,21 @@ internal fun makeClub(
     ownerId = ownerId,
     division = division,
 )
+
+/**
+ * Copa em memória para os testes de serviço (issue #61). Fake em vez de
+ * `mockk(relaxed = true)`: um mock relaxado devolveria uma `Cup` falsa em
+ * `findBySeason` (relaxed não devolve `null` para tipo de referência), e o
+ * calendário passaria a reservar datas de copa que o teste não pediu.
+ */
+internal class InMemoryCupRepository(vararg initial: Cup) : CupRepository {
+    val cups: MutableMap<Int, Cup> = initial.associateBy { it.season }.toMutableMap()
+
+    override suspend fun findBySeason(season: Int): Cup? = cups[season]
+
+    override suspend fun findLatest(): Cup? = cups.maxByOrNull { it.key }?.value
+
+    override suspend fun save(cup: Cup) {
+        cups[cup.season] = cup
+    }
+}

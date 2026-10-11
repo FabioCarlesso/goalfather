@@ -2,12 +2,15 @@ package com.carlesso.goalfather.adapter.`in`.web
 
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.PlayRoundResponse
+import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.`in`.SeasonHistoryUseCase
+import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.StartRoundResult
+import kotlinx.serialization.json.Json
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,7 +26,35 @@ class LeagueController(
     private val leagueRepo: LeagueRepository,
     private val readiness: RoundReadinessUseCase,
     private val history: SeasonHistoryUseCase,
+    private val cups: CupRepository,
+    private val json: Json,
 ) {
+
+    /**
+     * Chave da copa mata-mata (issue #61). Sem `season`, a da temporada mais
+     * recente — a que está em disputa. 404 quando a temporada não teve copa
+     * (liga pequena demais, ou save anterior à copa): é estado normal do jogo,
+     * mas não há chave nenhuma para mostrar.
+     *
+     * Leitura direta do port de saída, como `/standings`: não há projeção nem
+     * regra a aplicar — o DTO só expõe derivações que o domínio já calcula.
+     */
+    @GetMapping("/cup")
+    suspend fun getCup(@RequestParam(required = false) season: Int?): ResponseEntity<Any> {
+        val cup = if (season == null) cups.findLatest() else cups.findBySeason(season)
+        return if (cup == null) {
+            ResponseEntity.status(404).body(
+                ErrorResponse(
+                    code = "CUP_NOT_FOUND",
+                    message = if (season == null) "Nenhuma copa disputada" else "Temporada $season sem copa",
+                ),
+            )
+        } else {
+            // kotlinx explícito: os confrontos são `sealed` (Bye/Fixture) e
+            // precisam do discriminador — ver `okJson`.
+            json.okJson(cup.toDto())
+        }
+    }
 
     /**
      * Temporadas encerradas, da mais recente para a mais antiga (issue #60).
@@ -99,7 +130,9 @@ class LeagueController(
                 ErrorResponse(code = "ROUND_NOT_FOUND", message = "Nenhuma rodada disponivel"),
             )
         } else {
-            ResponseEntity.ok(current)
+            // kotlinx explícito: `stage` é `sealed` (liga × copa, issue #61) e
+            // o cliente desambigua pelo `type` — ver `okJson`.
+            json.okJson(current)
         }
     }
 

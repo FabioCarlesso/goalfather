@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.test.makeClub
@@ -113,5 +114,26 @@ class RoundFixturesGeneratorTest {
             (7L..9L).map { makeClub(id = it, division = Division(2)) }
         assertThrows<IllegalArgumentException> { generateRound(1, 2026, clubs) }
         assertTrue(!canScheduleSeason(clubs))
+    }
+
+    @Test
+    fun `data do calendario e rodada da liga se descolam com a copa (issue 61)`() {
+        // Data 5, rodada de liga 3: os pareamentos são os da rodada 3; o
+        // matchId (seed da simulação) é o da data, única na temporada.
+        val round = generateRound(roundNumber = 5, season = 2026, clubs = sixClubs, matchday = 3)
+        val berger3 = generateRound(roundNumber = 3, season = 2026, clubs = sixClubs)
+
+        assertEquals(5, round.number)
+        assertEquals(RoundStage.League(3), round.stage)
+        assertEquals(
+            berger3.matches.map { it.homeClubId to it.awayClubId },
+            round.matches.map { it.homeClubId to it.awayClubId },
+        )
+        assertEquals(listOf(5101L, 5102L, 5103L), round.matches.map { it.matchId })
+    }
+
+    @Test
+    fun `sem copa a rodada de liga e a propria data`() {
+        assertEquals(RoundStage.League(4), generateRound(4, 2026, sixClubs).stage)
     }
 }

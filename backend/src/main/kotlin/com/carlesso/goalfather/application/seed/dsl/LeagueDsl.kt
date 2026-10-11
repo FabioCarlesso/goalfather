@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.seed.dsl
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.Player
@@ -12,8 +13,12 @@ import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.rules.canHoldCup
+import com.carlesso.goalfather.domain.rules.cupDrawSeed
+import com.carlesso.goalfather.domain.rules.drawCup
 import com.carlesso.goalfather.domain.rules.promotionSpotsFor
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
+import kotlin.random.Random
 
 /**
  * DSL type-safe de seed de liga.
@@ -92,6 +97,14 @@ data class League(
             )
         }
     }
+
+    /**
+     * Copa da temporada inicial (issue #61), sorteada pela MESMA regra e seed
+     * que a virada de temporada usa — o seed não tem um sorteio "especial".
+     * `null` quando a liga não comporta copa (ver `canHoldCup`).
+     */
+    fun initialCup(): Cup? =
+        if (canHoldCup(clubs)) drawCup(season, clubs, Random(cupDrawSeed(season))) else null
 }
 
 @SeedDsl

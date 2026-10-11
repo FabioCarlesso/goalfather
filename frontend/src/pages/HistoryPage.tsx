@@ -65,7 +65,7 @@ function CareerCard({ career }: { career: ClubCareer }) {
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-5">
       <h2 className="text-lg font-semibold text-slate-100">{career.clubName}</h2>
-      <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
           <dt className="text-xs uppercase tracking-wide text-slate-500">Temporadas</dt>
           <dd className="text-2xl font-bold text-slate-100">{career.seasonsPlayed}</dd>
@@ -77,6 +77,18 @@ function CareerCard({ career }: { career: ClubCareer }) {
             {career.titles.length > 0 && (
               <span className="ml-2 text-xs font-normal text-slate-400">
                 {career.titles.join(', ')}
+              </span>
+            )}
+          </dd>
+        </div>
+        {/* Copa mata-mata (issue #61): títulos já contados no backend. */}
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-slate-500">Copas</dt>
+          <dd className="text-2xl font-bold text-amber-300">
+            {career.cupTitles.length}
+            {career.cupTitles.length > 0 && (
+              <span className="ml-2 text-xs font-normal text-slate-400">
+                {career.cupTitles.join(', ')}
               </span>
             )}
           </dd>
@@ -119,6 +131,9 @@ function SeasonRow({
           <span className="ml-2 text-xs text-slate-500">
             {season.champion.row.points} pts · {season.champion.pointsPercentage}%
           </span>
+          {season.cupChampion && (
+            <span className="ml-3 text-sm text-amber-200">🥇 Copa: {season.cupChampion.name}</span>
+          )}
         </span>
         <span className="hidden text-sm text-slate-400 sm:block">
           {season.topScorer

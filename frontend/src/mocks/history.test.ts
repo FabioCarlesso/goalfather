@@ -97,4 +97,25 @@ describe('mock de histórico (issue #60)', () => {
     expect(careerOf(99, [seasonRecordOf(2026, finalTables)])).toBeNull()
     expect(careerOf(1, [])).toBeNull()
   })
+
+  // Copa (issue #61): o campeão entra no record e a carreira conta os títulos.
+  it('record guarda o campeão da copa e a carreira conta as copas', () => {
+    const withCup = seasonRecordOf(2026, finalTables, { id: 1, name: 'Club 1' })
+    const withoutCup = seasonRecordOf(2027, finalTables)
+
+    expect(withCup.cupChampion).toEqual({ id: 1, name: 'Club 1' })
+    expect(withoutCup.cupChampion).toBeUndefined()
+    expect(careerOf(1, [withoutCup, withCup])!.cupTitles).toEqual([2026])
+  })
+
+  it('a virada leva o campeão da copa para a história e sorteia a copa nova', () => {
+    const cup = state.cup!
+    state.cup = { ...cup, champion: { id: 4, name: 'Tupinambás FC' } }
+
+    startNewSeason(2027, finalTables)
+
+    expect(state.history[0]!.cupChampion).toEqual({ id: 4, name: 'Tupinambás FC' })
+    expect(state.cup?.season).toBe(2027)
+    expect(state.cup?.champion).toBeUndefined()
+  })
 })

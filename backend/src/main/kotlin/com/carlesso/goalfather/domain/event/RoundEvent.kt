@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.event
 
+import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.StandingRow
@@ -56,6 +57,10 @@ sealed interface RoundEvent {
      * pendurou as chuteiras e qual garoto da base assumiu a vaga. Vem de TODOS
      * os clubes — cabe ao cliente filtrar o que interessa ao técnico. Default
      * vazio para não quebrar quem já consumia o evento.
+     *
+     * `cupChampion` (issue #61) é o vencedor da copa mata-mata da temporada
+     * que acabou — o mesmo que vai para o histórico. Nulo quando não houve
+     * copa ou ela não chegou à final.
      */
     @Serializable
     @SerialName("SeasonFinished")
@@ -64,5 +69,6 @@ sealed interface RoundEvent {
         val champion: StandingRow,
         val standings: List<Standings>,
         val retirements: List<Retirement> = emptyList(),
+        val cupChampion: CupClub? = null,
     ) : RoundEvent
 }

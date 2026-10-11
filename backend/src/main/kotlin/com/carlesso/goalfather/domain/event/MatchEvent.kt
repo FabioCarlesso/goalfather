@@ -104,6 +104,26 @@ sealed interface MatchEvent {
     ) : MatchEvent
 
     /**
+     * Disputa de pênaltis (issue #61). Só existe em jogo de mata-mata que
+     * terminou empatado no tempo normal, e sai ANTES do [FullTime] — que
+     * continua sendo o último evento de toda partida e segue carregando o
+     * placar dos 90 minutos.
+     *
+     * Os placares vêm junto das cobranças, embora derivem delas, para o
+     * cliente não precisar recontar: é o resumo que a UI mostra. A disputa é
+     * sorteada com o RNG da PRÓPRIA partida, depois do minuto 90 — então mesma
+     * seed dá a mesma disputa, e o replay do stream reproduz o mesmo vencedor.
+     */
+    @Serializable
+    @SerialName("PenaltyShootout")
+    data class PenaltyShootout(
+        override val minute: Int = 90,
+        val homeScore: Int,
+        val awayScore: Int,
+        val kicks: List<PenaltyKick>,
+    ) : MatchEvent
+
+    /**
      * Apito final. Além do placar, carrega o sumário da partida (issue #57):
      * finalizações, defesas e cartões de cada lado, derivados dos próprios
      * eventos emitidos — ver [matchStats].
@@ -117,3 +137,16 @@ sealed interface MatchEvent {
         val stats: MatchStats,
     ) : MatchEvent
 }
+
+/**
+ * Uma cobrança da disputa de pênaltis, na ordem em que aconteceu. `playerId`
+ * é nulo só quando o lado não tinha ninguém em campo para bater (elenco
+ * vazio) — a cobrança conta como perdida, sem um id "0" mágico (mesmo
+ * cuidado do `Save.goalkeeperId`).
+ */
+@Serializable
+data class PenaltyKick(
+    val playerId: PlayerId?,
+    val home: Boolean,
+    val scored: Boolean,
+)

@@ -23,6 +23,7 @@ export type ErrorResponse = components['schemas']['ErrorResponse']
 export type Round         = components['schemas']['Round']
 export type RoundMatch    = components['schemas']['RoundMatch']
 export type RoundStatus   = components['schemas']['RoundStatus']
+export type RoundStage    = components['schemas']['RoundStage']
 export type RoundEvent    = components['schemas']['RoundEvent']
 export type RoundFinance  = components['schemas']['RoundFinance']
 export type Retirement    = components['schemas']['Retirement']
@@ -39,6 +40,15 @@ export type SeasonStanding  = components['schemas']['SeasonStanding']
 export type SeasonTopScorer = components['schemas']['SeasonTopScorer']
 export type ClubCareer      = components['schemas']['ClubCareer']
 export type CareerCampaign  = components['schemas']['CareerCampaign']
+
+// Copa mata-mata (issue #61)
+export type Cup           = components['schemas']['Cup']
+export type CupStage      = components['schemas']['CupStage']
+export type CupTie        = components['schemas']['CupTie']
+export type CupClub       = components['schemas']['CupClub']
+export type CupPhaseInfo  = components['schemas']['CupPhaseInfo']
+export type KnockoutPhase = components['schemas']['KnockoutPhase']
+export type PenaltyScore  = components['schemas']['PenaltyScore']
 
 // Auth (issue #18) + seleção de clube (issue #19)
 export type AuthUser        = components['schemas']['AuthUser']

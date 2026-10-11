@@ -4,6 +4,7 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
 
 /**
@@ -23,12 +24,19 @@ import com.carlesso.goalfather.domain.model.RoundStatus
  *
  * Espelha `generateRound` em `frontend/src/mocks/seed.ts`.
  *
+ * `roundNumber` é a data GLOBAL do calendário e `matchday` a rodada da LIGA
+ * (issue #61): com a copa intercalada as duas se descolam — a 3ª rodada de
+ * liga pode cair na data 5. O Berger gira pela `matchday` (é ela que define
+ * quem enfrenta quem), e o `matchId` usa a data, que é única na temporada.
+ * Sem copa as duas coincidem, daí o default.
+ *
  * Idioma Kotlin: função top-level pura em `domain/rules` (sem classe
  * utilitária estática à la Java) e `data class` imutáveis montadas via
  * `map`/`flatMap` — nenhuma mutação de estado.
  */
-fun generateRound(roundNumber: Int, season: Int, clubs: List<Club>): Round {
+fun generateRound(roundNumber: Int, season: Int, clubs: List<Club>, matchday: Int = roundNumber): Round {
     require(roundNumber >= 1) { "roundNumber deve ser >= 1: $roundNumber" }
+    require(matchday >= 1) { "matchday deve ser >= 1: $matchday" }
 
     // `toSortedMap` garante ordem estável (divisão 1, 2, ...) para o
     // determinismo do schedule e da numeração das partidas.
@@ -46,11 +54,11 @@ fun generateRound(roundNumber: Int, season: Int, clubs: List<Club>): Round {
             "Fórmula de matchId suporta no máximo 9 divisões: ${division.value}"
         }
         // Turno encerrado para esta divisão → ela folga nesta rodada.
-        if (roundNumber > divisionClubs.size - 1) emptyList()
-        else divisionMatches(roundNumber, division, divisionClubs)
+        if (matchday > divisionClubs.size - 1) emptyList()
+        else divisionMatches(roundNumber, matchday, division, divisionClubs)
     }
     require(matches.isNotEmpty()) {
-        "Nenhuma divisão tem partidas na rodada $roundNumber — temporada já encerrada"
+        "Nenhuma divisão tem partidas na rodada $matchday — temporada já encerrada"
     }
 
     return Round(
@@ -58,10 +66,16 @@ fun generateRound(roundNumber: Int, season: Int, clubs: List<Club>): Round {
         season = season,
         status = RoundStatus.Scheduled,
         matches = matches,
+        stage = RoundStage.League(matchday),
     )
 }
 
-private fun divisionMatches(roundNumber: Int, division: Division, clubs: List<Club>): List<RoundMatch> {
+private fun divisionMatches(
+    roundNumber: Int,
+    matchday: Int,
+    division: Division,
+    clubs: List<Club>,
+): List<RoundMatch> {
     // Ordena por id para determinismo independente da ordem de entrada e
     // para garantir o "clube fixo" do Berger (o de menor id).
     val ordered = clubs.sortedBy { it.id.value }
@@ -70,7 +84,7 @@ private fun divisionMatches(roundNumber: Int, division: Division, clubs: List<Cl
     val rotating = ordered.drop(1)
 
     // Rotação dependente da rodada — ciclo de N-1 posições (turno único).
-    val offset = (roundNumber - 1) % (n - 1)
+    val offset = (matchday - 1) % (n - 1)
     val rotated = rotating.drop(offset) + rotating.take(offset)
     val order = listOf(fixed) + rotated
 

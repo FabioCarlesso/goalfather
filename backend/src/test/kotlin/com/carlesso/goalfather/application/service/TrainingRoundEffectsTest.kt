@@ -13,6 +13,7 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.rules.STAMINA_MATCH_FLOOR
+import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
 import io.mockk.Runs
@@ -46,6 +47,7 @@ class TrainingRoundEffectsTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
+            InMemoryCupRepository(),
         )
 
     // Elenco jovem e cansado: o foco FISICO tem o que recuperar, e a chance de

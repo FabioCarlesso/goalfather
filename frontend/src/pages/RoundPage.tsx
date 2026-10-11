@@ -9,17 +9,22 @@ import { useMyClubId } from '../auth/useMyClubId'
 import { useAuth } from '../auth/AuthContext'
 import { standingsKey } from '../api/queries/useStandings'
 import { seasonHistoryKey, clubCareerKey } from '../api/queries/useSeasonHistory'
+import { cupKey } from '../api/queries/useCup'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { ReadinessCard } from '../components/ReadinessCard'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import { TRAINED_ATTRIBUTE_LABEL, TRAINING_FOCUS_LABEL } from '../domain/training'
+import { KNOCKOUT_PHASE_LABEL, stageTitle } from '../domain/cup'
 import type {
+  CupClub,
   MatchEvent,
+  PenaltyScore,
   Retirement,
   RoundEvent,
   RoundFinance,
   RoundMatch,
+  RoundStage,
   StandingRow,
   Standings,
   TrainingReport,
@@ -35,6 +40,8 @@ interface LiveMatchState {
   awayGoals: number
   minute: number
   status: 'Scheduled' | 'InProgress' | 'Finished'
+  // Disputa de pênaltis do jogo de copa (issue #61), quando houve.
+  penalties?: PenaltyScore
 }
 
 export function RoundPage() {
@@ -60,6 +67,11 @@ export function RoundPage() {
   const [finalFinance, setFinalFinance] = useState<RoundFinance | null>(null)
   const [training, setTraining] = useState<TrainingReport | null>(null)
   const [champion, setChampion] = useState<SeasonFinishedEvent | null>(null)
+  // O que a data JOGADA disputou (issue #61). Guardado no início porque o
+  // RoundFinished invalida a rodada corrente: dali em diante `round` já é a
+  // PRÓXIMA data, e o banner falaria da fase de copa seguinte em vez da
+  // rodada de liga que acabou de ser jogada.
+  const [playedStage, setPlayedStage] = useState<RoundStage | null>(null)
 
   // Prontidão da liga compartilhada (issue #20). Durante a partida ao vivo o
   // card some, então pausamos o polling de prontidão para não gerar tráfego
@@ -94,6 +106,7 @@ export function RoundPage() {
           awayGoals: m.awayGoals,
           minute: m.minute,
           status: m.status,
+          ...(m.penalties ? { penalties: m.penalties } : {}),
         })
       }
     }
@@ -109,6 +122,9 @@ export function RoundPage() {
         case 'Goal':
           if (evt.event.home) next.homeGoals++
           else next.awayGoals++
+          break
+        case 'PenaltyShootout':
+          next.penalties = { home: evt.event.homeScore, away: evt.event.awayScore }
           break
         case 'FullTime':
           next.homeGoals = evt.event.homeGoals
@@ -163,6 +179,7 @@ export function RoundPage() {
     setFinalFinance(null)
     setTraining(null)
     setChampion(null)
+    setPlayedStage(round.stage)
     setStatus('connecting')
 
     try {
@@ -190,6 +207,9 @@ export function RoundPage() {
           qc.invalidateQueries({ queryKey: currentRoundKey })
           // A prontidão foi resetada no servidor — rebusca para a próxima rodada (issue #20)
           qc.invalidateQueries({ queryKey: roundReadinessKey })
+          // Data de copa avança a chave (issue #61); data de liga pode ter
+          // sido a última antes da fase seguinte. Rebusca sempre — é barato.
+          qc.invalidateQueries({ queryKey: cupKey })
           // Treino da semana (issue #58): o evento traz o extrato de todos os
           // clubes; só o do técnico interessa aqui. Fica DEPOIS das
           // invalidações e com acesso opcional de propósito: um payload sem
@@ -241,8 +261,12 @@ export function RoundPage() {
     <section className="space-y-4">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">Rodada {round.number}</h1>
-          <p className="text-sm text-slate-400">Temporada {round.season} · {round.matches.length} partidas</p>
+          {/* A data do calendário é rodada de liga OU fase de copa (issue #61). */}
+          <h1 className="text-3xl font-bold text-slate-100">{stageTitle(round.stage)}</h1>
+          <p className="text-sm text-slate-400">
+            Temporada {round.season} · Data {round.number} do calendário · {round.matches.length} partidas
+            {round.stage.type === 'Cup' && ' · jogo único, empate vai aos pênaltis'}
+          </p>
         </div>
         <button
           onClick={startRound}
@@ -280,10 +304,10 @@ export function RoundPage() {
         allFinished={allFinished && status === 'finished'}
       />
 
-      {/* Partidas agrupadas por divisão (issue #47). */}
-      {divisionsOf(round.matches).map(([division, matches]) => (
-        <div key={division} className="space-y-2">
-          <h2 className="text-sm uppercase tracking-wide text-slate-500">Divisão {division}</h2>
+      {/* Partidas agrupadas por divisão (issue #47) — ou num grupo só, na copa (issue #61). */}
+      {matchGroupsOf(round.stage, round.matches).map(([label, matches]) => (
+        <div key={label} className="space-y-2">
+          <h2 className="text-sm uppercase tracking-wide text-slate-500">{label}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {matches.map((m) => (
               <MatchCard
@@ -319,7 +343,7 @@ export function RoundPage() {
       )}
 
       {champion && status === 'finished' && (
-        <ChampionBanner season={champion.season} champion={champion.champion} />
+        <ChampionBanner season={champion.season} champion={champion.champion} cupChampion={champion.cupChampion} />
       )}
 
       {/* Aposentadorias do clube do usuário na virada (issue #55). */}
@@ -330,10 +354,10 @@ export function RoundPage() {
       {/* Resultado do treino da semana no clube do usuário (issue #58). */}
       {training && status === 'finished' && <TrainingCard report={training} />}
 
-      {finalStandings && status === 'finished' && (
+      {finalStandings && playedStage && status === 'finished' && (
         <FinalBanner
           standings={myDivisionTable(finalStandings, myClubId)}
-          round={round.number}
+          stage={playedStage}
           finance={finalFinance}
         />
       )}
@@ -341,15 +365,26 @@ export function RoundPage() {
   )
 }
 
-/** Pares [divisão, partidas] na ordem da elite para baixo. */
-function divisionsOf(matches: RoundMatch[]): Array<[number, RoundMatch[]]> {
-  const grouped = new Map<number, RoundMatch[]>()
-  for (const m of matches) {
-    const list = grouped.get(m.division) ?? []
-    list.push(m)
-    grouped.set(m.division, list)
+/**
+ * Pares [rótulo, partidas]: na liga, uma divisão por grupo, da elite para
+ * baixo; na copa, que mistura divisões, um grupo só com a fase.
+ */
+function matchGroupsOf(stage: RoundStage, matches: RoundMatch[]): Array<[string, RoundMatch[]]> {
+  switch (stage.type) {
+    case 'Cup':
+      return [[`Copa · ${KNOCKOUT_PHASE_LABEL[stage.phase]}`, matches]]
+    case 'League': {
+      const grouped = new Map<number, RoundMatch[]>()
+      for (const m of matches) {
+        const list = grouped.get(m.division) ?? []
+        list.push(m)
+        grouped.set(m.division, list)
+      }
+      return [...grouped.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([division, list]) => [`Divisão ${division}`, list])
+    }
   }
-  return [...grouped.entries()].sort(([a], [b]) => a - b)
 }
 
 /** Tabela da divisão do usuário (fallback: elite) para o banner de fim de rodada. */
@@ -357,7 +392,11 @@ function myDivisionTable(tables: Standings[], myClubId: number): Standings {
   return tables.find((t) => t.rows.some((r) => r.clubId === myClubId)) ?? tables[0]!
 }
 
-function ChampionBanner({ season, champion }: { season: number; champion: StandingRow }) {
+function ChampionBanner({
+  season,
+  champion,
+  cupChampion,
+}: { season: number; champion: StandingRow; cupChampion?: CupClub }) {
   return (
     <div className="rounded-lg border border-amber-500/60 bg-gradient-to-r from-amber-900/30 to-amber-700/20 p-5 text-center">
       <div className="text-4xl mb-1">🏆</div>
@@ -367,6 +406,9 @@ function ChampionBanner({ season, champion }: { season: number; champion: Standi
         {champion.points} pts · {champion.wins}V {champion.draws}E {champion.losses}D · SG{' '}
         {champion.goalDifference >= 0 ? '+' : ''}{champion.goalDifference}
       </div>
+      {cupChampion && (
+        <div className="mt-2 text-sm text-amber-200">🥇 Copa: {cupChampion.name}</div>
+      )}
       <div className="mt-2 text-xs text-slate-400">Uma nova temporada começou — boa sorte!</div>
     </div>
   )
@@ -516,8 +558,13 @@ function MatchCard({
         <div className="text-right">
           <div className="text-sm font-medium text-slate-100 truncate">{match.homeClubName}</div>
         </div>
-        <div className="text-2xl font-bold font-mono tabular-nums text-slate-100 px-2">
+        <div className="text-2xl font-bold font-mono tabular-nums text-slate-100 px-2 text-center">
           {s.homeGoals} <span className="text-slate-600">×</span> {s.awayGoals}
+          {s.penalties && (
+            <div className="text-xs font-normal text-amber-300">
+              pên. {s.penalties.home} × {s.penalties.away}
+            </div>
+          )}
         </div>
         <div className="text-left">
           <div className="text-sm font-medium text-slate-100 truncate">{match.awayClubName}</div>
@@ -529,16 +576,25 @@ function MatchCard({
 
 function FinalBanner({
   standings,
-  round,
+  stage,
   finance,
-}: { standings: Standings; round: number; finance: RoundFinance | null }) {
-  const top3 = standings.rows.slice(0, 3)
+}: { standings: Standings; stage: RoundStage; finance: RoundFinance | null }) {
+  // Data de copa não mexe na tabela (issue #61): o banner fala da fase e do
+  // caixa, e o top-3 só aparece depois de uma rodada de liga.
+  const top3 = stage.type === 'League' ? standings.rows.slice(0, 3) : []
+  const title = stage.type === 'League'
+    ? `Pontuações atualizadas após a rodada ${stage.matchday}`
+    : `Copa — ${KNOCKOUT_PHASE_LABEL[stage.phase]} encerrada`
+  const income = finance ? finance.ticketRevenue + finance.cupPrize : 0
   return (
     <div className="rounded-lg border border-emerald-700/50 bg-emerald-900/20 p-4">
-      <div className="font-semibold text-emerald-200">Pontuações atualizadas após a rodada {round}</div>
+      <div className="font-semibold text-emerald-200">{title}</div>
       {finance && (
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-mono">
           <span className="text-emerald-300">+{formatMoney(finance.ticketRevenue)} bilheteria</span>
+          {finance.cupPrize > 0 && (
+            <span className="text-amber-300">+{formatMoney(finance.cupPrize)} prêmio da copa</span>
+          )}
           {/* Detalhe da bilheteria (issue #59): sem público × preço, o total
               não diz se rendeu por estádio cheio ou por ingresso caro. */}
           {finance.attendance > 0 && (
@@ -548,8 +604,8 @@ function FinalBanner({
           )}
           <span className="text-red-300">−{formatMoney(finance.salariesPaid)} salários</span>
           <span className="text-slate-200">
-            saldo {finance.ticketRevenue - finance.salariesPaid >= 0 ? '+' : '−'}
-            {formatMoney(Math.abs(finance.ticketRevenue - finance.salariesPaid))}
+            saldo {income - finance.salariesPaid >= 0 ? '+' : '−'}
+            {formatMoney(Math.abs(income - finance.salariesPaid))}
           </span>
           {finance.deficit > 0 && (
             <span className="font-semibold text-red-400">

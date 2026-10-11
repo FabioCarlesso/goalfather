@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -140,5 +142,43 @@ class StandingsRulesTest {
         val result = applyRoundToStandings(round, initialStandings)
         assertEquals(5, result.round)
         assertEquals(2026, result.season)
+    }
+
+    // ─── Copa (issue #61) ─────────────────────────────────────────────────
+
+    private fun finishedMatch(home: Long, away: Long, homeGoals: Int, awayGoals: Int) = RoundMatch(
+        matchId = 1,
+        homeClubId = ClubId(home),
+        awayClubId = ClubId(away),
+        homeClubName = "H",
+        awayClubName = "A",
+        status = RoundStatus.Finished,
+        homeGoals = homeGoals,
+        awayGoals = awayGoals,
+    )
+
+    @Test
+    fun `rodada de copa nao mexe na tabela`() {
+        val cupRound = Round(
+            number = 2,
+            season = 2026,
+            matches = listOf(finishedMatch(1, 2, 3, 0)),
+            stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS),
+        )
+        assertEquals(initialStandings, applyRoundToStandings(cupRound, initialStandings))
+    }
+
+    @Test
+    fun `tabela registra a rodada da liga e nao a data do calendario`() {
+        // Data 3 do calendário, 2ª rodada de liga (a data 2 foi de copa).
+        val leagueRound = Round(
+            number = 3,
+            season = 2026,
+            matches = listOf(finishedMatch(1, 2, 1, 0)),
+            stage = RoundStage.League(2),
+        )
+        val updated = applyRoundToStandings(leagueRound, initialStandings)
+        assertEquals(2, updated.round)
+        assertEquals(3, updated.rows.first { it.clubId == ClubId(1) }.points)
     }
 }

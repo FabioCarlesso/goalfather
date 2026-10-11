@@ -4,6 +4,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
+import com.carlesso.goalfather.adapter.out.persistence.repository.CupJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.MarketEntryJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.PlayerJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
@@ -21,8 +22,9 @@ import org.springframework.context.annotation.Configuration
  *
  * 12 clubes em 2 divisões (issue #47): divisão 1 com o clube do usuário +
  * 5 IA, divisão 2 com 6 clubes IA. 4 entradas iniciais no mercado, rodada 1
- * com 3 pareamentos POR divisão (Berger round-robin) e standings vazias da
- * temporada 2026 (uma tabela por divisão).
+ * com 3 pareamentos POR divisão (Berger round-robin), standings vazias da
+ * temporada 2026 (uma tabela por divisão) e a copa da temporada já sorteada
+ * (issue #61) — 12 clubes numa chave de 16, com 4 folgas.
  *
  * A descrição do estado vive na **DSL de seed** (`application/seed/dsl`),
  * que produz um [League] imutável; este runner só faz a tradução
@@ -41,6 +43,7 @@ class DataInitializer(
     private val marketRepo: MarketEntryJpaRepository,
     private val roundRepo: RoundJpaRepository,
     private val standingsRepo: StandingsJpaRepository,
+    private val cupRepo: CupJpaRepository,
     private val json: Json,
 ) : CommandLineRunner {
 
@@ -157,6 +160,8 @@ class DataInitializer(
         for (standings in league.initialStandings()) {
             standingsRepo.save(standings.toEntity(json))
         }
+
+        league.initialCup()?.let { cupRepo.save(it.toEntity(json)) }
     }
 
     private fun positionForSlot(slot: Int): Position = when (slot) {

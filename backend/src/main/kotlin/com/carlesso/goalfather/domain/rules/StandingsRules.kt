@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
@@ -18,8 +19,17 @@ import com.carlesso.goalfather.domain.model.Standings
  * - Partidas de clubes que não estão em `current.rows` são ignoradas —
  *   com múltiplas divisões (issue #47), a MESMA rodada pode ser aplicada
  *   a cada tabela e só os jogos daquela divisão contam.
+ * - Rodada de COPA não mexe na tabela (issue #61): mata-mata não vale ponto.
+ *   O `when` sobre o `sealed` [RoundStage] força a decisão aqui, em vez de
+ *   confiar que o chamador lembre de filtrar. A tabela também conta a rodada
+ *   pela `matchday` da liga — com a copa no meio, a data 5 pode ser a 3ª
+ *   rodada do campeonato, e é esta que o técnico lê.
  */
 fun applyRoundToStandings(round: Round, current: Standings): Standings {
+    val matchday = when (val stage = round.stage) {
+        is RoundStage.League -> stage.matchday
+        is RoundStage.Cup -> return current
+    }
     val byId = current.rows.associateBy { it.clubId }.toMutableMap()
 
     for (match in round.matches) {
@@ -46,7 +56,7 @@ fun applyRoundToStandings(round: Round, current: Standings): Standings {
 
     // `copy` preserva divisão e vagas de promoção/rebaixamento da tabela.
     return current.copy(
-        round = round.number,
+        round = matchday,
         rows = sorted.mapIndexed { i, row -> row.copy(position = i + 1) },
     )
 }

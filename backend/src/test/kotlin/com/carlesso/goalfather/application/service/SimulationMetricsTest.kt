@@ -10,6 +10,7 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import io.micrometer.core.instrument.MockClock
 import io.micrometer.core.instrument.simple.SimpleConfig
@@ -47,6 +48,7 @@ class SimulationMetricsTest {
         mockk(relaxed = true),
         mockk(relaxed = true),
         mockk(relaxed = true),
+        InMemoryCupRepository(),
         meterRegistry = registry,
     )
 
@@ -133,6 +135,7 @@ class SimulationMetricsTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
+            InMemoryCupRepository(),
             simulator = simulator,
             meterRegistry = clockedRegistry,
         )
