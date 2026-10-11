@@ -18,6 +18,7 @@ import type {
   Round,
   RoundMatch,
   RoundStage,
+  TrainingReport,
 } from '../domain/types'
 import {
   MulberryRng,
@@ -320,6 +321,20 @@ export function drawSeasonCup(season: number): Cup | null {
 }
 
 const divisionOf = (clubId: number): number => divisionAssignments[clubId] ?? 1
+
+/**
+ * Extrato de treino da rodada para TODOS os clubes da liga — o backend treina
+ * a liga inteira em `persistRoundEffects`, tenha o clube jogado ou não. Montar
+ * a lista a partir de quem jogou (como era) deixava o técnico sem o card de
+ * treino numa data de copa em que ele folgou ou já tinha caído (review do PR
+ * #78). O mock só acompanha o elenco do clube 1; os demais entram com o
+ * relatório vazio do default.
+ */
+export function roundTrainingReports(myTraining: TrainingReport | null): TrainingReport[] {
+  return allClubIds.map((clubId) =>
+    clubId === 1 && myTraining ? myTraining : { clubId, focus: 'DESCANSO', events: [] },
+  )
+}
 
 /** Calendário da temporada: as rodadas de liga com as fases da copa intercaladas. */
 export function calendar(): RoundStage[] {

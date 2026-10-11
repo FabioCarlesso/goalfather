@@ -14,7 +14,7 @@ import {
   tieWinner,
 } from './cup'
 import { MulberryRng, penaltyShootout, simulateMatch, type SquadMember } from './engine'
-import { applyRoundToStandings, calendar, initialStandings, state } from './seed'
+import { applyRoundToStandings, calendar, initialStandings, roundTrainingReports, state } from './seed'
 import type { Cup, CupClub, Round } from '../domain/types'
 
 const clubs: CupClub[] = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, name: `C${i + 1}` }))
@@ -117,6 +117,15 @@ describe('copa do mock (issue #61)', () => {
     expect(calendar()).toHaveLength(9)
     expect(state.currentRound.stage).toEqual({ type: 'League', matchday: 1 })
     expect(state.nextRound().stage).toEqual({ type: 'Cup', phase: 'ROUND_OF_16' })
+  })
+
+  it('extrato de treino cobre a liga inteira, mesmo quem não jogou a data de copa', () => {
+    const mine = { clubId: 1, focus: 'FISICO' as const, events: [] }
+    const reports = roundTrainingReports(mine)
+    // 12 clubes, embora uma data de oitavas só tenha 4 jogos (8 clubes).
+    expect(reports).toHaveLength(12)
+    expect(reports.find((r) => r.clubId === 1)).toBe(mine)
+    expect(reports.filter((r) => r.clubId !== 1).every((r) => r.focus === 'DESCANSO')).toBe(true)
   })
 
   it('rodada de copa não mexe na tabela', () => {

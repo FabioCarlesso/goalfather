@@ -745,9 +745,24 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   despercebido; para o `RoundStage` e o `CupTie` o `"type"` sumiria e o `oneOf`
   do contrato ficaria impossível de desambiguar. `/round/current` e `/cup`
   passaram a serializar com o `Json` do kotlinx explicitamente (`Json.okJson`,
-  com `reified`), e `LeagueCupMvcTest` trava o discriminador no JSON cru. Os
-  demais endpoints com `sealed` no corpo (ex.: `TransferResultDto`) seguem pelo
-  caminho antigo — fica como follow-up.
+  com `reified`), e `LeagueCupMvcTest` trava o discriminador no JSON cru. A
+  review do PR #78 achou o mesmo buraco, ANTERIOR à copa, nos outros corpos com
+  `sealed`: o `ClubDto` (o `availability` de cada jogador saía `{}`, então a UI
+  via todo lesionado como apto) e o `TransferResultDto` de compra/venda (sem
+  `type`, a UI não reconhecia o `Success`). Todos os corpos de sucesso com
+  `sealed` passaram por `okJson`; `SealedPayloadMvcTest` cobre clube, comando
+  que devolve o clube e venda. Para um `sealed` no topo o `reified` importa: o
+  tipo inferido é a interface, então sai o serializer polimórfico, que escreve
+  o `type`.
+
+  **Rodada corrente depois da virada (achado da mesma review, anterior à
+  copa).** `findLatest` ordenava só por `number`, mas a PK de `rounds` é só
+  `number` e a virada reescreve apenas a linha 1: as datas 2..N da temporada
+  encerrada continuam na tabela, `Finished`, e a maior delas virava a "atual"
+  — `/round/current` mostrava a rodada velha e `/round/play` respondia 409,
+  travando a liga depois da 1ª temporada contra o backend real (o E2E roda no
+  MSW, que guarda a rodada em memória). Agora a ordenação é `season DESC,
+  number DESC`; `CurrentRoundIntegrationTest` reproduz a virada contra o H2.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`

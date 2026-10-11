@@ -10,6 +10,7 @@ import {
   applyRoundToStandings,
   careerOf,
   calendar,
+  roundTrainingReports,
   startNewSeason,
   auth,
   clubOwners,
@@ -871,11 +872,9 @@ export const handlers = [
         state.currentRound = state.nextRound()
       }
 
-      const training: TrainingReport[] = finances.map((f) =>
-        f.clubId === 1 && myTraining
-          ? myTraining
-          : { clubId: f.clubId, focus: 'DESCANSO', events: [] },
-      )
+      // Extrato de TODOS os clubes da liga, como o backend — inclusive de
+      // quem folgou ou já caiu na copa (review do PR #78).
+      const training: TrainingReport[] = roundTrainingReports(myTraining)
       const finished: RoundEvent = {
         type: 'RoundFinished',
         standings: finalStandings,

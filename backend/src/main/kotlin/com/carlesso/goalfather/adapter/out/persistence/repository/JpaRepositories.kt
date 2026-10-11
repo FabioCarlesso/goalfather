@@ -88,7 +88,14 @@ interface CupJpaRepository : JpaRepository<CupEntity, Int> {
 }
 
 interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
-    fun findTopByOrderByNumberDesc(): RoundEntity?
+    /**
+     * Data corrente do calendário: a maior `number` da temporada MAIS RECENTE.
+     * Ordenar só por `number` estava errado (review do PR #78): a PK é só
+     * `number` e a virada reescreve apenas a linha 1, então as datas 2..N da
+     * temporada encerrada continuam na tabela — e a "atual" virava a última
+     * delas, já `Finished`, travando a liga depois da 1ª temporada.
+     */
+    fun findTopByOrderBySeasonDescNumberDesc(): RoundEntity?
 }
 
 interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, RoundReadinessId> {

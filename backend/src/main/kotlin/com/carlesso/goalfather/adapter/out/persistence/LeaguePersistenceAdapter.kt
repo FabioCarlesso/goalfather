@@ -33,7 +33,7 @@ class LeaguePersistenceAdapter(
     }
 
     override suspend fun findLatest(): Round? = withContext(Dispatchers.IO) {
-        roundRepo.findTopByOrderByNumberDesc()?.toDomain(json)
+        roundRepo.findTopByOrderBySeasonDescNumberDesc()?.toDomain(json)
     }
 
     override suspend fun currentStandings(): List<Standings> = withContext(Dispatchers.IO) {
