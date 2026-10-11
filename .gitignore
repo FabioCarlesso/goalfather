@@ -1,5 +1,7 @@
 # ─── Gradle / Kotlin / JVM ───
 .gradle/
+# Sessões/caches do daemon do compilador Kotlin 2.x (gerados pelo build).
+.kotlin/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
