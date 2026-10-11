@@ -105,25 +105,31 @@ class PlayRoundService(
         // persistir as estatísticas dos jogadores ao final (issue #2).
         val involvedClubs = mutableMapOf<Long, Club>()
 
-        // Timer só sobre o trabalho da engine (todas as partidas). Fica AQUI e não
-        // no WS handler de propósito: o handler intercala delays de ~80ms/minuto
-        // para dar sensação de "ao vivo" — cronometrar lá mediria a animação, não
-        // a simulação. `Timer.start/stop` só captura wall time, então atravessa
-        // suspensões de coroutine sem problema.
-        val sample = Timer.start(meterRegistry)
-        for (match in round.matches) {
+        // Fase 1 — I/O: busca os clubes e monta os `MatchSetup` ANTES de ligar o
+        // cronômetro (issue #51). `map` é `inline`, então as chamadas `suspend`
+        // a `findById` valem aqui dentro sem precisar de `async`/coroutine extra.
+        val setups = round.matches.map { match ->
             val home = clubRepo.findById(match.homeClubId)
             val away = clubRepo.findById(match.awayClubId)
             home?.let { involvedClubs[it.id.value] = it }
             away?.let { involvedClubs[it.id.value] = it }
 
-            val setup = MatchSetup(
+            match to MatchSetup(
                 home = home?.startingLineup() ?: emptyLineup(),
                 away = away?.startingLineup() ?: emptyLineup(),
                 homeName = match.homeClubName,
                 awayName = match.awayClubName,
             )
+        }
 
+        // Fase 2 — engine: o timer cobre SÓ `simulator.simulate(...)` de todas as
+        // partidas, espelhando o `PlayMatchService`. Nenhum I/O de repositório
+        // fica aqui dentro: como `Timer.start/stop` mede wall time, um
+        // `findById` no meio contaria a latência do banco como "simulação".
+        // Também não fica no WS handler: lá há delays de ~80ms/minuto para dar
+        // sensação de "ao vivo" — cronometrar lá mediria a animação.
+        val sample = Timer.start(meterRegistry)
+        for ((match, setup) in setups) {
             for (event in simulator.simulate(setup, Random(match.matchId)).toList()) {
                 tagged.add(match.matchId to event)
                 if (event is MatchEvent.FullTime) {
