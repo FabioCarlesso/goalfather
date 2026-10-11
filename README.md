@@ -147,7 +147,7 @@ Além das métricas de JVM/HTTP que o Micrometer já fornece, instrumentamos os 
 
 | Métrica | Tipo | Descrição |
 |---|---|---|
-| `goalfather_round_simulation_seconds` | timer | duração da simulação de uma rodada inteira (só a engine, sem o *pacing* do WebSocket) |
+| `goalfather_round_simulation_seconds` | timer | duração da simulação de uma rodada inteira: soma do tempo da engine (`simulate`) em todas as partidas — sem o I/O de repositório (busca dos clubes) nem o *pacing* do WebSocket |
 | `goalfather_match_simulation_seconds` | timer | duração da simulação de uma partida (drill-down `/ws/matches/{id}`) |
 | `goalfather_market_transfers_total{result}` | counter | compras no mercado por desfecho: `success`, `conflict` (jogador já levado — lock otimista da #21), `insufficient_funds`, `squad_full` |
 | `goalfather_auth_logins_total{result}` | counter | tentativas de login por desfecho: `success`, `failure` |
