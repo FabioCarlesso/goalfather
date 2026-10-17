@@ -74,10 +74,14 @@ describe('ReadinessCard', () => {
         onReady={() => {}}
       />,
     )
-    expect(screen.getByText(/Auto-início em 1m 05s/)).toBeInTheDocument()
+    expect(
+      screen.getByText('Rodada liberada em 1m 05s, mesmo sem os outros técnicos'),
+    ).toBeInTheDocument()
+    // Issue #86: nada inicia sozinho — o texto não pode prometer auto-início.
+    expect(screen.queryByText(/auto-início|automátic/i)).not.toBeInTheDocument()
   })
 
-  it('ao expirar o timeout, avisa que ausentes entram com a escalação atual (issue #45)', () => {
+  it('ao expirar o timeout, avisa que "Jogar rodada" está liberado (issues #45/#86)', () => {
     render(
       <ReadinessCard
         readyCount={1}
@@ -90,5 +94,10 @@ describe('ReadinessCard', () => {
       />,
     )
     expect(screen.getByText(/Tempo esgotado/)).toBeInTheDocument()
+    expect(screen.getByText(/qualquer técnico já pode clicar em "Jogar rodada"/)).toBeInTheDocument()
+    expect(screen.getByText(/ausentes jogam com a última escalação salva/)).toBeInTheDocument()
+    // Countdown some depois do timeout, e nada fala em auto-início.
+    expect(screen.queryByText(/Rodada liberada em/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/auto-início|automátic/i)).not.toBeInTheDocument()
   })
 })
