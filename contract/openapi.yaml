@@ -253,8 +253,11 @@ paths:
       operationId: expandStadium
       summary: Ampliar capacidade do estádio
       description: |
-        Investe caixa do clube para aumentar a capacidade do estádio.
-        Falha com `INSUFFICIENT_FUNDS` se o caixa for insuficiente.
+        Investe caixa do clube para aumentar a capacidade do estádio, a
+        R$ 100 (`10000` centavos) por assento. Pedidos abaixo de 1000 assentos
+        (incluindo zero e negativos) falham com 400 `INVALID_STADIUM_EXPANSION`
+        sem alterar caixa nem capacidade (issue #79). Falha com
+        `INSUFFICIENT_FUNDS` se o caixa for insuficiente.
       parameters:
         - $ref: '#/components/parameters/ClubIdPath'
       requestBody:
@@ -268,8 +271,18 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Club' }
+        '400':
+          description: Ampliação abaixo do mínimo de assentos (`INVALID_STADIUM_EXPANSION`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '402':
           description: Caixa insuficiente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: Usuário não é dono do clube
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -1120,7 +1133,10 @@ components:
         additionalSeats:
           type: integer
           minimum: 1000
-          description: Quantidade de novos assentos a adicionar
+          description: |
+            Quantidade de novos assentos a adicionar. Abaixo de `1000` o
+            backend responde 400 `INVALID_STADIUM_EXPANSION` — o mínimo é regra
+            de domínio, o `minimum` aqui só documenta (issue #79).
 
     BuyPlayerRequest:
       type: object

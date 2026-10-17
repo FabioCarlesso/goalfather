@@ -8,7 +8,11 @@ interface ReadinessCardProps {
   pendingUsernames: string[]
   /** Se o usuário atual já sinalizou pronto. */
   amIReady: boolean
-  /** Segundos até o auto-start do escape hatch (issue #45); null = cronômetro parado. */
+  /**
+   * Segundos até o escape hatch liberar o início (issue #45); null = cronômetro parado.
+   * Ao zerar NADA inicia sozinho: o backend só passa a aceitar `POST /round/play`
+   * e alguém precisa clicar "Jogar rodada" (issue #86).
+   */
   secondsRemaining?: number | null
   /** Timeout expirou: a rodada pode iniciar mesmo com pendentes (issue #45). */
   timedOut?: boolean
@@ -49,15 +53,17 @@ export function ReadinessCard({
         {!allReady && pendingUsernames.length > 0 && (
           <p className="text-xs text-slate-400">Aguardando: {pendingUsernames.join(', ')}</p>
         )}
-        {/* Escape hatch (issue #45): countdown enquanto corre; aviso ao estourar. */}
+        {/* Escape hatch (issue #45): countdown enquanto corre; aviso ao estourar.
+            O texto não promete início automático (issue #86): o timeout só LIBERA
+            o botão "Jogar rodada" — alguém ainda precisa clicar. */}
         {!allReady && timedOut && (
           <p className="text-xs text-emerald-400">
-            Tempo esgotado — ausentes entram com a escalação atual. Pode jogar!
+            Tempo esgotado — qualquer técnico já pode clicar em "Jogar rodada"; ausentes jogam com a última escalação salva.
           </p>
         )}
         {!allReady && !timedOut && secondsRemaining != null && (
           <p className="text-xs text-amber-300 tabular-nums">
-            Auto-início em {formatCountdown(secondsRemaining)} se ninguém mais sinalizar
+            Rodada liberada em {formatCountdown(secondsRemaining)}, mesmo sem os outros técnicos
           </p>
         )}
         {allReady && (

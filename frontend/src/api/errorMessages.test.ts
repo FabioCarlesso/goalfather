@@ -8,6 +8,8 @@ describe('errorMessage', () => {
       .toBe('Caixa insuficiente para a operação.')
     expect(errorMessage(new ApiError(404, { code: 'CLUB_NOT_FOUND', message: 'x' })))
       .toBe('Clube não encontrado.')
+    expect(errorMessage(new ApiError(400, { code: 'INVALID_STADIUM_EXPANSION', message: 'x' })))
+      .toBe('A ampliação mínima é de 1.000 assentos.')
   })
 
   it('usa a mensagem do corpo para códigos desconhecidos', () => {
