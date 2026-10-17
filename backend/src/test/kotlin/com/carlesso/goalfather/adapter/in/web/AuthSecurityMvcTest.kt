@@ -4,6 +4,7 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import org.hamcrest.Matchers.containsString
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -56,6 +57,19 @@ class AuthSecurityMvcTest {
     @Test
     fun `GET clube sem token retorna 401`() {
         mockMvc.get("/api/clubs/1").andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `401 sai em UTF-8 no formato ErrorResponse com details`() {
+        // Regressão da issue #83: sem charset, "ç"/"á" chegavam corrompidos.
+        mockMvc.get("/api/clubs/1").andExpect {
+            status { isUnauthorized() }
+            header { string("Content-Type", containsString("charset=UTF-8")) }
+            jsonPath("$.code") { value("UNAUTHORIZED") }
+            jsonPath("$.message") { value("Autenticação necessária") }
+            jsonPath("$.details") { isMap() }
+            jsonPath("$.details") { isEmpty() }
+        }
     }
 
     @Test
