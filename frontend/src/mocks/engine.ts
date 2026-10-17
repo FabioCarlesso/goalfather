@@ -159,6 +159,10 @@ export const STAMINA_FULL_PERFORMANCE = 70
 export const MEDICAL_DEPARTMENT_COST_CENTS = 30_000_00
 export const MEDICAL_STAMINA_RECOVERY = 30
 
+// ─── Ampliação do estádio (issue #79) — espelham domain/rules/StadiumRules.kt ───
+export const STADIUM_SEAT_COST_CENTS = 100_00
+export const MIN_STADIUM_EXPANSION_SEATS = 1_000
+
 /**
  * Gera o fluxo de eventos da partida.
  * KickOff → eventos minuto a minuto → FullTime.

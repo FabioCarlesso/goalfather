@@ -9,16 +9,17 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.TrainingFocusRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.toAvailableDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
+import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
-import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
+import com.carlesso.goalfather.domain.result.ExpandStadiumResult
 import com.carlesso.goalfather.domain.result.LineupResult
 import com.carlesso.goalfather.domain.result.MedicalResult
 import com.carlesso.goalfather.domain.result.TicketPriceResult
@@ -43,6 +44,7 @@ class ClubController(
     private val treatSquad: TreatSquadUseCase,
     private val setTrainingFocus: SetTrainingFocusUseCase,
     private val setTicketPrice: SetTicketPriceUseCase,
+    private val expandStadium: ExpandStadiumUseCase,
     // `ClubDto` carrega o `availability` (sealed) de cada jogador: as respostas
     // de sucesso saem pelo kotlinx via `okJson` para manter o `type` do
     // contrato — `ResponseEntity<Any>` sozinho cairia no Jackson.
@@ -206,46 +208,37 @@ class ClubController(
             )
         }
 
+    /**
+     * Ampliação do estádio (issue #79). Custo, piso de assentos e posse vivem
+     * no use case — aqui só se traduz cada desfecho em HTTP.
+     */
     @PostMapping("/{id}/stadium/expand")
     suspend fun expandStadium(
         @PathVariable id: Long,
         @RequestBody req: ExpandStadiumRequest,
         @AuthenticationPrincipal userId: Long,
-    ): ResponseEntity<Any> {
-        val club = clubRepo.findById(ClubId(id))
-            ?: return ResponseEntity.status(404).body(
+    ): ResponseEntity<Any> =
+        when (val result = expandStadium.execute(ClubId(id), userId, req.additionalSeats)) {
+            is ExpandStadiumResult.Success -> json.okJson(result.club.toDto())
+            is ExpandStadiumResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
-        ownershipError(club, userId)?.let { return it }
-        val cost = req.additionalSeats * 100_00L
-        if (club.cash < cost) {
-            return ResponseEntity.status(402).body(
-                ErrorResponse(
-                    code = "INSUFFICIENT_FUNDS",
-                    message = "Caixa insuficiente para ampliar",
-                ),
-            )
-        }
-        val updated: Club = club.copy(
-            cash = club.cash - cost,
-            stadiumCapacity = club.stadiumCapacity + req.additionalSeats,
-        )
-        clubRepo.save(updated)
-        return json.okJson(updated.toDto())
-    }
-
-    /**
-     * Garante que o usuário autenticado é dono do clube (issue #18: A não
-     * altera dados do clube de B). Devolve a resposta de erro a propagar, ou
-     * `null` se está tudo certo. Usado pelo endpoint de estádio (que já carrega
-     * o clube); o de escalação faz a checagem dentro do use case.
-     */
-    private fun ownershipError(club: Club, userId: Long): ResponseEntity<Any>? =
-        if (club.ownerId != userId) {
-            ResponseEntity.status(403).body(
+            is ExpandStadiumResult.NotOwner -> ResponseEntity.status(403).body(
                 ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
             )
-        } else {
-            null
+            is ExpandStadiumResult.BelowMinimumSeats -> ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    code = "INVALID_STADIUM_EXPANSION",
+                    message = "Ampliação mínima de ${result.minimum} assentos " +
+                        "(pedido: ${result.requested})",
+                ),
+            )
+            is ExpandStadiumResult.InsufficientFunds -> ResponseEntity.status(402).body(
+                ErrorResponse(
+                    code = "INSUFFICIENT_FUNDS",
+                    message = "Caixa insuficiente para ampliar " +
+                        "(necessário ${result.required}, disponível ${result.available})",
+                ),
+            )
         }
 }
