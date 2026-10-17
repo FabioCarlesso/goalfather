@@ -42,6 +42,8 @@ import {
   MAX_TICKET_PRICE_CENTS,
   SALARY_EVERY_N_ROUNDS,
   MEDICAL_DEPARTMENT_COST_CENTS,
+  STADIUM_SEAT_COST_CENTS,
+  MIN_STADIUM_EXPANSION_SEATS,
   type SquadMember,
   type TeamTactics,
 } from './engine'
@@ -252,8 +254,17 @@ export const handlers = [
     if (!club) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
 
     const body = (await request.json()) as ExpandStadiumRequest
-    const costPerSeat = 100_00 // R$ 100 por assento (mock)
-    const totalCost = body.additionalSeats * costPerSeat
+    // Mesmo piso do backend (issue #79): sem ele, negativo virava caixa grátis.
+    if (body.additionalSeats < MIN_STADIUM_EXPANSION_SEATS) {
+      return HttpResponse.json(
+        {
+          code: 'INVALID_STADIUM_EXPANSION',
+          message: `Ampliação mínima de ${MIN_STADIUM_EXPANSION_SEATS} assentos (pedido: ${body.additionalSeats})`,
+        } satisfies ErrorResponse,
+        { status: 400 },
+      )
+    }
+    const totalCost = body.additionalSeats * STADIUM_SEAT_COST_CENTS
 
     if (club.cash < totalCost) {
       return HttpResponse.json(

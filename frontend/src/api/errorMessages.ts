@@ -13,6 +13,7 @@ const MESSAGES: Record<string, string> = {
   ROUND_ALREADY_FINISHED: 'Esta rodada já foi encerrada.',
   INCOMPLETE_LINEUP: 'Escalação incompleta — preencha os 11 titulares.',
   INVALID_LINEUP: 'Escalação inválida — jogadores fora do elenco.',
+  INVALID_STADIUM_EXPANSION: 'A ampliação mínima é de 1.000 assentos.',
   NOT_FOUND: 'Recurso não encontrado.',
 }
 
