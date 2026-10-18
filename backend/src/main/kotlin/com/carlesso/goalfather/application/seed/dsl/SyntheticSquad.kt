@@ -44,6 +44,9 @@ private val LAST_NAMES = listOf(
     "Teixeira", "Toledo", "Valente", "Vieira", "Xavier",
 )
 
+/** Quantos nomes distintos as listas conseguem formar (~3.300). */
+val MAX_DISTINCT_PLAYER_NAMES: Int = FIRST_NAMES.size * LAST_NAMES.size
+
 /** Um nome "Prenome Sobrenome" sorteado das listas acima. */
 fun Random.nextPlayerName(): String = "${FIRST_NAMES.random(this)} ${LAST_NAMES.random(this)}"
 
@@ -57,6 +60,11 @@ fun Random.nextPlayerName(): String = "${FIRST_NAMES.random(this)} ${LAST_NAMES.
  * - **`distinct()` + `filterNot`** em `Sequence` também são preguiçosos: o
  *   sorteio continua até achar o próximo nome inédito. Com ~3.300 combinações
  *   e 11 nomes por clube, o descarte é raro; quem consome usa `take(n)`.
+ *
+ * **Cuidado:** a sequência é infinita, mas os nomes DISTINTOS não são. Pedir
+ * mais do que [MAX_DISTINCT_PLAYER_NAMES] menos [taken] faz o `take(n)` girar
+ * para sempre esperando um nome inédito que nunca vem — por isso
+ * [syntheticSquad] valida o tamanho antes de consumir.
  */
 fun Random.playerNames(taken: Set<String> = emptySet()): Sequence<String> =
     generateSequence { nextPlayerName() }
@@ -105,6 +113,11 @@ fun Random.syntheticSquad(
     // quebraria a média. Melhor falhar cedo com mensagem clara.
     require(strength - maxSpread in Player.OVERALL_RANGE && strength + maxSpread in Player.OVERALL_RANGE) {
         "strength $strength ± $maxSpread fora de ${Player.OVERALL_RANGE}"
+    }
+    // Conservador: conta `taken` inteiro mesmo que nem todo nome dele seja uma
+    // combinação das listas. Falhar cedo é melhor que travar o boot do seed.
+    require(taken.size + size <= MAX_DISTINCT_PLAYER_NAMES) {
+        "pedidos ${taken.size + size} nomes distintos, mas as listas só formam $MAX_DISTINCT_PLAYER_NAMES"
     }
     val names = playerNames(taken).take(size).toList()
     val deltas = balancedDeltas(size, maxSpread)

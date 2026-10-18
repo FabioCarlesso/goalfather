@@ -2,7 +2,8 @@
 // Usado pelo tratamento global de erros do TanStack Query (toast).
 
 import { ApiError } from './client'
-import { formatMoney } from '../domain/formatters'
+import { formatMoney, formatSeats } from '../domain/formatters'
+import { MIN_STADIUM_EXPANSION_SEATS } from './queries/useExpandStadium'
 import type { TransferResult } from '../domain/types'
 
 /** Mensagens por `code` estável do ErrorResponse (não pela mensagem livre). */
@@ -13,7 +14,7 @@ const MESSAGES: Record<string, string> = {
   ROUND_ALREADY_FINISHED: 'Esta rodada já foi encerrada.',
   INCOMPLETE_LINEUP: 'Escalação incompleta — preencha os 11 titulares.',
   INVALID_LINEUP: 'Escalação inválida — jogadores fora do elenco.',
-  INVALID_STADIUM_EXPANSION: 'A ampliação mínima é de 1.000 assentos.',
+  INVALID_STADIUM_EXPANSION: `A ampliação mínima é de ${formatSeats(MIN_STADIUM_EXPANSION_SEATS)} assentos.`,
   NOT_FOUND: 'Recurso não encontrado.',
 }
 

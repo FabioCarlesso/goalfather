@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { useClub } from '../api/queries/useClub'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
-import { useExpandStadium, COST_PER_SEAT_CENTS } from '../api/queries/useExpandStadium'
+import {
+  useExpandStadium,
+  COST_PER_SEAT_CENTS,
+  MIN_STADIUM_EXPANSION_SEATS,
+} from '../api/queries/useExpandStadium'
 import { useTreatSquad, MEDICAL_COST_CENTS } from '../api/queries/useTreatSquad'
 import { useSetTrainingFocus } from '../api/queries/useSetTrainingFocus'
 import {
@@ -205,9 +209,9 @@ function TicketPricePanel({ club }: { club: Club }) {
 /** Painel de ampliação de estádio (issue #5). */
 function StadiumExpandPanel({ club }: { club: Club }) {
   const expand = useExpandStadium(club.id)
-  const [seats, setSeats] = useState(1000)
+  const [seats, setSeats] = useState(MIN_STADIUM_EXPANSION_SEATS)
 
-  const valid = Number.isInteger(seats) && seats >= 1000
+  const valid = Number.isInteger(seats) && seats >= MIN_STADIUM_EXPANSION_SEATS
   const cost = seats * COST_PER_SEAT_CENTS
 
   return (
@@ -221,8 +225,8 @@ function StadiumExpandPanel({ club }: { club: Club }) {
           Novos assentos
           <input
             type="number"
-            min={1000}
-            step={1000}
+            min={MIN_STADIUM_EXPANSION_SEATS}
+            step={MIN_STADIUM_EXPANSION_SEATS}
             value={seats}
             onChange={(e) => setSeats(Math.floor(Number(e.target.value)))}
             className="mt-1 block w-32 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
@@ -239,7 +243,7 @@ function StadiumExpandPanel({ club }: { club: Club }) {
           {expand.isPending ? 'Ampliando…' : 'Ampliar'}
         </button>
       </div>
-      {!valid && <p className="text-xs text-amber-300">Informe um número inteiro de pelo menos 1000 assentos.</p>}
+      {!valid && <p className="text-xs text-amber-300">Informe um número inteiro de pelo menos {formatSeats(MIN_STADIUM_EXPANSION_SEATS)} assentos.</p>}
       {expand.isError && (
         <p className="text-sm text-red-400">
           {expand.error instanceof ApiError && expand.error.status === 402

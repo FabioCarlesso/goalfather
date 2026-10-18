@@ -28,6 +28,15 @@ servers:
   - url: http://localhost:5173
     description: Frontend Vite com MSW interceptando (dev mock)
 
+# Segurança padrão de TODAS as operações (espelha o `authorize("/api/**",
+# authenticated)` do SecurityConfig). Sem este bloco global, só as operações
+# com `security` próprio declaravam o JWT — e o "Authorize" do Swagger UI não
+# mandava o header no resto, devolvendo 401 em todo "Try it out". As rotas
+# públicas (register/login) e os WebSockets (token na query) sobrescrevem com
+# `security: []`.
+security:
+  - bearerAuth: []
+
 tags:
   - name: Auth
     description: Cadastro, login e identidade do usuário (JWT)
@@ -58,6 +67,7 @@ paths:
         Cria um usuário com senha (hash BCrypt no backend) e devolve um JWT
         já autenticado. O usuário nasce sem clube (`clubId = null`) — o
         próximo passo é reivindicar um clube em `/api/clubs/{id}/claim`.
+      security: []   # público: é aqui que o JWT nasce
       requestBody:
         required: true
         content:
@@ -82,6 +92,7 @@ paths:
       tags: [Auth]
       operationId: login
       summary: Autenticar usuário existente
+      security: []   # público: é aqui que o JWT nasce
       requestBody:
         required: true
         content:
@@ -685,6 +696,8 @@ paths:
       tags: [League]
       operationId: streamRound
       summary: '[WebSocket] Stream de eventos da rodada'
+      # O JWT vai no query param `token` (ver parâmetro abaixo), não no header.
+      security: []
       description: |
         **ATENÇÃO: endpoint WebSocket.** Multiplexa eventos de TODAS as
         partidas da rodada em um único canal. Cada mensagem é um
@@ -729,6 +742,8 @@ paths:
       tags: [Match]
       operationId: streamMatch
       summary: '[WebSocket] Stream de eventos da partida ao vivo'
+      # O JWT vai no query param `token` (ver parâmetro abaixo), não no header.
+      security: []
       description: |
         **ATENÇÃO: endpoint WebSocket**, não HTTP. OpenAPI 3.1 não modela WS
         oficialmente, então documentamos aqui apenas o formato das mensagens

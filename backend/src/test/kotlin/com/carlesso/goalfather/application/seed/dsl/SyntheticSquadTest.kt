@@ -66,4 +66,12 @@ class SyntheticSquadTest {
         assertFailsWith<IllegalArgumentException> { Random(1).syntheticSquad(strength = 98, maxSpread = 3) }
         assertFailsWith<IllegalArgumentException> { Random(1).syntheticSquad(strength = 1, maxSpread = 3) }
     }
+
+    @Test
+    fun `pedir mais nomes do que as listas formam falha cedo em vez de travar`() {
+        // Sem o guard, `take(n)` sobre a sequência `distinct()` giraria para
+        // sempre esperando um nome inédito.
+        val taken = (1..MAX_DISTINCT_PLAYER_NAMES).map { "Nome $it" }.toSet()
+        assertFailsWith<IllegalArgumentException> { Random(1).syntheticSquad(strength = 70, taken = taken) }
+    }
 }
