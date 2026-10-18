@@ -9,6 +9,7 @@
 import type {
   Availability,
   Formation,
+  Lineup,
   MatchEvent,
   MatchStats,
   Player,
@@ -495,6 +496,40 @@ export function startingEleven<T extends FitPlayer>(
   const starters = savedPlayerIds.filter((id) => byId.has(id))
   const substitutes = available.filter((p) => !starters.includes(p.id)).map((p) => p.id)
   return new Set([...starters, ...substitutes].slice(0, 11))
+}
+
+/** Campos derivados da escalação que o schema `Club` exige (issue #87). */
+export interface EffectiveLineupFields {
+  effectiveLineup: Lineup
+  lineupIsDefault: boolean
+  lineupAdjusted: boolean
+}
+
+/**
+ * Escalação EFETIVA do clube — espelha o mapeamento `Club.toDto()` do backend
+ * (issue #87): `startingEleven` decide QUEM entra (a mesma regra de
+ * `Club.startingLineup()`), e a formação/postura vêm da salva ou do 4-4-2
+ * EQUILIBRADO automático. Único lugar do front que deriva titulares — a
+ * `LineupPage` só lê `effectiveLineup`.
+ */
+export function effectiveLineupOf<T extends FitPlayer>(
+  squad: T[],
+  saved: Lineup | undefined,
+): EffectiveLineupFields {
+  const playerIds = [...startingEleven(squad, saved?.playerIds)]
+  const effectiveLineup: Lineup = {
+    formation: saved?.formation ?? '4-4-2',
+    playerIds,
+    posture: saved?.posture ?? 'BALANCED',
+  }
+  const sameIds = saved != null
+    && saved.playerIds.length === playerIds.length
+    && saved.playerIds.every((id, i) => id === playerIds[i])
+  return {
+    effectiveLineup,
+    lineupIsDefault: saved == null,
+    lineupAdjusted: saved != null && !sameIds,
+  }
 }
 
 // ─── Envelhecimento de temporada (espelha AgingRules.kt, issue #55) ───────

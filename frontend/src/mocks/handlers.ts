@@ -25,6 +25,7 @@ import {
   squadOf,
   DEFAULT_POSITIONS,
   type ClubMeta,
+  type StoredClub,
 } from './seed'
 import {
   simulateMatch,
@@ -32,6 +33,7 @@ import {
   applyRoundFitness,
   applyMedicalTreatment,
   startingEleven,
+  effectiveLineupOf,
   MulberryRng,
   matchStats,
   trainSquad,
@@ -117,6 +119,16 @@ const tacticsOf = (clubId: number): TeamTactics => {
     formation: lineup?.formation ?? DEFAULT_TACTICS.formation,
   }
 }
+
+/**
+ * Clube guardado → `Club` do contrato: acrescenta a escalação efetiva
+ * (issue #87) na hora de responder, como o `Club.toDto()` do backend. Toda
+ * resposta com clube passa por aqui.
+ */
+const toClubResponse = (club: StoredClub): Club => ({
+  ...club,
+  ...effectiveLineupOf(club.squad, club.lineup),
+})
 
 // Latência simulada para parecer com rede real (descomente em testes determinísticos)
 const SIMULATED_LATENCY_MS = 120
@@ -230,7 +242,7 @@ export const handlers = [
     if (!state.clubs[id] && clubOwners[id] != null) materializeClub(id)
     const club = state.clubs[id]
     return club
-      ? HttpResponse.json(club)
+      ? HttpResponse.json(toClubResponse(club))
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
   }),
 
@@ -273,13 +285,13 @@ export const handlers = [
       )
     }
 
-    const updated: Club = {
+    const updated: StoredClub = {
       ...club,
       cash: club.cash - totalCost,
       stadiumCapacity: club.stadiumCapacity + body.additionalSeats,
     }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── treatSquad (departamento médico, issue #54) ──────────────────────
@@ -299,13 +311,13 @@ export const handlers = [
       )
     }
 
-    const updated: Club = {
+    const updated: StoredClub = {
       ...club,
       cash: club.cash - MEDICAL_DEPARTMENT_COST_CENTS,
       squad: applyMedicalTreatment(club.squad),
     }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── setTrainingFocus (treino semanal, issue #58) ─────────────────────
@@ -318,9 +330,9 @@ export const handlers = [
     // Só registra a decisão — o efeito entra na virada da rodada, como no
     // backend (`SetTrainingFocusService` grava, `PlayRoundService` aplica).
     const body = (await request.json()) as TrainingFocusRequest
-    const updated: Club = { ...club, trainingFocus: body.focus }
+    const updated: StoredClub = { ...club, trainingFocus: body.focus }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── setTicketPrice (preço do ingresso, issue #59) ────────────────────
@@ -346,9 +358,9 @@ export const handlers = [
     // Só registra o preço — o efeito entra na bilheteria da próxima rodada em
     // casa, como no backend (`SetTicketPriceService` grava, `PlayRoundService`
     // aplica).
-    const updated: Club = { ...club, ticketPriceCents: body.ticketPriceCents }
+    const updated: StoredClub = { ...club, ticketPriceCents: body.ticketPriceCents }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── listMarket ───────────────────────────────────────────────────────
@@ -389,7 +401,7 @@ export const handlers = [
       return HttpResponse.json(result)
     }
 
-    const updatedClub: Club = {
+    const updatedClub: StoredClub = {
       ...club,
       cash: club.cash - entry.price,
       squad: [...club.squad, entry.player],
@@ -397,7 +409,7 @@ export const handlers = [
     state.clubs[body.clubId] = updatedClub
     state.market = state.market.filter((e) => e.player.id !== body.playerId)
 
-    const result: TransferResult = { type: 'Success', club: updatedClub, player: entry.player }
+    const result: TransferResult = { type: 'Success', club: toClubResponse(updatedClub), player: entry.player }
     return HttpResponse.json(result)
   }),
 
@@ -419,7 +431,7 @@ export const handlers = [
     }
 
     const salePrice = player.overall * 100_000_00 // R$ 100k * overall (mock)
-    const updatedClub: Club = {
+    const updatedClub: StoredClub = {
       ...club,
       cash: club.cash + salePrice,
       squad: club.squad.filter((p) => p.id !== body.playerId),
@@ -428,7 +440,7 @@ export const handlers = [
     state.market = [...state.market, { player, price: salePrice }]
 
     return HttpResponse.json(
-      { type: 'Success', club: updatedClub, player } satisfies TransferResult,
+      { type: 'Success', club: toClubResponse(updatedClub), player } satisfies TransferResult,
     )
   }),
 

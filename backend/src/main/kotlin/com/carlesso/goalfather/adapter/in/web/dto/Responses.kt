@@ -85,7 +85,23 @@ data class ClubDto(
     val cash: Long,
     val stadiumCapacity: Int,
     val squad: List<PlayerDto>,
+    /** Escalação SALVA pelo técnico — a foto do momento em que ele escalou. */
     val lineup: LineupDto? = null,
+    /**
+     * Escalação EFETIVA (issue #87): o time que a engine põe em campo se a
+     * rodada começar agora — `Club.startingLineup()`, já com o fallback 4-4-2
+     * e a troca de lesionados/vendidos. Sempre presente, para a UI nunca
+     * precisar recalcular a regra de seleção de titulares.
+     */
+    val effectiveLineup: LineupDto,
+    /** `true` quando não há escalação salva e a efetiva é a automática. */
+    val lineupIsDefault: Boolean,
+    /**
+     * `true` quando HÁ escalação salva mas a efetiva difere dela (lesionado
+     * ou vendido substituído por reserva). Separado de `lineupIsDefault` para
+     * a UI poder explicar o motivo de cada aviso.
+     */
+    val lineupAdjusted: Boolean,
     val ownerId: Long? = null,
     /** Foco de treino em vigor (issue #58) — o card da Dashboard o pré-seleciona. */
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
@@ -153,17 +169,32 @@ fun Lineup.toDto(): LineupDto = LineupDto(
     posture = tactics.posture,
 )
 
-fun Club.toDto(): ClubDto = ClubDto(
-    id = id.value,
-    name = name,
-    cash = cash,
-    stadiumCapacity = stadiumCapacity,
-    squad = squad.map { it.toDto() },
-    lineup = lineup?.toDto(),
-    ownerId = ownerId,
-    trainingFocus = trainingFocus,
-    ticketPriceCents = ticketPriceCents,
-)
+/**
+ * Corpo de expressão com `run`: o bloco calcula `startingLineup()` UMA vez
+ * (`effective`) e a última expressão vira o retorno — sem precisar trocar o
+ * `= ClubDto(...)` por um corpo com chaves e `return`.
+ */
+fun Club.toDto(): ClubDto = run {
+    val saved = lineup?.toDto()
+    val effective = startingLineup().toDto()
+    ClubDto(
+        id = id.value,
+        name = name,
+        cash = cash,
+        stadiumCapacity = stadiumCapacity,
+        squad = squad.map { it.toDto() },
+        lineup = saved,
+        effectiveLineup = effective,
+        lineupIsDefault = saved == null,
+        // `data class` gera `equals` estrutural: compara formação, ids (em
+        // ordem) e postura de uma vez. Só os ids mudam em `startingLineup()`,
+        // mas comparar o DTO inteiro dispensa saber disso.
+        lineupAdjusted = saved != null && saved != effective,
+        ownerId = ownerId,
+        trainingFocus = trainingFocus,
+        ticketPriceCents = ticketPriceCents,
+    )
+}
 
 fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto(), price = price)
 

@@ -139,9 +139,73 @@ class ResponsesTest {
                 "trainingFocus",
                 // Preço do ingresso (issue #59) — idem.
                 "ticketPriceCents",
+                // Escalação efetiva (issue #87) — idem.
+                "effectiveLineup", "lineupIsDefault", "lineupAdjusted",
             ),
             encoded.keys,
         )
+    }
+
+    // ─── Escalação efetiva (issue #87) ────────────────────────────────────
+
+    private fun JsonObject.playerIds(field: String): List<Long> =
+        getValue(field).jsonObject.getValue("playerIds").jsonArray.map { it.jsonPrimitive.content.toLong() }
+
+    private fun JsonObject.flag(field: String): Boolean = getValue(field).jsonPrimitive.content.toBoolean()
+
+    @Test
+    fun `sem escalacao salva a efetiva e o 4-4-2 automatico com 11 titulares`() {
+        val encoded = encode(club.copy(lineup = null).toDto())
+
+        val effective = encoded.getValue("effectiveLineup").jsonObject
+        assertEquals("4-4-2", effective.getValue("formation").jsonPrimitive.content)
+        assertEquals("BALANCED", effective.getValue("posture").jsonPrimitive.content)
+        assertEquals(club.squad.take(11).map { it.id.value }, encoded.playerIds("effectiveLineup"))
+        assertTrue(encoded.flag("lineupIsDefault"))
+        assertEquals(false, encoded.flag("lineupAdjusted"))
+        assertNull(encoded["lineup"], "a escalação SALVA continua ausente")
+    }
+
+    @Test
+    fun `com escalacao salva e lesionado a efetiva troca pelo reserva`() {
+        // Escalou os 11 primeiros; depois o 3º se machucou. O 12º (reserva)
+        // é quem a engine põe em campo — e é isso que a tela tem de mostrar.
+        val saved = Lineup(
+            players = club.squad.take(11),
+            formation = Formation.F_4_3_3,
+            tactics = Tactics(Posture.OFFENSIVE),
+        )
+        val squad = club.squad.mapIndexed { i, p ->
+            if (i == 2) p.copy(availability = Availability.Injured(2)) else p
+        }
+
+        val encoded = encode(club.copy(squad = squad, lineup = saved).toDto())
+
+        val injuredId = club.squad[2].id.value
+        val reserveId = club.squad[11].id.value
+        val effective = encoded.playerIds("effectiveLineup")
+        assertEquals(11, effective.size)
+        assertTrue(injuredId !in effective, "lesionado não entra em campo")
+        assertTrue(reserveId in effective, "o reserva apto assume a vaga")
+        // A salva segue intacta — o campo antigo não muda de significado.
+        assertTrue(injuredId in encoded.playerIds("lineup"))
+        // Formação e postura da salva são preservadas na efetiva.
+        val effectiveObj = encoded.getValue("effectiveLineup").jsonObject
+        assertEquals("4-3-3", effectiveObj.getValue("formation").jsonPrimitive.content)
+        assertEquals("OFFENSIVE", effectiveObj.getValue("posture").jsonPrimitive.content)
+        assertEquals(false, encoded.flag("lineupIsDefault"))
+        assertTrue(encoded.flag("lineupAdjusted"))
+    }
+
+    @Test
+    fun `escalacao salva intacta nao e marcada como ajustada`() {
+        val saved = Lineup(players = club.squad.take(11), formation = Formation.F_4_4_2)
+
+        val encoded = encode(club.copy(lineup = saved).toDto())
+
+        assertEquals(encoded.playerIds("lineup"), encoded.playerIds("effectiveLineup"))
+        assertEquals(false, encoded.flag("lineupIsDefault"))
+        assertEquals(false, encoded.flag("lineupAdjusted"))
     }
 
     // ─── Mercado e transferências ─────────────────────────────────────────
