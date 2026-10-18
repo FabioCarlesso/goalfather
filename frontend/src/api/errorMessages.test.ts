@@ -12,6 +12,15 @@ describe('errorMessage', () => {
       .toBe('A ampliação mínima é de 1.000 assentos.')
   })
 
+  it('traduz os códigos genéricos de erro de entrada e de servidor (issue #81)', () => {
+    expect(errorMessage(new ApiError(400, { code: 'MALFORMED_REQUEST', message: 'x' })))
+      .toBe('Requisição inválida — os dados enviados não puderam ser lidos.')
+    expect(errorMessage(new ApiError(400, { code: 'INVALID_PARAMETER', message: 'x' })))
+      .toBe('Parâmetro inválido na requisição.')
+    expect(errorMessage(new ApiError(500, { code: 'INTERNAL_ERROR', message: 'x' })))
+      .toBe('Erro no servidor. Tente novamente em instantes.')
+  })
+
   it('usa a mensagem do corpo para códigos desconhecidos', () => {
     expect(errorMessage(new ApiError(400, { code: 'WEIRD', message: 'Detalhe específico' })))
       .toBe('Detalhe específico')

@@ -2046,6 +2046,18 @@ components:
           description: |
             Código estável para o cliente discriminar (não a mensagem).
             Ex.: `CLUB_NOT_FOUND`, `INVALID_LINEUP`, `INSUFFICIENT_FUNDS`.
+
+            Códigos genéricos, válidos em qualquer endpoint (issue #81):
+            - `MALFORMED_REQUEST` (400): corpo JSON inválido ou que não
+              desserializa (sintaxe, campo obrigatório ausente, enum/formação
+              desconhecida). `details.reason` traz a causa.
+            - `INVALID_PARAMETER` (400): parâmetro de query/path com tipo ou
+              valor inválido (ex.: `?position=XX`). `details.parameter` e
+              `details.value` identificam o parâmetro.
+            - `NOT_FOUND` (404): rota inexistente.
+            - `METHOD_NOT_ALLOWED` (405): método HTTP não suportado na rota.
+            - `INTERNAL_ERROR` (500): erro inesperado no servidor; mensagem
+              genérica, sem detalhes internos.
         message:
           type: string
           description: Mensagem humana (pode ser exibida ao usuário)
