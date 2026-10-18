@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.result.TicketPriceResult
 import com.carlesso.goalfather.domain.rules.MAX_TICKET_PRICE_CENTS
@@ -20,12 +21,27 @@ import com.carlesso.goalfather.domain.rules.isTicketPriceAllowed
  *
  * Repetir o preço que já está gravado não persiste nada: o `save` evita uma
  * escrita (e um bump de `@Version`) que não muda nada.
+ *
+ * **Retry automático no conflito (issue #89).** Definir o preço é uma
+ * SUBSTITUIÇÃO idempotente ("o preço passa a ser X"), não um efeito acumulado:
+ * se a virada da rodada gravou o clube entre a leitura e o `save`, reler e
+ * reaplicar dá exatamente o que o técnico pediu — sem pisar no caixa que a
+ * rodada acabou de creditar. Cada tentativa refaz posse e faixa do zero.
  */
 class SetTicketPriceService(
     private val clubRepo: ClubRepository,
 ) : SetTicketPriceUseCase {
 
     override suspend fun execute(
+        clubId: ClubId,
+        requesterId: Long,
+        ticketPriceCents: Long,
+    ): TicketPriceResult =
+        retryOnConflict(isConflict = { it is TicketPriceResult.Conflict }) {
+            attempt(clubId, requesterId, ticketPriceCents)
+        }
+
+    private suspend fun attempt(
         clubId: ClubId,
         requesterId: Long,
         ticketPriceCents: Long,
@@ -49,8 +65,9 @@ class SetTicketPriceService(
             return TicketPriceResult.Success(club)
         }
 
-        return TicketPriceResult.Success(
-            clubRepo.save(club.copy(ticketPriceCents = ticketPriceCents)),
-        )
+        return when (val saved = clubRepo.save(club.copy(ticketPriceCents = ticketPriceCents))) {
+            is ClubSaveResult.Saved -> TicketPriceResult.Success(saved.club)
+            is ClubSaveResult.Conflict -> TicketPriceResult.Conflict(saved.clubId)
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.MarketEntry
@@ -32,10 +33,16 @@ class SellPlayerService(
             cash = club.cash + salePrice,
             squad = club.squad.filterNot { it.id == playerId },
         )
-        clubRepo.save(updatedClub)
-        marketRepo.add(MarketEntry(player = player, price = salePrice))
-
-        return TransferResult.Success(club = updatedClub, player = player)
+        // Clube ANTES do mercado: se o `save` perder o lock otimista (issue #89),
+        // nada foi gravado e o jogador ainda está no elenco — basta não anunciá-lo.
+        // Na ordem inversa, um conflito deixaria o jogador no mercado E no clube.
+        return when (val saved = clubRepo.save(updatedClub)) {
+            is ClubSaveResult.Saved -> {
+                marketRepo.add(MarketEntry(player = player, price = salePrice))
+                TransferResult.Success(club = saved.club, player = player)
+            }
+            is ClubSaveResult.Conflict -> TransferResult.Conflict(saved.clubId)
+        }
     }
 }
 

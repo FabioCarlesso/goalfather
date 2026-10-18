@@ -481,6 +481,13 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
     a rodada `Finished` com efeitos parciais e sem sucessora, e todo stream
     seguinte cairia no replay (a liga travaria). Recuperação (rodada `Finished`
     sem sucessora → reconciliar) fica como follow-up.
+- [x] **Lock otimista no save de clube** (issue #89): o `save` recarregava a
+  `ClubEntity` e copiava o domínio por cima, então o `@Version` comparava contra
+  a versão recém-lida, não contra a que o use case leu — *lost update*
+  silencioso (ex.: ampliar estádio × virada da rodada creditando bilheteria).
+  Agora `Club.version` (um `Long` puro, sem JPA) viaja da leitura até o `save`,
+  e o port devolve `ClubSaveResult` (`Saved` | `Conflict`). Detalhes na decisão
+  "lock otimista do clube" abaixo.
 - **Foco de estudo:** coroutines + concorrência, transações otimistas
 
 ### Fase 6 — Profundidade de gestão
@@ -857,6 +864,44 @@ Dois compradores podem disputar o mesmo jogador. Escolhemos **lock otimista**
 A unidade transacional vive num bean **não-suspend** (`MarketClaimTransaction`),
 porque `@Transactional` sobre função `suspend` é frágil — o `withContext` troca
 de thread e a transação é thread-bound (vide nota no claim de clube).
+
+#### Decisão: lock otimista do clube — versão lida + compare-and-set (issue #89)
+
+Todo comando sobre o clube é um *read-modify-write* em duas transações (o
+`findById` do use case e, depois, o `save`). Para o lock proteger alguma coisa,
+o `save` precisa comparar com a versão **da leitura do use case**:
+
+- **`Club.version`** é dado puro do agregado (regra de ouro: nada de `@Version`
+  no domínio). O mapper a sobe da `ClubEntity` e cada `copy()` a carrega até o
+  `save`.
+- **Compare-and-set explícito** na `ClubSaveTransaction` (bean não-suspend, como
+  os claims): `UPDATE clubs SET version = version + 1 WHERE id = ? AND version = ?`.
+  Zero linhas = alguém gravou depois da leitura → `ClubSaveResult.Conflict`, sem
+  gravar clube nem elenco. Por que não só o `@Version`: o Hibernate só incrementa
+  a versão quando a LINHA do clube muda, e o desgaste/treino da rodada mexe só no
+  elenco — duas escritas assim não se enxergariam. O UPDATE também segura o lock
+  de linha até o commit, então duas gravações sobrepostas se serializam ali.
+  `@Version` continua como rede de segurança; qualquer `ConcurrencyFailureException`
+  vira o mesmo `Conflict` no adapter — nenhum controller vê exception de lock.
+- **Quem reaplica e quem devolve conflito:**
+  - *Substituição de ajuste* (escalação, foco de treino, preço do ingresso):
+    retry automático (`retryOnConflict`, até 3 tentativas) — relê, **revalida**
+    (posse, faixa, lesões) e reaplica. Idempotente, então é seguro.
+  - *Efeito acumulado sobre o caixa* (ampliar estádio, departamento médico,
+    compra, venda): devolve `Conflict` → 409 `CLUB_WRITE_CONFLICT` (ou a
+    variante `Conflict` do `TransferResult` no mercado). O técnico decidiu com o
+    caixa que viu; reaplicar em silêncio decidiria por ele. Na compra, o
+    jogador já saiu do mercado no claim (#21), então o conflito o **devolve ao
+    mercado** (compensação); na venda o clube é gravado antes do anúncio, então
+    basta não anunciar.
+  - *Virada da rodada*: não tem a quem devolver 409. `saveReapplying` relê o
+    clube e recalcula os efeitos (caixa como **delta**, elenco pelos RNGs
+    semeados por rodada + clube, logo determinístico), até 5 tentativas.
+    Esgotar é contenção patológica — único caso que vira exception.
+- **Pessimista (preterido):** `SELECT ... FOR UPDATE` serializaria tudo, mas a
+  leitura do use case acontece numa transação anterior à do `save`, então o
+  lock teria de atravessar o use case inteiro (ports `suspend` por agregado) —
+  e mexer no fluxo da rodada (#46), fora do escopo.
 
 ---
 

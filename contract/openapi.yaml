@@ -247,6 +247,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/stadium/expand:
     post:
@@ -291,6 +293,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/medical:
     post:
@@ -324,6 +328,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/training:
     post:
@@ -357,6 +363,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/ticket-price:
     put:
@@ -404,6 +412,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/market:
     get:
@@ -840,6 +850,19 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ClubWriteConflict:
+      description: |
+        Lock otimista do clube (issue #89): outra operação alterou o clube
+        entre a leitura e a gravação — tipicamente a virada da rodada
+        creditando bilheteria ou outra aba do mesmo técnico — e NADA foi
+        aplicado. `code` = `CLUB_WRITE_CONFLICT`. O cliente recarrega o clube
+        e o técnico decide de novo. Comandos que só substituem um ajuste
+        (escalação, foco de treino, preço do ingresso) já relêem e reaplicam
+        sozinhos antes de chegar aqui; os de efeito acumulado sobre o caixa
+        (ampliar estádio, departamento médico) devolvem o conflito direto.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   schemas:
 
@@ -1233,6 +1256,7 @@ components:
         - $ref: '#/components/schemas/InsufficientFunds'
         - $ref: '#/components/schemas/SquadFull'
         - $ref: '#/components/schemas/PlayerNotAvailable'
+        - $ref: '#/components/schemas/TransferConflict'
       discriminator:
         propertyName: type
         mapping:
@@ -1240,6 +1264,7 @@ components:
           InsufficientFunds:  '#/components/schemas/InsufficientFunds'
           SquadFull:          '#/components/schemas/SquadFull'
           PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
+          Conflict:           '#/components/schemas/TransferConflict'
 
     TransferSuccess:
       type: object
@@ -1270,6 +1295,18 @@ components:
       properties:
         type:     { type: string, enum: [PlayerNotAvailable] }
         playerId: { type: integer, format: int64 }
+
+    TransferConflict:
+      description: |
+        Lock otimista do clube (issue #89): outra operação alterou o clube
+        entre a leitura e a gravação, e a transferência NÃO foi aplicada —
+        caixa, elenco e mercado ficam como estavam (na compra, o jogador volta
+        ao mercado). Recarregue o clube e tente de novo.
+      type: object
+      required: [type, clubId]
+      properties:
+        type:   { type: string, enum: [Conflict] }
+        clubId: { type: integer, format: int64 }
 
     # ─── Match (sealed MatchEvent + summary) ─────────────────────────────
     MatchEvent:

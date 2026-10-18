@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
@@ -30,7 +31,7 @@ class TreatSquadServiceTest {
         val club = makeClub(cash = 100_000_00, ownerId = owner, stamina = 50)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val result = service.execute(ClubId(1), owner)
 
@@ -51,7 +52,7 @@ class TreatSquadServiceTest {
         }
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         service.execute(ClubId(1), owner)
 
@@ -77,7 +78,7 @@ class TreatSquadServiceTest {
         val club = makeClub(cash = MEDICAL_DEPARTMENT_COST_CENTS, ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val result = service.execute(ClubId(1), owner)
 
@@ -100,5 +101,16 @@ class TreatSquadServiceTest {
 
         assertIs<MedicalResult.NotOwner>(service.execute(ClubId(1), owner + 1))
         coVerify(exactly = 0) { clubRepo.save(any()) }
+    }
+
+    @Test
+    fun `conflito de lock otimista volta como valor, sem retry automatico (issue 89)`() = runTest {
+        coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(cash = 100_000_00, ownerId = owner)
+        coEvery { clubRepo.save(any()) } returns ClubSaveResult.Conflict(ClubId(1))
+
+        val result = service.execute(ClubId(1), owner)
+
+        assertIs<MedicalResult.Conflict>(result)
+        coVerify(exactly = 1) { clubRepo.save(any()) }
     }
 }

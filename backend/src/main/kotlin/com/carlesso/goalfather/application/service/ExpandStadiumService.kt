@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.result.ExpandStadiumResult
 import com.carlesso.goalfather.domain.rules.MIN_STADIUM_EXPANSION_SEATS
@@ -46,6 +47,12 @@ class ExpandStadiumService(
             return ExpandStadiumResult.InsufficientFunds(available = club.cash, required = cost)
         }
 
-        return ExpandStadiumResult.Success(clubRepo.save(club.withExpandedStadium(additionalSeats)))
+        // Sem retry automático (issue #89): ampliar tem efeito ACUMULADO sobre o
+        // caixa que o técnico viu na tela. Se a rodada mexeu no clube no meio do
+        // caminho, devolvemos o conflito para ele decidir com o caixa novo.
+        return when (val saved = clubRepo.save(club.withExpandedStadium(additionalSeats))) {
+            is ClubSaveResult.Saved -> ExpandStadiumResult.Success(saved.club)
+            is ClubSaveResult.Conflict -> ExpandStadiumResult.Conflict(saved.clubId)
+        }
     }
 }

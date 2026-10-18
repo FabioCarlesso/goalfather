@@ -3,6 +3,7 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
@@ -400,24 +401,32 @@ class PlayRoundService(
         val retirements = mutableListOf<Retirement>()
 
         for (club in clubsAtSeasonEnd) {
-            val turn = ageSquadForSeason(club.squad, club.id, nextSeason)
-            retirements += turn.retirements
+            // Envelhecimento roda sobre o clube que estiver no banco NA HORA de
+            // gravar (issue #89): se um técnico mexeu no clube no meio da virada,
+            // o `saveReapplying` relê e refaz a conta. O RNG é semeado por
+            // temporada + clube, então a releitura não muda o sorteio — e só as
+            // aposentadorias da tentativa que gravou entram no resultado.
+            var turnRetirements = emptyList<Retirement>()
+            val updated = saveReapplying(club) { current ->
+                val turn = ageSquadForSeason(current.squad, current.id, nextSeason)
+                turnRetirements = turn.retirements
 
-            // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-            val reset = turn.squad.map {
-                it.copy(
-                    goals = 0,
-                    yellowCards = 0,
-                    redCards = 0,
-                    availability = Availability.Available,
-                    stamina = 100,
+                // Pré-temporada: elenco volta inteiro e descansado (issue #54).
+                val reset = turn.squad.map {
+                    it.copy(
+                        goals = 0,
+                        yellowCards = 0,
+                        redCards = 0,
+                        availability = Availability.Available,
+                        stamina = 100,
+                    )
+                }
+                current.copy(
+                    squad = reset,
+                    division = nextDivisions[current.id] ?: current.division,
                 )
             }
-            val updated = club.copy(
-                squad = reset,
-                division = nextDivisions[club.id] ?: club.division,
-            )
-            if (updated != club) clubRepo.save(updated)
+            retirements += turnRetirements
             clubs += updated
         }
 
@@ -611,51 +620,102 @@ class PlayRoundService(
                 if (club.id in playedIds) club.startingLineup().players.map { it.id }.toSet()
                 else emptySet()
 
-            val rested = applyRoundFitness(
-                squad = club.squad,
-                starterIds = starterIds,
-                rng = Random(fitnessSeed(roundNumber, club.id)),
-                newInjuries = injuries,
-            )
+            // Efeitos da rodada sobre o clube ATUAL (issue #89): na 1ª tentativa
+            // é o `club` já lido; se outra escrita chegar antes do `save`,
+            // `saveReapplying` relê e recalcula — os RNGs são semeados por
+            // rodada + clube, então reaplicar é determinístico. Os titulares
+            // ficam fixos no `club` lido: são os que a engine pôs em campo.
+            var report: TrainingReport? = null
+            saveReapplying(club) { current ->
+                val rested = applyRoundFitness(
+                    squad = current.squad,
+                    starterIds = starterIds,
+                    rng = Random(fitnessSeed(roundNumber, club.id)),
+                    newInjuries = injuries,
+                )
 
-            val updatedSquad = rested.map { p ->
-                val id = p.id.value
-                val g = goals[id] ?: 0
-                val y = yellow[id] ?: 0
-                val r = red[id] ?: 0
-                if (g == 0 && y == 0 && r == 0) {
-                    p
-                } else {
-                    p.copy(
-                        goals = p.goals + g,
-                        yellowCards = p.yellowCards + y,
-                        redCards = p.redCards + r,
-                    )
+                val updatedSquad = rested.map { p ->
+                    val id = p.id.value
+                    val g = goals[id] ?: 0
+                    val y = yellow[id] ?: 0
+                    val r = red[id] ?: 0
+                    if (g == 0 && y == 0 && r == 0) {
+                        p
+                    } else {
+                        p.copy(
+                            goals = p.goals + g,
+                            yellowCards = p.yellowCards + y,
+                            redCards = p.redCards + r,
+                        )
+                    }
                 }
+
+                // Semana de treino no foco escolhido (issue #58). Seed própria
+                // (`trainingSeed`) para não repetir a sequência do desgaste desta
+                // mesma rodada/clube. O relatório sai daqui pronto para o evento
+                // de fim de rodada, mesmo vazio — "treinei e ninguém evoluiu"
+                // também é notícia.
+                val trained = train(
+                    squad = updatedSquad,
+                    focus = current.trainingFocus,
+                    rng = Random(trainingSeed(roundNumber, current.id)),
+                )
+                report = TrainingReport(current.id, current.trainingFocus, trained.events)
+
+                // Caixa é aplicado como DELTA sobre o clube relido — é isso que
+                // impede a rodada de apagar um débito concorrente (ampliar estádio,
+                // compra) ou vice-versa (issue #89).
+                val finance = financeByClub[current.id.value]
+                val newCash = if (finance == null) current.cash
+                    else (current.cash + finance.cashDelta()).coerceAtLeast(0)
+
+                current.copy(squad = trained.squad, cash = newCash)
             }
-
-            // Semana de treino no foco escolhido (issue #58). Seed própria
-            // (`trainingSeed`) para não repetir a sequência do desgaste desta
-            // mesma rodada/clube. O relatório sai daqui pronto para o evento
-            // de fim de rodada, mesmo vazio — "treinei e ninguém evoluiu"
-            // também é notícia.
-            val trained = train(
-                squad = updatedSquad,
-                focus = club.trainingFocus,
-                rng = Random(trainingSeed(roundNumber, club.id)),
-            )
-            training += TrainingReport(club.id, club.trainingFocus, trained.events)
-
-            val finance = financeByClub[club.id.value]
-            val newCash = if (finance == null) club.cash
-                else (club.cash + finance.cashDelta()).coerceAtLeast(0)
-
-            if (trained.squad != club.squad || newCash != club.cash) {
-                clubRepo.save(club.copy(squad = trained.squad, cash = newCash))
-            }
+            training += checkNotNull(report)
         }
 
         return training
+    }
+
+    /**
+     * Grava num clube um efeito da rodada sem perder escritas concorrentes
+     * (issue #89). A rodada não tem como devolver "409" para ninguém — ela é o
+     * relógio do jogo —, então, no conflito, RELÊ o clube e reaplica
+     * [transform] sobre o estado novo: o caixa entra como delta e o elenco é
+     * recalculado, preservando o que o técnico gravou no meio do caminho
+     * (ampliar estádio, compra, preço do ingresso).
+     *
+     * A 1ª tentativa usa [snapshot] (o clube já lido pela rodada) para não
+     * custar uma leitura extra no caso comum, sem concorrência. Se nada mudou,
+     * não grava — mesma regra de antes ("clubes sem mudança não são salvos").
+     *
+     * Esgotar as tentativas significa o mesmo clube sendo regravado sem parar
+     * durante a finalização — contenção patológica, não fluxo de negócio, e
+     * por isso o único caso que vira exception (CLAUDE.md).
+     *
+     * `inline` deixa [transform] atribuir `var`s locais do chamador (o
+     * relatório de treino, as aposentadorias) sem cerimônia de closure.
+     */
+    private suspend inline fun saveReapplying(snapshot: Club, transform: (Club) -> Club): Club {
+        var current = snapshot
+        val outcome = retryOnConflict(
+            maxAttempts = ROUND_CLUB_WRITE_ATTEMPTS,
+            isConflict = { it is ClubSaveResult.Conflict },
+        ) { attempt ->
+            if (attempt > 0) {
+                current = checkNotNull(clubRepo.findById(snapshot.id)) {
+                    "Clube ${snapshot.id.value} sumiu durante a finalização da rodada"
+                }
+            }
+            val updated = transform(current)
+            if (updated == current) ClubSaveResult.Saved(current) else clubRepo.save(updated)
+        }
+        return when (outcome) {
+            is ClubSaveResult.Saved -> outcome.club
+            is ClubSaveResult.Conflict -> error(
+                "Clube ${snapshot.id.value}: $ROUND_CLUB_WRITE_ATTEMPTS conflitos seguidos ao gravar a rodada",
+            )
+        }
     }
 
     private fun RoundMatch.finish(score: Pair<Int, Int>?, penalties: PenaltyScore?): RoundMatch =
@@ -671,3 +731,10 @@ class PlayRoundService(
     private fun emptyLineup() =
         Lineup(players = emptyList(), formation = Formation.F_4_4_2)
 }
+
+/**
+ * Tentativas da rodada ao gravar um clube (issue #89). Folga maior que a dos
+ * comandos do técnico ([MAX_CLUB_WRITE_ATTEMPTS]): a rodada não pode devolver
+ * conflito para ninguém, então insiste mais antes de desistir.
+ */
+private const val ROUND_CLUB_WRITE_ATTEMPTS: Int = 5

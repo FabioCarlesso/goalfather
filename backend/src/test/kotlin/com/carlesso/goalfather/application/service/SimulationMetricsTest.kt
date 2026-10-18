@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.engine.MatchSimulator
@@ -92,7 +93,7 @@ class SimulationMetricsTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs

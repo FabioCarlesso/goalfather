@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.result.ExpandStadiumResult
@@ -28,7 +29,7 @@ class ExpandStadiumServiceTest {
         val club = makeClub(ownerId = owner, cash = 1_075_000_00)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val result = service.execute(ClubId(1), owner, 1_000)
 
@@ -78,5 +79,19 @@ class ExpandStadiumServiceTest {
         // Posse é checada ANTES do mínimo: o clube alheio não recebe resposta de regra.
         assertIs<ExpandStadiumResult.NotOwner>(service.execute(ClubId(1), owner + 1, -10_000))
         coVerify(exactly = 0) { clubRepo.save(any()) }
+    }
+
+    @Test
+    fun `conflito de lock otimista volta como valor, sem retry automatico (issue 89)`() = runTest {
+        // A ampliação debita o caixa que o técnico VIU. Se a rodada gravou o
+        // clube no meio do caminho, reaplicar em silêncio decidiria por ele.
+        coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(ownerId = owner, cash = 1_075_000_00)
+        coEvery { clubRepo.save(any()) } returns ClubSaveResult.Conflict(ClubId(1))
+
+        val result = service.execute(ClubId(1), owner, 1_000)
+
+        assertIs<ExpandStadiumResult.Conflict>(result)
+        assertEquals(ClubId(1), result.clubId)
+        coVerify(exactly = 1) { clubRepo.save(any()) }
     }
 }

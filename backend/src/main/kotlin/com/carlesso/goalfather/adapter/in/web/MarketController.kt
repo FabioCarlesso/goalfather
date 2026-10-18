@@ -63,6 +63,9 @@ class MarketController(
             is TransferResult.InsufficientFunds -> "insufficient_funds"
             is TransferResult.SquadFull -> "squad_full"
             is TransferResult.PlayerNotAvailable -> "conflict"
+            // Perda do lock otimista do CLUBE (issue #89) — outra corrida que a
+            // do jogador, então tag própria para não misturar as duas no painel.
+            is TransferResult.Conflict -> "club_conflict"
         }
         meterRegistry.counter(GoalfatherMetrics.MARKET_TRANSFERS, GoalfatherMetrics.TAG_RESULT, outcome)
             .increment()

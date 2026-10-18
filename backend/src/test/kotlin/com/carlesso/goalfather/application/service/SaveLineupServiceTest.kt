@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
@@ -32,7 +33,7 @@ class SaveLineupServiceTest {
         val ids = club.squad.take(11).map { it.id }
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, ids)
 
@@ -51,7 +52,7 @@ class SaveLineupServiceTest {
         val ids = club.squad.take(11).map { it.id }
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val result = service.execute(
             ClubId(1),
@@ -159,7 +160,7 @@ class SaveLineupServiceTest {
         )
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val healthy = club.squad.filterNot { it.injured }.take(11).map { it.id }
         val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, healthy)
@@ -181,5 +182,27 @@ class SaveLineupServiceTest {
 
         assertIs<LineupResult.PlayersNotInSquad>(result)
         assertEquals(listOf(999L), result.missingIds)
+    }
+
+    @Test
+    fun `conflito rele o clube e REVALIDA a escalacao contra o estado novo (issue 89)`() = runTest {
+        // A escrita concorrente foi a rodada lesionando um titular: a nova
+        // tentativa não grava às cegas — devolve o erro de negócio certo.
+        val stale = makeClub(squadSize = 15, ownerId = owner)
+        val ids = stale.squad.take(11).map { it.id }
+        val fresh = stale.copy(
+            squad = stale.squad.mapIndexed { i, p ->
+                if (i == 0) p.copy(availability = Availability.Injured(2)) else p
+            },
+            version = stale.version + 1,
+        )
+        coEvery { clubRepo.findById(ClubId(1)) } returnsMany listOf(stale, fresh)
+        coEvery { clubRepo.save(any()) } returns ClubSaveResult.Conflict(ClubId(1))
+
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, ids)
+
+        assertIs<LineupResult.InjuredPlayers>(result)
+        assertEquals(listOf(ids.first().value), result.playerIds)
+        coVerify(exactly = 1) { clubRepo.save(any()) }
     }
 }

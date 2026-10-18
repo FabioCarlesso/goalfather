@@ -30,6 +30,13 @@ value class ClubId(val value: Long)
  * `ticketPriceCents` (issue #59) é a decisão de BILHETERIA, do mesmo tipo:
  * vale até o técnico mexer e alimenta a curva de demanda em `FinanceRules`.
  * Quem nunca mexeu — e todo clube da IA — cobra `DEFAULT_TICKET_PRICE_CENTS`.
+ *
+ * `version` (issue #89) é a versão do agregado NO MOMENTO DA LEITURA — dado
+ * puro, um `Long` sem anotação JPA (regra de ouro do CLAUDE.md). Ela viaja
+ * dentro do `copy()` de cada comando até o `ClubRepository.save`, que só grava
+ * se o banco ainda estiver nessa versão: é o que faz o lock otimista comparar
+ * contra o que o use case LEU, e não contra o que o adapter acabou de reler.
+ * Clube ainda não persistido nasce com `0`.
  */
 @Serializable
 data class Club(
@@ -43,6 +50,7 @@ data class Club(
     val division: Division = Division.FIRST,
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
     val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
+    val version: Long = 0,
 ) {
     init {
         require(cash >= 0) { "cash não pode ser negativo: $cash" }

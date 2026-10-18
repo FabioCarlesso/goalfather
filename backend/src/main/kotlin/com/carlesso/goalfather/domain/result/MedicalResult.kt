@@ -33,4 +33,13 @@ sealed interface MedicalResult {
     @Serializable
     @SerialName("InsufficientFunds")
     data class InsufficientFunds(val available: Long, val required: Long) : MedicalResult
+
+    /**
+     * Outra escrita alterou o clube entre a leitura e a gravação (lock otimista,
+     * issue #89) — nada foi aplicado: nem taxa debitada, nem elenco tratado.
+     * Controller mapeia 409 `CLUB_WRITE_CONFLICT`.
+     */
+    @Serializable
+    @SerialName("Conflict")
+    data class Conflict(val clubId: ClubId) : MedicalResult
 }

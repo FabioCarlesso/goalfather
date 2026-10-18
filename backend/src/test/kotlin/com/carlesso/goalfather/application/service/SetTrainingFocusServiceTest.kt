@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.TrainingFocus
@@ -28,7 +29,7 @@ class SetTrainingFocusServiceTest {
         val club = makeClub(ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val result = service.execute(ClubId(1), owner, TrainingFocus.ATAQUE)
 
@@ -71,5 +72,21 @@ class SetTrainingFocusServiceTest {
             service.execute(ClubId(1), owner + 1, TrainingFocus.DEFESA),
         )
         coVerify(exactly = 0) { clubRepo.save(any()) }
+    }
+
+    @Test
+    fun `conflito rele o clube e reaplica o foco (issue 89)`() = runTest {
+        val stale = makeClub(ownerId = owner, cash = 1_000_000_00)
+        val fresh = stale.copy(cash = 900_000_00, version = stale.version + 1)
+        coEvery { clubRepo.findById(ClubId(1)) } returnsMany listOf(stale, fresh)
+        coEvery { clubRepo.save(any()) } returns
+            ClubSaveResult.Conflict(ClubId(1)) coAndThen { ClubSaveResult.Saved(firstArg()) }
+
+        val result = service.execute(ClubId(1), owner, TrainingFocus.ATAQUE)
+
+        assertIs<TrainingFocusResult.Success>(result)
+        assertEquals(TrainingFocus.ATAQUE, result.club.trainingFocus)
+        assertEquals(900_000_00, result.club.cash, "não desfaz o débito concorrente")
+        coVerify(exactly = 2) { clubRepo.save(any()) }
     }
 }

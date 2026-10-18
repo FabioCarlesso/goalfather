@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
@@ -24,12 +25,29 @@ import com.carlesso.goalfather.domain.result.LineupResult
  * fica para o backend num refinamento futuro — frontend já faz UI-
  * level com o mapeamento de `formations.ts`. Quando o backend Spring
  * estiver com auth, esta camada vira a fonte de verdade.
+ *
+ * **Retry automático no conflito (issue #89).** Salvar a escalação SUBSTITUI a
+ * anterior — mesma natureza do preço do ingresso e do foco de treino —, então
+ * reler e reaplicar é seguro. E a releitura importa: a escrita concorrente
+ * pode ter sido a rodada lesionando um titular ou uma venda tirando alguém do
+ * elenco, e a nova tentativa revalida tudo contra esse estado.
  */
 class SaveLineupService(
     private val clubRepo: ClubRepository,
 ) : SaveLineupUseCase {
 
     override suspend fun execute(
+        clubId: ClubId,
+        requesterId: Long,
+        formation: Formation,
+        playerIds: List<PlayerId>,
+        tactics: Tactics,
+    ): LineupResult =
+        retryOnConflict(isConflict = { it is LineupResult.Conflict }) {
+            attempt(clubId, requesterId, formation, playerIds, tactics)
+        }
+
+    private suspend fun attempt(
         clubId: ClubId,
         requesterId: Long,
         formation: Formation,
@@ -78,9 +96,10 @@ class SaveLineupService(
         // Postura entra na MESMA gravação da escalação (issue #56): quando a
         // rodada começar, todas as réplicas leem a mesma tática do banco.
         val lineup = Lineup(players = orderedPlayers, formation = formation, tactics = tactics)
-        val updatedClub = clubRepo.save(club.copy(lineup = lineup))
-
-        return LineupResult.Success(updatedClub)
+        return when (val saved = clubRepo.save(club.copy(lineup = lineup))) {
+            is ClubSaveResult.Saved -> LineupResult.Success(saved.club)
+            is ClubSaveResult.Conflict -> LineupResult.Conflict(saved.clubId)
+        }
     }
 
     companion object {

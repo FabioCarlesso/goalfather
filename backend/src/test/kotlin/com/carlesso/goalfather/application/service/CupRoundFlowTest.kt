@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
@@ -87,7 +88,7 @@ class CupRoundFlowTest {
         // desembrulhado (Long), então `firstArg<ClubId>()` não funcionaria.
         for (club in clubs) coEvery { clubRepo.findById(club.id) } returns club
         coEvery { clubRepo.findAll() } returns clubs
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.result.TicketPriceResult
@@ -30,7 +31,7 @@ class SetTicketPriceServiceTest {
         val club = makeClub(ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
-        coEvery { clubRepo.save(capture(saved)) } answers { saved.captured }
+        coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
 
         val result = service.execute(ClubId(1), owner, 80_00)
 
@@ -48,7 +49,7 @@ class SetTicketPriceServiceTest {
     fun `as bordas da faixa sao aceitas`() = runTest {
         val club = makeClub(ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
 
         assertIs<TicketPriceResult.Success>(service.execute(ClubId(1), owner, MIN_TICKET_PRICE_CENTS))
         assertIs<TicketPriceResult.Success>(service.execute(ClubId(1), owner, MAX_TICKET_PRICE_CENTS))
@@ -100,5 +101,37 @@ class SetTicketPriceServiceTest {
             service.execute(ClubId(1), owner + 1, MAX_TICKET_PRICE_CENTS + 1),
         )
         coVerify(exactly = 0) { clubRepo.save(any()) }
+    }
+
+    @Test
+    fun `conflito rele o clube e reaplica o preco sem pisar no caixa novo (issue 89)`() = runTest {
+        // Cenário da issue: entre a leitura e o save, a rodada creditou a
+        // bilheteria. A 2ª tentativa parte do clube RELIDO — o preço entra e o
+        // caixa da rodada fica.
+        val stale = makeClub(ownerId = owner, cash = 1_000_000_00)
+        val fresh = stale.copy(cash = 1_250_000_00, version = stale.version + 1)
+        coEvery { clubRepo.findById(ClubId(1)) } returnsMany listOf(stale, fresh)
+        val saved = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(saved)) } returns
+            ClubSaveResult.Conflict(ClubId(1)) coAndThen { ClubSaveResult.Saved(firstArg()) }
+
+        val result = service.execute(ClubId(1), owner, 80_00)
+
+        assertIs<TicketPriceResult.Success>(result)
+        assertEquals(80_00, result.club.ticketPriceCents)
+        assertEquals(1_250_000_00, result.club.cash)
+        assertEquals(fresh.version, saved.last().version, "a gravação vencedora usa a versão relida")
+        coVerify(exactly = 2) { clubRepo.findById(ClubId(1)) }
+    }
+
+    @Test
+    fun `conflito persistente esgota as tentativas e volta como valor (issue 89)`() = runTest {
+        coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(ownerId = owner)
+        coEvery { clubRepo.save(any()) } returns ClubSaveResult.Conflict(ClubId(1))
+
+        val result = service.execute(ClubId(1), owner, 80_00)
+
+        assertIs<TicketPriceResult.Conflict>(result)
+        coVerify(exactly = MAX_CLUB_WRITE_ATTEMPTS) { clubRepo.save(any()) }
     }
 }

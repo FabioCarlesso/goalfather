@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
@@ -77,7 +78,7 @@ class PlayerStatsPersistenceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         val events = service.stream(1).toList()
         val matchEvents = events.filterIsInstance<RoundEvent.MatchUpdate>().map { it.event }

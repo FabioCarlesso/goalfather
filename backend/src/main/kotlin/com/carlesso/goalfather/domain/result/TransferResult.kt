@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.result
 
 import com.carlesso.goalfather.domain.model.Club
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import kotlinx.serialization.SerialName
@@ -31,4 +32,13 @@ sealed interface TransferResult {
     @Serializable
     @SerialName("PlayerNotAvailable")
     data class PlayerNotAvailable(val playerId: PlayerId) : TransferResult
+
+    /**
+     * Outra escrita alterou o clube entre a leitura e a gravação (lock otimista,
+     * issue #89) — caixa, elenco e mercado ficam como estavam.
+     * Vai no payload do 200, como as demais variantes (contrato `TransferConflict`).
+     */
+    @Serializable
+    @SerialName("Conflict")
+    data class Conflict(val clubId: ClubId) : TransferResult
 }

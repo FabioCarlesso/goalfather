@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -29,7 +30,7 @@ class SellPlayerServiceTest {
     fun `venda bem-sucedida credita caixa, remove do elenco e listou no mercado`() = runTest {
         val club = makeClub(cash = 500_000_00, squadSize = 11)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { marketRepo.add(any()) } just Runs
 
         val targetId = club.squad.first().id
@@ -62,5 +63,19 @@ class SellPlayerServiceTest {
         val result = service.execute(ClubId(999), PlayerId(1))
 
         assertIs<TransferResult.PlayerNotAvailable>(result)
+    }
+
+    @Test
+    fun `conflito no clube nao anuncia o jogador no mercado (issue 89)`() = runTest {
+        // Clube é gravado ANTES do mercado: perdido o lock, o jogador continua
+        // no elenco — anunciá-lo o deixaria em dois lugares.
+        val club = makeClub(cash = 500_000_00, squadSize = 11)
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+        coEvery { clubRepo.save(any()) } returns ClubSaveResult.Conflict(ClubId(1))
+
+        val result = service.execute(ClubId(1), club.squad.first().id)
+
+        assertIs<TransferResult.Conflict>(result)
+        coVerify(exactly = 0) { marketRepo.add(any()) }
     }
 }

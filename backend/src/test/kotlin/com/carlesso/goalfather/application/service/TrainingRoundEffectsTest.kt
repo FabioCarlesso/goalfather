@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.domain.event.RoundEvent
@@ -98,7 +99,7 @@ class TrainingRoundEffectsTest {
     fun `rodada aplica o foco de cada clube e reporta no RoundFinished`() = runTest {
         stubRound()
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         val finished = service.stream(1).toList()
             .filterIsInstance<RoundEvent.RoundFinished>()
@@ -120,7 +121,7 @@ class TrainingRoundEffectsTest {
     fun `recuperacao do foco entra por cima do desgaste da rodada`() = runTest {
         stubRound()
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         service.stream(1).toList()
 
@@ -147,7 +148,7 @@ class TrainingRoundEffectsTest {
         // evolução que o elenco não teria.
         stubRound()
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         val finished = service.stream(1).toList()
             .filterIsInstance<RoundEvent.RoundFinished>()

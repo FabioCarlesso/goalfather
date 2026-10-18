@@ -6,12 +6,15 @@ import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.PlayerJpaRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Lineup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.springframework.dao.ConcurrencyFailureException
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
@@ -24,12 +27,14 @@ import org.springframework.transaction.annotation.Transactional
  *
  * Squad é gerenciado pela relação `Player.clubId`. Salvar um clube
  * sincroniza o `clubId` em todos os players passados (atribui se
- * estavam livres; remove se foram tirados do elenco).
+ * estavam livres; remove se foram tirados do elenco) — na mesma transação
+ * do clube, sob o lock otimista do agregado (issue #89).
  */
 @Repository
 class ClubPersistenceAdapter(
     private val clubRepo: ClubJpaRepository,
     private val playerRepo: PlayerJpaRepository,
+    private val saveTx: ClubSaveTransaction,
     private val json: Json,
 ) : ClubRepository {
 
@@ -58,15 +63,62 @@ class ClubPersistenceAdapter(
         }
     }
 
+    /**
+     * Gravação sob lock otimista (issue #89). A coroutine só faz a ponte para o
+     * pool de I/O; a unidade transacional roda em [ClubSaveTransaction] (método
+     * **não-suspend**) pelo mesmo motivo do claim (issue #19): `@Transactional`
+     * sobre função `suspend` é frágil — o `withContext` troca de thread e a
+     * transação é thread-bound. Assim clube E elenco caem juntos num rollback.
+     *
+     * O `catch` é a rede de segurança: o compare-and-set da transação já
+     * devolve `Conflict` no caso comum, mas o banco ainda pode recusar a
+     * escrita concorrente por outra via — o `@Version` no flush
+     * ([org.springframework.dao.OptimisticLockingFailureException]) ou um
+     * timeout de lock de linha enquanto a outra transação não comita (H2).
+     * Todos descendem de [ConcurrencyFailureException] e significam a mesma
+     * coisa para o chamador — "alguém gravou antes, nada foi aplicado" —, então
+     * viram o mesmo valor aqui, sem exception chegando ao use case nem ao
+     * controller.
+     */
+    override suspend fun save(club: Club): ClubSaveResult = withContext(Dispatchers.IO) {
+        try {
+            saveTx.save(club)
+        } catch (_: ConcurrencyFailureException) {
+            ClubSaveResult.Conflict(club.id)
+        }
+    }
+}
+
+/**
+ * Transação síncrona do `save` de clube (issue #89). Bean separado para que
+ * `@Transactional` passe pelo proxy do Spring — self-invocation não passaria.
+ */
+@Component
+class ClubSaveTransaction(
+    private val clubRepo: ClubJpaRepository,
+    private val playerRepo: PlayerJpaRepository,
+    private val json: Json,
+) {
     @Transactional
-    override suspend fun save(club: Club): Club = withContext(Dispatchers.IO) {
-        // Carrega a entidade EXISTENTE e copia os campos do domínio nela, em vez
-        // de mapear para uma entidade nova. Isso preserva o @Version (lock
-        // otimista do claim, issue #19): mapear para uma instância destacada com
-        // version=0 faria o Hibernate ver um update obsoleto contra a versão do
-        // banco (≥1 após o claim) → StaleObjectStateException em todo save de
-        // clube (ampliar estádio, escalação, compra/venda).
-        val entity = clubRepo.findById(club.id.value).orElseGet { ClubEntity(id = club.id.value) }
+    fun save(club: Club): ClubSaveResult {
+        val id = club.id.value
+
+        // Lock otimista contra a versão que o USE CASE leu (`club.version`), e
+        // não contra uma releitura feita aqui — esse era o bug da issue #89: o
+        // adapter recarregava a entidade e o `@Version` passava a comparar com
+        // a versão recém-lida, então qualquer escrita intercalada (virada da
+        // rodada × ampliar estádio) sumia em silêncio.
+        //
+        // `when` sem argumento: cada ramo é uma condição, avaliada em ordem —
+        // o `return` no meio sai da função direto, sem `if/else` aninhado.
+        val entity = when {
+            clubRepo.compareAndIncrementVersion(id, club.version) == 1 ->
+                clubRepo.findById(id).orElseThrow()
+            clubRepo.existsById(id) -> return ClubSaveResult.Conflict(club.id)
+            // Clube ainda não persistido (seed, testes): INSERT com version 0.
+            else -> ClubEntity(id = id)
+        }
+
         entity.name = club.name
         entity.cash = club.cash
         entity.stadiumCapacity = club.stadiumCapacity
@@ -75,28 +127,27 @@ class ClubPersistenceAdapter(
         entity.division = club.division.value
         entity.trainingFocus = club.trainingFocus.name
         entity.ticketPriceCents = club.ticketPriceCents
-        clubRepo.save(entity)
+        // `saveAndFlush`: o UPDATE (e a checagem do `@Version`) acontece AGORA,
+        // então `saved.version` já é a versão que fica no banco após o commit.
+        val saved = clubRepo.saveAndFlush(entity)
 
         // Sincroniza o elenco. Players que estavam no clube e nao estao
         // mais ficam com clubId = null (vao para o mercado via SellPlayer).
-        val currentPlayerIds = playerRepo.findAllByClubId(club.id.value).map { it.id }.toSet()
+        val currentPlayerIds = playerRepo.findAllByClubId(id).map { it.id }.toSet()
         val newPlayerIds = club.squad.map { it.id.value }.toSet()
 
         val removed = currentPlayerIds - newPlayerIds
-        if (removed.isNotEmpty()) {
-            for (id in removed) {
-                val p = playerRepo.findById(id).orElse(null) ?: continue
-                p.clubId = null
-                playerRepo.save(p)
-            }
+        for (playerId in removed) {
+            val p = playerRepo.findById(playerId).orElse(null) ?: continue
+            p.clubId = null
+            playerRepo.save(p)
         }
 
         // Atualiza/adiciona players do squad
         for (player in club.squad) {
-            val p = player.toEntity(clubId = club.id.value)
-            playerRepo.save(p)
+            playerRepo.save(player.toEntity(clubId = id))
         }
 
-        club
+        return ClubSaveResult.Saved(club.copy(version = saved.version))
     }
 }

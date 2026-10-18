@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
@@ -99,7 +100,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -122,7 +123,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -146,7 +147,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(any()) } returns homeClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         val savedStandings = slot<Standings>()
         val claimed = slot<Round>()
         coEvery { leagueRepo.saveRound(any()) } just Runs
@@ -170,7 +171,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -193,7 +194,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(any()) } returns homeClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         val savedRounds = mutableListOf<Round>()
         coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
@@ -217,7 +218,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(any()) } returns homeClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         val savedStandings = mutableListOf<Standings>()
         coEvery { leagueRepo.finishRound(any()) } returns true
@@ -272,7 +273,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(any()) } returns null
         coEvery { clubRepo.findAll() } returns allClubs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
         val savedRounds = mutableListOf<Round>()
         coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
@@ -333,7 +334,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns listOf(standings4)
         clubs.forEach { c -> coEvery { clubRepo.findById(c.id) } returns c }
         coEvery { clubRepo.findAll() } returns clubs
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         val savedRounds = mutableListOf<Round>()
         coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
@@ -360,7 +361,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<com.carlesso.goalfather.domain.model.Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         val events = service.stream(1).toList()
         val finished = events.last()
@@ -383,6 +384,63 @@ class PlayRoundServiceTest {
     }
 
     @Test
+    fun `conflito ao gravar a rodada rele o clube e aplica a bilheteria como delta (issue 89)`() = runTest {
+        // Cenário da issue: enquanto a rodada finaliza, o técnico amplia o
+        // estádio (caixa − custo, capacidade + 1000) e comita primeiro. O save
+        // da rodada perde o lock, relê o clube e credita a bilheteria SOBRE o
+        // caixa já debitado — nenhuma das duas alterações some.
+        val expanded = homeClub.copy(
+            cash = homeClub.cash - 100_000_00,
+            stadiumCapacity = homeClub.stadiumCapacity + 1_000,
+            version = homeClub.version + 1,
+        )
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        // 1ª leitura: montagem das partidas; 2ª: a releitura após o conflito.
+        coEvery { clubRepo.findById(ClubId(1)) } returnsMany listOf(homeClub, expanded)
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val attempts = mutableListOf<Club>()
+        var pendingConflicts = 1
+        coEvery { clubRepo.save(capture(attempts)) } answers {
+            val club = firstArg<Club>()
+            if (club.id == ClubId(1) && pendingConflicts-- > 0) ClubSaveResult.Conflict(club.id)
+            else ClubSaveResult.Saved(club)
+        }
+
+        val finished = service.stream(1).toList().last()
+        assertIs<RoundEvent.RoundFinished>(finished)
+        val revenue = finished.finances.first { it.clubId == ClubId(1) }.ticketRevenue
+
+        // [0] = tentativa sobre o clube lido (perdeu); [1] = reaplicada sobre o
+        // relido. (Gravações seguintes são da virada de temporada desta liga
+        // de 2 clubes, a partir do `findAll` mockado.)
+        val homeWrites = attempts.filter { it.id == ClubId(1) }
+        assertEquals(homeClub.cash + revenue, homeWrites[0].cash)
+        assertEquals(expanded.cash + revenue, homeWrites[1].cash, "bilheteria entra sobre o caixa relido")
+        assertEquals(expanded.stadiumCapacity, homeWrites[1].stadiumCapacity, "a ampliação não é desfeita")
+        assertEquals(expanded.version, homeWrites[1].version, "regrava a partir da versão relida")
+    }
+
+    @Test
+    fun `conflito persistente na gravacao da rodada e excepcional e nao some em silencio (issue 89)`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Conflict(firstArg<Club>().id) }
+
+        val failure = runCatching { service.stream(1).toList() }.exceptionOrNull()
+
+        assertIs<IllegalStateException>(failure)
+    }
+
+    @Test
     fun `bilheteria da rodada usa o preco configurado pelo tecnico (issue 59)`() = runTest {
         suspend fun financesAt(priceCents: Long): List<RoundFinance> {
             val home = homeClub.copy(ticketPriceCents = priceCents)
@@ -391,7 +449,7 @@ class PlayRoundServiceTest {
             coEvery { clubRepo.findById(ClubId(1)) } returns home
             coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
             coEvery { clubRepo.findAll() } returns listOf(home, awayClub)
-            coEvery { clubRepo.save(any()) } answers { firstArg() }
+            coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
             coEvery { leagueRepo.saveRound(any()) } just Runs
             coEvery { leagueRepo.finishRound(any()) } returns true
             coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -446,7 +504,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         service.stream(1).toList()
 
@@ -487,7 +545,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         service.stream(1).toList()
 
@@ -527,7 +585,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         val events = service.stream(1).toList()
 
@@ -567,7 +625,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         val events = service.stream(1).toList()
 
@@ -609,7 +667,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         val events = service.stream(1).toList()
         assertTrue(events.any { it is RoundEvent.SeasonFinished }, "temporada deveria encerrar")
@@ -643,7 +701,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
         service.stream(1).toList()
 
@@ -693,7 +751,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns aging
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(aging, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -727,7 +785,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -766,7 +824,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns poorAway
         coEvery { clubRepo.findAll() } returns listOf(homeClub, poorAway)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -817,7 +875,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(any()) } returns homeClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -841,7 +899,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } answers {
             if (current.status == RoundStatus.Finished) return@answers false
@@ -912,7 +970,7 @@ class PlayRoundServiceTest {
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(withScorer, awayClub)
         val savedClubs = mutableListOf<Club>()
-        coEvery { clubRepo.save(capture(savedClubs)) } answers { firstArg() }
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -949,7 +1007,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(any()) } returns homeClub
         coEvery { clubRepo.findAll() } returns clubs
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
@@ -976,7 +1034,7 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(any()) } returns homeClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
-        coEvery { clubRepo.save(any()) } answers { firstArg() }
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
         coEvery { leagueRepo.saveRound(any()) } just Runs
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs

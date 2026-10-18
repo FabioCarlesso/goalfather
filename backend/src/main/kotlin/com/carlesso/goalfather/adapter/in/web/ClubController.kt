@@ -136,6 +136,7 @@ class ClubController(
                     details = playerIdsDetail(result.playerIds),
                 ),
             )
+            is LineupResult.Conflict -> clubWriteConflict(result.clubId)
         }
 
     /**
@@ -164,6 +165,7 @@ class ClubController(
                         "(necessário ${result.required}, disponível ${result.available})",
                 ),
             )
+            is MedicalResult.Conflict -> clubWriteConflict(result.clubId)
         }
 
     /**
@@ -185,6 +187,7 @@ class ClubController(
             is TrainingFocusResult.NotOwner -> ResponseEntity.status(403).body(
                 ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
             )
+            is TrainingFocusResult.Conflict -> clubWriteConflict(result.clubId)
         }
 
     /**
@@ -214,6 +217,7 @@ class ClubController(
                         "(${result.min}..${result.max} centavos)",
                 ),
             )
+            is TicketPriceResult.Conflict -> clubWriteConflict(result.clubId)
         }
 
     /**
@@ -248,6 +252,7 @@ class ClubController(
                         "(necessário ${result.required}, disponível ${result.available})",
                 ),
             )
+            is ExpandStadiumResult.Conflict -> clubWriteConflict(result.clubId)
         }
 }
 
@@ -258,3 +263,17 @@ class ClubController(
  */
 private fun playerIdsDetail(playerIds: List<Long>): Map<String, String> =
     mapOf("playerIds" to playerIds.joinToString(","))
+
+/**
+ * 409 do lock otimista do clube (issue #89): outra escrita alterou o clube
+ * entre a leitura e a gravação, e nada foi aplicado. É o mesmo status do claim
+ * disputado (`CLUB_ALREADY_CLAIMED`), com um `code` próprio porque a reação da
+ * UI é outra — recarregar o clube e deixar o técnico decidir de novo.
+ */
+private fun clubWriteConflict(clubId: ClubId): ResponseEntity<Any> =
+    ResponseEntity.status(409).body(
+        ErrorResponse(
+            code = "CLUB_WRITE_CONFLICT",
+            message = "Clube ${clubId.value} foi alterado por outra operação; recarregue e tente de novo",
+        ),
+    )

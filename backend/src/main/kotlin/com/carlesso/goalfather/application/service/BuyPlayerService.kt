@@ -2,8 +2,10 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
 
@@ -50,9 +52,20 @@ class BuyPlayerService(
             cash = club.cash - entry.price,
             squad = club.squad + entry.player,
         )
-        clubRepo.save(updatedClub)
 
-        return TransferResult.Success(club = updatedClub, player = entry.player)
+        // O clube pode ter mudado desde a leitura (issue #89) — ex.: a virada da
+        // rodada creditou bilheteria. Aí o `save` não grava nada, mas o jogador
+        // JÁ saiu do mercado no claim acima: devolvê-lo com o mesmo preço é a
+        // compensação que impede o jogador de sumir (fora do mercado e fora de
+        // qualquer elenco). Sem retry automático: o débito é sobre o caixa que
+        // o técnico viu, então a decisão de tentar de novo volta para ele.
+        return when (val saved = clubRepo.save(updatedClub)) {
+            is ClubSaveResult.Saved -> TransferResult.Success(club = saved.club, player = entry.player)
+            is ClubSaveResult.Conflict -> {
+                marketRepo.add(MarketEntry(player = entry.player, price = entry.price))
+                TransferResult.Conflict(saved.clubId)
+            }
+        }
     }
 
     companion object {
