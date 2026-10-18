@@ -88,11 +88,17 @@ class ApiErrorHandlingMvcTest {
     @Test
     fun `foco de treino desconhecido responde 400 MALFORMED_REQUEST`() {
         val (token, clubId) = managerWithClub()
-        mockMvc.post("/api/clubs/$clubId/training") {
+        val error = mockMvc.post("/api/clubs/$clubId/training") {
             header("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
             content = """{"focus":"YOGA"}"""
         }.andReturn().await().assertError(400, "MALFORMED_REQUEST")
+
+        // O kotlinx cita o enum pelo nome qualificado; o pacote interno não
+        // deve vazar para o cliente — só o nome simples do tipo.
+        val reason = error.details["reason"].orEmpty()
+        assertTrue(reason.contains("TrainingFocus") && reason.contains("YOGA"), reason)
+        assertFalse(reason.contains("com.carlesso"), reason)
     }
 
     @Test

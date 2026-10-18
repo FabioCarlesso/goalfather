@@ -123,7 +123,7 @@ class ApiExceptionHandler(private val json: Json) : ResponseEntityExceptionHandl
         message = "Corpo da requisição inválido",
         // A causa mais específica (ex.: "Formação desconhecida: 2-2-6") descreve
         // a ENTRADA do cliente, não o servidor — ajuda a depurar sem vazar nada.
-        details = mapOf("reason" to ex.rootCause().firstLine()),
+        details = mapOf("reason" to ex.rootCause().firstLine().withoutPackages()),
     )
 
     private fun invalidParameter(name: String, value: Any?) = ErrorResponse(
@@ -165,5 +165,15 @@ class ApiExceptionHandler(private val json: Json) : ResponseEntityExceptionHandl
 
         /** Mensagens do kotlinx trazem dicas multi-linha; só a 1ª linha interessa. */
         fun Throwable.firstLine(): String = message?.lineSequence()?.firstOrNull().orEmpty()
+
+        /**
+         * O kotlinx cita tipos pelo nome qualificado ("com.carlesso.goalfather
+         * .domain.model.TrainingFocus does not contain…"). O nome simples basta
+         * para o cliente entender o erro; o pacote só expõe a estrutura interna.
+         */
+        fun String.withoutPackages(): String = replace(QUALIFIED_NAME) { it.groupValues[1] }
+
+        /** Segmentos minúsculos seguidos de ponto antes de um tipo em PascalCase. */
+        val QUALIFIED_NAME = Regex("""\b(?:[a-z_][a-z0-9_]*\.)+([A-Z]\w*)""")
     }
 }
