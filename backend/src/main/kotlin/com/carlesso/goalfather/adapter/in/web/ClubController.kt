@@ -128,6 +128,12 @@ class ClubController(
                     message = "Jogadores lesionados não podem ser escalados: ${result.playerIds}",
                 ),
             )
+            is LineupResult.DuplicatePlayers -> ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    code = "DUPLICATE_PLAYERS",
+                    message = "Jogadores repetidos na escalação: ${result.playerIds}",
+                ),
+            )
         }
 
     /**

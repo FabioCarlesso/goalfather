@@ -10,6 +10,8 @@ describe('errorMessage', () => {
       .toBe('Clube não encontrado.')
     expect(errorMessage(new ApiError(400, { code: 'INVALID_STADIUM_EXPANSION', message: 'x' })))
       .toBe('A ampliação mínima é de 1.000 assentos.')
+    expect(errorMessage(new ApiError(400, { code: 'DUPLICATE_PLAYERS', message: 'x' })))
+      .toBe('Escalação inválida — o mesmo jogador está em mais de uma vaga.')
   })
 
   it('usa a mensagem do corpo para códigos desconhecidos', () => {
