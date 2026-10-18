@@ -439,7 +439,8 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   (`round_readiness` + gate "todos prontos → joga"; a simulação não roda 2× sob
   WS concorrentes graças ao claim de rodada da issue #46, abaixo)
 - [x] **Escape hatch para técnico ausente** (follow-up #20 → issue #45):
-  timeout auto-start. Assim que o PRIMEIRO técnico sinaliza pronto começa a
+  timeout que libera o início (não inicia sozinho — alguém ainda clica
+  "Jogar rodada"; ver issue #86). Assim que o PRIMEIRO técnico sinaliza pronto começa a
   correr `app.round-readiness.timeout` (default 2min); ao expirar, o gate
   `start()` passa de "todos prontos" para "todos prontos OU timeout", e a
   rodada joga com os ausentes usando a última escalação salva

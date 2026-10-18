@@ -554,21 +554,26 @@ function MatchCard({
         </span>
         {highlight && <span className="text-xs text-emerald-400 font-semibold">SEU JOGO</span>}
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="text-right">
-          <div className="text-sm font-medium text-slate-100 truncate">{match.homeClubName}</div>
+      {/* Grade fixa [nome] [gols] × [gols] [nome] (issue #85). `minmax(0,1fr)`
+          em vez de `1fr`: o mínimo implícito de `1fr` é o conteúdo, então um
+          nome longo empurrava o placar e o "×" quebrava linha. Com mínimo 0 o
+          nome encolhe e o `truncate` aplica reticências; o `title` mostra o
+          nome completo no hover. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_minmax(0,1fr)] items-center gap-x-2">
+        <div className="text-sm font-medium text-slate-100 truncate text-right" title={match.homeClubName}>
+          {match.homeClubName}
         </div>
-        <div className="text-2xl font-bold font-mono tabular-nums text-slate-100 px-2 text-center">
-          {s.homeGoals} <span className="text-slate-600">×</span> {s.awayGoals}
-          {s.penalties && (
-            <div className="text-xs font-normal text-amber-300">
-              pên. {s.penalties.home} × {s.penalties.away}
-            </div>
-          )}
+        <span className="text-2xl font-bold font-mono tabular-nums text-slate-100">{s.homeGoals}</span>
+        <span className="text-2xl font-bold font-mono text-slate-600">×</span>
+        <span className="text-2xl font-bold font-mono tabular-nums text-slate-100">{s.awayGoals}</span>
+        <div className="text-sm font-medium text-slate-100 truncate text-left" title={match.awayClubName}>
+          {match.awayClubName}
         </div>
-        <div className="text-left">
-          <div className="text-sm font-medium text-slate-100 truncate">{match.awayClubName}</div>
-        </div>
+        {s.penalties && (
+          <div className="col-start-2 col-span-3 text-center text-xs text-amber-300 whitespace-nowrap">
+            pên. {s.penalties.home} × {s.penalties.away}
+          </div>
+        )}
       </div>
     </Link>
   )

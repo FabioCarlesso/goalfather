@@ -28,6 +28,15 @@ servers:
   - url: http://localhost:5173
     description: Frontend Vite com MSW interceptando (dev mock)
 
+# Segurança padrão de TODAS as operações (espelha o `authorize("/api/**",
+# authenticated)` do SecurityConfig). Sem este bloco global, só as operações
+# com `security` próprio declaravam o JWT — e o "Authorize" do Swagger UI não
+# mandava o header no resto, devolvendo 401 em todo "Try it out". As rotas
+# públicas (register/login) e os WebSockets (token na query) sobrescrevem com
+# `security: []`.
+security:
+  - bearerAuth: []
+
 tags:
   - name: Auth
     description: Cadastro, login e identidade do usuário (JWT)
@@ -58,6 +67,7 @@ paths:
         Cria um usuário com senha (hash BCrypt no backend) e devolve um JWT
         já autenticado. O usuário nasce sem clube (`clubId = null`) — o
         próximo passo é reivindicar um clube em `/api/clubs/{id}/claim`.
+      security: []   # público: é aqui que o JWT nasce
       requestBody:
         required: true
         content:
@@ -82,6 +92,7 @@ paths:
       tags: [Auth]
       operationId: login
       summary: Autenticar usuário existente
+      security: []   # público: é aqui que o JWT nasce
       requestBody:
         required: true
         content:
@@ -253,8 +264,11 @@ paths:
       operationId: expandStadium
       summary: Ampliar capacidade do estádio
       description: |
-        Investe caixa do clube para aumentar a capacidade do estádio.
-        Falha com `INSUFFICIENT_FUNDS` se o caixa for insuficiente.
+        Investe caixa do clube para aumentar a capacidade do estádio, a
+        R$ 100 (`10000` centavos) por assento. Pedidos abaixo de 1000 assentos
+        (incluindo zero e negativos) falham com 400 `INVALID_STADIUM_EXPANSION`
+        sem alterar caixa nem capacidade (issue #79). Falha com
+        `INSUFFICIENT_FUNDS` se o caixa for insuficiente.
       parameters:
         - $ref: '#/components/parameters/ClubIdPath'
       requestBody:
@@ -268,8 +282,18 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Club' }
+        '400':
+          description: Ampliação abaixo do mínimo de assentos (`INVALID_STADIUM_EXPANSION`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '402':
           description: Caixa insuficiente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: Usuário não é dono do clube
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -672,6 +696,8 @@ paths:
       tags: [League]
       operationId: streamRound
       summary: '[WebSocket] Stream de eventos da rodada'
+      # O JWT vai no query param `token` (ver parâmetro abaixo), não no header.
+      security: []
       description: |
         **ATENÇÃO: endpoint WebSocket.** Multiplexa eventos de TODAS as
         partidas da rodada em um único canal. Cada mensagem é um
@@ -716,6 +742,8 @@ paths:
       tags: [Match]
       operationId: streamMatch
       summary: '[WebSocket] Stream de eventos da partida ao vivo'
+      # O JWT vai no query param `token` (ver parâmetro abaixo), não no header.
+      security: []
       description: |
         **ATENÇÃO: endpoint WebSocket**, não HTTP. OpenAPI 3.1 não modela WS
         oficialmente, então documentamos aqui apenas o formato das mensagens
@@ -1120,7 +1148,10 @@ components:
         additionalSeats:
           type: integer
           minimum: 1000
-          description: Quantidade de novos assentos a adicionar
+          description: |
+            Quantidade de novos assentos a adicionar. Abaixo de `1000` o
+            backend responde 400 `INVALID_STADIUM_EXPANSION` — o mínimo é regra
+            de domínio, o `minimum` aqui só documenta (issue #79).
 
     BuyPlayerRequest:
       type: object

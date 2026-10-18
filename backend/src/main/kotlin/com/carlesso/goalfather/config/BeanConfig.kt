@@ -2,6 +2,7 @@ package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
+import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.LoginUseCase
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
@@ -25,6 +26,7 @@ import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BuyPlayerService
 import com.carlesso.goalfather.application.service.ClaimClubService
+import com.carlesso.goalfather.application.service.ExpandStadiumService
 import com.carlesso.goalfather.application.service.LoginService
 import com.carlesso.goalfather.application.service.PlayMatchService
 import com.carlesso.goalfather.application.service.PlayRoundService
@@ -100,6 +102,12 @@ class BeanConfig {
     fun setTicketPriceUseCase(
         clubRepo: ClubRepository,
     ): SetTicketPriceUseCase = SetTicketPriceService(clubRepo)
+
+    /** Ampliação do estádio (issue #79). */
+    @Bean
+    fun expandStadiumUseCase(
+        clubRepo: ClubRepository,
+    ): ExpandStadiumUseCase = ExpandStadiumService(clubRepo)
 
     @Bean
     fun playRoundUseCase(

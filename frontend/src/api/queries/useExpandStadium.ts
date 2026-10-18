@@ -6,8 +6,16 @@ import type { components } from '../generated'
 
 type ExpandStadiumRequest = components['schemas']['ExpandStadiumRequest']
 
-/** Custo por assento, em centavos (espelha o controller do backend: 100_00). */
+/**
+ * Custo por assento (centavos) e menor obra aceita — espelham
+ * `STADIUM_SEAT_COST_CENTS` e `MIN_STADIUM_EXPANSION_SEATS` de
+ * `domain/rules/StadiumRules.kt` (issue #79), no mesmo padrão de
+ * `MIN_TICKET_PRICE_CENTS`. Um lugar só no frontend: o formulário e a
+ * mensagem de erro leem daqui. A palavra final é do backend, que responde 400
+ * `INVALID_STADIUM_EXPANSION`.
+ */
 export const COST_PER_SEAT_CENTS = 100_00
+export const MIN_STADIUM_EXPANSION_SEATS = 1_000
 
 export function useExpandStadium(clubId: number) {
   const qc = useQueryClient()
