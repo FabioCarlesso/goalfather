@@ -28,7 +28,7 @@
 | Cliente HTTP | **`fetch` + wrapper tipado** | Sem axios; tipos vêm do OpenAPI |
 | Roteamento | **React Router v6** | Telas: dashboard, escalação, partida, mercado, tabela |
 | Mocks | **MSW (Mock Service Worker)** | Intercepta no Service Worker → mesmo `fetch` da app |
-| Contrato | **OpenAPI 3.1** em `contract/openapi.yaml` | Compartilhado com backend (springdoc) |
+| Contrato | **OpenAPI 3.1** em `contract/openapi.yaml` | Compartilhado com backend (`ContractDriftTest`) |
 | Tipos gerados | **`openapi-typescript`** | Gera `.d.ts` do `openapi.yaml` |
 | WebSocket | **`native WebSocket` + mock server local** | Stream de `MatchEvent` ao vivo |
 | Testes | **Vitest** + **React Testing Library** + **Playwright** (E2E) | Vitest = Jest compatível, Playwright = fluxo de partida |
@@ -100,7 +100,7 @@ goalfather/
 
 ## 4. O contrato OpenAPI
 
-`contract/openapi.yaml` define endpoints, schemas e tipos de evento. **Mesmo arquivo** é consumido pelo frontend (gera tipos TS) e pelo backend (springdoc valida que a implementação bate com o spec).
+`contract/openapi.yaml` define endpoints, schemas e tipos de evento. **Mesmo arquivo** é consumido pelo frontend (gera tipos TS) e pelo backend (o `ContractDriftTest` falha se método + path de alguma operação `/api/**` não tiver handler Spring, ou vice-versa).
 
 Endpoints da Fase 3 (ver [`ARQUITETURA.md §7`](ARQUITETURA.md#7-adapters)) traduzidos para schemas:
 

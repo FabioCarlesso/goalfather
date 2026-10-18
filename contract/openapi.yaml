@@ -6,8 +6,12 @@ info:
     Contrato compartilhado entre o backend (Kotlin + Spring Boot) e o frontend
     (Vite + React + TypeScript). Esta é a fonte de verdade dos tipos da API.
 
-    - **Backend:** springdoc-openapi valida que a implementação Spring bate com
-      este spec. `sealed interface MatchEvent` em Kotlin é serializado com
+    - **Backend:** o teste `ContractDriftTest` (backend/src/test) carrega este
+      arquivo e falha se alguma operação HTTP `/api/**` não tiver handler
+      Spring com o mesmo método + path, ou se algum handler `/api/**` não
+      estiver documentado aqui (paths `/ws/**` são WebSocket e ficam de fora).
+      O formato dos payloads é coberto pelos testes `*MvcTest` de cada
+      endpoint. `sealed interface MatchEvent` em Kotlin é serializado com
       `@JsonClassDiscriminator("type")` (kotlinx.serialization), mapeando
       diretamente para `oneOf + discriminator` aqui.
     - **Frontend:** `openapi-typescript` gera `src/api/generated.d.ts` a partir
@@ -225,38 +229,6 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
-
-  /api/clubs/{id}/matches:
-    post:
-      tags: [Match]
-      operationId: playMatch
-      summary: Jogar uma partida da rodada
-      description: |
-        Dispara a simulação síncrona da partida desta rodada e retorna o resumo.
-        Para acompanhar evento a evento em tempo real, conecte-se ao WebSocket
-        `/ws/matches/{id}` (ver `x-websocket` abaixo).
-      parameters:
-        - $ref: '#/components/parameters/ClubIdPath'
-        - name: round
-          in: query
-          required: true
-          description: Número da rodada (1..N)
-          schema: { type: integer, minimum: 1 }
-      responses:
-        '200':
-          description: Partida concluída
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/MatchSummary' }
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: Partida da rodada já disputada
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /api/clubs/{id}/stadium/expand:
     post:
@@ -1449,37 +1421,6 @@ components:
           description: Defesas feitas pelo goleiro DESTE time
         yellowCards: { type: integer, minimum: 0 }
         redCards:    { type: integer, minimum: 0 }
-
-    MatchSummary:
-      type: object
-      required:
-        - matchId
-        - round
-        - homeClubId
-        - awayClubId
-        - homeGoals
-        - awayGoals
-        - events
-        - attendance
-        - ticketRevenue
-      properties:
-        matchId:       { type: integer, format: int64 }
-        round:         { type: integer, minimum: 1 }
-        homeClubId:    { type: integer, format: int64 }
-        awayClubId:    { type: integer, format: int64 }
-        homeGoals:     { type: integer, minimum: 0 }
-        awayGoals:     { type: integer, minimum: 0 }
-        events:
-          type: array
-          items: { $ref: '#/components/schemas/MatchEvent' }
-        attendance:
-          type: integer
-          minimum: 0
-          description: Público pagante
-        ticketRevenue:
-          type: integer
-          format: int64
-          description: Receita de bilheteria (em centavos)
 
     # ─── League ───────────────────────────────────────────────────────────
     StandingRow:
