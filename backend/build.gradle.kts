@@ -91,6 +91,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // ContractDriftTest (issue #82) lê o contrato fora de backend/. Declarar
+    // como input faz o Gradle re-rodar os testes quando só o YAML muda — sem
+    // isso, `test` ficaria UP-TO-DATE e o drift passaria despercebido.
+    inputs.file("../contract/openapi.yaml").withPathSensitivity(PathSensitivity.RELATIVE)
     testLogging {
         events("passed", "failed", "skipped")
         exceptionFormat = TestExceptionFormat.FULL
