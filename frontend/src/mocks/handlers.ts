@@ -242,6 +242,17 @@ export const handlers = [
     if (!club) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
 
     const body = (await request.json()) as LineupRequest
+    // Mesma regra do backend (issue #80): um jogador não ocupa duas vagas.
+    const duplicated = [...new Set(body.playerIds.filter((id, i) => body.playerIds.indexOf(id) !== i))]
+    if (duplicated.length > 0) {
+      return HttpResponse.json(
+        {
+          code: 'DUPLICATE_PLAYERS',
+          message: `Jogadores repetidos na escalação: [${duplicated.join(', ')}]`,
+        } satisfies ErrorResponse,
+        { status: 400 },
+      )
+    }
     state.clubs[clubId] = { ...club, lineup: body }
     return new HttpResponse(null, { status: 204 })
   }),

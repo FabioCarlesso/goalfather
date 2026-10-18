@@ -222,7 +222,16 @@ paths:
         '204':
           description: Escalação salva
         '400':
-          $ref: '#/components/responses/ValidationError'
+          description: |
+            Escalação inválida. `code` do `ErrorResponse`:
+            - `INCOMPLETE_LINEUP` — não vieram exatamente 11 `playerIds`;
+            - `DUPLICATE_PLAYERS` — algum ID aparece mais de uma vez (issue #80);
+              a mensagem lista os IDs repetidos;
+            - `INVALID_LINEUP` — jogador fora do elenco do clube;
+            - `INJURED_PLAYERS` — jogador lesionado (issue #54).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
 

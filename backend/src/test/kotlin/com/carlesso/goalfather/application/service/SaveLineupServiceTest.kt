@@ -105,6 +105,21 @@ class SaveLineupServiceTest {
     }
 
     @Test
+    fun `jogador repetido retorna DuplicatePlayers sem persistir (issue 80)`() = runTest {
+        val club = makeClub(squadSize = 15, ownerId = owner)
+        val distinct = club.squad.take(9).map { it.id }
+        // 11 IDs: 9 distintos + o 1º e o 2º repetidos — cada repetido listado uma vez.
+        val ids = distinct + distinct[0] + distinct[1]
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+
+        val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, ids)
+
+        assertIs<LineupResult.DuplicatePlayers>(result)
+        assertEquals(listOf(distinct[0].value, distinct[1].value), result.playerIds)
+        coVerify(exactly = 0) { clubRepo.save(any()) }
+    }
+
+    @Test
     fun `IDs fora do elenco retornam PlayersNotInSquad`() = runTest {
         val club = makeClub(squadSize = 11, ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
