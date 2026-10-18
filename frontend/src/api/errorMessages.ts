@@ -24,6 +24,14 @@ const MESSAGES: Record<string, string> = {
   INTERNAL_ERROR: 'Erro no servidor. Tente novamente em instantes.',
 }
 
+/**
+ * 409 do lock otimista do clube (issue #89): nada foi aplicado e o clube em
+ * cache ficou velho — quem trata o erro deve recarregá-lo.
+ */
+export function isClubWriteConflict(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409 && error.body?.code === 'CLUB_WRITE_CONFLICT'
+}
+
 /** Converte qualquer erro em uma mensagem legível para exibir ao usuário. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {

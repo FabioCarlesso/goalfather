@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { errorMessage, transferErrorMessage } from './errorMessages'
+import { errorMessage, isClubWriteConflict, transferErrorMessage } from './errorMessages'
 import { ApiError } from './client'
 
 describe('errorMessage', () => {
@@ -28,6 +28,12 @@ describe('errorMessage', () => {
       .toBe('O clube foi alterado por outra operação ao mesmo tempo. Confira os dados e tente de novo.')
     expect(transferErrorMessage({ type: 'Conflict', clubId: 1 }))
       .toBe('O clube foi alterado por outra operação ao mesmo tempo — nada foi aplicado. Tente de novo.')
+  })
+
+  it('reconhece só o 409 de lock otimista do clube como conflito de escrita', () => {
+    expect(isClubWriteConflict(new ApiError(409, { code: 'CLUB_WRITE_CONFLICT', message: 'x' }))).toBe(true)
+    expect(isClubWriteConflict(new ApiError(409, { code: 'CLUB_ALREADY_CLAIMED', message: 'x' }))).toBe(false)
+    expect(isClubWriteConflict(new Error('rede'))).toBe(false)
   })
 
   it('usa a mensagem do corpo para códigos desconhecidos', () => {
