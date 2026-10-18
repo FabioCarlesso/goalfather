@@ -227,7 +227,10 @@ export const handlers = [
     const id = Number(params.id)
     // Após reload, `state.clubs` volta ao seed mas a posse foi restaurada de
     // `clubOwners` — rematerializa o clube reivindicado sob demanda (issue #19).
-    if (!state.clubs[id] && clubOwners[id] != null) materializeClub(id)
+    // Clubes da IA também: o feed da partida busca o ADVERSÁRIO para nomear
+    // os jogadores (issue #84), e o backend devolve qualquer clube da liga.
+    // Os ids do elenco materializado (id*1000+n) batem com os de `clubMeta`.
+    if (!state.clubs[id] && clubMeta[id]) materializeClub(id)
     const club = state.clubs[id]
     return club
       ? HttpResponse.json(club)

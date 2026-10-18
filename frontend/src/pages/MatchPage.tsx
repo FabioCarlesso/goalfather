@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useClub } from '../api/queries/useClub'
+import { useCurrentRound } from '../api/queries/useCurrentRound'
+import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
 import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { MatchEventFeed } from '../components/MatchEventFeed'
@@ -22,7 +23,7 @@ interface Teams {
 /**
  * Drill-down de uma partida específica (issue #9). Conecta em
  * `/ws/matches/{id}` ao montar e renderiza placar + feed ao vivo. Os
- * nomes dos jogadores do clube do usuário são resolvidos pelo lookup.
+ * nomes dos jogadores dos dois clubes são resolvidos pelo lookup (issue #84).
  *
  * O wrapper apenas resolve o `matchId` da rota e usa `key={matchId}` para
  * remontar `MatchView` ao trocar de partida — assim o estado (events/status)
@@ -36,16 +37,17 @@ export function MatchPage() {
 
 function MatchView({ matchId }: { matchId: string }) {
   const myClubId = useMyClubId()
-  const { data: myClub } = useClub(myClubId)
+  const { data: round } = useCurrentRound()
 
   const [events, setEvents] = useState<MatchEvent[]>([])
   const [status, setStatus] = useState<Status>('connecting')
   const [error, setError] = useState<string | null>(null)
 
-  const playerLookup = useMemo(
-    () => new Map<number, string>(myClub?.squad.map((p) => [p.id, p.name]) ?? []),
-    [myClub],
-  )
+  // Os ids dos dois clubes vêm da rodada corrente (o KickOff só traz nomes).
+  // Partida fora da rodada (ex.: drill-down standalone) → resolve ao menos o
+  // elenco do usuário; o resto cai no fallback "#N" (issue #84).
+  const match = round?.matches.find((m) => String(m.matchId) === matchId)
+  const playerLookup = useMatchPlayerLookup(match?.homeClubId ?? myClubId, match?.awayClubId)
 
   // Conecta ao montar. Como o componente é remontado via `key` quando o
   // `matchId` muda, não há reset de estado manual aqui.
