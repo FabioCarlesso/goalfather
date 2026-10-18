@@ -259,6 +259,7 @@ export const handlers = [
         {
           code: 'DUPLICATE_PLAYERS',
           message: `Jogadores repetidos na escalação: [${duplicated.join(', ')}]`,
+          details: { playerIds: duplicated.join(',') },
         } satisfies ErrorResponse,
         { status: 400 },
       )

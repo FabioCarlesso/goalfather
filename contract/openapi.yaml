@@ -108,6 +108,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           description: Credenciais inválidas (`INVALID_CREDENTIALS`)
           content:
@@ -175,6 +177,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AuthUser' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -199,6 +203,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Club' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -230,9 +236,12 @@ paths:
             Escalação inválida. `code` do `ErrorResponse`:
             - `INCOMPLETE_LINEUP` — não vieram exatamente 11 `playerIds`;
             - `DUPLICATE_PLAYERS` — algum ID aparece mais de uma vez (issue #80);
-              a mensagem lista os IDs repetidos;
+              `details.playerIds` traz os IDs repetidos em CSV (ex.: `"1,7"`);
             - `INVALID_LINEUP` — jogador fora do elenco do clube;
-            - `INJURED_PLAYERS` — jogador lesionado (issue #54).
+            - `INJURED_PLAYERS` — jogador lesionado (issue #54);
+              `details.playerIds` traz os IDs lesionados em CSV.
+            Além dos genéricos `MALFORMED_REQUEST` (ex.: formação desconhecida)
+            e `INVALID_PARAMETER` — ver `components.responses.BadRequest`.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -264,7 +273,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Club' }
         '400':
-          description: Ampliação abaixo do mínimo de assentos (`INVALID_STADIUM_EXPANSION`)
+          description: |
+            Ampliação abaixo do mínimo de assentos (`INVALID_STADIUM_EXPANSION`),
+            além dos genéricos `MALFORMED_REQUEST`/`INVALID_PARAMETER`.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -299,6 +310,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Club' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '402':
           description: Caixa insuficiente
           content:
@@ -335,6 +348,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Club' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '403':
           description: Usuário não é dono do clube
           content:
@@ -376,7 +391,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Club' }
         '400':
-          description: Preço fora da faixa permitida
+          description: |
+            Preço fora da faixa permitida, além dos genéricos
+            `MALFORMED_REQUEST`/`INVALID_PARAMETER`.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -412,6 +429,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/MarketEntry' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /api/market/buy:
     post:
@@ -432,6 +451,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/TransferResult' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -451,6 +472,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/TransferResult' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -478,6 +501,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Standings' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           description: Temporada inexistente
           content:
@@ -524,6 +549,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SeasonRecord' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           description: Temporada não encerrada (ou inexistente)
           content:
@@ -552,6 +579,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ClubCareer' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           description: Clube sem nenhuma temporada encerrada
           content:
@@ -583,6 +612,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Cup' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           description: Temporada sem copa
           content:
@@ -787,6 +818,15 @@ components:
   responses:
     NotFound:
       description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    BadRequest:
+      description: |
+        Entrada inválida — códigos genéricos do `ErrorResponse` (issue #81):
+        `MALFORMED_REQUEST` (corpo que não desserializa; `details.reason`) ou
+        `INVALID_PARAMETER` (parâmetro de path/query inválido;
+        `details.parameter` e `details.value`).
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }

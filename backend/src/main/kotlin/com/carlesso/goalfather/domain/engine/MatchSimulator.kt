@@ -3,6 +3,7 @@ package com.carlesso.goalfather.domain.engine
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.matchStats
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.attackFactor
 import com.carlesso.goalfather.domain.model.defenseFactor
 import com.carlesso.goalfather.domain.model.teamStrength
@@ -108,6 +109,14 @@ class MatchSimulator {
         val awayShare = awayStrength * awayGoalWeight
         val homeRatio = if (homeShare + awayShare > 0) homeShare / (homeShare + awayShare) else 0.5
 
+        // Quem se lesiona ou leva vermelho deixa o campo: não marca, não chuta,
+        // não defende nem leva outro cartão no resto da partida. A força do
+        // time continua a do apito inicial (não há substituições no jogo) —
+        // só os sorteios de "quem participa do lance" passam a ignorá-lo.
+        val offPitch = mutableSetOf<PlayerId>()
+        fun onPitch(home: Boolean) =
+            (if (home) setup.home.players else setup.away.players).filterNot { it.id in offPitch }
+
         for (minute in 1..90) {
             if (rng.nextDouble() >= EVENT_RATE) continue
 
@@ -115,7 +124,7 @@ class MatchSimulator {
             when {
                 roll < goalP -> {
                     val isHome = rng.nextDouble() < homeRatio
-                    val squad = if (isHome) setup.home.players else setup.away.players
+                    val squad = onPitch(isHome)
                     // Autor ponderado por posição (issue #57): atacante marca
                     // muito, zagueiro pouco, goleiro nunca. `null` = ninguém
                     // apto em campo, então o lance simplesmente não acontece.
@@ -128,7 +137,7 @@ class MatchSimulator {
                     // segue o mesmo viés do gol, e quem defende é o goleiro do
                     // lado oposto — daí `home = !shooterIsHome`.
                     val shooterIsHome = rng.nextDouble() < homeRatio
-                    val keeper = (if (shooterIsHome) setup.away else setup.home).players.goalkeeper()
+                    val keeper = onPitch(!shooterIsHome).goalkeeper()
                     emitting(
                         MatchEvent.Save(
                             minute = minute,
@@ -139,31 +148,34 @@ class MatchSimulator {
                 }
                 roll < goalP + saveP + P_MISS -> {
                     val isHome = rng.nextDouble() < homeRatio
-                    val squad = if (isHome) setup.home.players else setup.away.players
+                    val squad = onPitch(isHome)
                     val shooter = squad.drawShooter(rng) ?: continue
                     emitting(MatchEvent.Miss(minute = minute, playerId = shooter.id, home = isHome))
                 }
                 roll < goalP + saveP + P_MISS + P_CARD -> {
                     val isHome = rng.nextDouble() < 0.5
-                    val squad = if (isHome) setup.home.players else setup.away.players
+                    val squad = onPitch(isHome)
                     if (squad.isEmpty()) continue
                     // Cartão e lesão continuam UNIFORMES: qualquer um leva uma
                     // entrada dura — não há razão para ponderar por posição.
                     val player = squad[rng.nextInt(squad.size)]
+                    val red = rng.nextDouble() < P_RED_CARD
+                    if (red) offPitch += player.id
                     emitting(
                         MatchEvent.Card(
                             minute = minute,
                             playerId = player.id,
-                            red = rng.nextDouble() < P_RED_CARD,
+                            red = red,
                             home = isHome,
                         ),
                     )
                 }
                 else -> {
                     val isHome = rng.nextDouble() < 0.5
-                    val squad = if (isHome) setup.home.players else setup.away.players
+                    val squad = onPitch(isHome)
                     if (squad.isEmpty()) continue
                     val player = squad[rng.nextInt(squad.size)]
+                    offPitch += player.id
                     // Duração sorteada aqui, com o RNG da partida (issue #54):
                     // o evento já sai completo e o serviço só aplica.
                     emitting(
@@ -181,7 +193,7 @@ class MatchSimulator {
         // já depois dos 90 minutos — então ela não altera nenhum evento do tempo
         // normal, e mesma seed continua dando o mesmo jogo E a mesma disputa.
         if (setup.knockout && homeGoals == awayGoals) {
-            val shootout = penaltyShootout(setup.home.players, setup.away.players, rng)
+            val shootout = penaltyShootout(onPitch(home = true), onPitch(home = false), rng)
             emitting(
                 MatchEvent.PenaltyShootout(
                     minute = 90,

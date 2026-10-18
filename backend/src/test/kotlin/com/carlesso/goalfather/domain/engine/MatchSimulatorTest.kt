@@ -363,19 +363,63 @@ class MatchSimulatorTest {
 
     @Test
     fun `defesa identifica o goleiro do lado que defendeu`() = runTest {
-        val saves = eventsOver(1..50).filterIsInstance<MatchEvent.Save>()
         val homeKeeper = homeLineup.players.first { it.position == Position.GK }.id
+        val saves = (1..50).flatMap { seed ->
+            val events = MatchSimulator().simulate(setup, Random(seed.toLong())).toList()
+            // Goleiro lesionado/expulso deixa o campo: daí em diante a defesa
+            // não tem goleiro escalado (null). Por isso a checagem é por partida.
+            val keeperOffAt = events.firstOrNull {
+                (it is MatchEvent.Injury && it.playerId == homeKeeper) ||
+                    (it is MatchEvent.Card && it.red && it.playerId == homeKeeper)
+            }?.minute ?: Int.MAX_VALUE
+            events.filterIsInstance<MatchEvent.Save>().map { it to (it.minute > keeperOffAt) }
+        }
 
         assertTrue(saves.isNotEmpty(), "50 partidas deveriam produzir alguma defesa")
-        for (save in saves) {
+        for ((save, keeperOff) in saves) {
             if (save.home) {
-                assertEquals(homeKeeper, save.goalkeeperId, "defesa do mandante é do goleiro do mandante")
+                val expected = if (keeperOff) null else homeKeeper
+                assertEquals(expected, save.goalkeeperId, "defesa do mandante é do goleiro do mandante")
             } else {
                 // O visitante deste setup não tem goleiro escalado (11 MF):
                 // ausência modelada como null, sem id inventado.
                 assertEquals(null, save.goalkeeperId)
             }
         }
+    }
+
+    @Test
+    fun `lesionado ou expulso nao participa de mais nenhum lance da partida`() = runTest {
+        // Propriedade sobre muitas seeds (inclusive mata-mata, para cobrir os
+        // pênaltis): depois de sair de campo, o id não aparece em evento algum.
+        var playersSentOff = 0
+        for (seed in 1L..200L) {
+            val events = MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+            val offPitch = mutableSetOf<PlayerId>()
+            for (event in events) {
+                // `when` como expressão sobre o sealed: o compilador exige
+                // cobrir todos os tipos — evento novo sem participante quebra aqui.
+                val participants: List<PlayerId?> = when (event) {
+                    is MatchEvent.Goal -> listOf(event.scorerId)
+                    is MatchEvent.Miss -> listOf(event.playerId)
+                    is MatchEvent.Save -> listOf(event.goalkeeperId)
+                    is MatchEvent.Card -> listOf(event.playerId)
+                    is MatchEvent.Injury -> listOf(event.playerId)
+                    is MatchEvent.PenaltyShootout -> event.kicks.map { it.playerId }
+                    is MatchEvent.KickOff, is MatchEvent.FullTime -> emptyList()
+                }
+                val returned = participants.filterNotNull().filter { it in offPitch }
+                assertTrue(returned.isEmpty(), "seed $seed: $returned voltou a campo em $event")
+
+                when (event) {
+                    is MatchEvent.Injury -> offPitch += event.playerId
+                    is MatchEvent.Card -> if (event.red) offPitch += event.playerId
+                    else -> Unit
+                }
+            }
+            playersSentOff += offPitch.size
+        }
+        assertTrue(playersSentOff > 0, "200 partidas deveriam ter alguma lesão/expulsão")
     }
 
     @Test

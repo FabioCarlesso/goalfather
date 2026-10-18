@@ -75,7 +75,7 @@ class ApiErrorHandlingMvcTest {
     }
 
     @Test
-    fun `formacao desconhecida na escalacao responde 400 MALFORMED_REQUEST`() {
+    fun `escalacao com formacao desconhecida ou jogador repetido responde 400`() {
         val (token, clubId) = managerWithClub()
         val error = mockMvc.post("/api/clubs/$clubId/lineup") {
             header("Authorization", "Bearer $token")
@@ -83,6 +83,17 @@ class ApiErrorHandlingMvcTest {
             content = """{"formation":"2-2-6","playerIds":[1,2,3,4,5,6,7,8,9,10,11]}"""
         }.andReturn().await().assertError(400, "MALFORMED_REQUEST")
         assertEquals("Formação desconhecida: 2-2-6", error.details["reason"])
+
+        // Mesmo clube (cada `managerWithClub` consome um dos poucos clubes livres
+        // do banco compartilhado pelos testes): jogador repetido é erro de
+        // negócio, com os ids em `details` — a checagem vem antes de "fora do
+        // elenco", então ids arbitrários bastam.
+        val duplicated = mockMvc.post("/api/clubs/$clubId/lineup") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"formation":"4-4-2","playerIds":[7,7,2,3,4,5,6,8,9,9,10]}"""
+        }.andReturn().await().assertError(400, "DUPLICATE_PLAYERS")
+        assertEquals("7,9", duplicated.details["playerIds"])
     }
 
     @Test
