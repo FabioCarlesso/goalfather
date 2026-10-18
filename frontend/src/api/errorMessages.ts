@@ -17,6 +17,9 @@ const MESSAGES: Record<string, string> = {
   DUPLICATE_PLAYERS: 'Escalação inválida — o mesmo jogador está em mais de uma vaga.',
   INVALID_STADIUM_EXPANSION: `A ampliação mínima é de ${formatSeats(MIN_STADIUM_EXPANSION_SEATS)} assentos.`,
   NOT_FOUND: 'Recurso não encontrado.',
+  MALFORMED_REQUEST: 'Requisição inválida — os dados enviados não puderam ser lidos.',
+  INVALID_PARAMETER: 'Parâmetro inválido na requisição.',
+  INTERNAL_ERROR: 'Erro no servidor. Tente novamente em instantes.',
 }
 
 /** Converte qualquer erro em uma mensagem legível para exibir ao usuário. */
