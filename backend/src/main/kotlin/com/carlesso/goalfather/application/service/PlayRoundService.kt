@@ -210,9 +210,10 @@ class PlayRoundService(
         // interrupção entre o claim e o fim da persistência deixaria a rodada
         // `Finished` com efeitos parciais — e como todo stream seguinte cai no
         // replay, a liga travaria (a próxima rodada nunca seria gerada). Por
-        // isso o bloco roda em `NonCancellable`: fechar a aba do WS (o handler
-        // faz `job.cancel()` no `afterConnectionClosed`) logo após o FullTime
-        // não pode rasgar a finalização no meio.
+        // isso o bloco roda em `NonCancellable`: nenhum cancelamento do coletor
+        // (shutdown, um adapter que cancele o Flow) pode rasgar a finalização no
+        // meio. O `RoundWebSocketHandler` nem cancela mais ao fechar a aba: a
+        // rodada segue até o fim sem pacing (revisão do PR #92).
         //
         // NonCancellable NÃO cobre crash de processo entre o claim e o fim —
         // esse resíduo de durabilidade fica documentado em docs/ARQUITETURA.md

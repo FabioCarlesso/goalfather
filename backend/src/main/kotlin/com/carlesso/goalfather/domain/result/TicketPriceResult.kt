@@ -35,13 +35,4 @@ sealed interface TicketPriceResult {
     @Serializable
     @SerialName("PriceOutOfRange")
     data class PriceOutOfRange(val price: Long, val min: Long, val max: Long) : TicketPriceResult
-
-    /**
-     * Outra escrita alterou o clube entre a leitura e a gravação (lock otimista,
-     * issue #89) — nada foi gravado, mesmo depois das releituras automáticas.
-     * Controller mapeia 409 `CLUB_WRITE_CONFLICT`.
-     */
-    @Serializable
-    @SerialName("Conflict")
-    data class Conflict(val clubId: ClubId) : TicketPriceResult
 }

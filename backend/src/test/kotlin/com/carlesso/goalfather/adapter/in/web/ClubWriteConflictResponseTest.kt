@@ -4,8 +4,6 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.BuyPlayerRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.ExpandStadiumRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.LineupRequest
-import com.carlesso.goalfather.adapter.`in`.web.dto.TicketPriceRequest
-import com.carlesso.goalfather.adapter.`in`.web.dto.TrainingFocusRequest
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
@@ -16,12 +14,9 @@ import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.PlayerId
-import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.result.ExpandStadiumResult
 import com.carlesso.goalfather.domain.result.LineupResult
 import com.carlesso.goalfather.domain.result.MedicalResult
-import com.carlesso.goalfather.domain.result.TicketPriceResult
-import com.carlesso.goalfather.domain.result.TrainingFocusResult
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -77,19 +72,15 @@ class ClubWriteConflictResponseTest {
     }
 
     @Test
-    fun `comandos do clube traduzem Conflict em 409 CLUB_WRITE_CONFLICT`() = runTest {
+    fun `comandos read-modify-write do clube traduzem Conflict em 409 CLUB_WRITE_CONFLICT`() = runTest {
         coEvery { saveLineup.execute(clubId, owner, any(), any(), any()) } returns LineupResult.Conflict(clubId)
         coEvery { treatSquad.execute(clubId, owner) } returns MedicalResult.Conflict(clubId)
-        coEvery { setTrainingFocus.execute(clubId, owner, any()) } returns TrainingFocusResult.Conflict(clubId)
-        coEvery { setTicketPrice.execute(clubId, owner, any()) } returns TicketPriceResult.Conflict(clubId)
         coEvery { expandStadium.execute(clubId, owner, any()) } returns ExpandStadiumResult.Conflict(clubId)
 
         assertClubWriteConflict(
             clubs.saveLineup(1, LineupRequest(Formation.F_4_4_2, List(11) { PlayerId(it + 1L) }), owner),
         )
         assertClubWriteConflict(clubs.treatSquad(1, owner))
-        assertClubWriteConflict(clubs.setTrainingFocus(1, TrainingFocusRequest(TrainingFocus.ATAQUE), owner))
-        assertClubWriteConflict(clubs.setTicketPrice(1, TicketPriceRequest(80_00), owner))
         assertClubWriteConflict(clubs.expandStadium(1, ExpandStadiumRequest(1_000), owner))
     }
 

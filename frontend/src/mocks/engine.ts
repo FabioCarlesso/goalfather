@@ -164,6 +164,16 @@ export const MEDICAL_STAMINA_RECOVERY = 30
 export const STADIUM_SEAT_COST_CENTS = 100_00
 export const MIN_STADIUM_EXPANSION_SEATS = 1_000
 
+// ─── Mercado — espelham domain/rules/TransferRules.kt ───
+// Venda paga 8 salários; o jogador vendido é anunciado por 12. O pagamento é
+// sempre menor que o anúncio, então comprar e revender não gera dinheiro.
+export const SALE_PAYOUT_SALARY_MULTIPLIER = 8
+export const MARKET_LISTING_SALARY_MULTIPLIER = 12
+export const salePayoutOf = (player: Pick<Player, 'salary'>): number =>
+  player.salary * SALE_PAYOUT_SALARY_MULTIPLIER
+export const marketListingPriceOf = (player: Pick<Player, 'salary'>): number =>
+  player.salary * MARKET_LISTING_SALARY_MULTIPLIER
+
 /**
  * Gera o fluxo de eventos da partida.
  * KickOff → eventos minuto a minuto → FullTime.

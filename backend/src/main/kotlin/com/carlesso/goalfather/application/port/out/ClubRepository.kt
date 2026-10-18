@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.port.out
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.TrainingFocus
 
 /**
  * Port de saída — define como o domínio acessa clubes. A implementação
@@ -28,6 +29,18 @@ interface ClubRepository {
      * decidir entre devolver conflito ou reler e reaplicar.
      */
     suspend fun save(club: Club): ClubSaveResult
+
+    /**
+     * Substitui o preço do ingresso num UPDATE só dessa coluna (revisão do PR
+     * #92), sem ler-modificar-gravar o agregado: não conflita com ninguém e não
+     * pisa nas outras colunas. A versão é incrementada mesmo assim, para que um
+     * `save` concorrente baseado numa leitura anterior ainda receba `Conflict`.
+     * Devolve o clube relido, ou `null` se ele não existe.
+     */
+    suspend fun updateTicketPrice(id: ClubId, ticketPriceCents: Long): Club?
+
+    /** Mesmo contrato de [updateTicketPrice], para o foco de treino da semana. */
+    suspend fun updateTrainingFocus(id: ClubId, focus: TrainingFocus): Club?
 }
 
 /**

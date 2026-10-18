@@ -4,6 +4,7 @@ import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
@@ -12,6 +13,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,6 +26,7 @@ class SellPlayerServiceTest {
     private val service = SellPlayerService(
         clubRepo, marketRepo,
         salePriceCalc = { 200_000_00 }, // fixo para determinismo
+        listingPriceCalc = { 300_000_00 },
     )
 
     @Test
@@ -77,5 +80,22 @@ class SellPlayerServiceTest {
 
         assertIs<TransferResult.Conflict>(result)
         coVerify(exactly = 0) { marketRepo.add(any()) }
+    }
+
+    @Test
+    fun `o jogador vendido e anunciado pelo preco de anuncio, acima do que o clube recebeu`() = runTest {
+        // Recebe 200k e anuncia por 300k: quem recompra paga mais do que o
+        // vendedor ganhou — sem arbitragem compra/venda (revisão do PR #92).
+        val club = makeClub(cash = 500_000_00, squadSize = 11)
+        coEvery { clubRepo.findById(ClubId(1)) } returns club
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
+        val listed = slot<MarketEntry>()
+        coEvery { marketRepo.add(capture(listed)) } just Runs
+
+        val result = service.execute(ClubId(1), club.squad.first().id)
+
+        assertIs<TransferResult.Success>(result)
+        assertEquals(700_000_00, result.club.cash)
+        assertEquals(300_000_00, listed.captured.price)
     }
 }

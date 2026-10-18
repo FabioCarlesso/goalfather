@@ -2,7 +2,6 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
-import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.result.TrainingFocusResult
@@ -13,28 +12,19 @@ import com.carlesso.goalfather.domain.result.TrainingFocusResult
  * da rodada (`PlayRoundService`), não aqui — mesma separação do departamento
  * médico com `FitnessRules`.
  *
- * Repetir o foco que já está gravado não persiste nada: o `save` evita uma
+ * Repetir o foco que já está gravado não persiste nada: evita uma
  * escrita (e um bump de `@Version`) que não muda nada.
  *
- * **Retry automático no conflito (issue #89)**, pelo mesmo motivo do preço do
- * ingresso: escolher o foco é substituição idempotente, então reler o clube e
- * reaplicar a escolha é seguro — e não desfaz o que a escrita concorrente
- * (tipicamente a virada da rodada) gravou.
+ * **Sem conflito possível (issue #89, revisão do PR #92)**, pelo mesmo motivo
+ * do preço do ingresso: escolher o foco é substituir uma coluna, gravada por
+ * `updateTrainingFocus` num UPDATE atômico — sem pisar no que a escrita
+ * concorrente (tipicamente a virada da rodada) gravou, e sem perder para ela.
  */
 class SetTrainingFocusService(
     private val clubRepo: ClubRepository,
 ) : SetTrainingFocusUseCase {
 
     override suspend fun execute(
-        clubId: ClubId,
-        requesterId: Long,
-        focus: TrainingFocus,
-    ): TrainingFocusResult =
-        retryOnConflict(isConflict = { it is TrainingFocusResult.Conflict }) {
-            attempt(clubId, requesterId, focus)
-        }
-
-    private suspend fun attempt(
         clubId: ClubId,
         requesterId: Long,
         focus: TrainingFocus,
@@ -50,9 +40,8 @@ class SetTrainingFocusService(
             return TrainingFocusResult.Success(club)
         }
 
-        return when (val saved = clubRepo.save(club.copy(trainingFocus = focus))) {
-            is ClubSaveResult.Saved -> TrainingFocusResult.Success(saved.club)
-            is ClubSaveResult.Conflict -> TrainingFocusResult.Conflict(saved.clubId)
-        }
+        return clubRepo.updateTrainingFocus(clubId, focus)
+            ?.let { TrainingFocusResult.Success(it) }
+            ?: TrainingFocusResult.ClubNotFound(clubId)
     }
 }

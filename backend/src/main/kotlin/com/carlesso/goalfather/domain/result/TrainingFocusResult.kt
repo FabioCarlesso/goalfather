@@ -31,13 +31,4 @@ sealed interface TrainingFocusResult {
     @Serializable
     @SerialName("NotOwner")
     data class NotOwner(val clubId: ClubId) : TrainingFocusResult
-
-    /**
-     * Outra escrita alterou o clube entre a leitura e a gravação (lock otimista,
-     * issue #89) — nada foi gravado, mesmo depois das releituras automáticas.
-     * Controller mapeia 409 `CLUB_WRITE_CONFLICT`.
-     */
-    @Serializable
-    @SerialName("Conflict")
-    data class Conflict(val clubId: ClubId) : TrainingFocusResult
 }

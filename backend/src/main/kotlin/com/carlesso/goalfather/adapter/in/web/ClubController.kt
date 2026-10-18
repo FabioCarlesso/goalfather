@@ -187,7 +187,6 @@ class ClubController(
             is TrainingFocusResult.NotOwner -> ResponseEntity.status(403).body(
                 ErrorResponse(code = "FORBIDDEN", message = "Você não é dono deste clube"),
             )
-            is TrainingFocusResult.Conflict -> clubWriteConflict(result.clubId)
         }
 
     /**
@@ -217,7 +216,6 @@ class ClubController(
                         "(${result.min}..${result.max} centavos)",
                 ),
             )
-            is TicketPriceResult.Conflict -> clubWriteConflict(result.clubId)
         }
 
     /**

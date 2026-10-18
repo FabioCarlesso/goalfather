@@ -49,6 +49,20 @@ interface ClubJpaRepository : JpaRepository<ClubEntity, Long> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update ClubEntity c set c.version = c.version + 1 where c.id = :id and c.version = :expected")
     fun compareAndIncrementVersion(@Param("id") id: Long, @Param("expected") expected: Long): Int
+
+    /**
+     * Ajustes de UMA coluna (preço do ingresso, foco de treino): UPDATE atômico
+     * que não depende de leitura prévia, então não há o que conflitar. Também
+     * incrementa a versão — quem leu o clube antes e grava via `save` precisa
+     * enxergar que ele mudou. Devolve as linhas afetadas (`0` = não existe).
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update ClubEntity c set c.ticketPriceCents = :price, c.version = c.version + 1 where c.id = :id")
+    fun updateTicketPrice(@Param("id") id: Long, @Param("price") price: Long): Int
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update ClubEntity c set c.trainingFocus = :focus, c.version = c.version + 1 where c.id = :id")
+    fun updateTrainingFocus(@Param("id") id: Long, @Param("focus") focus: String): Int
 }
 
 interface UserJpaRepository : JpaRepository<UserEntity, Long> {

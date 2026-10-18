@@ -475,8 +475,10 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
     inviável com os ports `suspend` por agregado.
   - *Durabilidade — resíduo em aberto:* a ordem é claim (marca `Finished`) →
     efeitos, ou seja *at-most-once* (nunca dobra; podia dobrar antes). O bloco de
-    efeitos roda em `withContext(NonCancellable)`, então **fechar a aba do WS**
-    logo após o FullTime não rasga a finalização no meio. O que **não** está
+    efeitos roda em `withContext(NonCancellable)`, e o `RoundWebSocketHandler`
+    não cancela o stream quando o cliente sai: com a aba fechada a qualquer
+    momento, a rodada termina no servidor sem pacing (antes ficava `InProgress`
+    até alguém reconectar, e o cancelamento ainda era logado como `ERROR`). O que **não** está
     coberto é um **crash de processo** entre o claim e o fim dos efeitos: deixaria
     a rodada `Finished` com efeitos parciais e sem sucessora, e todo stream
     seguinte cairia no replay (a liga travaria). Recuperação (rodada `Finished`
@@ -884,9 +886,17 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   `@Version` continua como rede de segurança; qualquer `ConcurrencyFailureException`
   vira o mesmo `Conflict` no adapter — nenhum controller vê exception de lock.
 - **Quem reaplica e quem devolve conflito:**
-  - *Substituição de ajuste* (escalação, foco de treino, preço do ingresso):
-    retry automático (`retryOnConflict`, até 3 tentativas) — relê, **revalida**
-    (posse, faixa, lesões) e reaplica. Idempotente, então é seguro.
+  - *Ajuste de uma coluna* (preço do ingresso, foco de treino): nem passa pelo
+    read-modify-write. `updateTicketPrice`/`updateTrainingFocus` são UPDATEs
+    atômicos só daquela coluna, que também sobem a versão. **Nunca conflitam**,
+    não pisam nas outras colunas, e uma escrita concorrente baseada em leitura
+    anterior (ampliar, comprar) ainda recebe `Conflict`. Na revisão do PR #92,
+    a versão com retry ainda devolvia 409 em ~4% das requisições sob 4
+    escritores contínuos no mesmo clube.
+  - *Escalação*: substitui o ajuste, mas é validada contra o elenco (lesões,
+    vendas). Usa retry automático (`retryOnConflict`, até 4 tentativas com
+    backoff exponencial + *jitter*, para o perdedor não recolidir na hora com o
+    mesmo escritor): relê, **revalida** e reaplica.
   - *Efeito acumulado sobre o caixa* (ampliar estádio, departamento médico,
     compra, venda): devolve `Conflict` → 409 `CLUB_WRITE_CONFLICT` (ou a
     variante `Conflict` do `TransferResult` no mercado). O técnico decidiu com o
@@ -896,7 +906,8 @@ o `save` precisa comparar com a versão **da leitura do use case**:
     basta não anunciar.
   - *Virada da rodada*: não tem a quem devolver 409. `saveReapplying` relê o
     clube e recalcula os efeitos (caixa como **delta**, elenco pelos RNGs
-    semeados por rodada + clube, logo determinístico), até 5 tentativas.
+    semeados por rodada + clube, logo determinístico), até 5 tentativas com o
+    mesmo backoff.
     Esgotar é contenção patológica — único caso que vira exception.
 - **Pessimista (preterido):** `SELECT ... FOR UPDATE` serializaria tudo, mas a
   leitura do use case acontece numa transação anterior à do `save`, então o
@@ -917,7 +928,7 @@ o `save` precisa comparar com a versão **da leitura do use case**:
 | Cache | Caffeine |
 | Async/Stream | Kotlin Coroutines + Flow |
 | Serialização | kotlinx.serialization |
-| Docs API | springdoc-openapi (Swagger) |
+| Docs API | Swagger UI (webjar) servindo o `contract/openapi.yaml` em `/swagger-ui.html` — sem springdoc: o contrato é escrito à mão e é a fonte de verdade |
 | Testes (backend) | JUnit 5, kotlin.test, MockK, `kotlinx-coroutines-test` |
 | Frontend | Vite + React 18 + TypeScript (strict) |
 | Estilo | Tailwind CSS |
@@ -935,7 +946,7 @@ o `save` precisa comparar com a versão **da leitura do use case**:
 ## 10. Primeiros passos práticos
 
 **Backend (em série):**
-1. **`start.spring.io`** → Gradle Kotlin DSL, JVM 21, deps: Web, Data JPA, PostgreSQL Driver, Validation, Actuator. Adicione coroutines, MockK e springdoc manualmente.
+1. **`start.spring.io`** → Gradle Kotlin DSL, JVM 21, deps: Web, Data JPA, PostgreSQL Driver, Validation, Actuator. Adicione coroutines, MockK e o webjar do Swagger UI manualmente (o contrato é escrito à mão — sem springdoc gerando spec dos controllers).
 2. Crie **primeiro o módulo `domain`** e escreva a engine + testes **antes** de qualquer controller. Isso força a separação e dá retorno rápido de aprendizado.
 3. Só depois suba a camada Spring ao redor do domínio já testado.
 

@@ -29,7 +29,12 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      # Contexto nomeado: o contrato (fora de ./backend) entra no jar para o
+      # Swagger UI em /swagger-ui.html — ver backend/Dockerfile.
+      additional_contexts:
+        contract: ./contract
     # `dev,postgres`, não `prod`: este stack usa Postgres mas NÃO é produção
     # (credenciais fixas, portas abertas ao host). Ativar `prod` só para trocar
     # o datasource fazia o JwtSecretGuard (#30) derrubar o boot, porque o

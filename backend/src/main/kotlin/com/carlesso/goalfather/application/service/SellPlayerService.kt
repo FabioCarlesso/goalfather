@@ -9,17 +9,21 @@ import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
+import com.carlesso.goalfather.domain.rules.marketListingPrice
+import com.carlesso.goalfather.domain.rules.salePayout
 
 /**
- * Implementação de `SellPlayerUseCase`. O preço de venda é função do
- * `Player` — injetada como parâmetro para que testes consigam fixar
- * resultados, e regras futuras (idade, lesão, mercado em alta) possam
- * trocar o cálculo sem mudar o use case.
+ * Implementação de `SellPlayerUseCase`. Os dois preços — o que o clube recebe
+ * e o do anúncio no mercado — são funções do `Player`, injetadas como
+ * parâmetro para que testes consigam fixar resultados. Os defaults vêm de
+ * `domain/rules/TransferRules`, onde o pagamento é sempre menor que o anúncio:
+ * comprar e revender o mesmo jogador não gera dinheiro.
  */
 class SellPlayerService(
     private val clubRepo: ClubRepository,
     private val marketRepo: MarketRepository,
-    private val salePriceCalc: (Player) -> Long = ::defaultSalePrice,
+    private val salePriceCalc: (Player) -> Long = ::salePayout,
+    private val listingPriceCalc: (Player) -> Long = ::marketListingPrice,
 ) : SellPlayerUseCase {
 
     override suspend fun execute(clubId: ClubId, playerId: PlayerId): TransferResult {
@@ -38,16 +42,10 @@ class SellPlayerService(
         // Na ordem inversa, um conflito deixaria o jogador no mercado E no clube.
         return when (val saved = clubRepo.save(updatedClub)) {
             is ClubSaveResult.Saved -> {
-                marketRepo.add(MarketEntry(player = player, price = salePrice))
+                marketRepo.add(MarketEntry(player = player, price = listingPriceCalc(player)))
                 TransferResult.Success(club = saved.club, player = player)
             }
             is ClubSaveResult.Conflict -> TransferResult.Conflict(saved.clubId)
         }
     }
 }
-
-/**
- * Default: R$ 100k × overall (em centavos). Mesmo cálculo que o mock
- * MSW do frontend usava — vira regra única quando o backend assumir.
- */
-fun defaultSalePrice(player: Player): Long = player.overall * 100_000_00L

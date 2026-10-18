@@ -27,6 +27,8 @@ info:
     email: fabio.carlesso@gmail.com
 
 servers:
+  - url: /
+    description: Mesma origem — Swagger UI servido pelo backend (`/swagger-ui.html`)
   - url: http://localhost:8080
     description: Backend Spring Boot local (bootRun)
   - url: http://localhost:5173
@@ -363,8 +365,6 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/ticket-price:
     put:
@@ -412,8 +412,6 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/market:
     get:
@@ -471,6 +469,11 @@ paths:
       tags: [Market]
       operationId: sellPlayer
       summary: Vender jogador do elenco
+      description: |
+        O clube recebe 8 salários do jogador, e ele vai ao mercado anunciado
+        por 12 salários (`domain/rules/TransferRules`, como no protótipo). O
+        pagamento é sempre menor que o anúncio: comprar e revender o mesmo
+        jogador dá prejuízo, nunca lucro.
       requestBody:
         required: true
         content:
@@ -856,10 +859,11 @@ components:
         entre a leitura e a gravação — tipicamente a virada da rodada
         creditando bilheteria ou outra aba do mesmo técnico — e NADA foi
         aplicado. `code` = `CLUB_WRITE_CONFLICT`. O cliente recarrega o clube
-        e o técnico decide de novo. Comandos que só substituem um ajuste
-        (escalação, foco de treino, preço do ingresso) já relêem e reaplicam
-        sozinhos antes de chegar aqui; os de efeito acumulado sobre o caixa
-        (ampliar estádio, departamento médico) devolvem o conflito direto.
+        e o técnico decide de novo. A escalação relê e reaplica sozinha (com
+        backoff) antes de chegar aqui; os comandos de efeito acumulado sobre o
+        caixa (ampliar estádio, departamento médico) devolvem o conflito
+        direto. Foco de treino e preço do ingresso nunca conflitam: são UPDATEs
+        atômicos de uma coluna.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }

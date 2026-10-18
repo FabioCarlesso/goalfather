@@ -143,10 +143,11 @@ class ClubOptimisticLockIntegrationTest {
     }
 
     @Test
-    fun `preco do ingresso concorrente com ampliacao - conflito no preco e reaplicado sem perder nada`() {
-        // Preço é idempotente: se perder a corrida, relê e reaplica (retry).
-        // Ampliação não: se perder, devolve Conflict. Qualquer que seja a ordem,
-        // o estado final tem de bater com os desfechos — nada some.
+    fun `preco do ingresso concorrente com ampliacao - o preco sempre entra e nada se perde`() {
+        // Preço é UPDATE atômico de coluna: nunca conflita. Ampliação é
+        // read-modify-write: se o preço mudou o clube depois da leitura dela,
+        // devolve Conflict. Qualquer que seja a ordem, o estado final tem de
+        // bater com os desfechos — nada some.
         val initial = newClub(960_005)
         val repo = ReadBarrierClubRepository(clubRepo, CyclicBarrier(2), serializeSaves = true)
         val expand = ExpandStadiumService(repo)
@@ -176,6 +177,24 @@ class ClubOptimisticLockIntegrationTest {
         } finally {
             pool.shutdownNow()
         }
+    }
+
+    @Test
+    fun `preco gravado por UPDATE de coluna sobe a versao e nunca conflita`() {
+        // Revisão do PR #92: sob martelada contínua, o preço (read-modify-write
+        // + retry) ainda esgotava as tentativas. Como UPDATE de uma coluna, 8
+        // threads gravando ao mesmo tempo nunca conflitam — e uma leitura feita
+        // antes delas fica velha: o `save` dela recebe Conflict.
+        val initial = newClub(960_007)
+        val stale = runBlocking { clubRepo.findById(initial.id)!! }
+
+        val prices = runConcurrently(8) { clubRepo.updateTicketPrice(initial.id, 70_00L) }
+
+        assertTrue(prices.all { it?.ticketPriceCents == 70_00L }, "toda gravação de preço entra")
+        val fresh = runBlocking { clubRepo.findById(initial.id)!! }
+        assertEquals(stale.version + 8, fresh.version, "cada UPDATE de coluna sobe a versão")
+        assertEquals(initial.cash, fresh.cash, "o preço não toca o caixa")
+        assertIs<ClubSaveResult.Conflict>(runBlocking { clubRepo.save(stale.copy(cash = 1)) })
     }
 
     /** Roda [block] em [threads] threads reais e devolve os desfechos. */

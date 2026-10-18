@@ -10,6 +10,7 @@ import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.TrainingFocus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -87,6 +88,12 @@ class ClubPersistenceAdapter(
             ClubSaveResult.Conflict(club.id)
         }
     }
+
+    override suspend fun updateTicketPrice(id: ClubId, ticketPriceCents: Long): Club? =
+        withContext(Dispatchers.IO) { saveTx.updateTicketPrice(id.value, ticketPriceCents) }
+
+    override suspend fun updateTrainingFocus(id: ClubId, focus: TrainingFocus): Club? =
+        withContext(Dispatchers.IO) { saveTx.updateTrainingFocus(id.value, focus.name) }
 }
 
 /**
@@ -149,5 +156,21 @@ class ClubSaveTransaction(
         }
 
         return ClubSaveResult.Saved(club.copy(version = saved.version))
+    }
+
+    /** UPDATE de coluna do preço + releitura, na mesma transação. */
+    @Transactional
+    fun updateTicketPrice(id: Long, ticketPriceCents: Long): Club? =
+        reloadIfUpdated(id, clubRepo.updateTicketPrice(id, ticketPriceCents))
+
+    /** UPDATE de coluna do foco de treino + releitura, na mesma transação. */
+    @Transactional
+    fun updateTrainingFocus(id: Long, focus: String): Club? =
+        reloadIfUpdated(id, clubRepo.updateTrainingFocus(id, focus))
+
+    private fun reloadIfUpdated(id: Long, updatedRows: Int): Club? {
+        if (updatedRows == 0) return null
+        val entity = clubRepo.findById(id).orElse(null) ?: return null
+        return entity.toDomain(playerRepo.findAllByClubId(id), json)
     }
 }

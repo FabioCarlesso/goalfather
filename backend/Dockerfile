@@ -14,6 +14,11 @@ COPY gradle ./gradle
 # de gravar um cache incompleto que faz o bootJar seguinte falhar sem explicação.
 RUN gradle --no-daemon dependencies
 
+# O contrato fica FORA de ./backend e entra pelo contexto nomeado `contract`
+# (compose: `additional_contexts`; à mão: `--build-context contract=./contract`).
+# O `processResources` o embute no jar como /openapi.yaml, servido ao Swagger
+# UI — e falha o build se ele não estiver aqui (`../contract` = /contract).
+COPY --from=contract openapi.yaml /contract/openapi.yaml
 COPY src ./src
 RUN gradle --no-daemon clean bootJar
 

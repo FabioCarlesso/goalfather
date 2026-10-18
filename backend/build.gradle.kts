@@ -51,6 +51,17 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
+    // ── Swagger UI (revisão do PR #92) ──────────────────────────────────────
+    //    Só a interface (webjar), sem springdoc: o contrato é escrito à mão e é
+    //    a única fonte de verdade (CLAUDE.md). Gerar uma segunda spec a partir
+    //    dos controllers abriria espaço para divergir dela. A página estática
+    //    `static/swagger-ui.html` carrega o `contract/openapi.yaml`, copiado
+    //    para dentro do jar pelo `processResources` abaixo. O locator-lite
+    //    (versão gerida pelo Boot) deixa a página referenciar o webjar sem
+    //    repetir a versão dele.
+    implementation("org.webjars:swagger-ui:5.17.14")
+    implementation("org.webjars:webjars-locator-lite")
+
     // Cache: abstração do Spring + Caffeine como provider (issue #13).
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("com.github.ben-manes.caffeine:caffeine")
@@ -99,6 +110,16 @@ tasks.test {
         events("passed", "failed", "skipped")
         exceptionFormat = TestExceptionFormat.FULL
     }
+}
+
+// O contrato entra no jar como `/openapi.yaml`, servido ao Swagger UI. Fonte
+// única: o arquivo de `contract/`, nunca uma cópia versionada em resources.
+// `inputs.file` faz o build FALHAR se o contrato não estiver lá (ex.: imagem
+// Docker sem o contexto `contract`), em vez de publicar um Swagger vazio.
+val contractFile = file("../contract/openapi.yaml")
+tasks.processResources {
+    inputs.file(contractFile).withPathSensitivity(PathSensitivity.RELATIVE)
+    from(contractFile) { into("static") }
 }
 
 // Spring Boot 3.4 + Servlet container embarcado (Tomcat) por padrao
