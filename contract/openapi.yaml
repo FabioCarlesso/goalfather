@@ -1054,6 +1054,11 @@ components:
         - trainingFocus
         # Idem: quem nunca mexeu no ingresso vem com R$ 50 (`5000`).
         - ticketPriceCents
+        # Escalação efetiva (issue #87): sempre derivável do elenco, então
+        # sempre presente — a UI nunca recalcula quem entra em campo.
+        - effectiveLineup
+        - lineupIsDefault
+        - lineupAdjusted
       properties:
         id:               { type: integer, format: int64 }
         name:             { type: string }
@@ -1065,6 +1070,26 @@ components:
         lineup:
           $ref: '#/components/schemas/Lineup'
           description: Escalação salva (pode estar incompleta)
+        effectiveLineup:
+          $ref: '#/components/schemas/Lineup'
+          description: |
+            Escalação EFETIVA (issue #87) — o time que a engine põe em campo se
+            a rodada começar agora. Sem escalação salva, é o 4-4-2 automático
+            com os 11 primeiros aptos do elenco; com escalação salva, é ela com
+            lesionados/vendidos trocados por reservas aptos, na ordem do elenco.
+            Pode ter menos de 11 se o elenco não tiver aptos suficientes. A regra
+            vive no backend (`Club.startingLineup()`); o cliente só exibe.
+        lineupIsDefault:
+          type: boolean
+          description: |
+            `true` quando não há escalação salva (`lineup` ausente) e
+            `effectiveLineup` é a automática.
+        lineupAdjusted:
+          type: boolean
+          description: |
+            `true` quando há escalação salva mas `effectiveLineup` difere dela
+            (titular lesionado ou vendido foi substituído). Sempre `false`
+            quando `lineupIsDefault` é `true`.
         ownerId:
           type: integer
           format: int64

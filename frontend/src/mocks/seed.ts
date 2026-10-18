@@ -24,6 +24,7 @@ import {
   MulberryRng,
   ageSquadOneSeason,
   DEFAULT_TICKET_PRICE_CENTS,
+  type EffectiveLineupFields,
   type SquadMember,
 } from './engine'
 import { canHoldCup, cupRound, drawCup, seasonCalendar } from './cup'
@@ -65,7 +66,14 @@ const initialSquad: Player[] = [
   player(11, 'João Faria',        'FW', 79, 26_000_00, 26),
 ]
 
-export const myClub: Club = {
+/**
+ * Clube como o mock o GUARDA: sem os campos derivados da escalação efetiva
+ * (issue #87), que os handlers calculam na resposta (`toClubResponse`) — assim
+ * nenhum handler que muda elenco ou escalação pode esquecer de recalculá-los.
+ */
+export type StoredClub = Omit<Club, keyof EffectiveLineupFields>
+
+export const myClub: StoredClub = {
   id: 1,
   name: 'Goal Father FC',
   cash: 800_000_00,
@@ -343,7 +351,7 @@ export function calendar(): RoundStage[] {
 
 // Estado mutável — mocks alteram aqui para simular persistência durante a sessão.
 export const state = {
-  clubs: { [myClub.id]: myClub } as Record<number, Club>,
+  clubs: { [myClub.id]: myClub } as Record<number, StoredClub>,
   market: [...marketEntries] as MarketEntry[],
   standings: initialStandings.map((s) => ({ ...s, rows: [...s.rows] })) as Standings[],
   // Temporadas encerradas, da mais recente para a mais antiga (issue #60).
