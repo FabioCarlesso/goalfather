@@ -97,6 +97,12 @@ docker compose up --build
 
 > **Contexto de build do frontend é a raiz do repo**, não `frontend/` — a imagem precisa de `contract/openapi.yaml` para rodar o `gen:api` durante o build. Ou seja: `docker build -f frontend/Dockerfile .` (a partir da raiz), nunca `docker build ./frontend`. Assim os tipos TS saem **sempre** do contrato; o `src/api/generated.d.ts` é um artefato derivado e gitignorado, e nunca entra na imagem (issue #65).
 
+> **O backend também precisa do contrato**, que vira o Swagger UI em `/swagger-ui.html`. Ele entra como contexto nomeado (o compose já faz isso via `additional_contexts`). À mão: `docker build --build-context contract=./contract ./backend`.
+
+### 3.2. Swagger UI
+
+Com o backend no ar, abra `http://localhost:8080/swagger-ui.html` (no `bootRun`; no Docker, `http://localhost:8081/swagger-ui.html`). A página mostra o **próprio `contract/openapi.yaml`**, que o build copia para `/openapi.yaml`. Não há uma spec gerada dos controllers, então a documentação não diverge do contrato. Para testar as rotas protegidas: `POST /api/auth/register` (ou `login`) → copie o `token` → **Authorize**.
+
 ### 4. Autenticação (Fase 5)
 
 A partir da Fase 5 a API exige **JWT** em `/api/**` (exceto `/api/auth/register` e `/api/auth/login`). O fluxo do usuário é: **cadastrar/entrar → escolher um clube sem dono (`/select-club`) → dashboard**.
@@ -149,7 +155,7 @@ Além das métricas de JVM/HTTP que o Micrometer já fornece, instrumentamos os 
 |---|---|---|
 | `goalfather_round_simulation_seconds` | timer | duração da simulação de uma rodada inteira: soma do tempo da engine (`simulate`) em todas as partidas — sem o I/O de repositório (busca dos clubes) nem o *pacing* do WebSocket |
 | `goalfather_match_simulation_seconds` | timer | duração da simulação de uma partida (drill-down `/ws/matches/{id}`) |
-| `goalfather_market_transfers_total{result}` | counter | compras no mercado por desfecho: `success`, `conflict` (jogador já levado — lock otimista da #21), `insufficient_funds`, `squad_full` |
+| `goalfather_market_transfers_total{result}` | counter | compras no mercado por desfecho: `success`, `conflict` (jogador já levado — lock otimista da #21), `club_conflict` (o clube comprador mudou entre a leitura e a gravação — lock otimista da #89; o jogador volta ao mercado), `insufficient_funds`, `squad_full` |
 | `goalfather_auth_logins_total{result}` | counter | tentativas de login por desfecho: `success`, `failure` |
 
 > Os counters aparecem no scrape **após o primeiro evento** de cada tipo (Micrometer os cria sob demanda); os timers já aparecem no boot com contagem zero.

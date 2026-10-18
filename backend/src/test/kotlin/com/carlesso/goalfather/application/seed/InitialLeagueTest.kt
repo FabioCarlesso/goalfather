@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.seed
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.rules.salePayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -23,6 +24,19 @@ class InitialLeagueTest {
         val names = league.clubs.flatMap { c -> c.squad.map { it.name } } + league.market.map { it.player.name }
         val duplicates = names.groupingBy { it }.eachCount().filterValues { it > 1 }
         assertTrue(duplicates.isEmpty(), "nomes repetidos: $duplicates")
+    }
+
+    @Test
+    fun `nenhum jogador do mercado inicial pode ser revendido com lucro`() {
+        // Os preços do seed são escritos à mão; o pagamento da venda sai de
+        // `TransferRules`. Se um preço de seed ficar abaixo do pagamento,
+        // volta a arbitragem compra → venda corrigida na revisão do PR #92.
+        for (entry in league.market) {
+            assertTrue(
+                entry.price > salePayout(entry.player),
+                "${entry.player.name}: compra ${entry.price}, venda ${salePayout(entry.player)}",
+            )
+        }
     }
 
     @Test

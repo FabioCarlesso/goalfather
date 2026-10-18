@@ -28,9 +28,13 @@ fun ClubEntity.toDomain(squadEntities: List<PlayerEntity>, json: Json): Club = C
     // entra pela borda mais próxima em vez de derrubar a leitura do clube —
     // e a próxima gravação já normaliza a linha.
     ticketPriceCents = ticketPriceCents.coerceIn(TICKET_PRICE_RANGE),
+    // A versão LIDA sobe para o domínio (issue #89) e volta no `save`, que a
+    // compara com a do banco — sem isso o lock otimista não protege nada.
+    version = version,
 )
 
 // NOTA: NÃO existe `Club.toEntity` de propósito. Persistir um clube deve
-// CARREGAR a entidade gerenciada e copiar os campos (ver ClubPersistenceAdapter),
-// preservando o @Version do lock otimista. Mapear para uma entidade nova
-// (version=0) causa StaleObjectStateException após o claim (issue #19).
+// CARREGAR a entidade gerenciada e copiar os campos (ver ClubPersistenceAdapter):
+// mapear para uma entidade nova (version=0) causava StaleObjectStateException
+// após o claim (issue #19). A checagem de versão é feita explicitamente lá,
+// contra `Club.version` (issue #89).

@@ -96,6 +96,11 @@ function TransferFeedback({
       title = 'Jogador indisponível'
       body  = `Jogador #${result.playerId} não está mais à venda.`
       break
+    case 'Conflict':
+      color = 'border-amber-700/50 bg-amber-900/20 text-amber-200'
+      title = 'Clube alterado ao mesmo tempo'
+      body  = 'Outra operação mexeu no clube agora há pouco; nada foi aplicado. Tente de novo.'
+      break
   }
 
   return (

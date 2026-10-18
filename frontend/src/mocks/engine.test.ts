@@ -8,6 +8,8 @@ import {
   EMPTY_MATCH_STATS,
   type MatchSetup,
   type SquadMember,
+  salePayoutOf,
+  marketListingPriceOf,
 } from './engine'
 import type { MatchEvent, Position, Posture } from '../domain/types'
 
@@ -323,5 +325,18 @@ describe('averageOverall', () => {
 
   it('default para 60 em elenco vazio', () => {
     expect(averageOverall([])).toBe(60)
+  })
+})
+
+describe('preços do mercado (espelha TransferRules.kt)', () => {
+  it('venda paga 8 salários e o anúncio cobra 12', () => {
+    expect(salePayoutOf({ salary: 23_000_00 })).toBe(184_000_00)
+    expect(marketListingPriceOf({ salary: 23_000_00 })).toBe(276_000_00)
+  })
+
+  it('comprar e revender o mesmo jogador nunca dá lucro', () => {
+    for (const salary of [1, 10_000_00, 55_000_00]) {
+      expect(salePayoutOf({ salary })).toBeLessThan(marketListingPriceOf({ salary }))
+    }
   })
 })

@@ -140,6 +140,11 @@ sealed interface TransferResultDto {
     @Serializable
     @SerialName("PlayerNotAvailable")
     data class PlayerNotAvailable(val playerId: Long) : TransferResultDto
+
+    /** Lock otimista do clube (issue #89) — contrato `TransferConflict`. */
+    @Serializable
+    @SerialName("Conflict")
+    data class Conflict(val clubId: Long) : TransferResultDto
 }
 
 // ─── Mapeamento domínio → DTO ─────────────────────────────────────────────
@@ -214,4 +219,7 @@ fun TransferResult.toDto(): TransferResultDto = when (this) {
 
     is TransferResult.PlayerNotAvailable ->
         TransferResultDto.PlayerNotAvailable(playerId = playerId.value)
+
+    is TransferResult.Conflict ->
+        TransferResultDto.Conflict(clubId = clubId.value)
 }

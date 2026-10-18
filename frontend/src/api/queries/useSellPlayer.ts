@@ -21,6 +21,9 @@ export function useSellPlayer() {
         qc.invalidateQueries({ queryKey: marketKey })
       } else {
         toast.error(transferErrorMessage(result))
+        // Lock otimista do clube (issue #89): nada foi aplicado, mas o clube em
+        // cache está velho — recarrega para o técnico decidir sobre o atual.
+        if (result.type === 'Conflict') qc.invalidateQueries({ queryKey: clubKey(vars.clubId) })
       }
     },
   })

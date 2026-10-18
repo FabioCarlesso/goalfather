@@ -2,11 +2,10 @@ package com.carlesso.goalfather.adapter.`in`.web.ws
 
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.domain.event.RoundEvent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -15,7 +14,6 @@ import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Handler do WebSocket `/ws/round/{number}`. Sobe quando o cliente abre
@@ -27,7 +25,12 @@ import java.util.concurrent.ConcurrentHashMap
  * intercalamos delay proporcional ao minuto entre mensagens, mantendo
  * a sensacao de partida ao vivo.
  *
- * Ciclo de vida: SupervisorJob por sessao; cancelado em afterConnectionClosed.
+ * Ciclo de vida: a coroutine da sessão NÃO é cancelada quando o cliente sai.
+ * O stream é o que encerra a rodada (claim `finishRound` + efeitos, depois do
+ * último FullTime); cancelá-lo no meio deixava a rodada `InProgress` até
+ * alguém reconectar. Sem ninguém assistindo, o pacing perde o sentido: os
+ * delays e os envios são pulados e a rodada termina em milissegundos.
+ * Reconexões concorrentes continuam seguras — só um stream vence o claim.
  */
 class RoundWebSocketHandler(
     private val playRound: PlayRoundUseCase,
@@ -35,7 +38,6 @@ class RoundWebSocketHandler(
 ) : TextWebSocketHandler() {
 
     private val log = LoggerFactory.getLogger(RoundWebSocketHandler::class.java)
-    private val jobs = ConcurrentHashMap<String, Job>()
 
     companion object {
         const val MS_PER_MINUTE: Long = 80
@@ -51,7 +53,7 @@ class RoundWebSocketHandler(
         log.info("WS round connected: session={} round={}", session.id, number)
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val job = scope.launch {
+        scope.launch {
             try {
                 var lastMinute = 0
                 playRound.stream(number).collect { event ->
@@ -66,7 +68,9 @@ class RoundWebSocketHandler(
                         is RoundEvent.RoundFinished -> 50L
                         is RoundEvent.SeasonFinished -> 50L
                     }
-                    if (delayMs > 0) kotlinx.coroutines.delay(delayMs)
+                    // Pacing só para quem está assistindo: com a aba fechada, a
+                    // rodada corre até o fim sem esperar (ver KDoc da classe).
+                    if (delayMs > 0 && session.isOpen) kotlinx.coroutines.delay(delayMs)
                     if (session.isOpen) {
                         val payload = json.encodeToString(RoundEvent.serializer(), event)
                         session.sendMessage(TextMessage(payload))
@@ -76,6 +80,11 @@ class RoundWebSocketHandler(
                     kotlinx.coroutines.delay(50)
                     session.close(CloseStatus.NORMAL.withReason("Rodada encerrada"))
                 }
+            } catch (e: CancellationException) {
+                // Cancelamento é fluxo normal de coroutine (ex.: shutdown), não
+                // erro: relança sem logar ERROR. Precisa vir antes do `Exception`
+                // genérico, que o engoliria.
+                throw e
             } catch (e: IllegalArgumentException) {
                 log.warn("Round invalida: {}", e.message)
                 session.close(CloseStatus.SERVER_ERROR.withReason(e.message ?: "Erro"))
@@ -84,11 +93,10 @@ class RoundWebSocketHandler(
                 if (session.isOpen) session.close(CloseStatus.SERVER_ERROR)
             }
         }
-        jobs[session.id] = job
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
-        jobs.remove(session.id)?.cancel()
+        // Sem cancel de propósito: a rodada termina no servidor (KDoc da classe).
         log.info("WS round closed: session={} status={}", session.id, status)
     }
 

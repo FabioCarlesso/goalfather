@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.MarketEntry
@@ -9,8 +10,10 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
@@ -34,7 +37,7 @@ class BuyPlayerServiceTest {
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns entry
         coEvery { marketRepo.claim(PlayerId(99)) } returns true
         val savedClub = slot<com.carlesso.goalfather.domain.model.Club>()
-        coEvery { clubRepo.save(capture(savedClub)) } answers { savedClub.captured }
+        coEvery { clubRepo.save(capture(savedClub)) } answers { ClubSaveResult.Saved(savedClub.captured) }
 
         val result = service.execute(ClubId(1), PlayerId(99))
 
@@ -114,5 +117,25 @@ class BuyPlayerServiceTest {
         val result = service.execute(ClubId(1), PlayerId(99))
 
         assertIs<TransferResult.PlayerNotAvailable>(result)
+    }
+
+    @Test
+    fun `conflito no clube devolve o jogador ao mercado e volta como valor (issue 89)`() = runTest {
+        // O claim já tirou o jogador do mercado; se o save do clube perde o lock
+        // otimista, sem compensação o jogador sumiria (fora do mercado e de
+        // qualquer elenco).
+        val target = makePlayer(99, Position.FW, overall = 88)
+        val entry = MarketEntry(player = target, price = 400_000_00)
+        coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(cash = 1_000_000_00)
+        coEvery { marketRepo.findEntry(PlayerId(99)) } returns entry
+        coEvery { marketRepo.claim(PlayerId(99)) } returns true
+        coEvery { clubRepo.save(any()) } returns ClubSaveResult.Conflict(ClubId(1))
+        coEvery { marketRepo.add(any()) } just Runs
+
+        val result = service.execute(ClubId(1), PlayerId(99))
+
+        assertIs<TransferResult.Conflict>(result)
+        assertEquals(ClubId(1), result.clubId)
+        coVerify(exactly = 1) { marketRepo.add(entry) }
     }
 }

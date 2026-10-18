@@ -38,4 +38,13 @@ sealed interface ExpandStadiumResult {
     @Serializable
     @SerialName("InsufficientFunds")
     data class InsufficientFunds(val available: Long, val required: Long) : ExpandStadiumResult
+
+    /**
+     * Outra escrita alterou o clube entre a leitura e a gravação (lock otimista,
+     * issue #89) — nada foi aplicado: nem caixa debitado, nem assentos.
+     * Controller mapeia 409 `CLUB_WRITE_CONFLICT`.
+     */
+    @Serializable
+    @SerialName("Conflict")
+    data class Conflict(val clubId: ClubId) : ExpandStadiumResult
 }

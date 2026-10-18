@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.`in`.web.ws
 
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.domain.event.MatchEvent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,6 +63,11 @@ class MatchWebSocketHandler(
                     kotlinx.coroutines.delay(50)
                     session.close(CloseStatus.NORMAL.withReason("Partida encerrada"))
                 }
+            } catch (e: CancellationException) {
+                // Aba fechada → `afterConnectionClosed` cancela o job. É o fim
+                // normal do drill-down (que não grava nada), não um erro: relança
+                // sem logar ERROR. Antes do `Exception` genérico, que o engoliria.
+                throw e
             } catch (e: IllegalArgumentException) {
                 log.warn("Partida invalida: {}", e.message)
                 session.close(CloseStatus.SERVER_ERROR.withReason(e.message ?: "Erro"))

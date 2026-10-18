@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.out.persistence
 
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.User
@@ -95,7 +96,7 @@ class ClaimClubIntegrationTest {
         assertIs<ClaimResult.Success>(claimRepo.claim(clubId, user.id))
 
         val club = clubRepo.findById(clubId)!!
-        clubRepo.save(club.copy(stadiumCapacity = club.stadiumCapacity + 1000))
+        assertIs<ClubSaveResult.Saved>(clubRepo.save(club.copy(stadiumCapacity = club.stadiumCapacity + 1000)))
 
         assertEquals(club.stadiumCapacity + 1000, clubRepo.findById(clubId)!!.stadiumCapacity)
     }

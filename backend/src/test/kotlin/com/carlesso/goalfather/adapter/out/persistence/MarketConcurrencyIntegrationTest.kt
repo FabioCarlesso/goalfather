@@ -7,6 +7,7 @@ import com.carlesso.goalfather.adapter.out.persistence.repository.MarketEntryJpa
 import com.carlesso.goalfather.adapter.out.persistence.repository.PlayerJpaRepository
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
@@ -42,7 +43,7 @@ class MarketConcurrencyIntegrationTest {
 
     /** Cria um clube comprador vazio, com caixa de sobra para a compra. */
     private fun newBuyerClub(id: Long): ClubId = runBlocking {
-        clubRepo.save(
+        val saved = clubRepo.save(
             Club(
                 id = ClubId(id),
                 name = "Buyer $id",
@@ -50,7 +51,8 @@ class MarketConcurrencyIntegrationTest {
                 stadiumCapacity = 10_000,
                 squad = emptyList(),
             ),
-        ).id
+        )
+        assertIs<ClubSaveResult.Saved>(saved).club.id
     }
 
     /** Coloca um jogador livre (clubId = null) no mercado e devolve seu id. */

@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.result.MedicalResult
 import com.carlesso.goalfather.domain.rules.MEDICAL_DEPARTMENT_COST_CENTS
@@ -38,6 +39,11 @@ class TreatSquadService(
             squad = applyMedicalTreatment(club.squad),
         )
 
-        return MedicalResult.Success(clubRepo.save(treated))
+        // Sem retry automático (issue #89), pelo mesmo motivo da ampliação do
+        // estádio: a taxa é um débito acumulado sobre o caixa que o técnico viu.
+        return when (val saved = clubRepo.save(treated)) {
+            is ClubSaveResult.Saved -> MedicalResult.Success(saved.club)
+            is ClubSaveResult.Conflict -> MedicalResult.Conflict(saved.clubId)
+        }
     }
 }

@@ -45,6 +45,8 @@ import {
   MEDICAL_DEPARTMENT_COST_CENTS,
   STADIUM_SEAT_COST_CENTS,
   MIN_STADIUM_EXPANSION_SEATS,
+  salePayoutOf,
+  marketListingPriceOf,
   type SquadMember,
   type TeamTactics,
 } from './engine'
@@ -440,14 +442,13 @@ export const handlers = [
       )
     }
 
-    const salePrice = player.overall * 100_000_00 // R$ 100k * overall (mock)
     const updatedClub: StoredClub = {
       ...club,
-      cash: club.cash + salePrice,
+      cash: club.cash + salePayoutOf(player),
       squad: club.squad.filter((p) => p.id !== body.playerId),
     }
     state.clubs[body.clubId] = updatedClub
-    state.market = [...state.market, { player, price: salePrice }]
+    state.market = [...state.market, { player, price: marketListingPriceOf(player) }]
 
     return HttpResponse.json(
       { type: 'Success', club: toClubResponse(updatedClub), player } satisfies TransferResult,

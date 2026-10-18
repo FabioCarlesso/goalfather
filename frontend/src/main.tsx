@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { App } from './App.tsx'
-import { errorMessage } from './api/errorMessages'
+import { errorMessage, isClubWriteConflict } from './api/errorMessages'
 import './index.css'
 
 // Tratamento global de erros/sucessos via toast (issue #6). Centralizado nos
@@ -27,7 +27,13 @@ const queryClient = new QueryClient({
     },
   }),
   mutationCache: new MutationCache({
-    onError: (error) => toast.error(errorMessage(error)),
+    onError: (error) => {
+      toast.error(errorMessage(error))
+      // Conflito de lock otimista (issue #89): outra operação mudou o clube e
+      // nada foi aplicado. Recarrega os clubes em cache para o técnico decidir
+      // de novo sobre o estado atual, não sobre o caixa velho da tela.
+      if (isClubWriteConflict(error)) queryClient.invalidateQueries({ queryKey: ['club'] })
+    },
     // Toast verde quando a mutation declara `meta.successMessage` (ex.:
     // escalação, ampliação). Compra/venda tratam o sucesso no próprio hook,
     // pois o resultado de negócio vive no payload (TransferResult).

@@ -16,10 +16,20 @@ const MESSAGES: Record<string, string> = {
   INVALID_LINEUP: 'Escalação inválida — jogadores fora do elenco.',
   DUPLICATE_PLAYERS: 'Escalação inválida — o mesmo jogador está em mais de uma vaga.',
   INVALID_STADIUM_EXPANSION: `A ampliação mínima é de ${formatSeats(MIN_STADIUM_EXPANSION_SEATS)} assentos.`,
+  // Lock otimista do clube (issue #89): nada foi aplicado.
+  CLUB_WRITE_CONFLICT: 'O clube foi alterado por outra operação ao mesmo tempo. Confira os dados e tente de novo.',
   NOT_FOUND: 'Recurso não encontrado.',
   MALFORMED_REQUEST: 'Requisição inválida — os dados enviados não puderam ser lidos.',
   INVALID_PARAMETER: 'Parâmetro inválido na requisição.',
   INTERNAL_ERROR: 'Erro no servidor. Tente novamente em instantes.',
+}
+
+/**
+ * 409 do lock otimista do clube (issue #89): nada foi aplicado e o clube em
+ * cache ficou velho — quem trata o erro deve recarregá-lo.
+ */
+export function isClubWriteConflict(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409 && error.body?.code === 'CLUB_WRITE_CONFLICT'
 }
 
 /** Converte qualquer erro em uma mensagem legível para exibir ao usuário. */
@@ -50,5 +60,7 @@ export function transferErrorMessage(result: Exclude<TransferResult, { type: 'Su
       return `Elenco cheio — limite de ${result.maxSize} jogadores.`
     case 'PlayerNotAvailable':
       return `Jogador #${result.playerId} indisponível.`
+    case 'Conflict':
+      return 'O clube foi alterado por outra operação ao mesmo tempo — nada foi aplicado. Tente de novo.'
   }
 }

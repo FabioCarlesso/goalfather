@@ -27,6 +27,8 @@ info:
     email: fabio.carlesso@gmail.com
 
 servers:
+  - url: /
+    description: Mesma origem — Swagger UI servido pelo backend (`/swagger-ui.html`)
   - url: http://localhost:8080
     description: Backend Spring Boot local (bootRun)
   - url: http://localhost:5173
@@ -247,6 +249,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/stadium/expand:
     post:
@@ -291,6 +295,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/medical:
     post:
@@ -324,6 +330,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ClubWriteConflict'
 
   /api/clubs/{id}/training:
     post:
@@ -461,6 +469,11 @@ paths:
       tags: [Market]
       operationId: sellPlayer
       summary: Vender jogador do elenco
+      description: |
+        O clube recebe 8 salários do jogador, e ele vai ao mercado anunciado
+        por 12 salários (`domain/rules/TransferRules`, como no protótipo). O
+        pagamento é sempre menor que o anúncio: comprar e revender o mesmo
+        jogador dá prejuízo, nunca lucro.
       requestBody:
         required: true
         content:
@@ -837,6 +850,20 @@ components:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     Unauthorized:
       description: Token ausente ou inválido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    ClubWriteConflict:
+      description: |
+        Lock otimista do clube (issue #89): outra operação alterou o clube
+        entre a leitura e a gravação — tipicamente a virada da rodada
+        creditando bilheteria ou outra aba do mesmo técnico — e NADA foi
+        aplicado. `code` = `CLUB_WRITE_CONFLICT`. O cliente recarrega o clube
+        e o técnico decide de novo. A escalação relê e reaplica sozinha (com
+        backoff) antes de chegar aqui; os comandos de efeito acumulado sobre o
+        caixa (ampliar estádio, departamento médico) devolvem o conflito
+        direto. Foco de treino e preço do ingresso nunca conflitam: são UPDATEs
+        atômicos de uma coluna.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -1233,6 +1260,7 @@ components:
         - $ref: '#/components/schemas/InsufficientFunds'
         - $ref: '#/components/schemas/SquadFull'
         - $ref: '#/components/schemas/PlayerNotAvailable'
+        - $ref: '#/components/schemas/TransferConflict'
       discriminator:
         propertyName: type
         mapping:
@@ -1240,6 +1268,7 @@ components:
           InsufficientFunds:  '#/components/schemas/InsufficientFunds'
           SquadFull:          '#/components/schemas/SquadFull'
           PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
+          Conflict:           '#/components/schemas/TransferConflict'
 
     TransferSuccess:
       type: object
@@ -1270,6 +1299,18 @@ components:
       properties:
         type:     { type: string, enum: [PlayerNotAvailable] }
         playerId: { type: integer, format: int64 }
+
+    TransferConflict:
+      description: |
+        Lock otimista do clube (issue #89): outra operação alterou o clube
+        entre a leitura e a gravação, e a transferência NÃO foi aplicada —
+        caixa, elenco e mercado ficam como estavam (na compra, o jogador volta
+        ao mercado). Recarregue o clube e tente de novo.
+      type: object
+      required: [type, clubId]
+      properties:
+        type:   { type: string, enum: [Conflict] }
+        clubId: { type: integer, format: int64 }
 
     # ─── Match (sealed MatchEvent + summary) ─────────────────────────────
     MatchEvent:

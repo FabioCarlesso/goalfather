@@ -15,6 +15,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.time.Instant
@@ -28,6 +29,40 @@ import java.time.Instant
 interface ClubJpaRepository : JpaRepository<ClubEntity, Long> {
     /** Clubes ainda sem dono — base do fluxo de seleção (issue #19). */
     fun findAllByOwnerIdIsNull(): List<ClubEntity>
+
+    /**
+     * Compare-and-set da versão do clube (issue #89): incrementa só se o banco
+     * ainda está em [expected]. Devolve as linhas afetadas — `0` = alguém
+     * gravou depois da leitura (ou o clube não existe).
+     *
+     * Por que um UPDATE explícito em vez de confiar só no `@Version`: o
+     * Hibernate só incrementa a versão quando a LINHA do clube muda, e muitos
+     * comandos mexem apenas no elenco (desgaste, treino). Sem o bump, duas
+     * escritas só-de-elenco não se enxergariam. O UPDATE também segura o lock
+     * de linha até o commit, então um concorrente que leu a mesma versão
+     * espera e, ao seguir, encontra a versão nova → 0 linhas → conflito.
+     *
+     * `clearAutomatically`: o UPDATE em massa passa por fora do contexto de
+     * persistência; limpar garante que o `findById` seguinte releia a versão
+     * nova em vez de uma instância cacheada com a antiga.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update ClubEntity c set c.version = c.version + 1 where c.id = :id and c.version = :expected")
+    fun compareAndIncrementVersion(@Param("id") id: Long, @Param("expected") expected: Long): Int
+
+    /**
+     * Ajustes de UMA coluna (preço do ingresso, foco de treino): UPDATE atômico
+     * que não depende de leitura prévia, então não há o que conflitar. Também
+     * incrementa a versão — quem leu o clube antes e grava via `save` precisa
+     * enxergar que ele mudou. Devolve as linhas afetadas (`0` = não existe).
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update ClubEntity c set c.ticketPriceCents = :price, c.version = c.version + 1 where c.id = :id")
+    fun updateTicketPrice(@Param("id") id: Long, @Param("price") price: Long): Int
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update ClubEntity c set c.trainingFocus = :focus, c.version = c.version + 1 where c.id = :id")
+    fun updateTrainingFocus(@Param("id") id: Long, @Param("focus") focus: String): Int
 }
 
 interface UserJpaRepository : JpaRepository<UserEntity, Long> {
