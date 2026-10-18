@@ -13,8 +13,9 @@ import com.carlesso.goalfather.domain.result.LineupResult
  * Implementação de `SaveLineupUseCase`. Valida:
  * 1. Clube existe;
  * 2. Exatamente 11 jogadores;
- * 3. Todos os IDs estão no elenco do clube;
- * 4. Nenhum deles está lesionado (issue #54).
+ * 3. Nenhum ID repetido (issue #80);
+ * 4. Todos os IDs estão no elenco do clube;
+ * 5. Nenhum deles está lesionado (issue #54).
  *
  * A postura (issue #56) não tem o que validar — o enum já é o conjunto
  * fechado de valores aceitos —, só viaja junto e é gravada com a escalação.
@@ -52,6 +53,14 @@ class SaveLineupService(
             )
         }
 
+        // Um jogador não ocupa duas vagas (issue #80). Checado aqui, ANTES de
+        // construir o `Lineup`: erro de negócio volta como valor do `sealed`,
+        // não como exception de um `require` no `init`.
+        val duplicated = playerIds.duplicates().map { it.value }
+        if (duplicated.isNotEmpty()) {
+            return LineupResult.DuplicatePlayers(playerIds = duplicated)
+        }
+
         val squadIndex = club.squad.associateBy { it.id }
         val missing = playerIds.filterNot { it in squadIndex }.map { it.value }
         if (missing.isNotEmpty()) {
@@ -78,3 +87,14 @@ class SaveLineupService(
         const val EXPECTED_SIZE: Int = 11
     }
 }
+
+/**
+ * Elementos que aparecem mais de uma vez, na ordem da primeira ocorrência.
+ *
+ * `groupingBy { it }.eachCount()` é a forma idiomática de contar ocorrências:
+ * o `Grouping` é lazy e agrega direto num `Map<T, Int>`, sem materializar as
+ * listas intermediárias que um `groupBy { it }` criaria. `private` no topo do
+ * arquivo = visível só aqui, sem precisar de classe utilitária estática.
+ */
+private fun <T> List<T>.duplicates(): List<T> =
+    groupingBy { it }.eachCount().filterValues { it > 1 }.keys.toList()

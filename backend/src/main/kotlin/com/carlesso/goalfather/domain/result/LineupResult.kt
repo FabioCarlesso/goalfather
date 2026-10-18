@@ -46,4 +46,12 @@ sealed interface LineupResult {
     @Serializable
     @SerialName("InjuredPlayers")
     data class InjuredPlayers(val playerIds: List<Long>) : LineupResult
+
+    /**
+     * Mesmo jogador escalado em mais de uma vaga (issue #80) — controller
+     * mapeia 400 `DUPLICATE_PLAYERS`. `playerIds` lista cada repetido uma vez.
+     */
+    @Serializable
+    @SerialName("DuplicatePlayers")
+    data class DuplicatePlayers(val playerIds: List<Long>) : LineupResult
 }

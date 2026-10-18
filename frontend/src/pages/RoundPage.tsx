@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
 import { useRoundReadiness, useMarkReady, roundReadinessKey } from '../api/queries/useRoundReadiness'
-import { useClub } from '../api/queries/useClub'
+import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
 import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { useAuth } from '../auth/AuthContext'
@@ -49,16 +49,7 @@ export function RoundPage() {
   const myClubId = useMyClubId()
   const { user } = useAuth()
   const { data: round, isLoading } = useCurrentRound()
-  const { data: myClub } = useClub(myClubId)
   const playRound = usePlayRound()
-
-  // Lookup id → nome a partir do elenco do usuário, para o feed mostrar
-  // nomes em vez de "#N" (issue #7). Só resolve a partida do usuário; os
-  // jogadores dos outros clubes seguem como "#N" (fora de escopo).
-  const playerLookup = useMemo(
-    () => new Map<number, string>(myClub?.squad.map((p) => [p.id, p.name]) ?? []),
-    [myClub],
-  )
 
   const [events, setEvents] = useState<RoundEvent[]>([])
   const [status, setStatus] = useState<Status>('idle')
@@ -151,6 +142,11 @@ export function RoundPage() {
     () => round?.matches.find((m) => m.homeClubId === myClubId || m.awayClubId === myClubId),
     [round, myClubId],
   )
+
+  // Lookup id → nome dos dois elencos da partida do usuário, para o feed
+  // mostrar nomes em vez de "#N" (issues #7 e #84). Antes de a rodada
+  // carregar, resolve ao menos o próprio elenco.
+  const playerLookup = useMatchPlayerLookup(myMatch?.homeClubId ?? myClubId, myMatch?.awayClubId)
 
   const myMatchEvents = useMemo<MatchEvent[]>(() => {
     if (!myMatch) return []

@@ -17,7 +17,7 @@ import type { Club, Formation, Player, Posture } from '../domain/types'
 /**
  * Carrega o clube e só então monta o formulário. O `key={club.id}` remonta
  * `LineupForm` ao trocar de clube, fazendo o estado reiniciar a partir da
- * escalação salva via inicializadores de `useState` — sem `useEffect`.
+ * escalação EFETIVA via inicializadores de `useState` — sem `useEffect`.
  */
 export function LineupPage() {
   const myClubId = useMyClubId()
@@ -31,16 +31,23 @@ export function LineupPage() {
 function LineupForm({ club }: { club: Club }) {
   const save = useSaveLineup(club.id)
 
-  // Estado inicializado a partir da escalação salva (estado derivado só na
-  // montagem); edições subsequentes ficam locais ao formulário.
-  const [formation, setFormation] = useState<Formation>(club.lineup?.formation ?? '4-4-2')
-  // Escalação salva antes da issue #56 não tem postura — cai em EQUILIBRADA,
-  // o mesmo default do backend.
-  const [posture, setPosture] = useState<Posture>(club.lineup?.posture ?? 'BALANCED')
-  const [slots, setSlots] = useState<(number | null)[]>(() => {
-    const ids = club.lineup?.playerIds ?? []
-    return Array.from({ length: 11 }, (_, i) => ids[i] ?? null)
-  })
+  // Estado inicializado a partir da escalação EFETIVA (issue #87) — o time que
+  // a engine põe em campo se a rodada começar agora, já com o 4-4-2 automático
+  // e os lesionados trocados. Quem decide os titulares é o servidor; aqui só
+  // se lê. Edições subsequentes ficam locais ao formulário.
+  const initial = club.effectiveLineup
+  const [formation, setFormation] = useState<Formation>(initial.formation)
+  // A postura é opcional no schema `Lineup` — ausente, EQUILIBRADA, o mesmo
+  // default do backend.
+  const [posture, setPosture] = useState<Posture>(initial.posture ?? 'BALANCED')
+  const [slots, setSlots] = useState<(number | null)[]>(() =>
+    Array.from({ length: 11 }, (_, i) => initial.playerIds[i] ?? null),
+  )
+  const autoNotice = club.lineupIsDefault
+    ? 'Escalação automática — é este o time que entra em campo se você não salvar.'
+    : club.lineupAdjusted
+      ? 'Escalação ajustada — titulares lesionados ou vendidos foram trocados por reservas. É este o time que entra em campo se você não salvar.'
+      : null
 
   const positions = FORMATION_SLOTS[formation]
   const complete = slots.every((id) => id !== null)
@@ -105,6 +112,15 @@ function LineupForm({ club }: { club: Club }) {
         </div>
       </header>
 
+      {autoNotice && (
+        <p
+          role="status"
+          className="mb-4 rounded-md border border-amber-700/60 bg-amber-900/20 px-3 py-2 text-sm text-amber-300"
+        >
+          {autoNotice}
+        </p>
+      )}
+
       <p className="mb-4 rounded-md border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-400">
         {POSTURE_HINT[posture]}
       </p>
@@ -157,6 +173,11 @@ function SlotPicker({
   const available = squad.filter(
     (p) => p.position === position && !otherSelected.includes(p.id) && !isInjured(p),
   )
+  // A escalação efetiva (issue #87) não casa posição: o reserva que cobre um
+  // lesionado pode ser de outra posição. Mantém o selecionado visível como
+  // opção, marcado, em vez de o select mostrar o slot como vazio.
+  const selected = squad.find((p) => p.id === selectedId)
+  const offPosition = selected && !available.includes(selected) ? selected : null
 
   return (
     <label className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900/40 px-3 py-2">
@@ -169,6 +190,11 @@ function SlotPicker({
         className="flex-1 bg-transparent text-sm text-slate-100 outline-none"
       >
         <option value="">— {POSITION_LABEL[position]} —</option>
+        {offPosition && (
+          <option value={offPosition.id}>
+            {offPosition.name} ({offPosition.overall}) · {POSITION_ABBR[offPosition.position]} fora de posição
+          </option>
+        )}
         {available.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name} ({p.overall}) · {p.stamina}%

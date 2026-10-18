@@ -36,6 +36,26 @@ describe('MatchEventFeed', () => {
     expect(screen.getByText(/#999/)).toBeInTheDocument()
   })
 
+  // Issue #84: o lookup une os dois elencos, então o visitante também é nomeado.
+  it('nomeia jogadores do adversário quando o lookup traz os dois elencos', () => {
+    const lookup = new Map<number, string>([
+      [10, 'Renato Silva'],
+      [4007, 'Tupinambás FC 7'],
+    ])
+    render(
+      <MatchEventFeed
+        events={[
+          { type: 'Goal', minute: 44, scorerId: 4007, home: false },
+          { type: 'Goal', minute: 54, scorerId: 10, home: true },
+        ]}
+        playerLookup={lookup}
+      />,
+    )
+    expect(screen.getByText(/GOL! Tupinambás FC 7/)).toBeInTheDocument()
+    expect(screen.getByText(/GOL! Renato Silva/)).toBeInTheDocument()
+    expect(screen.queryByText(/#4007/)).not.toBeInTheDocument()
+  })
+
   // Novos eventos da issue #57: o feed nomeia quem participou do lance.
   it('mostra chute para fora com o autor', () => {
     const lookup = new Map<number, string>([[11, 'João Faria']])

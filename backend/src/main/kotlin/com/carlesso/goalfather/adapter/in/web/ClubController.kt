@@ -126,6 +126,14 @@ class ClubController(
                 ErrorResponse(
                     code = "INJURED_PLAYERS",
                     message = "Jogadores lesionados não podem ser escalados: ${result.playerIds}",
+                    details = playerIdsDetail(result.playerIds),
+                ),
+            )
+            is LineupResult.DuplicatePlayers -> ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    code = "DUPLICATE_PLAYERS",
+                    message = "Jogadores repetidos na escalação: ${result.playerIds}",
+                    details = playerIdsDetail(result.playerIds),
                 ),
             )
         }
@@ -242,3 +250,11 @@ class ClubController(
             )
         }
 }
+
+/**
+ * `details` é `Map<String, String>` no contrato: os ids vão como CSV ("1,7"),
+ * legíveis por máquina sem o cliente ter de parsear a `message`.
+ * `private` no nível do arquivo = visível só neste arquivo (não há `static`).
+ */
+private fun playerIdsDetail(playerIds: List<Long>): Map<String, String> =
+    mapOf("playerIds" to playerIds.joinToString(","))

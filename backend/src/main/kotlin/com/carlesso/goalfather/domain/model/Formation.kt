@@ -5,6 +5,7 @@ import com.carlesso.goalfather.domain.model.Position.FW
 import com.carlesso.goalfather.domain.model.Position.GK
 import com.carlesso.goalfather.domain.model.Position.MF
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -46,9 +47,24 @@ enum class Formation(
     }
 }
 
+/**
+ * Label desconhecido sai como [SerializationException], não como o
+ * `IllegalArgumentException` de [Formation.fromLabel] (issue #81): o conversor
+ * kotlinx do Spring só traduz `SerializationException` em
+ * `HttpMessageNotReadableException` (→ 400). Qualquer outra exception lançada
+ * por um `KSerializer` atravessa o conversor crua e virava 500. É o mesmo
+ * contrato dos serializers gerados pelo plugin (enum inválido também lança
+ * `SerializationException`).
+ */
 object FormationSerializer : KSerializer<Formation> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("Formation", PrimitiveKind.STRING)
     override fun serialize(encoder: Encoder, value: Formation) = encoder.encodeString(value.label)
-    override fun deserialize(decoder: Decoder): Formation = Formation.fromLabel(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): Formation {
+        val label = decoder.decodeString()
+        // `firstOrNull` + `?:` em vez de try/catch em cima de `fromLabel`: a
+        // ausência vira valor e só então decidimos qual exception lançar.
+        return Formation.entries.firstOrNull { it.label == label }
+            ?: throw SerializationException("Formação desconhecida: $label")
+    }
 }

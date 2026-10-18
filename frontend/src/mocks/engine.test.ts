@@ -205,12 +205,44 @@ describe('simulateMatch: finalizações e sumário', () => {
   })
 
   it('defesa identifica o goleiro do lado que defendeu', () => {
-    const saves = overSeeds(50).filter((e) => e.type === 'Save')
-    expect(saves.length).toBeGreaterThan(0)
-    for (const save of saves) {
-      const roster = save.home ? baseSetup.homeSquad : baseSetup.awaySquad
-      expect(save.goalkeeperId).toBe(roster.find((p) => p.pos === 'GK')!.id)
+    let saves = 0
+    for (let seed = 1; seed <= 50; seed++) {
+      // Goleiro lesionado/expulso deixa o campo: daí em diante a defesa sai sem
+      // goleiro (null). Por isso a checagem é por partida.
+      const offPitch = new Set<number>()
+      for (const e of collect(baseSetup, seed)) {
+        if (e.type === 'Injury' || (e.type === 'Card' && e.red)) offPitch.add(e.playerId)
+        if (e.type !== 'Save') continue
+        saves++
+        const roster = e.home ? baseSetup.homeSquad : baseSetup.awaySquad
+        const keeper = roster.find((p) => p.pos === 'GK')!.id
+        expect(e.goalkeeperId).toBe(offPitch.has(keeper) ? null : keeper)
+      }
     }
+    expect(saves).toBeGreaterThan(0)
+  })
+
+  it('lesionado ou expulso nao participa de mais nenhum lance da partida', () => {
+    let sentOff = 0
+    for (let seed = 1; seed <= 200; seed++) {
+      const offPitch = new Set<number>()
+      for (const e of collect({ ...baseSetup, knockout: true }, seed)) {
+        // switch exaustivo sobre a união discriminada (espelho do `when` Kotlin).
+        const participants: (number | null)[] = (() => {
+          switch (e.type) {
+            case 'Goal': return [e.scorerId]
+            case 'Miss': case 'Card': case 'Injury': return [e.playerId]
+            case 'Save': return [e.goalkeeperId]
+            case 'PenaltyShootout': return e.kicks.map((k) => k.playerId ?? null)
+            case 'KickOff': case 'FullTime': return []
+          }
+        })()
+        expect(participants.filter((id) => id != null && offPitch.has(id))).toEqual([])
+        if (e.type === 'Injury' || (e.type === 'Card' && e.red)) offPitch.add(e.playerId)
+      }
+      sentOff += offPitch.size
+    }
+    expect(sentOff).toBeGreaterThan(0)
   })
 
   it('estatisticas do FullTime batem com os eventos emitidos', () => {

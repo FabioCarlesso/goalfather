@@ -25,6 +25,7 @@ import {
   squadOf,
   DEFAULT_POSITIONS,
   type ClubMeta,
+  type StoredClub,
 } from './seed'
 import {
   simulateMatch,
@@ -32,8 +33,8 @@ import {
   applyRoundFitness,
   applyMedicalTreatment,
   startingEleven,
+  effectiveLineupOf,
   MulberryRng,
-  matchStats,
   trainSquad,
   gateOf,
   isTicketPriceAllowed,
@@ -53,7 +54,6 @@ import type {
   Club,
   ErrorResponse,
   MatchEvent,
-  MatchSummary,
   RoundEvent,
   RoundFinance,
   RoundMatch,
@@ -107,9 +107,6 @@ const squadInPlay = (meta: ClubMeta): SquadMember[] =>
 /** Adversário do drill-down standalone: 4-4-2 sintético, ids fora da liga. */
 const aiOpponentSquad: SquadMember[] = DEFAULT_POSITIONS.map((pos, i) => ({ id: 1001 + i, pos }))
 
-/** Autor dos gols do adversário no stub de `playMatch` (id fora da liga). */
-const AWAY_STUB_SCORER_ID = 1011
-
 const tacticsOf = (clubId: number): TeamTactics => {
   const lineup = state.clubs[clubId]?.lineup
   return {
@@ -117,6 +114,16 @@ const tacticsOf = (clubId: number): TeamTactics => {
     formation: lineup?.formation ?? DEFAULT_TACTICS.formation,
   }
 }
+
+/**
+ * Clube guardado → `Club` do contrato: acrescenta a escalação efetiva
+ * (issue #87) na hora de responder, como o `Club.toDto()` do backend. Toda
+ * resposta com clube passa por aqui.
+ */
+const toClubResponse = (club: StoredClub): Club => ({
+  ...club,
+  ...effectiveLineupOf(club.squad, club.lineup),
+})
 
 // Latência simulada para parecer com rede real (descomente em testes determinísticos)
 const SIMULATED_LATENCY_MS = 120
@@ -227,10 +234,13 @@ export const handlers = [
     const id = Number(params.id)
     // Após reload, `state.clubs` volta ao seed mas a posse foi restaurada de
     // `clubOwners` — rematerializa o clube reivindicado sob demanda (issue #19).
-    if (!state.clubs[id] && clubOwners[id] != null) materializeClub(id)
+    // Clubes da IA também: o feed da partida busca o ADVERSÁRIO para nomear
+    // os jogadores (issue #84), e o backend devolve qualquer clube da liga.
+    // Os ids do elenco materializado (id*1000+n) batem com os de `clubMeta`.
+    if (!state.clubs[id] && clubMeta[id]) materializeClub(id)
     const club = state.clubs[id]
     return club
-      ? HttpResponse.json(club)
+      ? HttpResponse.json(toClubResponse(club))
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
   }),
 
@@ -242,6 +252,18 @@ export const handlers = [
     if (!club) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
 
     const body = (await request.json()) as LineupRequest
+    // Mesma regra do backend (issue #80): um jogador não ocupa duas vagas.
+    const duplicated = [...new Set(body.playerIds.filter((id, i) => body.playerIds.indexOf(id) !== i))]
+    if (duplicated.length > 0) {
+      return HttpResponse.json(
+        {
+          code: 'DUPLICATE_PLAYERS',
+          message: `Jogadores repetidos na escalação: [${duplicated.join(', ')}]`,
+          details: { playerIds: duplicated.join(',') },
+        } satisfies ErrorResponse,
+        { status: 400 },
+      )
+    }
     state.clubs[clubId] = { ...club, lineup: body }
     return new HttpResponse(null, { status: 204 })
   }),
@@ -273,13 +295,13 @@ export const handlers = [
       )
     }
 
-    const updated: Club = {
+    const updated: StoredClub = {
       ...club,
       cash: club.cash - totalCost,
       stadiumCapacity: club.stadiumCapacity + body.additionalSeats,
     }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── treatSquad (departamento médico, issue #54) ──────────────────────
@@ -299,13 +321,13 @@ export const handlers = [
       )
     }
 
-    const updated: Club = {
+    const updated: StoredClub = {
       ...club,
       cash: club.cash - MEDICAL_DEPARTMENT_COST_CENTS,
       squad: applyMedicalTreatment(club.squad),
     }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── setTrainingFocus (treino semanal, issue #58) ─────────────────────
@@ -318,9 +340,9 @@ export const handlers = [
     // Só registra a decisão — o efeito entra na virada da rodada, como no
     // backend (`SetTrainingFocusService` grava, `PlayRoundService` aplica).
     const body = (await request.json()) as TrainingFocusRequest
-    const updated: Club = { ...club, trainingFocus: body.focus }
+    const updated: StoredClub = { ...club, trainingFocus: body.focus }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── setTicketPrice (preço do ingresso, issue #59) ────────────────────
@@ -346,9 +368,9 @@ export const handlers = [
     // Só registra o preço — o efeito entra na bilheteria da próxima rodada em
     // casa, como no backend (`SetTicketPriceService` grava, `PlayRoundService`
     // aplica).
-    const updated: Club = { ...club, ticketPriceCents: body.ticketPriceCents }
+    const updated: StoredClub = { ...club, ticketPriceCents: body.ticketPriceCents }
     state.clubs[clubId] = updated
-    return HttpResponse.json(updated)
+    return HttpResponse.json(toClubResponse(updated))
   }),
 
   // ─── listMarket ───────────────────────────────────────────────────────
@@ -389,7 +411,7 @@ export const handlers = [
       return HttpResponse.json(result)
     }
 
-    const updatedClub: Club = {
+    const updatedClub: StoredClub = {
       ...club,
       cash: club.cash - entry.price,
       squad: [...club.squad, entry.player],
@@ -397,7 +419,7 @@ export const handlers = [
     state.clubs[body.clubId] = updatedClub
     state.market = state.market.filter((e) => e.player.id !== body.playerId)
 
-    const result: TransferResult = { type: 'Success', club: updatedClub, player: entry.player }
+    const result: TransferResult = { type: 'Success', club: toClubResponse(updatedClub), player: entry.player }
     return HttpResponse.json(result)
   }),
 
@@ -419,7 +441,7 @@ export const handlers = [
     }
 
     const salePrice = player.overall * 100_000_00 // R$ 100k * overall (mock)
-    const updatedClub: Club = {
+    const updatedClub: StoredClub = {
       ...club,
       cash: club.cash + salePrice,
       squad: club.squad.filter((p) => p.id !== body.playerId),
@@ -428,72 +450,8 @@ export const handlers = [
     state.market = [...state.market, { player, price: salePrice }]
 
     return HttpResponse.json(
-      { type: 'Success', club: updatedClub, player } satisfies TransferResult,
+      { type: 'Success', club: toClubResponse(updatedClub), player } satisfies TransferResult,
     )
-  }),
-
-  // ─── playMatch ────────────────────────────────────────────────────────
-  // Mock simplificado: gera um resumo determinístico. A engine de fato vive
-  // em src/mocks/engine.ts (a ser implementada) e é descartada quando o
-  // backend Kotlin assumir.
-  http.post('/api/clubs/:id/matches', async ({ params, request }) => {
-    await delay(SIMULATED_LATENCY_MS)
-    const clubId = Number(params.id)
-    const round = Number(new URL(request.url).searchParams.get('round'))
-    const club = state.clubs[clubId]
-    if (!club) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
-
-    const homeGoals = Math.floor(Math.random() * 4)
-    const awayGoals = Math.floor(Math.random() * 3)
-
-    // O resumo é montado a partir de eventos DE VERDADE, e as estatísticas
-    // saem deles pelo mesmo `matchStats` da engine (issue #57). Preencher o
-    // sumário à mão reintroduziria exatamente a divergência que a projeção
-    // existe para impedir — um 3×2 reportando zero finalizações.
-    const scorerId = (club.squad.find((p) => p.position === 'FW') ?? club.squad[0])?.id ?? 0
-    const goalsOf = (count: number, home: boolean, author: number): MatchEvent[] =>
-      Array.from({ length: count }, (_, i) => ({
-        type: 'Goal' as const,
-        minute: 10 + i * 15 + (home ? 0 : 7),
-        scorerId: author,
-        home,
-      }))
-
-    const played = [
-      ...goalsOf(homeGoals, true, scorerId),
-      ...goalsOf(awayGoals, false, AWAY_STUB_SCORER_ID),
-    ].sort((a, b) => a.minute - b.minute)
-
-    const events: MatchEvent[] = [
-      {
-        type: 'KickOff',
-        minute: 0,
-        homeClubName: club.name,
-        awayClubName: clubMeta[2]?.name ?? 'Adversário',
-        homeStrength: averageOverall(club.squad),
-        awayStrength: 75,
-        homePosture: 'BALANCED',
-        awayPosture: 'BALANCED',
-      },
-      ...played,
-      { type: 'FullTime', minute: 90, homeGoals, awayGoals, stats: matchStats(played) },
-    ]
-
-    // Bilheteria do drill-down standalone: mesma curva da rodada, com o preço
-    // configurado pelo clube (issue #59).
-    const home = gateOf(club.stadiumCapacity, averageOverall(club.squad), club.ticketPriceCents)
-
-    return HttpResponse.json({
-      matchId: Date.now(),
-      round,
-      homeClubId: clubId,
-      awayClubId: 2,
-      homeGoals,
-      awayGoals,
-      events,
-      attendance: home.attendance,
-      ticketRevenue: home.revenue,
-    } satisfies MatchSummary)
   }),
 
   // ─── getStandings ─────────────────────────────────────────────────────

@@ -201,7 +201,7 @@ Detalhes de cada fase em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md#8-roadmap-e
 | Segurança | Spring Security + JWT (jjwt) |
 | Async | Kotlin Coroutines + Flow |
 | Serialização | kotlinx.serialization |
-| Docs API | springdoc-openapi (valida contrato) |
+| Contrato API | `contract/openapi.yaml` + `ContractDriftTest` (método + path de cada `/api/**` ↔ handler Spring) |
 | Testes | JUnit 5, kotlin.test, MockK, kotlinx-coroutines-test |
 
 **Frontend**

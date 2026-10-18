@@ -8,6 +8,7 @@ import {
   applyRoundFitness,
   applyMedicalTreatment,
   startingEleven,
+  effectiveLineupOf,
   effectiveOverall,
   averageOverall,
   simulateMatch,
@@ -188,6 +189,42 @@ describe('titulares em campo (paridade com Club.startingLineup)', () => {
 
   it('elenco são mantém a escalação salva', () => {
     expect([...startingEleven(squad, savedIds)]).toEqual(savedIds)
+  })
+})
+
+// Paridade com o `Club.toDto()` do backend (issue #87): os campos derivados
+// que o schema `Club` exige.
+describe('escalação efetiva (paridade com ClubDto.effectiveLineup)', () => {
+  const squad = Array.from({ length: 14 }, (_, i) => fit(i + 1))
+  const savedIds = squad.slice(0, 11).map((p) => p.id)
+
+  it('sem escalação salva: 4-4-2 EQUILIBRADO com 11 titulares e flag default', () => {
+    const r = effectiveLineupOf(squad, undefined)
+
+    expect(r.effectiveLineup).toEqual({ formation: '4-4-2', playerIds: savedIds, posture: 'BALANCED' })
+    expect(r.lineupIsDefault).toBe(true)
+    expect(r.lineupAdjusted).toBe(false)
+  })
+
+  it('salva com lesionado: reserva assume, formação/postura preservadas, flag ajustada', () => {
+    const withInjury = squad.map((p) => (p.id === 3 ? fit(3, 100, { type: 'Injured', roundsOut: 2 }) : p))
+
+    const r = effectiveLineupOf(withInjury, { formation: '4-3-3', playerIds: savedIds, posture: 'OFFENSIVE' })
+
+    expect(r.effectiveLineup.playerIds).toHaveLength(11)
+    expect(r.effectiveLineup.playerIds).not.toContain(3)
+    expect(r.effectiveLineup.playerIds).toContain(12)
+    expect(r.effectiveLineup.formation).toBe('4-3-3')
+    expect(r.effectiveLineup.posture).toBe('OFFENSIVE')
+    expect(r.lineupIsDefault).toBe(false)
+    expect(r.lineupAdjusted).toBe(true)
+  })
+
+  it('salva intacta não é marcada como ajustada', () => {
+    const r = effectiveLineupOf(squad, { formation: '4-4-2', playerIds: savedIds })
+
+    expect(r.lineupAdjusted).toBe(false)
+    expect(r.effectiveLineup.posture).toBe('BALANCED')
   })
 })
 

@@ -9,6 +9,7 @@
 import type {
   Availability,
   Formation,
+  Lineup,
   MatchEvent,
   MatchStats,
   Player,
@@ -214,13 +215,20 @@ export function* simulateMatch(
   // Suprime o aviso de unused parameter quando os squads estão vazios (defensivo)
   void P_INJURY_AT_EVENT
 
+  // Quem se lesiona ou leva vermelho deixa o campo — espelha `offPitch` do
+  // MatchSimulator.kt: não participa de mais nenhum lance nem dos pênaltis.
+  // A força do time continua a do apito inicial.
+  const offPitch = new Set<number>()
+  const onPitch = (home: boolean) =>
+    (home ? setup.homeSquad : setup.awaySquad).filter((p) => !offPitch.has(p.id))
+
   for (let minute = 1; minute <= 90; minute++) {
     if (rng.next() >= EVENT_RATE) continue
 
     const roll = rng.next()
     if (roll < goalP) {
       const home = rng.next() < homeRatio
-      const squad = home ? setup.homeSquad : setup.awaySquad
+      const squad = onPitch(home)
       // Autor ponderado por posição (issue #57): sem ninguém apto o lance
       // simplesmente não acontece.
       const scorer = drawShooter(squad, rng)
@@ -231,23 +239,28 @@ export function* simulateMatch(
       // Defesa é o outro desfecho de uma finalização: quem chuta segue o mesmo
       // viés do gol e quem defende é o goleiro do lado oposto.
       const shooterIsHome = rng.next() < homeRatio
-      const keeper = goalkeeperOf(shooterIsHome ? setup.awaySquad : setup.homeSquad)
+      const keeper = goalkeeperOf(onPitch(!shooterIsHome))
       yield* emit({ type: 'Save', minute, goalkeeperId: keeper?.id ?? null, home: !shooterIsHome })
     } else if (roll < goalP + saveP + P_MISS_AT_EVENT) {
       const home = rng.next() < homeRatio
-      const shooter = drawShooter(home ? setup.homeSquad : setup.awaySquad, rng)
+      const shooter = drawShooter(onPitch(home), rng)
       if (!shooter) continue
       yield* emit({ type: 'Miss', minute, playerId: shooter.id, home })
     } else if (roll < goalP + saveP + P_MISS_AT_EVENT + P_CARD_AT_EVENT) {
       const home = rng.next() < 0.5
-      const squad = home ? setup.homeSquad : setup.awaySquad
+      const squad = onPitch(home)
       // Cartão e lesão seguem UNIFORMES: qualquer um leva uma entrada dura.
-      const playerId = squad.length > 0 ? rng.pick(squad).id : 0
-      yield* emit({ type: 'Card', minute, playerId, red: rng.next() < P_RED_CARD, home })
+      if (squad.length === 0) continue
+      const playerId = rng.pick(squad).id
+      const red = rng.next() < P_RED_CARD
+      if (red) offPitch.add(playerId)
+      yield* emit({ type: 'Card', minute, playerId, red, home })
     } else {
       const home = rng.next() < 0.5
-      const squad = home ? setup.homeSquad : setup.awaySquad
-      const playerId = squad.length > 0 ? rng.pick(squad).id : 0
+      const squad = onPitch(home)
+      if (squad.length === 0) continue
+      const playerId = rng.pick(squad).id
+      offPitch.add(playerId)
       // Duração sorteada com o RNG da própria partida (issue #54) — espelha
       // drawInjuryDuration do MatchSimulator.kt.
       const roundsOut = INJURY_DURATION_MIN
@@ -260,7 +273,7 @@ export function* simulateMatch(
   // depois dos 90' — o tempo normal fica idêntico ao de um jogo de liga.
   if (setup.knockout && homeGoals === awayGoals) {
     const shootout = penaltyShootout(
-      setup.homeSquad, setup.awaySquad, setup.homeStrength, setup.awayStrength, rng,
+      onPitch(true), onPitch(false), setup.homeStrength, setup.awayStrength, rng,
     )
     yield* emit({ type: 'PenaltyShootout', minute: 90, ...shootout })
   }
@@ -495,6 +508,40 @@ export function startingEleven<T extends FitPlayer>(
   const starters = savedPlayerIds.filter((id) => byId.has(id))
   const substitutes = available.filter((p) => !starters.includes(p.id)).map((p) => p.id)
   return new Set([...starters, ...substitutes].slice(0, 11))
+}
+
+/** Campos derivados da escalação que o schema `Club` exige (issue #87). */
+export interface EffectiveLineupFields {
+  effectiveLineup: Lineup
+  lineupIsDefault: boolean
+  lineupAdjusted: boolean
+}
+
+/**
+ * Escalação EFETIVA do clube — espelha o mapeamento `Club.toDto()` do backend
+ * (issue #87): `startingEleven` decide QUEM entra (a mesma regra de
+ * `Club.startingLineup()`), e a formação/postura vêm da salva ou do 4-4-2
+ * EQUILIBRADO automático. Único lugar do front que deriva titulares — a
+ * `LineupPage` só lê `effectiveLineup`.
+ */
+export function effectiveLineupOf<T extends FitPlayer>(
+  squad: T[],
+  saved: Lineup | undefined,
+): EffectiveLineupFields {
+  const playerIds = [...startingEleven(squad, saved?.playerIds)]
+  const effectiveLineup: Lineup = {
+    formation: saved?.formation ?? '4-4-2',
+    playerIds,
+    posture: saved?.posture ?? 'BALANCED',
+  }
+  const sameIds = saved != null
+    && saved.playerIds.length === playerIds.length
+    && saved.playerIds.every((id, i) => id === playerIds[i])
+  return {
+    effectiveLineup,
+    lineupIsDefault: saved == null,
+    lineupAdjusted: saved != null && !sameIds,
+  }
 }
 
 // ─── Envelhecimento de temporada (espelha AgingRules.kt, issue #55) ───────

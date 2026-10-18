@@ -337,7 +337,7 @@ class PlayMatchService(
 |---|---|---|
 | `GET` | `/api/clubs/{id}` | Estado do clube |
 | `POST` | `/api/clubs/{id}/lineup` | Salvar escalação e formação |
-| `POST` | `/api/clubs/{id}/matches?round=N` | Jogar partida (retorna resumo) |
+| ~~`POST`~~ | ~~`/api/clubs/{id}/matches?round=N`~~ | Removido do contrato (issue #82): partidas são jogadas por rodada (`POST /api/league/round/play`) |
 | `GET` | `/ws/matches/{id}` | **WebSocket**: stream de eventos ao vivo |
 | `GET` | `/api/market` | Jogadores disponíveis |
 | `POST` | `/api/market/buy` | Contratar jogador |
