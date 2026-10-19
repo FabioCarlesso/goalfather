@@ -55,7 +55,7 @@ import {
 } from './engine'
 import { recordCupRound } from './cup'
 import { boardStatusOf, forNewManager } from './board'
-import { afterRound, closedOfferResult, offerBlocker, OFFER_DEADLINE_ROUNDS } from './offers'
+import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_ROUNDS } from './offers'
 import type {
   TransferResult,
   Club,
@@ -558,6 +558,12 @@ export const handlers = [
 
     const blocker = offerBlocker(buyer, seller, body.playerId, body.amount)
     if (blocker) return HttpResponse.json(blocker satisfies TransferOfferResult)
+    // Uma pendente por comprador × jogador (revisão do PR #94).
+    const duplicate = state.offers.find((o) =>
+      o.buyerClubId === buyer.id && o.playerId === body.playerId && o.status.type === 'Pending')
+    if (duplicate) {
+      return HttpResponse.json({ type: 'OfferAlreadyPending', offerId: duplicate.id } satisfies TransferOfferResult)
+    }
 
     const player = seller.squad.find((p) => p.id === body.playerId)!
     const offer: TransferOffer = {
@@ -595,6 +601,12 @@ export const handlers = [
       )
     }
     const blocker = offerBlocker(buyer, seller, offer.playerId, offer.amount)
+    // Jogador que já saiu do vendedor: a proposta expira na hora (revisão do PR #94).
+    if (blocker?.type === 'PlayerNotAvailable') {
+      const expired: TransferOffer = { ...offer, status: { type: 'Expired', reason: 'PLAYER_TRANSFERRED' } }
+      replaceOffer(expired)
+      return HttpResponse.json(closedOfferResult(expired) satisfies TransferOfferResult)
+    }
     if (blocker) return HttpResponse.json(blocker satisfies TransferOfferResult)
 
     const player = seller.squad.find((p) => p.id === offer.playerId)!
@@ -879,8 +891,6 @@ export const handlers = [
 
       // Rodada consumida: zera a prontidão para a próxima começar limpa (issue #20).
       resetRoundReadiness(round.number)
-      // Prazo das propostas entre técnicos (issue #63): uma rodada a menos.
-      state.offers = state.offers.map(afterRound)
 
       // Balanço financeiro da rodada (issue #4) — espelha computeFinances do
       // backend. Bilheteria só para mandantes; folha salarial a cada N rodadas
@@ -1020,6 +1030,14 @@ export const handlers = [
         // Avança para a próxima rodada (cliente busca via getCurrentRound depois)
         state.currentRound = state.nextRound()
       }
+
+      // Prazo das propostas entre técnicos (issue #63), DEPOIS de avançar o
+      // calendário, como no backend (revisão do PR #94); quem perdeu o jogador
+      // do vendedor expira na hora.
+      state.offers = state.offers.map((o) => advanceOffer(
+        o,
+        state.clubs[o.sellerClubId]?.squad.some((p) => p.id === o.playerId) ?? true,
+      ))
 
       // Extrato de TODOS os clubes da liga, como o backend — inclusive de
       // quem folgou ou já caiu na copa (review do PR #78).

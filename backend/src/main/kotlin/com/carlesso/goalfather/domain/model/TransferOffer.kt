@@ -125,6 +125,17 @@ data class TransferOffer(
     }
 
     /**
+     * O que a virada da rodada faz com a proposta: se o jogador já não está no
+     * elenco do vendedor (vendido ao mercado, a outro clube, aposentado), ela
+     * morre agora por [ExpiryReason.PLAYER_TRANSFERRED] — nenhum aceite poderia
+     * mais dar certo, e mantê-la pendente só ofereceria ao vendedor um botão
+     * fadado a falhar. Senão, o prazo anda uma rodada ([afterRound]).
+     */
+    fun advance(playerStillWithSeller: Boolean): TransferOffer =
+        if (playerStillWithSeller) afterRound()
+        else expire(ExpiryReason.PLAYER_TRANSFERRED) ?: this
+
+    /**
      * O coração da máquina de estados: só [OfferStatus.Pending] sai do lugar.
      * `when` exaustivo SEM `else` — um estado novo no `sealed` quebra a
      * compilação aqui até alguém decidir se ele é terminal ou não.

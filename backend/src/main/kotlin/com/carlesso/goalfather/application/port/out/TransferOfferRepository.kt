@@ -23,7 +23,11 @@ interface TransferOfferRepository {
 
     suspend fun findById(id: OfferId): TransferOffer?
 
-    /** Propostas em que [clubId] é comprador OU vendedor, da mais nova para a mais antiga. */
+    /**
+     * Propostas em que [clubId] é comprador OU vendedor: TODAS as pendentes,
+     * seguidas do histórico recente (limitado), cada grupo da mais nova para a
+     * mais antiga. Pendente nunca fica de fora da lista por causa do histórico.
+     */
     suspend fun findByClub(clubId: ClubId): List<TransferOffer>
 
     /** Todas as propostas aguardando resposta — o relógio do prazo (virada da rodada). */

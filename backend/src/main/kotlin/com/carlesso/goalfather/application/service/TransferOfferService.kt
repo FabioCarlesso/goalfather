@@ -45,6 +45,12 @@ class TransferOfferService(
         // sabendo agora que o vendedor não pode abrir mão do goleiro, em vez de
         // descobrir rodadas depois, quando o vendedor tentar aceitar.
         offerBlocker(buyer, seller, playerId, amount)?.let { return it }
+        // Uma pendente por comprador × jogador (revisão do PR #94). É checagem
+        // de leitura: dois cliques simultâneos ainda podem gravar duas — o que
+        // não corrompe nada (o aceite de uma expira a outra como rival).
+        offerRepo.findPendingForPlayer(playerId)
+            .firstOrNull { it.buyerClubId == buyer.id }
+            ?.let { return OfferResult.OfferAlreadyPending(it.id) }
         // `offerBlocker` garante que o jogador está no elenco do vendedor.
         val player = seller.squad.first { it.id == playerId }
 
@@ -93,7 +99,17 @@ class TransferOfferService(
             ?.let { return OfferResult.RoundInProgress(it.number) }
 
         val buyer = clubRepo.findById(offer.buyerClubId) ?: return OfferResult.ClubNotFound(offer.buyerClubId)
-        offerBlocker(buyer, seller, offer.playerId, offer.amount)?.let { return it }
+        when (val blocker = offerBlocker(buyer, seller, offer.playerId, offer.amount)) {
+            null -> Unit
+            // O jogador saiu do elenco do vendedor desde a proposta (venda ao
+            // mercado, aposentadoria): nenhum aceite futuro daria certo, então
+            // a proposta morre agora em vez de seguir pendente com um "Aceitar"
+            // fadado a falhar (revisão do PR #94).
+            is OfferResult.PlayerNotAvailable -> return expireOrphan(offer)
+            // Os demais podem mudar (caixa do comprador, elenco do vendedor):
+            // a proposta segue pendente e o vendedor pode tentar de novo.
+            else -> return blocker
+        }
         val player = seller.squad.first { it.id == offer.playerId }
 
         // Quem disputava o mesmo jogador expira junto, na mesma transação.
@@ -147,6 +163,12 @@ class TransferOfferService(
         if (club.ownerId != requesterId) return OfferResult.NotOwner
         val next = transition(offer) ?: return closed(offer)
         return if (offerRepo.saveIfPending(next)) OfferResult.Success(next) else current(offerId)
+    }
+
+    /** Expira [offer] por jogador transferido e conta isso ao vendedor. */
+    private suspend fun expireOrphan(offer: TransferOffer): OfferResult {
+        val expired = offer.expire(ExpiryReason.PLAYER_TRANSFERRED) ?: return closed(offer)
+        return if (offerRepo.saveIfPending(expired)) closed(expired) else current(offer.id)
     }
 
     /** Relê a proposta que deixou de estar pendente e explica por quê. */

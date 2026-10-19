@@ -202,6 +202,23 @@ class TransferOfferConcurrencyIntegrationTest {
     }
 
     @Test
+    fun `pendente antiga nao some da lista atras do historico (revisao PR 94)`() = runBlocking {
+        val buyer = newHumanClub(970_050)
+        val seller = newHumanClub(970_051)
+        val oldPending = offer(buyer, seller, seller.lineMember(4), amount = 100_000_00)
+        // Mais resolvidas do que o limite do histórico, todas mais novas.
+        repeat(RECENT_RESOLVED_LIMIT + 2) {
+            val o = offer(buyer, seller, seller.lineMember(5), amount = 100_000_00)
+            assertIs<OfferResult.Success>(service.reject(o.id, requesterId = seller.ownerId!!))
+        }
+
+        val listed = offerRepo.findByClub(seller.id)
+
+        assertEquals(oldPending.id, listed.first().id, "pendente vem primeiro")
+        assertEquals(1 + RECENT_RESOLVED_LIMIT, listed.size, "histórico limitado, pendente fora do limite")
+    }
+
+    @Test
     fun `prazo vencido na virada nao sobrescreve um aceite`() = runBlocking {
         // `saveIfPending` é o compare-and-set da máquina de estados: o relógio
         // da rodada chegando depois de um aceite não "desaceita" a proposta.

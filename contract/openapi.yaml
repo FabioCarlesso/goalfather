@@ -534,8 +534,9 @@ paths:
       operationId: listClubOffers
       summary: Propostas recebidas e enviadas pelo clube
       description: |
-        Propostas em que o clube é comprador OU vendedor (issue #63), da mais
-        nova para a mais antiga (até 50). A UI separa recebidas
+        Propostas em que o clube é comprador OU vendedor (issue #63): TODAS as
+        pendentes, seguidas das 50 resolvidas mais recentes — cada grupo da mais
+        nova para a mais antiga. A UI separa recebidas
         (`sellerClubId` = o clube) de enviadas e consulta este endpoint com
         polling para avisar o técnico de proposta nova. Só o dono do clube lê.
       parameters:
@@ -572,7 +573,9 @@ paths:
         As mesmas regras do aceite já valem na criação — valor mínimo, caixa do
         comprador, elenco cheio, vendedor humano e elenco mínimo do vendedor
         (11 jogadores, sem vender o último goleiro) — e voltam como variantes de
-        `TransferOfferResult` no 200.
+        `TransferOfferResult` no 200. Uma proposta pendente por comprador ×
+        jogador: a segunda volta `OfferAlreadyPending` (retire a antiga para
+        mudar o valor).
       requestBody:
         required: true
         content:
@@ -608,7 +611,8 @@ paths:
 
         Dois aceites simultâneos pelo mesmo jogador: exatamente um vence; o
         outro recebe `OfferExpired`. Bloqueado durante a simulação da rodada
-        (`RoundInProgress`).
+        (`RoundInProgress`). Se o jogador já saiu do elenco do vendedor, a
+        proposta expira na hora (`OfferExpired` com `PLAYER_TRANSFERRED`).
       parameters:
         - $ref: '#/components/parameters/OfferIdPath'
       responses:
@@ -1563,6 +1567,19 @@ components:
           minimum: 0
           description: Rodadas até a proposta expirar sem resposta (anda a cada rodada encerrada).
         status: { $ref: '#/components/schemas/OfferStatus' }
+      # Exemplo explícito: o Swagger UI não monta um a partir do `oneOf` do
+      # `status` e mostrava `"status": {}` (revisão do PR #94).
+      example:
+        id: 7
+        buyerClubId: 1
+        buyerClubName: Goal Father FC
+        sellerClubId: 2
+        sellerClubName: Atlético Bonsucesso
+        playerId: 2004
+        playerName: Daniel Valente
+        amount: 50000000
+        roundsLeft: 3
+        status: { type: Pending }
 
     OfferStatus:
       description: |
@@ -1621,7 +1638,8 @@ components:
       enum: [DEADLINE, PLAYER_TRANSFERRED]
       description: |
         `DEADLINE` — o prazo em rodadas venceu sem resposta.
-        `PLAYER_TRANSFERRED` — o vendedor aceitou outra proposta pelo mesmo jogador.
+        `PLAYER_TRANSFERRED` — o jogador deixou o elenco do vendedor: outra
+        proposta por ele foi aceita, ou ele foi vendido ao mercado/se aposentou.
 
     SquadViolation:
       type: string
@@ -1648,6 +1666,7 @@ components:
         - $ref: '#/components/schemas/PlayerNotAvailable'
         - $ref: '#/components/schemas/SellerNotHuman'
         - $ref: '#/components/schemas/SellerSquadInvalid'
+        - $ref: '#/components/schemas/OfferAlreadyPending'
         - $ref: '#/components/schemas/OfferNotPending'
         - $ref: '#/components/schemas/OfferExpired'
         - $ref: '#/components/schemas/RoundInProgress'
@@ -1662,6 +1681,7 @@ components:
           PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
           SellerNotHuman:     '#/components/schemas/SellerNotHuman'
           SellerSquadInvalid: '#/components/schemas/SellerSquadInvalid'
+          OfferAlreadyPending: '#/components/schemas/OfferAlreadyPending'
           OfferNotPending:    '#/components/schemas/OfferNotPending'
           OfferExpired:       '#/components/schemas/OfferExpired'
           RoundInProgress:    '#/components/schemas/RoundInProgress'
@@ -1697,6 +1717,16 @@ components:
         type:         { type: string, enum: [SellerSquadInvalid] }
         violation:    { $ref: '#/components/schemas/SquadViolation' }
         minSquadSize: { type: integer }
+
+    OfferAlreadyPending:
+      description: |
+        O comprador já tem uma proposta pendente por este jogador (`offerId`).
+        Para mudar o valor, retire-a e faça outra.
+      type: object
+      required: [type, offerId]
+      properties:
+        type:    { type: string, enum: [OfferAlreadyPending] }
+        offerId: { type: integer, format: int64 }
 
     OfferNotPending:
       description: A proposta já foi aceita, recusada ou retirada.

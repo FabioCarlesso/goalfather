@@ -41,7 +41,7 @@ describe('OffersPanel (issue #63)', () => {
     expect(within(received).getByText('Renato Silva')).toBeInTheDocument()
     expect(within(received).getByText('expira em 2 rodadas')).toBeInTheDocument()
     // Resolvida aparece com o estado, sem botões; o motivo vai no title.
-    expect(within(received).getByText('Expirada')).toHaveAttribute('title', 'o jogador foi vendido a outro clube')
+    expect(within(received).getByText('Expirada')).toHaveAttribute('title', 'o jogador deixou o clube vendedor')
 
     const sent = screen.getByText('Enviadas').parentElement!
     expect(within(sent).getByText('Craque Rival')).toBeInTheDocument()

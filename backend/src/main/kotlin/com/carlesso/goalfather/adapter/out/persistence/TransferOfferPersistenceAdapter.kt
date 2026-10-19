@@ -17,6 +17,7 @@ import com.carlesso.goalfather.domain.model.TransferOffer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.dao.ConcurrencyFailureException
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
@@ -43,8 +44,14 @@ class TransferOfferPersistenceAdapter(
         offerRepo.findById(id.value).orElse(null)?.toDomain()
     }
 
+    /**
+     * Pendentes primeiro (todas), depois o histórico recente — duas consultas
+     * para o limite valer só para o histórico.
+     */
     override suspend fun findByClub(clubId: ClubId): List<TransferOffer> = withContext(Dispatchers.IO) {
-        offerRepo.findTop50ByBuyerClubIdOrSellerClubIdOrderByIdDesc(clubId.value, clubId.value).map { it.toDomain() }
+        val pending = offerRepo.findPendingByClub(clubId.value)
+        val resolved = offerRepo.findResolvedByClub(clubId.value, PageRequest.of(0, RECENT_RESOLVED_LIMIT))
+        (pending + resolved).map { it.toDomain() }
     }
 
     override suspend fun findPending(): List<TransferOffer> = withContext(Dispatchers.IO) {
@@ -86,6 +93,9 @@ class TransferOfferPersistenceAdapter(
         }
     }
 }
+
+/** Quantas propostas JÁ RESOLVIDAS a lista de um clube traz — as pendentes vêm todas. */
+internal const val RECENT_RESOLVED_LIMIT: Int = 50
 
 /**
  * Transações síncronas das propostas (issue #63). Bean separado para que

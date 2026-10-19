@@ -50,6 +50,17 @@ export function afterRound(offer: TransferOffer): TransferOffer {
     : { ...offer, roundsLeft: offer.roundsLeft - 1 }
 }
 
+/**
+ * Espelha `TransferOffer.advance`: jogador fora do elenco do vendedor expira a
+ * proposta na virada; senão, o prazo anda (revisão do PR #94).
+ */
+export function advanceOffer(offer: TransferOffer, playerStillWithSeller: boolean): TransferOffer {
+  if (offer.status.type !== 'Pending') return offer
+  return playerStillWithSeller
+    ? afterRound(offer)
+    : { ...offer, status: { type: 'Expired', reason: 'PLAYER_TRANSFERRED' } }
+}
+
 /** Erro de quem age sobre proposta que já não está pendente (espelha `closed`). */
 export function closedOfferResult(offer: TransferOffer): Rejection {
   return offer.status.type === 'Expired'

@@ -315,11 +315,6 @@ class PlayRoundService(
         // (issue #20). Os técnicos sinalizam de novo na rodada seguinte.
         readinessRepo.reset(round.number)
 
-        // Prazo das propostas entre técnicos (issue #63): uma rodada a menos
-        // para cada pendente, e quem chega a zero expira. Aqui, depois do claim
-        // da rodada (issue #46), o relógio anda exatamente uma vez por rodada.
-        advanceOfferDeadlines()
-
         // Avança o calendário. Num turno único (Berger), a liga dura o turno
         // da MAIOR divisão (N-1 rodadas para N clubes), e as fases da copa são
         // intercaladas entre elas (issue #61) — `seasonCalendar` diz o que cada
@@ -340,6 +335,15 @@ class PlayRoundService(
             val next = calendar[round.number]
             leagueRepo.saveRound(scheduleRound(round.number + 1, round.season, next, clubs, cup))
         }
+
+        // Prazo das propostas entre técnicos (issue #63): uma rodada a menos
+        // para cada pendente, e quem chega a zero expira. Aqui, depois do claim
+        // da rodada (issue #46), o relógio anda exatamente uma vez por rodada.
+        // DEPOIS do agendamento de propósito (revisão do PR #94): é um efeito
+        // secundário, e uma falha nele antes de `scheduleRound` deixaria a
+        // rodada `Finished` sem sucessora — a liga travaria por causa de uma
+        // proposta. Aqui, no pior caso, o prazo anda na rodada seguinte.
+        advanceOfferDeadlines()
 
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
         // encerrada"); SeasonFinished, quando há, vem logo antes dele.
@@ -502,14 +506,24 @@ class PlayRoundService(
     }
 
     /**
-     * Anda o prazo de cada proposta pendente (issue #63). A regra é do domínio
-     * (`TransferOffer.afterRound`); a gravação é condicional a a proposta
-     * ainda estar pendente, então um aceite ou recusa que chegue no meio do
-     * caminho vence e o `false` daqui é simplesmente ignorado — não há o que
-     * vencer numa proposta que já foi resolvida.
+     * Anda o prazo de cada proposta pendente (issue #63) e expira as que já
+     * não têm o que negociar — o jogador saiu do elenco do vendedor (revisão do
+     * PR #94). A regra é do domínio (`TransferOffer.advance`); a gravação é
+     * condicional a a proposta ainda estar pendente, então um aceite ou recusa
+     * que chegue no meio do caminho vence e o `false` daqui é ignorado.
+     *
+     * Os elencos são lidos DEPOIS dos efeitos e da virada (aposentadorias
+     * incluídas) e só quando há proposta pendente — o caso comum não paga a
+     * leitura extra.
      */
     private suspend fun advanceOfferDeadlines() {
-        for (offer in offerRepo.findPending()) offerRepo.saveIfPending(offer.afterRound())
+        val pending = offerRepo.findPending()
+        if (pending.isEmpty()) return
+        val squadsBySeller = clubRepo.findAll().associate { club -> club.id to club.squad.mapTo(HashSet()) { it.id } }
+        for (offer in pending) {
+            val stillWithSeller = offer.playerId in squadsBySeller[offer.sellerClubId].orEmpty()
+            offerRepo.saveIfPending(offer.advance(stillWithSeller))
+        }
     }
 
     /**

@@ -75,6 +75,18 @@ class TransferOfferTest {
     }
 
     @Test
+    fun `virada expira a proposta cujo jogador saiu do vendedor (revisao PR 94)`() {
+        val gone = offer(roundsLeft = 3).advance(playerStillWithSeller = false)
+        assertEquals(OfferStatus.Expired(ExpiryReason.PLAYER_TRANSFERRED), gone.status)
+
+        // Com o jogador no elenco, é só o relógio andando.
+        assertEquals(offer(roundsLeft = 3).afterRound(), offer(roundsLeft = 3).advance(playerStillWithSeller = true))
+        // Resolvida não muda, saia o jogador ou não.
+        val accepted = offer(status = OfferStatus.Accepted)
+        assertEquals(accepted, accepted.advance(playerStillWithSeller = false))
+    }
+
+    @Test
     fun `invariantes - valor positivo e clubes distintos`() {
         assertThrows<IllegalArgumentException> { offer().copy(amount = 0) }
         assertThrows<IllegalArgumentException> { offer().copy(sellerClubId = ClubId(1)) }

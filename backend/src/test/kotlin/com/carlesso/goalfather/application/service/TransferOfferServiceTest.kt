@@ -68,6 +68,7 @@ class TransferOfferServiceTest {
     @Test
     fun `proposta valida e gravada pendente com o prazo e os nomes da foto`() = runTest {
         stubClubs(buyer, seller)
+        coEvery { offerRepo.findPendingForPlayer(target.id) } returns emptyList()
         val created = slot<TransferOffer>()
         coEvery { offerRepo.create(capture(created)) } answers { created.captured.copy(id = OfferId(99)) }
 
@@ -79,6 +80,19 @@ class TransferOfferServiceTest {
         assertEquals(OFFER_DEADLINE_ROUNDS, created.captured.roundsLeft)
         assertEquals(target.name, created.captured.playerName)
         assertEquals("Vendedor", created.captured.sellerClubName)
+    }
+
+    @Test
+    fun `segunda pendente do mesmo comprador pelo mesmo jogador e recusada (revisao PR 94)`() = runTest {
+        stubClubs(buyer, seller)
+        // Pendente de OUTRO comprador pelo mesmo jogador não impede a proposta.
+        val rival = pending.copy(id = OfferId(8), buyerClubId = ClubId(3))
+        coEvery { offerRepo.findPendingForPlayer(target.id) } returns listOf(rival, pending)
+
+        val result = service.create(buyer.id, seller.id, target.id, 500_000_00, requesterId = buyerOwner)
+
+        assertEquals(OfferResult.OfferAlreadyPending(pending.id), result)
+        coVerify(exactly = 0) { offerRepo.create(any()) }
     }
 
     @Test
@@ -163,6 +177,22 @@ class TransferOfferServiceTest {
         coEvery { offerRepo.findById(pending.id) } returns pending
 
         assertIs<OfferResult.InsufficientFunds>(service.accept(pending.id, requesterId = sellerOwner))
+    }
+
+    @Test
+    fun `aceite de jogador que ja saiu do vendedor expira a proposta (revisao PR 94)`() = runTest {
+        // Vendido ao mercado depois da proposta: nenhum aceite daria certo.
+        stubClubs(buyer, seller.copy(squad = seller.squad.filterNot { it.id == target.id }))
+        stubRound(RoundStatus.Scheduled)
+        coEvery { offerRepo.findById(pending.id) } returns pending
+        val saved = slot<TransferOffer>()
+        coEvery { offerRepo.saveIfPending(capture(saved)) } returns true
+
+        val result = service.accept(pending.id, requesterId = sellerOwner)
+
+        assertEquals(OfferResult.OfferExpired(pending.id, ExpiryReason.PLAYER_TRANSFERRED), result)
+        assertEquals(OfferStatus.Expired(ExpiryReason.PLAYER_TRANSFERRED), saved.captured.status)
+        coVerify(exactly = 0) { offerRepo.completeTransfer(any(), any(), any(), any()) }
     }
 
     @Test

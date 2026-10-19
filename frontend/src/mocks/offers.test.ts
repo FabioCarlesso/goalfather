@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  advanceOffer,
   afterRound,
   closedOfferResult,
   offerBlocker,
@@ -54,6 +55,13 @@ describe('regras de proposta do mock (issue #63)', () => {
     expect(afterRound(afterRound(offer))).toMatchObject({ roundsLeft: 0, status: { type: 'Expired', reason: 'DEADLINE' } })
     const accepted: TransferOffer = { ...offer, status: { type: 'Accepted' } }
     expect(afterRound(accepted)).toBe(accepted)
+  })
+
+  it('a virada expira a proposta cujo jogador saiu do vendedor (revisão do PR #94)', () => {
+    expect(advanceOffer(offer, false)).toMatchObject({ status: { type: 'Expired', reason: 'PLAYER_TRANSFERRED' } })
+    expect(advanceOffer(offer, true)).toEqual(afterRound(offer))
+    const rejected: TransferOffer = { ...offer, status: { type: 'Rejected' } }
+    expect(advanceOffer(rejected, false)).toBe(rejected)
   })
 
   it('proposta resolvida explica por que não aceita mais comando', () => {

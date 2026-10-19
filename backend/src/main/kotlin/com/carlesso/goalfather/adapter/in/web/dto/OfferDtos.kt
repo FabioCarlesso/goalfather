@@ -81,6 +81,10 @@ sealed interface TransferOfferResultDto {
     data class SellerSquadInvalid(val violation: SquadViolation, val minSquadSize: Int) : TransferOfferResultDto
 
     @Serializable
+    @SerialName("OfferAlreadyPending")
+    data class OfferAlreadyPending(val offerId: Long) : TransferOfferResultDto
+
+    @Serializable
     @SerialName("OfferNotPending")
     data class OfferNotPending(val offerId: Long, val status: OfferStatus) : TransferOfferResultDto
 
@@ -122,6 +126,7 @@ fun OfferResult.Rejection.toDto(): TransferOfferResultDto = when (this) {
     is OfferResult.PlayerNotAvailable -> TransferOfferResultDto.PlayerNotAvailable(playerId.value)
     is OfferResult.SellerNotHuman -> TransferOfferResultDto.SellerNotHuman(clubId.value)
     is OfferResult.SellerSquadInvalid -> TransferOfferResultDto.SellerSquadInvalid(violation, minSquadSize)
+    is OfferResult.OfferAlreadyPending -> TransferOfferResultDto.OfferAlreadyPending(offerId.value)
     is OfferResult.OfferNotPending -> TransferOfferResultDto.OfferNotPending(offerId.value, status)
     is OfferResult.OfferExpired -> TransferOfferResultDto.OfferExpired(offerId.value, reason)
     is OfferResult.RoundInProgress -> TransferOfferResultDto.RoundInProgress(roundNumber)

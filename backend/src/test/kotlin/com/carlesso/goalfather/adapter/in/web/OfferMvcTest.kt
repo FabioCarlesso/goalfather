@@ -7,6 +7,7 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.test.makePlayer
+import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -46,6 +47,7 @@ class OfferMvcTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var json: Json
     @Autowired private lateinit var clubRepo: ClubRepository
+    @Autowired private lateinit var meterRegistry: MeterRegistry
 
     /** Ver nota em [AuthSecurityMvcTest]: controllers suspend exigem asyncDispatch. */
     private fun MvcResult.await(): MockHttpServletResponse =
@@ -114,7 +116,10 @@ class OfferMvcTest {
             .map { it.jsonObject.getValue("id").jsonPrimitive.long }
         assertEquals(listOf(offerId), ids)
 
+        val rejectsBefore = rejectCount()
         val rejected = post("/api/offers/$offerId/reject", seller.token).jsonBody()
+        // Métrica por comando × desfecho (revisão do PR #94).
+        assertEquals(rejectsBefore + 1, rejectCount())
         assertEquals("Success", rejected.type())
         assertEquals("Rejected", rejected.getValue("offer").jsonObject.getValue("status").jsonObject.type())
 
@@ -124,6 +129,21 @@ class OfferMvcTest {
         val lateBody = late.jsonBody()
         assertEquals("OfferNotPending", lateBody.type())
         assertEquals("Rejected", lateBody.getValue("status").jsonObject.type())
+    }
+
+    private fun rejectCount(): Double =
+        meterRegistry.find("goalfather.transfer.offers").tags("action", "reject", "result", "success")
+            .counter()?.count() ?: 0.0
+
+    @Test
+    fun `segunda proposta pendente pelo mesmo jogador volta OfferAlreadyPending`() {
+        val seller = manager(971_031)
+        val buyer = manager(971_032)
+        assertEquals("Success", post("/api/offers", buyer.token, createBody(buyer, seller)).jsonBody().type())
+
+        val again = post("/api/offers", buyer.token, createBody(buyer, seller, amount = 400_000_00)).jsonBody()
+
+        assertEquals("OfferAlreadyPending", again.type())
     }
 
     @Test

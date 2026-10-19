@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { api } from '../client'
 import { clubKey } from './useClub'
-import { offerErrorMessage } from '../errorMessages'
+import { offerErrorMessage, type OfferRole } from '../errorMessages'
 import type { CreateOfferRequest, TransferOffer, TransferOfferResult } from '../../domain/types'
 
 /**
@@ -39,7 +39,11 @@ export function useClubOffers(clubId: number) {
  */
 function useOfferResultHandler(clubId: number) {
   const qc = useQueryClient()
-  return (result: TransferOfferResult, successMessage: (offer: TransferOffer) => string) => {
+  return (
+    result: TransferOfferResult,
+    role: OfferRole,
+    successMessage: (offer: TransferOffer) => string,
+  ) => {
     qc.invalidateQueries({ queryKey: offersKey(clubId) })
     if (result.type === 'Success') {
       toast.success(successMessage(result.offer))
@@ -47,7 +51,7 @@ function useOfferResultHandler(clubId: number) {
       // recarregar o clube sempre é barato e evita um caso esquecido.
       qc.invalidateQueries({ queryKey: clubKey(clubId) })
     } else {
-      toast.error(offerErrorMessage(result))
+      toast.error(offerErrorMessage(result, role))
       if (result.type === 'Conflict') qc.invalidateQueries({ queryKey: clubKey(clubId) })
     }
   }
@@ -58,11 +62,18 @@ export function useCreateOffer(myClubId: number) {
   const handle = useOfferResultHandler(myClubId)
   return useMutation({
     mutationFn: (body: CreateOfferRequest) => api.post<TransferOfferResult>('/api/offers', body),
-    onSuccess: (result) => handle(result, (offer) => `Proposta enviada por ${offer.playerName}!`),
+    onSuccess: (result) => handle(result, 'buyer', (offer) => `Proposta enviada por ${offer.playerName}!`),
   })
 }
 
 export type OfferAction = 'accept' | 'reject' | 'withdraw'
+
+/** Quem dispara cada comando — o vendedor aceita/recusa, o comprador retira. */
+const ACTION_ROLE: Record<OfferAction, OfferRole> = {
+  accept:   'seller',
+  reject:   'seller',
+  withdraw: 'buyer',
+}
 
 const ACTION_DONE: Record<OfferAction, (offer: TransferOffer) => string> = {
   accept:   (o) => `${o.playerName} vendido para o ${o.buyerClubName}!`,
@@ -76,6 +87,6 @@ export function useOfferAction(myClubId: number) {
   return useMutation({
     mutationFn: ({ offerId, action }: { offerId: number; action: OfferAction }) =>
       api.post<TransferOfferResult>(`/api/offers/${offerId}/${action}`),
-    onSuccess: (result, { action }) => handle(result, ACTION_DONE[action]),
+    onSuccess: (result, { action }) => handle(result, ACTION_ROLE[action], ACTION_DONE[action]),
   })
 }

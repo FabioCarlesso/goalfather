@@ -542,6 +542,20 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   menu e página `/clubs/{id}` com o elenco do rival, a partir da Tabela.
   Notificação por polling (15s); WebSocket fica para a v2, junto de contraoferta,
   troca de jogadores e empréstimos.
+
+  **Ajustes da revisão do PR #94.** O prazo das propostas passou para DEPOIS
+  do agendamento da próxima rodada: é efeito secundário, e uma falha nele antes
+  de `scheduleRound` deixaria a rodada `Finished` sem sucessora (o travamento
+  de liga da #46). A varredura também expira (`PLAYER_TRANSFERRED`) a proposta
+  cujo jogador já saiu do elenco do vendedor — vendido ao mercado ou aposentado
+  —, regra pura em `TransferOffer.advance`; o aceite que encontra o jogador fora
+  faz o mesmo na hora, em vez de deixar um "Aceitar" fadado a falhar. Proposta
+  barrada por regra que pode mudar (caixa, elenco mínimo) segue pendente. A
+  lista do clube traz TODAS as pendentes + as 50 resolvidas mais recentes
+  (antes um `Top50` único escondia pendente antiga atrás do histórico). Uma
+  pendente por comprador × jogador (`OfferAlreadyPending`), checagem de leitura
+  — duas criações simultâneas ainda passam, sem corromper nada. Métrica
+  `goalfather.transfer.offers{action,result}`.
 - **Foco de estudo:** coroutines + concorrência, transações otimistas
 
 ### Fase 6 — Profundidade de gestão

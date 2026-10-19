@@ -68,27 +68,49 @@ export function transferErrorMessage(result: Exclude<TransferResult, { type: 'Su
   }
 }
 
+/** De que lado da proposta está quem lê a mensagem. */
+export type OfferRole = 'buyer' | 'seller'
+
 /**
  * Mensagem para os erros de negócio das propostas entre técnicos (issue #63),
  * que chegam no 200 como variantes de `TransferOfferResult`. `switch`
  * exaustivo: uma variante nova no contrato quebra a compilação aqui.
+ *
+ * `role` existe porque as mesmas regras barram os dois lados (revisão do PR
+ * #94): "o vendedor não pode ficar sem goleiro" é a frase certa para quem
+ * propõe, mas o vendedor que tenta aceitar precisa ler "você".
  */
-export function offerErrorMessage(result: Exclude<TransferOfferResult, { type: 'Success' }>): string {
+export function offerErrorMessage(
+  result: Exclude<TransferOfferResult, { type: 'Success' }>,
+  role: OfferRole,
+): string {
+  const seller = role === 'seller'
   switch (result.type) {
     case 'InvalidAmount':
       return `A proposta mínima é de ${formatMoney(result.minimum)}.`
     case 'InsufficientFunds':
-      return `Caixa insuficiente: necessário ${formatMoney(result.required)}, disponível ${formatMoney(result.available)}.`
+      return seller
+        ? `O comprador não tem mais caixa para esta proposta (disponível ${formatMoney(result.available)}).`
+        : `Caixa insuficiente: necessário ${formatMoney(result.required)}, disponível ${formatMoney(result.available)}.`
     case 'SquadFull':
-      return `Elenco do comprador cheio — limite de ${result.maxSize} jogadores.`
+      return seller
+        ? `O elenco do comprador está cheio — limite de ${result.maxSize} jogadores.`
+        : `Seu elenco está cheio — limite de ${result.maxSize} jogadores.`
     case 'PlayerNotAvailable':
-      return 'O jogador não está mais no elenco do vendedor.'
+      return seller
+        ? 'Este jogador não está mais no seu elenco.'
+        : 'O jogador não está mais no elenco do vendedor.'
     case 'SellerNotHuman':
       return 'Clubes da IA não negociam — propostas são só entre técnicos.'
     case 'SellerSquadInvalid':
-      return result.violation === 'NO_GOALKEEPER'
-        ? 'O vendedor não pode ficar sem goleiro.'
+      if (result.violation === 'NO_GOALKEEPER') {
+        return seller ? 'Você não pode vender seu último goleiro.' : 'O vendedor não pode ficar sem goleiro.'
+      }
+      return seller
+        ? `Seu elenco não pode ficar com menos de ${result.minSquadSize} jogadores.`
         : `O vendedor não pode ficar com menos de ${result.minSquadSize} jogadores.`
+    case 'OfferAlreadyPending':
+      return 'Você já tem uma proposta pendente por este jogador — retire-a para mudar o valor.'
     case 'OfferNotPending':
       return `Esta proposta já foi ${offerStatusLabel(result.status).toLowerCase()}.`
     case 'OfferExpired':

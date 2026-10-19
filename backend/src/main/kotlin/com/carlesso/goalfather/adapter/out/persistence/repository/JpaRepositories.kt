@@ -15,6 +15,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntit
 import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -174,8 +175,26 @@ interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, Int> {
 
 /** Propostas de transferência entre técnicos (issue #63). */
 interface TransferOfferJpaRepository : JpaRepository<TransferOfferEntity, Long> {
-    /** Propostas de um clube (comprador ou vendedor), da mais nova para a mais antiga. */
-    fun findTop50ByBuyerClubIdOrSellerClubIdOrderByIdDesc(buyerClubId: Long, sellerClubId: Long): List<TransferOfferEntity>
+    /**
+     * TODAS as pendentes de um clube (comprador ou vendedor), da mais nova para
+     * a mais antiga. Sem limite: são as que pedem ação, e o prazo em rodadas
+     * já as mantém poucas — misturá-las com o histórico num `Top50` escondia
+     * uma pendente antiga atrás de 50 resolvidas (revisão do PR #94).
+     */
+    @Query(
+        "select o from TransferOfferEntity o " +
+            "where (o.buyerClubId = :clubId or o.sellerClubId = :clubId) " +
+            "and o.status = '${TransferOfferEntity.PENDING}' order by o.id desc",
+    )
+    fun findPendingByClub(@Param("clubId") clubId: Long): List<TransferOfferEntity>
+
+    /** Histórico (já resolvidas) de um clube, da mais nova para a mais antiga, limitado por [page]. */
+    @Query(
+        "select o from TransferOfferEntity o " +
+            "where (o.buyerClubId = :clubId or o.sellerClubId = :clubId) " +
+            "and o.status <> '${TransferOfferEntity.PENDING}' order by o.id desc",
+    )
+    fun findResolvedByClub(@Param("clubId") clubId: Long, page: Pageable): List<TransferOfferEntity>
 
     fun findAllByStatus(status: String): List<TransferOfferEntity>
 

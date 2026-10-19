@@ -58,6 +58,13 @@ sealed interface OfferResult {
     /** Vender deixaria o elenco do vendedor inválido — ver [SquadViolation]. */
     data class SellerSquadInvalid(val violation: SquadViolation, val minSquadSize: Int) : Rejection
 
+    /**
+     * O comprador já tem uma proposta pendente pelo mesmo jogador (revisão do
+     * PR #94): para mudar o valor, retira a antiga e faz outra — sem isso o
+     * vendedor via a mesma oferta repetida N vezes na lista.
+     */
+    data class OfferAlreadyPending(val offerId: OfferId) : Rejection
+
     /** A proposta já foi aceita, recusada ou retirada. */
     data class OfferNotPending(val offerId: OfferId, val status: OfferStatus) : Rejection
 

@@ -17,7 +17,7 @@ export function offerStatusLabel(status: OfferStatus): string {
 export function expiryReasonLabel(reason: ExpiryReason): string {
   switch (reason) {
     case 'DEADLINE':           return 'o prazo acabou sem resposta'
-    case 'PLAYER_TRANSFERRED': return 'o jogador foi vendido a outro clube'
+    case 'PLAYER_TRANSFERRED': return 'o jogador deixou o clube vendedor'
   }
 }
 
