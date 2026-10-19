@@ -49,6 +49,14 @@ export type CupPhaseInfo  = components['schemas']['CupPhaseInfo']
 export type KnockoutPhase = components['schemas']['KnockoutPhase']
 export type PenaltyScore  = components['schemas']['PenaltyScore']
 
+// Diretoria — meta da temporada, confiança e demissão (issue #62)
+export type BoardObjective = components['schemas']['BoardObjective']
+export type BoardMood      = components['schemas']['BoardMood']
+export type BoardStatus    = components['schemas']['BoardStatus']
+export type BoardVerdict   = components['schemas']['BoardVerdict']
+export type BoardReview    = components['schemas']['BoardReview']
+export type Dismissal      = components['schemas']['Dismissal']
+
 // Auth (issue #18) + seleção de clube (issue #19)
 export type AuthUser        = components['schemas']['AuthUser']
 export type AuthResponse    = components['schemas']['AuthResponse']

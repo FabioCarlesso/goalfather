@@ -62,6 +62,8 @@ tags:
     description: Tabela e calendário do campeonato
   - name: Cup
     description: Copa mata-mata paralela ao campeonato
+  - name: Board
+    description: Diretoria — meta da temporada, confiança no técnico e demissão
 
 paths:
   /api/auth/register:
@@ -412,6 +414,40 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /api/clubs/{id}/board:
+    get:
+      tags: [Board]
+      operationId: getBoardStatus
+      summary: Painel da diretoria — meta da temporada e confiança no técnico
+      description: |
+        Meta que a diretoria fixou para a temporada corrente (issue #62) e
+        onde o clube está agora. A meta é proporcional à força do elenco contra
+        os da mesma divisão: elenco entre os favoritos ⇒ título; metade de cima
+        ⇒ metade de cima da tabela; o resto ⇒ meio de tabela.
+
+        A confiança (0..100) anda a cada rodada de LIGA conforme a posição × a
+        meta. Ao fim da temporada: meta cumprida rende `bonusCents` em caixa;
+        meta perdida com a confiança em `firingConfidence` ou abaixo demite o
+        técnico — o veredito viaja no `SeasonFinished` (`boardReviews`).
+
+        `mood` e `firingConfidence` vêm prontos do backend para a UI não
+        reimplementar os limiares.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      responses:
+        '200':
+          description: Painel da diretoria do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardStatus' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Clube inexistente ou fora de qualquer tabela (`BOARD_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /api/market:
     get:
@@ -902,6 +938,15 @@ components:
           format: int64
           nullable: true
           description: Clube reivindicado pelo usuário; `null` antes da seleção.
+        dismissal:
+          oneOf:
+            - $ref: '#/components/schemas/Dismissal'
+            - type: 'null'
+          description: |
+            Demissão mais recente (issue #62). Presente (com `clubId` nulo), a
+            UI mostra a tela de game over; volta a `null` quando o técnico
+            reivindica um clube novo. `null` (ou omitido) para quem nunca foi
+            demitido.
 
     AuthResponse:
       type: object
@@ -1883,7 +1928,7 @@ components:
         (promoção/rebaixamento aplicados, rodada 1 + tabelas zeradas) antes
         de emitir.
       type: object
-      required: [type, season, champion, standings, retirements]
+      required: [type, season, champion, standings, retirements, boardReviews]
       properties:
         type:     { type: string, enum: [SeasonFinished] }
         season:   { type: integer, description: Ano da temporada encerrada }
@@ -1904,6 +1949,13 @@ components:
             Vencedor da copa da temporada que acabou (issue #61) — o mesmo que
             vai para o histórico. Omitido quando não houve copa ou ela não
             chegou à final.
+        boardReviews:
+          type: array
+          description: |
+            Balanço da diretoria (issue #62) de TODOS os clubes com meta na
+            temporada — cabe ao cliente filtrar o do técnico. O veredito
+            `Fired` de um clube com dono humano já devolveu o clube à IA.
+          items: { $ref: '#/components/schemas/BoardReview' }
 
     Retirement:
       description: |
@@ -1943,6 +1995,118 @@ components:
             confronto leva o valor da fase. 0 em rodada de liga e para quem
             perdeu, folgou ou não estava na copa. Folha salarial não é cobrada
             em data de copa.
+
+    # ─── Diretoria (issue #62) ───────────────────────────────────────────
+    BoardObjective:
+      type: string
+      description: |
+        Objetivo da temporada, do mais ambicioso para o mais modesto: `TITLE`
+        (só o título serve), `TOP_HALF` (metade de cima) e `MID_TABLE` (meio
+        de tabela, longe do fundo).
+      enum: [TITLE, TOP_HALF, MID_TABLE]
+
+    BoardMood:
+      type: string
+      description: |
+        Humor da diretoria, derivado da confiança no backend. `AT_RISK` = na
+        faixa de demissão: se a temporada acabasse agora com a meta perdida, o
+        técnico cairia.
+      enum: [CONFIDENT, WARY, AT_RISK]
+
+    BoardStatus:
+      description: Painel da diretoria — meta da temporada e situação atual do clube.
+      type: object
+      required:
+        - clubId
+        - season
+        - objective
+        - targetPosition
+        - currentPosition
+        - divisionSize
+        - matchday
+        - confidence
+        - mood
+        - bonusCents
+        - firingConfidence
+      properties:
+        clubId:          { type: integer, format: int64 }
+        season:          { type: integer, description: Temporada da meta }
+        objective:       { $ref: '#/components/schemas/BoardObjective' }
+        targetPosition:  { type: integer, minimum: 1, description: Terminar nesta posição ou acima cumpre a meta }
+        currentPosition: { type: integer, minimum: 1, description: Posição atual na tabela da divisão }
+        divisionSize:    { type: integer, minimum: 1, description: Clubes na divisão do clube }
+        matchday:        { type: integer, minimum: 0, description: Rodadas de liga já disputadas (0 antes da estreia) }
+        confidence:      { type: integer, minimum: 0, maximum: 100 }
+        mood:            { $ref: '#/components/schemas/BoardMood' }
+        bonusCents:      { type: integer, format: int64, description: Bônus em caixa por cumprir a meta }
+        firingConfidence:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Limiar de demissão — meta perdida com a confiança neste valor ou abaixo demite
+
+    BoardVerdict:
+      description: |
+        Mapeia o `sealed interface BoardVerdict` do domínio: o que a diretoria
+        decide ao fim da temporada. Só `TargetMet` carrega dado (o bônus pago).
+        No TS, `switch (verdict.type)` exaustivo.
+      oneOf:
+        - $ref: '#/components/schemas/BoardTargetMetVerdict'
+        - $ref: '#/components/schemas/BoardTargetMissedVerdict'
+        - $ref: '#/components/schemas/BoardFiredVerdict'
+      discriminator:
+        propertyName: type
+        mapping:
+          TargetMet:    '#/components/schemas/BoardTargetMetVerdict'
+          TargetMissed: '#/components/schemas/BoardTargetMissedVerdict'
+          Fired:        '#/components/schemas/BoardFiredVerdict'
+
+    BoardTargetMetVerdict:
+      type: object
+      required: [type, bonusCents]
+      properties:
+        type:       { type: string, enum: [TargetMet] }
+        bonusCents: { type: integer, format: int64, description: Bônus creditado no caixa na virada }
+
+    BoardTargetMissedVerdict:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [TargetMissed] }
+
+    BoardFiredVerdict:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [Fired] }
+
+    BoardReview:
+      description: Balanço da diretoria sobre um clube numa temporada encerrada.
+      type: object
+      required: [clubId, clubName, season, objective, targetPosition, finalPosition, confidence, verdict]
+      properties:
+        clubId:         { type: integer, format: int64 }
+        clubName:       { type: string }
+        season:         { type: integer }
+        objective:      { $ref: '#/components/schemas/BoardObjective' }
+        targetPosition: { type: integer, minimum: 1 }
+        finalPosition:  { type: integer, minimum: 1 }
+        confidence:     { type: integer, minimum: 0, maximum: 100, description: Confiança ao apito final }
+        verdict:        { $ref: '#/components/schemas/BoardVerdict' }
+
+    Dismissal:
+      description: |
+        Demissão do técnico (issue #62) — o "game over" da v1. O clube já
+        voltou para a IA; o técnico pode recomeçar reivindicando outro.
+      type: object
+      required: [clubId, clubName, season, objective, targetPosition, finalPosition]
+      properties:
+        clubId:         { type: integer, format: int64, description: Clube de onde foi demitido }
+        clubName:       { type: string }
+        season:         { type: integer, description: Temporada do fracasso }
+        objective:      { $ref: '#/components/schemas/BoardObjective' }
+        targetPosition: { type: integer, minimum: 1 }
+        finalPosition:  { type: integer, minimum: 1 }
 
     # ─── Copa (issue #61) ────────────────────────────────────────────────
     KnockoutPhase:

@@ -65,6 +65,7 @@ class CupRoundFlowTest {
         mockk(relaxed = true),
         historyRepo,
         cupRepo,
+        mockk(relaxed = true),
     )
 
     private val table = Standings(

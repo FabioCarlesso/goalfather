@@ -2,6 +2,7 @@ package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
+import com.carlesso.goalfather.adapter.out.persistence.mapper.applyBoard
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.CupJpaRepository
@@ -11,6 +12,7 @@ import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaReposi
 import com.carlesso.goalfather.adapter.out.persistence.repository.StandingsJpaRepository
 import com.carlesso.goalfather.application.seed.dsl.League
 import com.carlesso.goalfather.application.seed.initialLeague
+import com.carlesso.goalfather.domain.rules.boardExpectations
 import kotlinx.serialization.json.Json
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Configuration
@@ -53,6 +55,9 @@ class DataInitializer(
 
     /** Traduz o agregado de domínio para entidades JPA e grava. */
     private fun persist(league: League) {
+        // Metas da diretoria da 1ª temporada (issue #62), fixadas já no seed:
+        // a meta é função da liga como ela COMEÇA, antes de qualquer compra.
+        val boards = boardExpectations(league.season, league.clubs)
         for (club in league.clubs) {
             clubRepo.save(
                 ClubEntity(
@@ -61,7 +66,7 @@ class DataInitializer(
                     cash = club.cash,
                     stadiumCapacity = club.stadiumCapacity,
                     division = club.division.value,
-                ),
+                ).apply { applyBoard(boards[club.id]) },
             )
             for (player in club.squad) {
                 playerRepo.save(player.toEntity(clubId = club.id.value))

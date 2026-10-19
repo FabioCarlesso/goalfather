@@ -19,6 +19,12 @@ interface AuthContextValue {
   logout: () => void
   /** Atualiza o clube local após reivindicar (issue #19) — sem refetch. */
   setClubId: (clubId: number) => void
+  /**
+   * Rebusca `/me` (issue #62). A demissão acontece no servidor, na virada de
+   * temporada: o clube volta para a IA e o usuário ganha a `dismissal` — é o
+   * novo `AuthUser` que leva os guardas de rota à tela de game over.
+   */
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -107,11 +113,16 @@ export function AuthProvider({
   }
 
   const setClubId = (clubId: number) => {
-    setUser((u) => (u ? { ...u, clubId } : u))
+    // Reivindicar apaga a demissão no servidor; o espelho local acompanha.
+    setUser((u) => (u ? { ...u, clubId, dismissal: null } : u))
+  }
+
+  const refreshUser = async () => {
+    setUser(await api.get<AuthUser>('/api/auth/me'))
   }
 
   return (
-    <AuthContext.Provider value={{ user, status, login, register, logout, setClubId }}>
+    <AuthContext.Provider value={{ user, status, login, register, logout, setClubId, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

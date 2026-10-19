@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useClub } from '../api/queries/useClub'
+import { useBoard } from '../api/queries/useBoard'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
 import {
   useExpandStadium,
@@ -16,6 +17,7 @@ import {
 import { ApiError } from '../api/client'
 import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
+import { BoardPanel } from '../components/BoardPanel'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import { TRAINING_FOCUSES, TRAINING_FOCUS_HINT, TRAINING_FOCUS_LABEL } from '../domain/training'
 import { isInjured, injuryRoundsOut, staminaLevel } from '../domain/players'
@@ -24,6 +26,9 @@ import type { Availability, Club, TransferResult } from '../domain/types'
 export function DashboardPage() {
   const myClubId = useMyClubId()
   const { data: club, isLoading, error } = useClub(myClubId)
+  // Painel da diretoria (issue #62): consulta à parte, para um erro nela não
+  // derrubar a Dashboard inteira — sem painel, o resto do clube segue de pé.
+  const { data: board } = useBoard(myClubId)
   const sell = useSellPlayer()
   const [lastResult, setLastResult] = useState<TransferResult | null>(null)
 
@@ -56,6 +61,8 @@ export function DashboardPage() {
       {lastResult && (
         <SaleFeedback result={lastResult} onDismiss={() => setLastResult(null)} />
       )}
+
+      {board && <BoardPanel status={board} />}
 
       <TrainingPanel club={club} />
 

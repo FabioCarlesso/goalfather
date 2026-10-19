@@ -8,6 +8,7 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.TicketPriceRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.TrainingFocusRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.toAvailableDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
+import com.carlesso.goalfather.application.port.`in`.BoardUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
@@ -45,6 +46,7 @@ class ClubController(
     private val setTrainingFocus: SetTrainingFocusUseCase,
     private val setTicketPrice: SetTicketPriceUseCase,
     private val expandStadium: ExpandStadiumUseCase,
+    private val board: BoardUseCase,
     // `ClubDto` carrega o `availability` (sealed) de cada jogador: as respostas
     // de sucesso saem pelo kotlinx via `okJson` para manter o `type` do
     // contrato — `ResponseEntity<Any>` sozinho cairia no Jackson.
@@ -68,6 +70,24 @@ class ClubController(
             )
         } else {
             json.okJson(club.toDto())
+        }
+    }
+
+    /**
+     * Painel da diretoria (issue #62): meta da temporada, posição atual e
+     * confiança no técnico. Leitura pública dentro da liga, como `GET
+     * /{id}` — a meta de um rival não é segredo. 404 quando o clube não existe
+     * ou não está em tabela nenhuma.
+     */
+    @GetMapping("/{id}/board")
+    suspend fun getBoard(@PathVariable id: Long): ResponseEntity<Any> {
+        val status = board.status(ClubId(id))
+        return if (status == null) {
+            ResponseEntity.status(404).body(
+                ErrorResponse(code = "BOARD_NOT_FOUND", message = "Clube $id sem meta da diretoria"),
+            )
+        } else {
+            json.okJson(status.toDto())
         }
     }
 

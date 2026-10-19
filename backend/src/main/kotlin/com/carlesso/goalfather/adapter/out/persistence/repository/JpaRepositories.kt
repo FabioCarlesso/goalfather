@@ -63,6 +63,20 @@ interface ClubJpaRepository : JpaRepository<ClubEntity, Long> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update ClubEntity c set c.trainingFocus = :focus, c.version = c.version + 1 where c.id = :id")
     fun updateTrainingFocus(@Param("id") id: Long, @Param("focus") focus: String): Int
+
+    /**
+     * Devolve o clube à IA (issue #62) — a direção inversa do claim da issue
+     * #19. Compare-and-set pelo DONO, não pela versão: só libera se o clube
+     * ainda é de [ownerId], e incrementa a versão para que um `save` baseado
+     * numa leitura anterior (com o dono antigo) receba `Conflict` em vez de
+     * devolver o clube ao técnico demitido. `0` = já não era dele.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(
+        "update ClubEntity c set c.ownerId = null, c.version = c.version + 1 " +
+            "where c.id = :id and c.ownerId = :ownerId",
+    )
+    fun releaseOwner(@Param("id") id: Long, @Param("ownerId") ownerId: Long): Int
 }
 
 interface UserJpaRepository : JpaRepository<UserEntity, Long> {

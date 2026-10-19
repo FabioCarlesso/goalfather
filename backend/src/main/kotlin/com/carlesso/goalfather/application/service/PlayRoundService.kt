@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
+import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.CupRepository
@@ -16,9 +17,13 @@ import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.event.TrainingReport
 import com.carlesso.goalfather.domain.model.Availability
+import com.carlesso.goalfather.domain.model.BoardExpectation
+import com.carlesso.goalfather.domain.model.BoardReview
+import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CupClub
+import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
@@ -36,10 +41,12 @@ import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.AgingOutcome
 import com.carlesso.goalfather.domain.rules.ageOneSeason
+import com.carlesso.goalfather.domain.rules.afterRound
 import com.carlesso.goalfather.domain.rules.ageSquadForSeason
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
+import com.carlesso.goalfather.domain.rules.boardExpectations
 import com.carlesso.goalfather.domain.rules.canHoldCup
 import com.carlesso.goalfather.domain.rules.canScheduleSeason
 import com.carlesso.goalfather.domain.rules.cashDelta
@@ -55,6 +62,7 @@ import com.carlesso.goalfather.domain.rules.recordRound
 import com.carlesso.goalfather.domain.rules.relegationSpotsFor
 import com.carlesso.goalfather.domain.rules.scheduleRound
 import com.carlesso.goalfather.domain.rules.seasonCalendar
+import com.carlesso.goalfather.domain.rules.seasonBoardReviews
 import com.carlesso.goalfather.domain.rules.seasonRecordOf
 import com.carlesso.goalfather.domain.rules.train
 import com.carlesso.goalfather.domain.rules.trainingSeed
@@ -87,6 +95,11 @@ import kotlin.random.Random
  * sincronização para a copa, que é o ponto de atenção multiplayer da issue.
  * O que muda numa data de copa: empate vai aos pênaltis, a tabela não mexe,
  * a folha não é cobrada e o vencedor de cada confronto leva o prêmio da fase.
+ *
+ * **Diretoria (issue #62).** Cada rodada de LIGA mexe na confiança da diretoria
+ * em cada técnico (posição × meta), dentro da mesma gravação por clube dos
+ * demais efeitos. Na virada, a diretoria dá o veredito — bônus, permanência ou
+ * demissão — e fixa a meta da temporada nova. A engine de partida não muda.
  */
 class PlayRoundService(
     private val clubRepo: ClubRepository,
@@ -103,6 +116,9 @@ class PlayRoundService(
     // Copa mata-mata (issue #61): o sorteio sai na virada de temporada e a
     // chave avança a cada data de copa encerrada.
     private val cupRepo: CupRepository,
+    // Diretoria (issue #62): o técnico demitido devolve o clube à IA — o claim
+    // da issue #19 na direção inversa.
+    private val claimRepo: ClubClaimRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
     // Default = registry isolado: mantém os testes existentes construindo o
     // service sem passar métrica; em produção o BeanConfig injeta o registry real
@@ -274,13 +290,18 @@ class PlayRoundService(
         // Uma leitura só, reusada no calendário lá embaixo: `persistRoundEffects`
         // não mexe em id/nome/divisão, que é tudo que o agendamento consulta.
         val clubs = clubRepo.findAll().ifEmpty { involvedClubs.toList() }
-        val training = persistRoundEffects(round.number, events, clubs, involvedClubs, finances)
 
         // A MESMA rodada é aplicada à tabela de cada divisão: só os jogos da
         // divisão em questão contam (clubes fora da tabela são ignorados pela
         // regra), então nenhum filtro manual é necessário (issue #47).
+        // Calculada ANTES dos efeitos por clube porque a confiança da
+        // diretoria (issue #62) é função da posição JÁ com esta rodada — e
+        // entra na mesma gravação do clube que o caixa e o elenco.
         val newStandings = leagueRepo.currentStandings()
             .map { applyRoundToStandings(finishedRound, it) }
+        val boardAfterRound = boardEvaluator(round, newStandings, clubs)
+
+        val training = persistRoundEffects(round.number, events, clubs, involvedClubs, finances, boardAfterRound)
         newStandings.forEach { leagueRepo.saveStandings(it) }
 
         // Rodada consumida: zera a prontidão para a próxima começar limpa
@@ -346,7 +367,11 @@ class PlayRoundService(
 
         val nextSeason = endedSeason + 1
         val nextDivisions = applyPromotionRelegation(finalStandings)
-        val (clubs, retirements) = startNextSeasonClubs(nextSeason, nextDivisions, clubsAtSeasonEnd)
+        val (agedClubs, retirements) = startNextSeasonClubs(nextSeason, nextDivisions, clubsAtSeasonEnd)
+        // Diretoria (issue #62) DEPOIS do envelhecimento e da troca de divisão:
+        // a meta da temporada nova é função do elenco que o clube vai ter e da
+        // divisão em que vai jogar, não dos que acabaram de sair.
+        val (clubs, boardReviews) = applyBoardTurnover(endedSeason, nextSeason, finalStandings, agedClubs)
         ageMarket(nextSeason)
         // Sorteio da copa da temporada nova (issue #61), com os clubes JÁ nas
         // divisões novas. Vem antes da rodada 1 só por legibilidade: o
@@ -363,7 +388,102 @@ class PlayRoundService(
             standings = finalStandings,
             retirements = retirements,
             cupChampion = cupChampion,
+            boardReviews = boardReviews,
         )
+    }
+
+    /**
+     * Veredito da diretoria sobre a temporada que acabou e meta da que começa
+     * (issue #62), numa ÚNICA gravação por clube: o bônus de quem cumpriu a
+     * meta entra no caixa como delta (mesma postura da rodada, issue #89) junto
+     * da meta nova, com a confiança de volta ao valor inicial.
+     *
+     * A demissão vem depois, e só para clube com dono humano: o clube volta ao
+     * pool da IA e o técnico fica sem clube, com a demissão registrada para a
+     * tela de game over. Clube da IA "demitido" só troca de técnico em
+     * silêncio — o veredito fica no balanço, sem efeito.
+     *
+     * Roda sob `NonCancellable`, como o resto da virada, e só para quem venceu
+     * o claim da rodada (issue #46): o bônus é pago uma vez.
+     */
+    private suspend fun applyBoardTurnover(
+        endedSeason: Int,
+        nextSeason: Int,
+        finalStandings: List<Standings>,
+        clubs: List<Club>,
+    ): BoardTurnover {
+        val reviews = seasonBoardReviews(endedSeason, finalStandings, clubs)
+        val verdicts = reviews.associate { it.clubId to it.verdict }
+        val nextBoards = boardExpectations(nextSeason, clubs)
+
+        val updated = clubs.map { club ->
+            // `when` exaustivo sobre o `sealed` (e o `null` de quem não tinha
+            // meta): um veredito novo no domínio quebra a compilação aqui.
+            val bonus = when (val verdict = verdicts[club.id]) {
+                is BoardVerdict.TargetMet -> verdict.bonusCents
+                BoardVerdict.TargetMissed, BoardVerdict.Fired, null -> 0L
+            }
+            saveReapplying(club) { current ->
+                current.copy(cash = current.cash + bonus, board = nextBoards[current.id])
+            }
+        }
+
+        val owners = clubs.associate { it.id to it.ownerId }
+        for (review in reviews) {
+            if (review.verdict !is BoardVerdict.Fired || owners[review.clubId] == null) continue
+            claimRepo.release(
+                review.clubId,
+                Dismissal(
+                    clubId = review.clubId,
+                    clubName = review.clubName,
+                    season = review.season,
+                    objective = review.objective,
+                    targetPosition = review.targetPosition,
+                    finalPosition = review.finalPosition,
+                ),
+            )
+        }
+        return BoardTurnover(updated, reviews)
+    }
+
+    /** Clubes já com a meta nova + o balanço da diretoria da temporada encerrada. */
+    private data class BoardTurnover(
+        val clubs: List<Club>,
+        val reviews: List<BoardReview>,
+    )
+
+    /**
+     * Como a confiança da diretoria anda nesta rodada (issue #62), por clube.
+     * Devolve uma função porque a avaliação acontece DENTRO do `saveReapplying`
+     * de cada clube — sobre o clube relido, se houver conflito.
+     *
+     * Só rodada de LIGA mexe na confiança: a meta é de posição na tabela, e data
+     * de copa não mexe na tabela. O `when` sobre o `sealed` força a decisão.
+     *
+     * Clube sem meta desta temporada (save anterior à issue) recebe a meta
+     * agora, calculada da liga como ela está — `lazy` porque, no caso comum,
+     * todo clube já tem a sua e o cálculo nem roda.
+     */
+    private fun boardEvaluator(
+        round: Round,
+        standings: List<Standings>,
+        clubs: Collection<Club>,
+    ): (Club) -> BoardExpectation? {
+        when (round.stage) {
+            is RoundStage.Cup -> return Club::board
+            is RoundStage.League -> Unit
+        }
+        val positions = standings.flatMap { it.rows }.associate { it.clubId to it.position }
+        val fallback by lazy { boardExpectations(round.season, clubs) }
+        // Função anônima (`fun(...)`) em vez de lambda: nela `return` sai da
+        // própria função, sem rótulo — o idioma para corpo com saídas antecipadas.
+        return fun(club: Club): BoardExpectation? {
+            val position = positions[club.id] ?: return club.board
+            val expectation = club.board?.takeIf { it.season == round.season }
+                ?: fallback[club.id]
+                ?: return club.board
+            return expectation.afterRound(position)
+        }
     }
 
     /**
@@ -575,6 +695,8 @@ class PlayRoundService(
      * @param clubs todos os clubes da liga — quem folgou também recupera.
      * @param playedClubs só os que entraram em campo; para os demais o conjunto
      *   de titulares é vazio, então o elenco inteiro descansa.
+     * @param boardAfterRound a confiança da diretoria depois da rodada (issue
+     *   #62) — ver [boardEvaluator].
      */
     private suspend fun persistRoundEffects(
         roundNumber: Int,
@@ -582,6 +704,7 @@ class PlayRoundService(
         clubs: Collection<Club>,
         playedClubs: Collection<Club>,
         finances: List<RoundFinance>,
+        boardAfterRound: (Club) -> BoardExpectation?,
     ): List<TrainingReport> {
         val playedIds = playedClubs.map { it.id }.toSet()
         val goals = mutableMapOf<Long, Int>()
@@ -670,7 +793,7 @@ class PlayRoundService(
                 val newCash = if (finance == null) current.cash
                     else (current.cash + finance.cashDelta()).coerceAtLeast(0)
 
-                current.copy(squad = trained.squad, cash = newCash)
+                current.copy(squad = trained.squad, cash = newCash, board = boardAfterRound(current))
             }
             training += checkNotNull(report)
         }

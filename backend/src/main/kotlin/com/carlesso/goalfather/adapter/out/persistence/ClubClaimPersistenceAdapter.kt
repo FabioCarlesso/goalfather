@@ -1,10 +1,13 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.adapter.out.persistence.mapper.encodeDismissal
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toDomain
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.UserJpaRepository
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Dismissal
+import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +42,9 @@ class ClubClaimPersistenceAdapter(
                 ClaimResult.AlreadyClaimed(clubId)
             }
         }
+
+    override suspend fun release(clubId: ClubId, dismissal: Dismissal): User? =
+        withContext(Dispatchers.IO) { tx.release(clubId.value, encodeDismissal(dismissal)) }
 }
 
 @Component
@@ -66,10 +72,31 @@ class ClubClaimTransaction(
         clubRepo.save(club) // @Version: a verificação ocorre no flush/commit
 
         user.clubId = clubId
+        // Clube novo, carreira nova: a demissão anterior (issue #62) deixa de
+        // ser a notícia — sem isso a tela de game over voltaria a aparecer.
+        user.dismissalJson = null
         val saved = userRepo.save(user)
 
         // Computado antes do commit; se o commit falhar por lock otimista, o
         // adapter descarta este valor e devolve AlreadyClaimed.
         return ClaimResult.Success(saved.toDomain())
+    }
+
+    /**
+     * Libera o clube do técnico demitido (issue #62). O clube sai por um UPDATE
+     * condicional ao dono (ver `releaseOwner`), que não depende de versão lida
+     * e por isso não disputa lock com ninguém; o usuário só perde o clube se
+     * ainda for ESTE. Tudo na mesma transação: clube sem dono e usuário ainda
+     * apontando para ele (ou o contrário) não ficam visíveis.
+     */
+    @Transactional
+    fun release(clubId: Long, dismissalJson: String): User? {
+        val ownerId = clubRepo.findById(clubId).orElse(null)?.ownerId ?: return null
+        if (clubRepo.releaseOwner(clubId, ownerId) == 0) return null
+
+        val user = userRepo.findById(ownerId).orElse(null) ?: return null
+        if (user.clubId == clubId) user.clubId = null
+        user.dismissalJson = dismissalJson
+        return userRepo.save(user).toDomain()
     }
 }

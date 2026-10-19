@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.config
 
+import com.carlesso.goalfather.application.port.`in`.BoardUseCase
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
@@ -24,6 +25,7 @@ import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
+import com.carlesso.goalfather.application.service.BoardService
 import com.carlesso.goalfather.application.service.BuyPlayerService
 import com.carlesso.goalfather.application.service.ClaimClubService
 import com.carlesso.goalfather.application.service.ExpandStadiumService
@@ -121,6 +123,8 @@ class BeanConfig {
         historyRepo: SeasonHistoryRepository,
         // Copa mata-mata (issue #61): sorteio na virada, avanço a cada fase.
         cupRepo: CupRepository,
+        // Diretoria (issue #62): demissão devolve o clube à IA.
+        claimRepo: ClubClaimRepository,
         simulator: MatchSimulator,
         // MeterRegistry é provido pelo actuator; injetado para o timer da
         // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
@@ -133,9 +137,17 @@ class BeanConfig {
         playerRepo,
         historyRepo,
         cupRepo,
+        claimRepo,
         simulator,
         meterRegistry,
     )
+
+    /** Painel da diretoria: meta da temporada e confiança no técnico (issue #62). */
+    @Bean
+    fun boardUseCase(
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+    ): BoardUseCase = BoardService(clubRepo, leagueRepo)
 
     /** Leitura do histórico de temporadas e da carreira do técnico (issue #60). */
     @Bean

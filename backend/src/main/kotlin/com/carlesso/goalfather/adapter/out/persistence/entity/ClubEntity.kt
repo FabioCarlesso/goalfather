@@ -59,6 +59,24 @@ class ClubEntity(
     var ticketPriceCents: Long = 50_00,
 
     /**
+     * Meta da diretoria da temporada (issue #62) — quatro colunas que só fazem
+     * sentido juntas: o mapper monta o `BoardExpectation` quando todas estão
+     * preenchidas e lê `null` (save anterior à issue) caso contrário. O
+     * objetivo vai como texto, pelo mesmo motivo do `trainingFocus`.
+     */
+    @Column(name = "board_season")
+    var boardSeason: Int? = null,
+
+    @Column(name = "board_objective", length = 16)
+    var boardObjective: String? = null,
+
+    @Column(name = "board_target_position")
+    var boardTargetPosition: Int? = null,
+
+    @Column(name = "board_confidence")
+    var boardConfidence: Int? = null,
+
+    /**
      * Lock otimista (issue #19): o Hibernate incrementa `version` a cada
      * update e rejeita o save se a versão lida não bate com a do banco. Dois
      * `claim` simultâneos no mesmo clube → o segundo leva
