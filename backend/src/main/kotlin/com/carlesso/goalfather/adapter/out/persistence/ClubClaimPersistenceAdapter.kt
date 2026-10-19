@@ -10,6 +10,7 @@ import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
+import com.carlesso.goalfather.domain.rules.INITIAL_BOARD_CONFIDENCE
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.dao.OptimisticLockingFailureException
@@ -69,6 +70,10 @@ class ClubClaimTransaction(
         if (club.ownerId != null) return ClaimResult.AlreadyClaimed(ClubId(clubId))
 
         club.ownerId = userId
+        // Técnico novo não herda a confiança da IA (issue #62): a meta é do
+        // clube e fica; a confiança volta ao valor inicial. `?.let` mantém a
+        // coluna nula num save anterior à issue (meta ainda não fixada).
+        club.boardConfidence = club.boardConfidence?.let { INITIAL_BOARD_CONFIDENCE }
         clubRepo.save(club) // @Version: a verificação ocorre no flush/commit
 
         user.clubId = clubId
@@ -85,8 +90,10 @@ class ClubClaimTransaction(
     /**
      * Libera o clube do técnico demitido (issue #62). O clube sai por um UPDATE
      * condicional ao dono (ver `releaseOwner`), que não depende de versão lida
-     * e por isso não disputa lock com ninguém; o usuário só perde o clube se
-     * ainda for ESTE. Tudo na mesma transação: clube sem dono e usuário ainda
+     * e por isso não disputa lock com ninguém. A demissão só é registrada se o
+     * usuário ainda aponta para ESTE clube: se ele já está em outro, não há o
+     * que demitir — gravar a `dismissal` o mandaria à tela de game over com um
+     * clube nas mãos. Tudo na mesma transação: clube sem dono e usuário ainda
      * apontando para ele (ou o contrário) não ficam visíveis.
      */
     @Transactional
@@ -94,8 +101,8 @@ class ClubClaimTransaction(
         val ownerId = clubRepo.findById(clubId).orElse(null)?.ownerId ?: return null
         if (clubRepo.releaseOwner(clubId, ownerId) == 0) return null
 
-        val user = userRepo.findById(ownerId).orElse(null) ?: return null
-        if (user.clubId == clubId) user.clubId = null
+        val user = userRepo.findById(ownerId).orElse(null)?.takeIf { it.clubId == clubId } ?: return null
+        user.clubId = null
         user.dismissalJson = dismissalJson
         return userRepo.save(user).toDomain()
     }

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { getToken, setToken, clearToken } from '../api/token'
 import { onSessionExpired } from '../api/sessionEvents'
@@ -117,9 +117,11 @@ export function AuthProvider({
     setUser((u) => (u ? { ...u, clubId, dismissal: null } : u))
   }
 
-  const refreshUser = async () => {
+  // `useCallback` com identidade estável: a `RoundPage` chama isto de dentro de
+  // um `useEffect` — uma função nova a cada render re-dispararia o efeito em loop.
+  const refreshUser = useCallback(async () => {
     setUser(await api.get<AuthUser>('/api/auth/me'))
-  }
+  }, [])
 
   return (
     <AuthContext.Provider value={{ user, status, login, register, logout, setClubId, refreshUser }}>

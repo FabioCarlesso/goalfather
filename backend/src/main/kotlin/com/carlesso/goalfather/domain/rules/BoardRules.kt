@@ -7,6 +7,7 @@ import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.Standings
 
 /**
@@ -149,7 +150,7 @@ val BoardExpectation.mood: BoardMood
  * derruba ninguém. Por isso a avaliação usa a confiança JÁ com a última rodada.
  */
 fun BoardExpectation.verdict(finalPosition: Int): BoardVerdict = when {
-    finalPosition <= targetPosition -> BoardVerdict.TargetMet(objective.bonusCents)
+    isOnTarget(finalPosition) -> BoardVerdict.TargetMet(objective.bonusCents)
     confidence <= FIRING_CONFIDENCE -> BoardVerdict.Fired
     else -> BoardVerdict.TargetMissed
 }
@@ -180,3 +181,23 @@ fun seasonBoardReviews(
         )
     }
 }
+
+/**
+ * O registro de demissão que o balanço gera — `null` para quem não foi
+ * demitido. O `when` exaustivo sobre o `sealed` mantém a decisão "o que vira
+ * demissão" no domínio: o service e o mock só repassam.
+ */
+fun BoardReview.toDismissal(): Dismissal? = when (verdict) {
+    is BoardVerdict.TargetMet, BoardVerdict.TargetMissed -> null
+    BoardVerdict.Fired -> Dismissal(
+        clubId = clubId,
+        clubName = clubName,
+        season = season,
+        objective = objective,
+        targetPosition = targetPosition,
+        finalPosition = finalPosition,
+    )
+}
+
+/** Clube está na meta (ou acima) nesta posição? Derivado para a UI não recalcular. */
+fun BoardExpectation.isOnTarget(position: Int): Boolean = position <= targetPosition

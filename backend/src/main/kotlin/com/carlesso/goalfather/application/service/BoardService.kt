@@ -12,9 +12,10 @@ import com.carlesso.goalfather.domain.rules.boardExpectations
  * rodada (`PlayRoundService`), dentro do claim que garante uma aplicação por
  * rodada — um GET que gravasse a meta abriria uma segunda via de escrita.
  *
- * Save anterior à issue ainda não tem meta: ela é DERIVADA aqui com a mesma
- * regra pura que a primeira rodada vai usar para fixá-la, então o painel mostra
- * desde já a meta que vai valer (salvo mercado mexendo nos elencos antes).
+ * Save anterior à issue ganha a meta no boot (`DataInitializer`). Se ainda
+ * assim faltar (o backfill perdeu uma corrida de lock), ela é DERIVADA aqui
+ * com a mesma regra pura que a primeira rodada vai usar para fixá-la — rede de
+ * segurança, não o caminho comum.
  */
 class BoardService(
     private val clubRepo: ClubRepository,

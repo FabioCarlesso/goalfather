@@ -9,6 +9,7 @@ const status: BoardStatus = {
   objective: 'TITLE',
   targetPosition: 1,
   currentPosition: 4,
+  onTarget: false,
   divisionSize: 6,
   matchday: 3,
   confidence: 20,

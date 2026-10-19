@@ -11,6 +11,7 @@ import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Dismissal
+import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.StandingRow
@@ -61,19 +62,20 @@ class BoardRoundFlowTest {
     private fun titleBoard(confidence: Int = INITIAL_BOARD_CONFIDENCE) =
         BoardExpectation(season = 2026, objective = BoardObjective.TITLE, targetPosition = 1, confidence = confidence)
 
-    private fun table(vararg ids: Long) = Standings(
+    private fun table(vararg ids: Long, division: Division = Division.FIRST) = Standings(
         season = 2026,
         round = 0,
         rows = ids.mapIndexed { i, id -> StandingRow(position = i + 1, clubId = ClubId(id), clubName = "C$id") },
+        division = division,
     )
 
-    private fun stubRound(clubs: List<Club>, standings: Standings) {
+    private fun stubRound(clubs: List<Club>, vararg standings: Standings) {
         coEvery { leagueRepo.findRound(1) } returns Round(
             number = 1,
             season = 2026,
             matches = listOf(RoundMatch(1001, ClubId(100), ClubId(101), "X", "Y")),
         )
-        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { leagueRepo.currentStandings() } returns standings.toList()
         coEvery { clubRepo.findById(any()) } returns null
         coEvery { clubRepo.findAll() } returns clubs
         coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
@@ -99,6 +101,26 @@ class BoardRoundFlowTest {
         assertTrue(leader > INITIAL_BOARD_CONFIDENCE, "líder deveria ganhar confiança: $leader")
         assertTrue(last < INITIAL_BOARD_CONFIDENCE, "lanterna deveria perder confiança: $last")
         assertTrue(INITIAL_BOARD_CONFIDENCE - last > leader - INITIAL_BOARD_CONFIDENCE)
+    }
+
+    @Test
+    fun `divisao que folga na rodada nao mexe na confianca`() = runTest {
+        // A rodada só tem jogo da 1ª divisão (100×101). A 2ª está parada — como
+        // a divisão menor nas últimas datas de um calendário desigual.
+        val first = (1L..4L).map { makeClub(id = it, name = "C$it").copy(board = titleBoard()) }
+        val idle = (5L..6L).map {
+            makeClub(id = it, name = "C$it", division = Division(2)).copy(board = titleBoard())
+        }
+        stubRound(first + idle, table(1, 2, 3, 4), table(5, 6, division = Division(2)))
+
+        service.stream(1).toList()
+
+        assertTrue(assertNotNull(lastSaved(1).board).confidence > INITIAL_BOARD_CONFIDENCE)
+        // Lanterna da divisão parada: abaixo da meta, mas sem jogo não perde
+        // nada — nem é regravado, porque a rodada não mudou o clube (se a
+        // confiança tivesse andado, haveria um save com ela).
+        val idleSaves = savedClubs.filter { it.id in idle.map(Club::id) }
+        assertTrue(idleSaves.all { it.board?.confidence == INITIAL_BOARD_CONFIDENCE }, "divisão parada: $idleSaves")
     }
 
     @Test

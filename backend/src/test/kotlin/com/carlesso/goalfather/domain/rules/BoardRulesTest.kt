@@ -3,8 +3,10 @@ package com.carlesso.goalfather.domain.rules
 import com.carlesso.goalfather.domain.model.BoardExpectation
 import com.carlesso.goalfather.domain.model.BoardMood
 import com.carlesso.goalfather.domain.model.BoardObjective
+import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
@@ -12,7 +14,9 @@ import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** Regras puras da diretoria (issue #62) — sem Spring, sem `Random`. */
@@ -188,5 +192,33 @@ class BoardRulesTest {
         assertEquals("Com meta", review.clubName)
         assertEquals(1, review.finalPosition)
         assertIs<BoardVerdict.TargetMet>(review.verdict)
+    }
+
+    @Test
+    fun `so o veredito Fired vira registro de demissao`() {
+        val review = BoardReview(
+            clubId = ClubId(3),
+            clubName = "Fiasco",
+            season = 2026,
+            objective = BoardObjective.TOP_HALF,
+            targetPosition = 3,
+            finalPosition = 6,
+            confidence = 10,
+            verdict = BoardVerdict.Fired,
+        )
+
+        assertEquals(
+            Dismissal(ClubId(3), "Fiasco", 2026, BoardObjective.TOP_HALF, targetPosition = 3, finalPosition = 6),
+            review.toDismissal(),
+        )
+        assertNull(review.copy(verdict = BoardVerdict.TargetMissed).toDismissal())
+        assertNull(review.copy(verdict = BoardVerdict.TargetMet(1)).toDismissal())
+    }
+
+    @Test
+    fun `na meta e na posicao alvo ou acima`() {
+        assertTrue(expectation(target = 3).isOnTarget(3))
+        assertTrue(expectation(target = 3).isOnTarget(1))
+        assertFalse(expectation(target = 3).isOnTarget(4))
     }
 }

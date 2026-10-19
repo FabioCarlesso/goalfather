@@ -31,11 +31,11 @@ import {
 } from './engine'
 import { canHoldCup, cupRound, drawCup, seasonCalendar } from './cup'
 import {
-  afterRound,
   boardExpectations,
-  positionsOf,
+  boardsAfterRound,
   seasonBoardReviews,
   squadRating,
+  toDismissal,
   type BoardClub,
   type MockBoard,
 } from './board'
@@ -404,16 +404,11 @@ state.boards = boardExpectations(2026, boardClubs())
 
 /**
  * Rodada de LIGA encerrada: a confiança de cada técnico anda conforme a posição
- * × a meta (data de copa não chama isto — a tabela não mexe).
+ * × a meta, só nas divisões que jogaram (data de copa não chama isto — a
+ * tabela não mexe).
  */
-export function evaluateBoards(tables: Standings[]): void {
-  const positions = positionsOf(tables)
-  state.boards = Object.fromEntries(
-    Object.entries(state.boards).map(([id, board]) => {
-      const position = positions.get(Number(id))
-      return [id, position == null ? board : afterRound(board, position)]
-    }),
-  )
+export function evaluateBoards(tables: Standings[], playedClubIds: ReadonlySet<number>): void {
+  state.boards = boardsAfterRound(state.boards, tables, playedClubIds)
 }
 
 /**
@@ -435,18 +430,15 @@ export function applyBoardTurnover(endedSeason: number, finalTables: Standings[]
         break
       case 'Fired': {
         const ownerId = clubOwners[review.clubId]
-        const owner = auth.users.find((u) => u.id === ownerId)
-        if (!owner) break
+        if (ownerId == null) break
         clubOwners[review.clubId] = null
         if (club) state.clubs[review.clubId] = { ...club, ownerId: null }
-        owner.clubId = null
-        owner.dismissal = {
-          clubId: review.clubId,
-          clubName: review.clubName,
-          season: review.season,
-          objective: review.objective,
-          targetPosition: review.targetPosition,
-          finalPosition: review.finalPosition,
+        // Demissão só para quem AINDA aponta para este clube — como o
+        // `release` do backend; quem já está em outro clube não é demitido.
+        const owner = auth.users.find((u) => u.id === ownerId && u.clubId === review.clubId)
+        if (owner) {
+          owner.clubId = null
+          owner.dismissal = toDismissal(review)
         }
         persistMockAuth()
         break

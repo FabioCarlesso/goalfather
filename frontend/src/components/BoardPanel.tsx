@@ -4,12 +4,12 @@ import type { BoardStatus } from '../domain/types'
 
 /**
  * Painel da diretoria (issue #62). Só desenha o que chega no `BoardStatus`: a
- * meta, a posição, a confiança e o humor já vêm calculados pelo backend — o
+ * meta, a posição, se ela cumpre a meta (`onTarget`), a confiança e o humor já
+ * vêm calculados pelo backend — o
  * marcador do limiar de demissão usa `firingConfidence`, não um número fixo.
  */
 export function BoardPanel({ status }: { status: BoardStatus }) {
   const tone = BOARD_MOOD_TONE[status.mood]
-  const onTarget = status.currentPosition <= status.targetPosition
 
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
@@ -28,7 +28,7 @@ export function BoardPanel({ status }: { status: BoardStatus }) {
         </div>
         <div>
           <div className="text-xs uppercase tracking-wide text-slate-500">Posição atual</div>
-          <div className={onTarget ? 'text-emerald-300' : 'text-amber-300'}>
+          <div className={status.onTarget ? 'text-emerald-300' : 'text-amber-300'}>
             {ordinal(status.currentPosition)}
           </div>
           <div className="text-xs text-slate-400">

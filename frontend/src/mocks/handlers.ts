@@ -54,7 +54,7 @@ import {
   type TeamTactics,
 } from './engine'
 import { recordCupRound } from './cup'
-import { boardStatusOf } from './board'
+import { boardStatusOf, forNewManager } from './board'
 import type {
   TransferResult,
   Club,
@@ -230,6 +230,9 @@ export const handlers = [
     clubOwners[clubId] = user.id
     materializeClub(clubId)
     state.clubs[clubId] = { ...state.clubs[clubId]!, ownerId: user.id }
+    // Técnico novo não herda a confiança da IA (issue #62).
+    const board = state.boards[clubId]
+    if (board) state.boards[clubId] = forNewManager(board)
     user.clubId = clubId
     // Clube novo, carreira nova: a demissão anterior deixa de valer (issue #62).
     user.dismissal = null
@@ -724,7 +727,10 @@ export const handlers = [
       state.standings = state.standings.map((table) =>
         applyRoundToStandings(state.currentRound, table))
       // Rodada de LIGA mexe na confiança da diretoria (issue #62).
-      if (!knockout) evaluateBoards(state.standings)
+      // Só as divisões que jogaram: a que folga fica com a confiança parada.
+      if (!knockout) {
+        evaluateBoards(state.standings, new Set(round.matches.flatMap((m) => [m.homeClubId, m.awayClubId])))
+      }
 
       // Rodada consumida: zera a prontidão para a próxima começar limpa (issue #20).
       resetRoundReadiness(round.number)

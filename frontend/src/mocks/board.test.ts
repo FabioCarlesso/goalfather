@@ -9,6 +9,9 @@ import {
   afterRound,
   boardExpectations,
   boardStatusOf,
+  boardsAfterRound,
+  forNewManager,
+  toDismissal,
   confidenceDelta,
   moodOf,
   objectiveFor,
@@ -18,14 +21,14 @@ import {
   verdictOf,
   type MockBoard,
 } from './board'
-import type { BoardObjective, Standings } from '../domain/types'
+import type { BoardObjective, BoardReview, Standings } from '../domain/types'
 
 const titleBoard = (confidence = INITIAL_BOARD_CONFIDENCE): MockBoard =>
   ({ season: 2026, objective: 'TITLE', targetPosition: 1, confidence })
 
-const table = (clubIds: number[]): Standings => ({
+const table = (clubIds: number[], division = 1): Standings => ({
   season: 2026,
-  division: 1,
+  division,
   round: 3,
   promotionSpots: 0,
   relegationSpots: 0,
@@ -116,8 +119,35 @@ describe('mock da diretoria (issue #62)', () => {
   it('painel traz posição, tamanho da divisão e o limiar de demissão', () => {
     const status = boardStatusOf(2, titleBoard(20), [table([1, 2, 3])])
     expect(status).toMatchObject({
-      currentPosition: 2, divisionSize: 3, matchday: 3, mood: 'AT_RISK', firingConfidence: FIRING_CONFIDENCE,
+      currentPosition: 2, onTarget: false, divisionSize: 3, matchday: 3, mood: 'AT_RISK',
+      firingConfidence: FIRING_CONFIDENCE,
     })
+    expect(boardStatusOf(1, titleBoard(), [table([1, 2, 3])])?.onTarget).toBe(true)
     expect(boardStatusOf(99, titleBoard(), [table([1, 2])])).toBeNull()
+  })
+
+  it('divisão que folga na rodada não mexe na confiança', () => {
+    const boards = { 1: titleBoard(), 2: titleBoard(), 5: titleBoard(), 6: titleBoard() }
+    // Só a 1ª divisão jogou; a 2ª (5 e 6) ficou parada.
+    const after = boardsAfterRound(boards, [table([1, 2]), table([5, 6], 2)], new Set([1, 2]))
+
+    expect(after[1]!.confidence).toBeGreaterThan(INITIAL_BOARD_CONFIDENCE)
+    expect(after[2]!.confidence).toBeLessThan(INITIAL_BOARD_CONFIDENCE)
+    expect(after[6]).toEqual(boards[6])
+  })
+
+  it('técnico novo mantém a meta do clube mas recomeça a confiança', () => {
+    expect(forNewManager(titleBoard(5))).toEqual(titleBoard(INITIAL_BOARD_CONFIDENCE))
+  })
+
+  it('só o veredito Fired vira registro de demissão', () => {
+    const review: BoardReview = {
+      clubId: 3, clubName: 'Fiasco', season: 2026, objective: 'TOP_HALF',
+      targetPosition: 3, finalPosition: 6, confidence: 10, verdict: { type: 'Fired' },
+    }
+    expect(toDismissal(review)).toEqual({
+      clubId: 3, clubName: 'Fiasco', season: 2026, objective: 'TOP_HALF', targetPosition: 3, finalPosition: 6,
+    })
+    expect(toDismissal({ ...review, verdict: { type: 'TargetMissed' } })).toBeNull()
   })
 })

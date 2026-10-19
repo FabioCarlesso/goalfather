@@ -448,15 +448,33 @@ function RetirementsCard({ retirements }: { retirements: Retirement[] }) {
 
 /**
  * Balanço da diretoria no fim da temporada (issue #62). Na demissão, o clube
- * já voltou para a IA no servidor; o botão rebusca o usuário (`/me`), e é a
- * `dismissal` nova que leva os guardas de rota à tela de game over — a página
- * não navega por conta própria.
+ * já voltou para a IA no servidor: o card rebusca o usuário (`/me`) sozinho,
+ * assim que o veredito chega — com o `AuthUser` antigo, qualquer outro caminho
+ * mostraria um clube que já é da IA (e as escritas dariam 403). É a `dismissal`
+ * nova que leva os guardas de rota à tela de game over; a página não navega
+ * por conta própria. Se o `/me` falhar, o card avisa e oferece tentar de novo.
  */
-function BoardReviewCard({ review }: { review: BoardReview | undefined }) {
+export function BoardReviewCard({ review }: { review: BoardReview | undefined }) {
   const { refreshUser } = useAuth()
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const fired = review?.verdict.type === 'Fired'
+
+  // O erro só é gravado na volta da promessa (assíncrono), então o efeito
+  // abaixo não chama setState de forma síncrona.
+  const leaveClub = useCallback(
+    () =>
+      refreshUser().catch((e: unknown) =>
+        setRefreshError(e instanceof Error ? e.message : 'Não foi possível atualizar sua conta.'),
+      ),
+    [refreshUser],
+  )
+
+  useEffect(() => {
+    if (fired) void leaveClub()
+  }, [fired, leaveClub])
+
   if (!review) return null
 
-  const fired = review.verdict.type === 'Fired'
   const tone = {
     TargetMet: 'border-emerald-700/50 bg-emerald-900/20 text-emerald-200',
     TargetMissed: 'border-amber-700/50 bg-amber-900/20 text-amber-200',
@@ -471,13 +489,19 @@ function BoardReviewCard({ review }: { review: BoardReview | undefined }) {
         terminou em {ordinal(review.finalPosition)} · confiança {review.confidence}%
         {review.verdict.type === 'TargetMet' && <> · bônus de {formatMoney(review.verdict.bonusCents)}</>}
       </p>
-      {fired && (
-        <button
-          onClick={() => void refreshUser()}
-          className="mt-3 rounded-md bg-red-600 hover:bg-red-500 text-white px-4 py-2 text-sm font-medium transition-colors"
-        >
-          Encerrar a passagem pelo clube
-        </button>
+      {fired && refreshError && (
+        <div className="mt-3 space-y-2">
+          <p role="alert" className="text-sm">{refreshError}</p>
+          <button
+            onClick={() => {
+              setRefreshError(null)
+              void leaveClub()
+            }}
+            className="rounded-md bg-red-600 hover:bg-red-500 text-white px-4 py-2 text-sm font-medium transition-colors"
+          >
+            Tentar de novo
+          </button>
+        </div>
       )}
     </div>
   )

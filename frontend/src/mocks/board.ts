@@ -5,6 +5,7 @@
 
 import type {
   BoardMood,
+  Dismissal,
   BoardObjective,
   BoardReview,
   BoardStatus,
@@ -113,6 +114,49 @@ export function verdictOf(board: MockBoard, finalPosition: number): BoardVerdict
   return { type: 'TargetMissed' }
 }
 
+/**
+ * Confiança depois de uma rodada de LIGA — só nas divisões que jogaram (tabela
+ * com algum clube de [playedClubIds]). Divisão que folga (a menor, no fim de um
+ * calendário desigual) tem a tabela parada e não mexe na confiança — como o
+ * `boardEvaluator` do backend.
+ */
+export function boardsAfterRound(
+  boards: Record<number, MockBoard>,
+  tables: Standings[],
+  playedClubIds: ReadonlySet<number>,
+): Record<number, MockBoard> {
+  const positions = positionsOf(tables.filter((t) => t.rows.some((r) => playedClubIds.has(r.clubId))))
+  return Object.fromEntries(
+    Object.entries(boards).map(([id, board]) => {
+      const position = positions.get(Number(id))
+      return [id, position == null ? board : afterRound(board, position)]
+    }),
+  )
+}
+
+/** Técnico recém-chegado: a meta é do clube e fica, a confiança recomeça (claim no backend). */
+export function forNewManager(board: MockBoard): MockBoard {
+  return { ...board, confidence: INITIAL_BOARD_CONFIDENCE }
+}
+
+/** Registro de demissão do balanço — `BoardReview.toDismissal()` do backend; `null` se não foi demitido. */
+export function toDismissal(review: BoardReview): Dismissal | null {
+  switch (review.verdict.type) {
+    case 'TargetMet':
+    case 'TargetMissed':
+      return null
+    case 'Fired':
+      return {
+        clubId: review.clubId,
+        clubName: review.clubName,
+        season: review.season,
+        objective: review.objective,
+        targetPosition: review.targetPosition,
+        finalPosition: review.finalPosition,
+      }
+  }
+}
+
 /** Posição de cada clube nas tabelas (todas as divisões). */
 export function positionsOf(tables: Standings[]): Map<number, number> {
   return new Map(tables.flatMap((t) => t.rows.map((r) => [r.clubId, r.position] as const)))
@@ -129,6 +173,7 @@ export function boardStatusOf(clubId: number, board: MockBoard | undefined, tabl
     objective: board.objective,
     targetPosition: board.targetPosition,
     currentPosition: row.position,
+    onTarget: row.position <= board.targetPosition,
     divisionSize: table.rows.length,
     matchday: table.round,
     confidence: board.confidence,

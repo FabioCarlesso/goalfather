@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.`in`.web
 import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -63,6 +64,11 @@ class BoardMvcTest {
         val size = body.getValue("divisionSize").jsonPrimitive.int
         assertTrue(body.getValue("currentPosition").jsonPrimitive.int in 1..size)
         assertTrue(body.getValue("targetPosition").jsonPrimitive.int in 1..size)
+        // `onTarget` vem pronto do backend — a UI não recompara posições.
+        assertEquals(
+            body.getValue("currentPosition").jsonPrimitive.int <= body.getValue("targetPosition").jsonPrimitive.int,
+            body.getValue("onTarget").jsonPrimitive.boolean,
+        )
         assertTrue(body.getValue("confidence").jsonPrimitive.int in 0..100)
         assertTrue(body.getValue("bonusCents").jsonPrimitive.long > 0)
         assertEquals(25, body.getValue("firingConfidence").jsonPrimitive.int)

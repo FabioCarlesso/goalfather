@@ -5,13 +5,14 @@ import com.carlesso.goalfather.domain.model.BoardObjective
 import com.carlesso.goalfather.domain.model.BoardStatus
 import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.rules.FIRING_CONFIDENCE
+import com.carlesso.goalfather.domain.rules.isOnTarget
 import com.carlesso.goalfather.domain.rules.mood
 import kotlinx.serialization.Serializable
 
 /**
  * Painel da diretoria (issue #62) — contrato `BoardStatus`. Achata a
- * `BoardExpectation` e materializa o que o domínio DERIVA (`mood`, o bônus do
- * objetivo, o limiar de demissão): a UI pinta o painel com esses valores em vez
+ * `BoardExpectation` e materializa o que o domínio DERIVA (`mood`, `onTarget`, o
+ * bônus do objetivo, o limiar de demissão): a UI pinta o painel com esses valores em vez
  * de reimplementar os limiares (regra de ouro do frontend no CLAUDE.md).
  */
 @Serializable
@@ -21,6 +22,7 @@ data class BoardStatusDto(
     val objective: BoardObjective,
     val targetPosition: Int,
     val currentPosition: Int,
+    val onTarget: Boolean,
     val divisionSize: Int,
     val matchday: Int,
     val confidence: Int,
@@ -46,6 +48,7 @@ fun BoardStatus.toDto(): BoardStatusDto = BoardStatusDto(
     objective = expectation.objective,
     targetPosition = expectation.targetPosition,
     currentPosition = currentPosition,
+    onTarget = expectation.isOnTarget(currentPosition),
     divisionSize = divisionSize,
     matchday = matchday,
     confidence = expectation.confidence,

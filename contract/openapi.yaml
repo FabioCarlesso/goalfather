@@ -2022,6 +2022,7 @@ components:
         - objective
         - targetPosition
         - currentPosition
+        - onTarget
         - divisionSize
         - matchday
         - confidence
@@ -2034,6 +2035,7 @@ components:
         objective:       { $ref: '#/components/schemas/BoardObjective' }
         targetPosition:  { type: integer, minimum: 1, description: Terminar nesta posição ou acima cumpre a meta }
         currentPosition: { type: integer, minimum: 1, description: Posição atual na tabela da divisão }
+        onTarget:        { type: boolean, description: A posição atual cumpre a meta (currentPosition <= targetPosition) }
         divisionSize:    { type: integer, minimum: 1, description: Clubes na divisão do clube }
         matchday:        { type: integer, minimum: 0, description: Rodadas de liga já disputadas (0 antes da estreia) }
         confidence:      { type: integer, minimum: 0, maximum: 100 }

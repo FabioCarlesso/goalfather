@@ -23,7 +23,6 @@ import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CupClub
-import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
@@ -66,6 +65,7 @@ import com.carlesso.goalfather.domain.rules.seasonBoardReviews
 import com.carlesso.goalfather.domain.rules.seasonRecordOf
 import com.carlesso.goalfather.domain.rules.train
 import com.carlesso.goalfather.domain.rules.trainingSeed
+import com.carlesso.goalfather.domain.rules.toDismissal
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -299,7 +299,7 @@ class PlayRoundService(
         // entra na mesma gravação do clube que o caixa e o elenco.
         val newStandings = leagueRepo.currentStandings()
             .map { applyRoundToStandings(finishedRound, it) }
-        val boardAfterRound = boardEvaluator(round, newStandings, clubs)
+        val boardAfterRound = boardEvaluator(finishedRound, newStandings, clubs)
 
         val training = persistRoundEffects(round.number, events, clubs, involvedClubs, finances, boardAfterRound)
         newStandings.forEach { leagueRepo.saveStandings(it) }
@@ -429,21 +429,15 @@ class PlayRoundService(
         }
 
         val owners = clubs.associate { it.id to it.ownerId }
-        for (review in reviews) {
-            if (review.verdict !is BoardVerdict.Fired || owners[review.clubId] == null) continue
-            claimRepo.release(
-                review.clubId,
-                Dismissal(
-                    clubId = review.clubId,
-                    clubName = review.clubName,
-                    season = review.season,
-                    objective = review.objective,
-                    targetPosition = review.targetPosition,
-                    finalPosition = review.finalPosition,
-                ),
-            )
-        }
-        return BoardTurnover(updated, reviews)
+        // `toDismissal()` só existe para o veredito `Fired`: o `mapNotNull`
+        // filtra a demissão e monta o registro numa passada só.
+        val dismissals = reviews.filter { owners[it.clubId] != null }.mapNotNull { it.toDismissal() }
+        for (dismissal in dismissals) claimRepo.release(dismissal.clubId, dismissal)
+        // O `release` muda dono e versão no banco: devolver a cópia de antes
+        // dele deixaria clubes com `ownerId`/`version` velhos para quem vier
+        // depois. Só relê quando houve demissão — o caso comum não paga a leitura.
+        val clubsAfter = if (dismissals.isEmpty()) updated else clubRepo.findAll().ifEmpty { updated }
+        return BoardTurnover(clubsAfter, reviews)
     }
 
     /** Clubes já com a meta nova + o balanço da diretoria da temporada encerrada. */
@@ -460,6 +454,11 @@ class PlayRoundService(
      * Só rodada de LIGA mexe na confiança: a meta é de posição na tabela, e data
      * de copa não mexe na tabela. O `when` sobre o `sealed` força a decisão.
      *
+     * E só nas divisões que JOGARAM: com divisões de tamanhos diferentes, a
+     * menor encerra o turno antes e folga nas últimas datas — a tabela dela
+     * parada não é desempenho novo, e reavaliá-la a cada data empurraria a
+     * confiança (até a demissão) sem que o técnico entrasse em campo.
+     *
      * Clube sem meta desta temporada (save anterior à issue) recebe a meta
      * agora, calculada da liga como ela está — `lazy` porque, no caso comum,
      * todo clube já tem a sua e o cálculo nem roda.
@@ -473,7 +472,11 @@ class PlayRoundService(
             is RoundStage.Cup -> return Club::board
             is RoundStage.League -> Unit
         }
-        val positions = standings.flatMap { it.rows }.associate { it.clubId to it.position }
+        val playedDivisions = round.matches.mapTo(HashSet()) { it.division }
+        val positions = standings
+            .filter { it.division in playedDivisions }
+            .flatMap { it.rows }
+            .associate { it.clubId to it.position }
         val fallback by lazy { boardExpectations(round.season, clubs) }
         // Função anônima (`fun(...)`) em vez de lambda: nela `return` sai da
         // própria função, sem rótulo — o idioma para corpo com saídas antecipadas.

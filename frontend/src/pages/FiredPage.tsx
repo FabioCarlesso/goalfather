@@ -7,8 +7,8 @@ import type { ClubCareer, Dismissal } from '../domain/types'
 /**
  * Game over da v1 (issue #62): a diretoria demitiu o técnico na virada de
  * temporada e o clube voltou para a IA. A tela conta o porquê (meta × posição
- * final, que vêm na `dismissal` do `AuthUser`), resume a carreira no clube (o
- * histórico da issue #60) e oferece recomeçar — escolher outro clube.
+ * final, que vêm na `dismissal` do `AuthUser`), mostra o histórico do clube (a
+ * projeção da issue #60) e oferece recomeçar — escolher outro clube.
  *
  * Fora do `RequireClub` de propósito: quem chega aqui não tem mais clube.
  */
@@ -61,10 +61,14 @@ function DismissalSummary({ dismissal }: { dismissal: Dismissal }) {
   )
 }
 
-/** Carreira no clube que demitiu — projeção do histórico (issue #60), pronta no backend. */
+/**
+ * Histórico do clube que demitiu — projeção da issue #60, pronta no backend.
+ * É o histórico do CLUBE inteiro (a projeção não separa passagens de técnico),
+ * por isso o título diz "no clube", não "sua carreira".
+ */
 function CareerSummary({ clubId }: { clubId: number }) {
   const { data: career, isLoading } = useClubCareer(clubId)
-  if (isLoading) return <p className="text-slate-400">Carregando carreira…</p>
+  if (isLoading) return <p className="text-slate-400">Carregando histórico…</p>
   if (!career) return null
   return <CareerStats career={career} />
 }
@@ -73,7 +77,8 @@ function CareerStats({ career }: { career: ClubCareer }) {
   const best = career.bestCampaign
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-5 text-left">
-      <h2 className="text-lg font-semibold text-slate-100">Resumo da carreira</h2>
+      <h2 className="text-lg font-semibold text-slate-100">Histórico do clube</h2>
+      <p className="text-xs text-slate-500">Todas as temporadas do clube, não só a sua passagem.</p>
       <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
           <dt className="text-xs uppercase tracking-wide text-slate-500">Temporadas</dt>
