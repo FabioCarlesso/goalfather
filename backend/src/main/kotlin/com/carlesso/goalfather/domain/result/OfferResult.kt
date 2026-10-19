@@ -55,6 +55,13 @@ sealed interface OfferResult {
     /** Clube da IA não negocia: a proposta é entre técnicos humanos. */
     data class SellerNotHuman(val clubId: ClubId) : Rejection
 
+    /**
+     * O comprador deixou de ter técnico humano (revisão do PR #94) — a proposta
+     * foi do técnico demitido, e o clube da IA não paga por ela. Rede de
+     * segurança: a demissão já expira as pendentes (`MANAGER_LEFT`).
+     */
+    data class BuyerNotHuman(val clubId: ClubId) : Rejection
+
     /** Vender deixaria o elenco do vendedor inválido — ver [SquadViolation]. */
     data class SellerSquadInvalid(val violation: SquadViolation, val minSquadSize: Int) : Rejection
 

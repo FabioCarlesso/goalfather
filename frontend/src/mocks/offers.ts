@@ -35,6 +35,7 @@ export function offerBlocker(buyer: OfferClub, seller: OfferClub, playerId: numb
     return { type: 'PlayerNotAvailable', playerId }
   }
   if (seller.ownerId == null) return { type: 'SellerNotHuman', clubId: seller.id }
+  if (buyer.ownerId == null) return { type: 'BuyerNotHuman', clubId: buyer.id }
   if (buyer.cash < amount) return { type: 'InsufficientFunds', available: buyer.cash, required: amount }
   if (buyer.squad.length >= MAX_SQUAD_SIZE) return { type: 'SquadFull', maxSize: MAX_SQUAD_SIZE }
   const violation = squadViolationAfterSale(seller.squad, playerId)
@@ -59,6 +60,17 @@ export function advanceOffer(offer: TransferOffer, playerStillWithSeller: boolea
   return playerStillWithSeller
     ? afterRound(offer)
     : { ...offer, status: { type: 'Expired', reason: 'PLAYER_TRANSFERRED' } }
+}
+
+/**
+ * Espelha a demissão do backend (revisão do PR #94): as pendentes que envolvem
+ * [clubId] expiram por `MANAGER_LEFT`, dos dois lados.
+ */
+export function expireOffersOf(offers: TransferOffer[], clubId: number): TransferOffer[] {
+  return offers.map((o) =>
+    o.status.type === 'Pending' && (o.buyerClubId === clubId || o.sellerClubId === clubId)
+      ? { ...o, status: { type: 'Expired', reason: 'MANAGER_LEFT' } }
+      : o)
 }
 
 /** Erro de quem age sobre proposta que já não está pendente (espelha `closed`). */

@@ -18,8 +18,16 @@ enum class ExpiryReason {
     /** Passaram as rodadas do prazo sem o vendedor responder. */
     DEADLINE,
 
-    /** O vendedor aceitou outra proposta pelo mesmo jogador. */
+    /** O jogador deixou o elenco do vendedor (outra proposta aceita, venda ao mercado, aposentadoria). */
     PLAYER_TRANSFERRED,
+
+    /**
+     * O técnico de um dos dois clubes saiu — demitido pela diretoria (issue
+     * #62). A proposta era dele, não do clube: sem isso o clube, já da IA,
+     * pagaria por ela, e o próximo técnico herdaria uma negociação que não
+     * começou (revisão do PR #94).
+     */
+    MANAGER_LEFT,
 }
 
 /**
@@ -98,6 +106,9 @@ data class TransferOffer(
     }
 
     val isPending: Boolean get() = status == OfferStatus.Pending
+
+    /** [clubId] está de um dos lados da proposta? */
+    fun involves(clubId: ClubId): Boolean = buyerClubId == clubId || sellerClubId == clubId
 
     // ─── Transições ──────────────────────────────────────────────────────
     // Devolvem `null` quando a proposta já não está pendente: a transição não

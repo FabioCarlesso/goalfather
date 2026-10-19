@@ -25,6 +25,7 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.PenaltyScore
@@ -448,12 +449,28 @@ class PlayRoundService(
         // `toDismissal()` só existe para o veredito `Fired`: o `mapNotNull`
         // filtra a demissão e monta o registro numa passada só.
         val dismissals = reviews.filter { owners[it.clubId] != null }.mapNotNull { it.toDismissal() }
-        for (dismissal in dismissals) claimRepo.release(dismissal.clubId, dismissal)
+        val released = mutableListOf<ClubId>()
+        for (dismissal in dismissals) {
+            if (claimRepo.release(dismissal.clubId, dismissal) != null) released += dismissal.clubId
+        }
+        // Propostas do técnico que saiu morrem com a saída dele (revisão do
+        // PR #94), dos dois lados: o clube agora é da IA, que não negocia nem
+        // paga, e quem assumir depois não herda negociação alheia.
+        expireOffersOf(released)
         // O `release` muda dono e versão no banco: devolver a cópia de antes
         // dele deixaria clubes com `ownerId`/`version` velhos para quem vier
         // depois. Só relê quando houve demissão — o caso comum não paga a leitura.
         val clubsAfter = if (dismissals.isEmpty()) updated else clubRepo.findAll().ifEmpty { updated }
         return BoardTurnover(clubsAfter, reviews)
+    }
+
+    /** Expira por [ExpiryReason.MANAGER_LEFT] as pendentes que envolvem [clubIds]. */
+    private suspend fun expireOffersOf(clubIds: Collection<ClubId>) {
+        if (clubIds.isEmpty()) return
+        offerRepo.findPending()
+            .filter { offer -> clubIds.any(offer::involves) }
+            .mapNotNull { it.expire(ExpiryReason.MANAGER_LEFT) }
+            .forEach { offerRepo.saveIfPending(it) }
     }
 
     /** Clubes já com a meta nova + o balanço da diretoria da temporada encerrada. */

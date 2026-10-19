@@ -556,6 +556,14 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   pendente por comprador × jogador (`OfferAlreadyPending`), checagem de leitura
   — duas criações simultâneas ainda passam, sem corromper nada. Métrica
   `goalfather.transfer.offers{action,result}`.
+
+  **Troca de técnico (2ª revisão do PR #94).** A proposta é do técnico, não do
+  clube: quando a diretoria demite alguém (#62), as pendentes em que o clube
+  dele é comprador OU vendedor expiram por `MANAGER_LEFT`, logo após o
+  `release`, na mesma virada. Assim o clube (agora da IA) não paga a proposta do
+  demitido e quem o reivindicar depois não herda negociação alheia. Como rede de
+  segurança — a expiração não está na transação do `release` —, `offerBlocker`
+  também exige comprador humano (`BuyerNotHuman`), além do vendedor.
 - **Foco de estudo:** coroutines + concorrência, transações otimistas
 
 ### Fase 6 — Profundidade de gestão

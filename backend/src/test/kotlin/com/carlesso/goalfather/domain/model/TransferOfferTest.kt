@@ -87,6 +87,13 @@ class TransferOfferTest {
     }
 
     @Test
+    fun `involves reconhece os dois lados`() {
+        assertEquals(true, offer().involves(ClubId(1)))
+        assertEquals(true, offer().involves(ClubId(2)))
+        assertEquals(false, offer().involves(ClubId(3)))
+    }
+
+    @Test
     fun `invariantes - valor positivo e clubes distintos`() {
         assertThrows<IllegalArgumentException> { offer().copy(amount = 0) }
         assertThrows<IllegalArgumentException> { offer().copy(sellerClubId = ClubId(1)) }

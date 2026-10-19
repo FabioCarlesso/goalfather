@@ -75,6 +75,13 @@ class TransferOfferRulesTest {
     }
 
     @Test
+    fun `comprador sem tecnico humano nao compra (revisao PR 94)`() {
+        // Técnico comprador demitido: o clube voltou à IA, que não paga a proposta dele.
+        val aiBuyer = buyer.copy(ownerId = null)
+        assertEquals(OfferResult.BuyerNotHuman(ClubId(1)), offerBlocker(aiBuyer, seller, target, 500_000_00))
+    }
+
+    @Test
     fun `comprador sem caixa`() {
         val poor = buyer.copy(cash = 100_000_00)
         assertEquals(

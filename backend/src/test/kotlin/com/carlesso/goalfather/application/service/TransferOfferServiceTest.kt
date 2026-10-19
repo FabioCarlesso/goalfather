@@ -196,6 +196,16 @@ class TransferOfferServiceTest {
     }
 
     @Test
+    fun `aceite com comprador que voltou a IA e recusado (revisao PR 94)`() = runTest {
+        stubClubs(buyer.copy(ownerId = null), seller)
+        stubRound(RoundStatus.Scheduled)
+        coEvery { offerRepo.findById(pending.id) } returns pending
+
+        assertEquals(OfferResult.BuyerNotHuman(buyer.id), service.accept(pending.id, requesterId = sellerOwner))
+        coVerify(exactly = 0) { offerRepo.completeTransfer(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `aceite de proposta expirada devolve OfferExpired com o motivo`() = runTest {
         stubClubs(buyer, seller)
         val expired = pending.copy(status = OfferStatus.Expired(ExpiryReason.DEADLINE))

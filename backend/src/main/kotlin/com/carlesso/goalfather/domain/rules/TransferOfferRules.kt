@@ -58,7 +58,8 @@ fun squadViolationAfterSale(squad: List<Player>, playerId: PlayerId): SquadViola
 
 /**
  * Primeiro motivo de negócio que impede [buyer] de levar [playerId] de
- * [seller] por [amount], ou `null` se a transferência pode acontecer.
+ * [seller] por [amount], ou `null` se a transferência pode acontecer. Os dois
+ * lados precisam ter técnico humano: proposta é negociação entre técnicos.
  *
  * Roda DUAS vezes na vida de uma proposta: ao criar (feedback imediato ao
  * comprador) e ao aceitar — a checagem que vale, porque entre uma e outra o
@@ -80,6 +81,7 @@ fun offerBlocker(
         amount < MIN_OFFER_CENTS -> OfferResult.InvalidAmount(minimum = MIN_OFFER_CENTS)
         buyer.id == seller.id || !inSellerSquad -> OfferResult.PlayerNotAvailable(playerId)
         seller.ownerId == null -> OfferResult.SellerNotHuman(seller.id)
+        buyer.ownerId == null -> OfferResult.BuyerNotHuman(buyer.id)
         buyer.cash < amount -> OfferResult.InsufficientFunds(available = buyer.cash, required = amount)
         buyer.squad.size >= maxSquadSize -> OfferResult.SquadFull(maxSize = maxSquadSize)
         violation != null -> OfferResult.SellerSquadInvalid(violation, MIN_SQUAD_SIZE)

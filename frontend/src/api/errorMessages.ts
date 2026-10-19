@@ -102,6 +102,10 @@ export function offerErrorMessage(
         : 'O jogador não está mais no elenco do vendedor.'
     case 'SellerNotHuman':
       return 'Clubes da IA não negociam — propostas são só entre técnicos.'
+    case 'BuyerNotHuman':
+      return seller
+        ? 'O técnico que fez esta proposta deixou o clube — ela não vale mais.'
+        : 'Seu clube não tem mais técnico humano.'
     case 'SellerSquadInvalid':
       if (result.violation === 'NO_GOALKEEPER') {
         return seller ? 'Você não pode vender seu último goleiro.' : 'O vendedor não pode ficar sem goleiro.'

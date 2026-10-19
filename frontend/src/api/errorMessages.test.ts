@@ -70,6 +70,13 @@ describe('errorMessage', () => {
       .toBe('Proposta não encontrada.')
   })
 
+  it('explica o comprador que perdeu o técnico (revisão do PR #94)', () => {
+    expect(offerErrorMessage({ type: 'BuyerNotHuman', clubId: 2 }, 'seller'))
+      .toBe('O técnico que fez esta proposta deixou o clube — ela não vale mais.')
+    expect(offerErrorMessage({ type: 'OfferExpired', offerId: 1, reason: 'MANAGER_LEFT' }, 'buyer'))
+      .toBe('Esta proposta expirou: o técnico de um dos clubes deixou o cargo.')
+  })
+
   it('fala com o vendedor na segunda pessoa quando é ele quem aceita (revisão do PR #94)', () => {
     expect(offerErrorMessage({ type: 'SellerSquadInvalid', violation: 'TOO_FEW_PLAYERS', minSquadSize: 11 }, 'seller'))
       .toBe('Seu elenco não pode ficar com menos de 11 jogadores.')

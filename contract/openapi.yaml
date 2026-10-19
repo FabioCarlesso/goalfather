@@ -1635,11 +1635,13 @@ components:
 
     ExpiryReason:
       type: string
-      enum: [DEADLINE, PLAYER_TRANSFERRED]
+      enum: [DEADLINE, PLAYER_TRANSFERRED, MANAGER_LEFT]
       description: |
         `DEADLINE` — o prazo em rodadas venceu sem resposta.
         `PLAYER_TRANSFERRED` — o jogador deixou o elenco do vendedor: outra
         proposta por ele foi aceita, ou ele foi vendido ao mercado/se aposentou.
+        `MANAGER_LEFT` — o técnico de um dos dois clubes foi demitido: a
+        negociação era dele, e o clube (agora da IA) não a herda.
 
     SquadViolation:
       type: string
@@ -1665,6 +1667,7 @@ components:
         - $ref: '#/components/schemas/SquadFull'
         - $ref: '#/components/schemas/PlayerNotAvailable'
         - $ref: '#/components/schemas/SellerNotHuman'
+        - $ref: '#/components/schemas/BuyerNotHuman'
         - $ref: '#/components/schemas/SellerSquadInvalid'
         - $ref: '#/components/schemas/OfferAlreadyPending'
         - $ref: '#/components/schemas/OfferNotPending'
@@ -1680,6 +1683,7 @@ components:
           SquadFull:          '#/components/schemas/SquadFull'
           PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
           SellerNotHuman:     '#/components/schemas/SellerNotHuman'
+          BuyerNotHuman:      '#/components/schemas/BuyerNotHuman'
           SellerSquadInvalid: '#/components/schemas/SellerSquadInvalid'
           OfferAlreadyPending: '#/components/schemas/OfferAlreadyPending'
           OfferNotPending:    '#/components/schemas/OfferNotPending'
@@ -1708,6 +1712,16 @@ components:
       required: [type, clubId]
       properties:
         type:   { type: string, enum: [SellerNotHuman] }
+        clubId: { type: integer, format: int64 }
+
+    BuyerNotHuman:
+      description: |
+        O clube comprador não tem mais técnico humano (o técnico que propôs foi
+        demitido) — o clube da IA não paga a proposta dele.
+      type: object
+      required: [type, clubId]
+      properties:
+        type:   { type: string, enum: [BuyerNotHuman] }
         clubId: { type: integer, format: int64 }
 
     SellerSquadInvalid:

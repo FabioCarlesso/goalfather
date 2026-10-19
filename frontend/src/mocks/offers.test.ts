@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   advanceOffer,
+  expireOffersOf,
   afterRound,
   closedOfferResult,
   offerBlocker,
@@ -39,6 +40,7 @@ describe('regras de proposta do mock (issue #63)', () => {
     expect(offerBlocker(buyer, seller, 5, MIN_OFFER_CENTS - 1)).toEqual({ type: 'InvalidAmount', minimum: MIN_OFFER_CENTS })
     expect(offerBlocker(buyer, seller, 999, 500_000_00)).toEqual({ type: 'PlayerNotAvailable', playerId: 999 })
     expect(offerBlocker(buyer, { ...seller, ownerId: null }, 5, 500_000_00)).toEqual({ type: 'SellerNotHuman', clubId: 2 })
+    expect(offerBlocker({ ...buyer, ownerId: null }, seller, 5, 500_000_00)).toEqual({ type: 'BuyerNotHuman', clubId: 1 })
     expect(offerBlocker({ ...buyer, cash: 1 }, seller, 5, 500_000_00))
       .toEqual({ type: 'InsufficientFunds', available: 1, required: 500_000_00 })
     expect(offerBlocker(buyer, { ...seller, squad: squad(11) }, 5, 500_000_00))
@@ -62,6 +64,19 @@ describe('regras de proposta do mock (issue #63)', () => {
     expect(advanceOffer(offer, true)).toEqual(afterRound(offer))
     const rejected: TransferOffer = { ...offer, status: { type: 'Rejected' } }
     expect(advanceOffer(rejected, false)).toBe(rejected)
+  })
+
+  it('a demissão expira as pendentes do clube, dos dois lados (revisão do PR #94)', () => {
+    const asSeller: TransferOffer = { ...offer, id: 8, buyerClubId: 3, sellerClubId: 1 }
+    const others: TransferOffer = { ...offer, id: 9, buyerClubId: 3, sellerClubId: 4 }
+    const accepted: TransferOffer = { ...offer, id: 10, status: { type: 'Accepted' } }
+    const after = expireOffersOf([offer, asSeller, others, accepted], 1)
+    expect(after.map((o) => o.status)).toEqual([
+      { type: 'Expired', reason: 'MANAGER_LEFT' },
+      { type: 'Expired', reason: 'MANAGER_LEFT' },
+      { type: 'Pending' },
+      { type: 'Accepted' },
+    ])
   })
 
   it('proposta resolvida explica por que não aceita mais comando', () => {

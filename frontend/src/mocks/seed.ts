@@ -40,6 +40,7 @@ import {
   type BoardClub,
   type MockBoard,
 } from './board'
+import { expireOffersOf } from './offers'
 
 const player = (
   id: number,
@@ -438,6 +439,8 @@ export function applyBoardTurnover(endedSeason: number, finalTables: Standings[]
         if (ownerId == null) break
         clubOwners[review.clubId] = null
         if (club) state.clubs[review.clubId] = { ...club, ownerId: null }
+        // Propostas do técnico que saiu morrem com ele (revisão do PR #94).
+        state.offers = expireOffersOf(state.offers, review.clubId)
         // Demissão só para quem AINDA aponta para este clube — como o
         // `release` do backend; quem já está em outro clube não é demitido.
         const owner = auth.users.find((u) => u.id === ownerId && u.clubId === review.clubId)
