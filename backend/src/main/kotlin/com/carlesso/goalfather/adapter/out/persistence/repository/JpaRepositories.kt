@@ -11,9 +11,11 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsId
+import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -169,6 +171,54 @@ interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, Roun
 interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, Int> {
     /** Da temporada mais recente para a mais antiga — ordem de exibição. */
     fun findAllByOrderBySeasonDesc(): List<SeasonHistoryEntity>
+}
+
+/** Propostas de transferência entre técnicos (issue #63). */
+interface TransferOfferJpaRepository : JpaRepository<TransferOfferEntity, Long> {
+    /**
+     * TODAS as pendentes de um clube (comprador ou vendedor), da mais nova para
+     * a mais antiga. Sem limite: são as que pedem ação, e o prazo em rodadas
+     * já as mantém poucas — misturá-las com o histórico num `Top50` escondia
+     * uma pendente antiga atrás de 50 resolvidas (revisão do PR #94).
+     */
+    @Query(
+        "select o from TransferOfferEntity o " +
+            "where (o.buyerClubId = :clubId or o.sellerClubId = :clubId) " +
+            "and o.status = '${TransferOfferEntity.PENDING}' order by o.id desc",
+    )
+    fun findPendingByClub(@Param("clubId") clubId: Long): List<TransferOfferEntity>
+
+    /** Histórico (já resolvidas) de um clube, da mais nova para a mais antiga, limitado por [page]. */
+    @Query(
+        "select o from TransferOfferEntity o " +
+            "where (o.buyerClubId = :clubId or o.sellerClubId = :clubId) " +
+            "and o.status <> '${TransferOfferEntity.PENDING}' order by o.id desc",
+    )
+    fun findResolvedByClub(@Param("clubId") clubId: Long, page: Pageable): List<TransferOfferEntity>
+
+    fun findAllByStatus(status: String): List<TransferOfferEntity>
+
+    fun findAllByPlayerIdAndStatus(playerId: Long, status: String): List<TransferOfferEntity>
+
+    /**
+     * Compare-and-set da máquina de estados: grava status, motivo e prazo SÓ se
+     * a proposta ainda está `PENDING`. Devolve as linhas afetadas — `0` = outra
+     * escrita já a resolveu (aceite, recusa, retirada ou prazo). O UPDATE segura
+     * o lock da linha até o commit, então um concorrente que leu `PENDING`
+     * espera e, ao seguir, encontra o status novo → 0 linhas.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(
+        "update TransferOfferEntity o " +
+            "set o.status = :status, o.expiryReason = :expiryReason, o.roundsLeft = :roundsLeft " +
+            "where o.id = :id and o.status = '${TransferOfferEntity.PENDING}'",
+    )
+    fun saveIfPending(
+        @Param("id") id: Long,
+        @Param("status") status: String,
+        @Param("expiryReason") expiryReason: String?,
+        @Param("roundsLeft") roundsLeft: Int,
+    ): Int
 }
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, StandingsId> {

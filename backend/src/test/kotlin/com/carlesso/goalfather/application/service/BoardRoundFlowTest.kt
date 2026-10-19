@@ -4,6 +4,7 @@ import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.BoardExpectation
 import com.carlesso.goalfather.domain.model.BoardObjective
@@ -12,10 +13,15 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.ExpiryReason
+import com.carlesso.goalfather.domain.model.OfferId
+import com.carlesso.goalfather.domain.model.OfferStatus
+import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.rules.INITIAL_BOARD_CONFIDENCE
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
@@ -46,6 +52,7 @@ class BoardRoundFlowTest {
     private val clubRepo: ClubRepository = mockk()
     private val leagueRepo: LeagueRepository = mockk()
     private val claimRepo: ClubClaimRepository = mockk(relaxed = true)
+    private val offerRepo: TransferOfferRepository = mockk(relaxed = true)
     private val service = PlayRoundService(
         clubRepo,
         leagueRepo,
@@ -55,6 +62,7 @@ class BoardRoundFlowTest {
         mockk(relaxed = true),
         InMemoryCupRepository(),
         claimRepo,
+        offerRepo,
     )
 
     private val savedClubs = mutableListOf<Club>()
@@ -179,6 +187,30 @@ class BoardRoundFlowTest {
             )
         }
         coVerify(exactly = 0) { claimRepo.release(ClubId(1), any()) }
+    }
+
+    @Test
+    fun `demissao expira as propostas pendentes do tecnico que saiu (revisao PR 94)`() = runTest {
+        val champion = makeClub(id = 1, name = "Campeao", ownerId = 7).copy(board = titleBoard())
+        val flop = makeClub(id = 2, name = "Fiasco", ownerId = 8).copy(board = titleBoard(confidence = 10))
+        stubRound(listOf(champion, flop), table(1, 2))
+        fun offer(id: Long, buyer: Long, seller: Long) = TransferOffer(
+            id = OfferId(id), buyerClubId = ClubId(buyer), buyerClubName = "B", sellerClubId = ClubId(seller),
+            sellerClubName = "S", playerId = PlayerId(5), playerName = "P", amount = 100_000_00, roundsLeft = 3,
+        )
+        // O demitido (clube 2) como comprador e como vendedor; e uma entre terceiros.
+        val asBuyer = offer(1, buyer = 2, seller = 1)
+        val asSeller = offer(2, buyer = 1, seller = 2)
+        val others = offer(3, buyer = 1, seller = 3)
+        coEvery { offerRepo.findPending() } returns listOf(asBuyer, asSeller, others)
+        val saved = mutableListOf<TransferOffer>()
+        coEvery { offerRepo.saveIfPending(capture(saved)) } returns true
+
+        service.stream(1).toList()
+
+        val managerLeft = saved.filter { it.status == OfferStatus.Expired(ExpiryReason.MANAGER_LEFT) }
+        assertEquals(setOf(OfferId(1), OfferId(2)), managerLeft.map { it.id }.toSet())
+        assertTrue(saved.none { it.id == OfferId(3) && it.status == OfferStatus.Expired(ExpiryReason.MANAGER_LEFT) })
     }
 
     @Test

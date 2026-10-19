@@ -11,6 +11,7 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
+import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
@@ -24,6 +25,7 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.PenaltyScore
@@ -100,6 +102,9 @@ import kotlin.random.Random
  * em cada técnico (posição × meta), dentro da mesma gravação por clube dos
  * demais efeitos. Na virada, a diretoria dá o veredito — bônus, permanência ou
  * demissão — e fixa a meta da temporada nova. A engine de partida não muda.
+ *
+ * **Propostas entre técnicos (issue #63).** Cada rodada encerrada anda uma
+ * rodada no prazo das propostas pendentes; quem chega a zero expira.
  */
 class PlayRoundService(
     private val clubRepo: ClubRepository,
@@ -119,6 +124,9 @@ class PlayRoundService(
     // Diretoria (issue #62): o técnico demitido devolve o clube à IA — o claim
     // da issue #19 na direção inversa.
     private val claimRepo: ClubClaimRepository,
+    // Propostas entre técnicos (issue #63): o prazo delas anda com o relógio
+    // do jogo, uma rodada a cada rodada encerrada.
+    private val offerRepo: TransferOfferRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
     // Default = registry isolado: mantém os testes existentes construindo o
     // service sem passar métrica; em produção o BeanConfig injeta o registry real
@@ -329,6 +337,15 @@ class PlayRoundService(
             leagueRepo.saveRound(scheduleRound(round.number + 1, round.season, next, clubs, cup))
         }
 
+        // Prazo das propostas entre técnicos (issue #63): uma rodada a menos
+        // para cada pendente, e quem chega a zero expira. Aqui, depois do claim
+        // da rodada (issue #46), o relógio anda exatamente uma vez por rodada.
+        // DEPOIS do agendamento de propósito (revisão do PR #94): é um efeito
+        // secundário, e uma falha nele antes de `scheduleRound` deixaria a
+        // rodada `Finished` sem sucessora — a liga travaria por causa de uma
+        // proposta. Aqui, no pior caso, o prazo anda na rodada seguinte.
+        advanceOfferDeadlines()
+
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
         // encerrada"); SeasonFinished, quando há, vem logo antes dele.
         tail += RoundEvent.RoundFinished(newStandings, finances, training)
@@ -432,12 +449,28 @@ class PlayRoundService(
         // `toDismissal()` só existe para o veredito `Fired`: o `mapNotNull`
         // filtra a demissão e monta o registro numa passada só.
         val dismissals = reviews.filter { owners[it.clubId] != null }.mapNotNull { it.toDismissal() }
-        for (dismissal in dismissals) claimRepo.release(dismissal.clubId, dismissal)
+        val released = mutableListOf<ClubId>()
+        for (dismissal in dismissals) {
+            if (claimRepo.release(dismissal.clubId, dismissal) != null) released += dismissal.clubId
+        }
+        // Propostas do técnico que saiu morrem com a saída dele (revisão do
+        // PR #94), dos dois lados: o clube agora é da IA, que não negocia nem
+        // paga, e quem assumir depois não herda negociação alheia.
+        expireOffersOf(released)
         // O `release` muda dono e versão no banco: devolver a cópia de antes
         // dele deixaria clubes com `ownerId`/`version` velhos para quem vier
         // depois. Só relê quando houve demissão — o caso comum não paga a leitura.
         val clubsAfter = if (dismissals.isEmpty()) updated else clubRepo.findAll().ifEmpty { updated }
         return BoardTurnover(clubsAfter, reviews)
+    }
+
+    /** Expira por [ExpiryReason.MANAGER_LEFT] as pendentes que envolvem [clubIds]. */
+    private suspend fun expireOffersOf(clubIds: Collection<ClubId>) {
+        if (clubIds.isEmpty()) return
+        offerRepo.findPending()
+            .filter { offer -> clubIds.any(offer::involves) }
+            .mapNotNull { it.expire(ExpiryReason.MANAGER_LEFT) }
+            .forEach { offerRepo.saveIfPending(it) }
     }
 
     /** Clubes já com a meta nova + o balanço da diretoria da temporada encerrada. */
@@ -486,6 +519,27 @@ class PlayRoundService(
                 ?: fallback[club.id]
                 ?: return club.board
             return expectation.afterRound(position)
+        }
+    }
+
+    /**
+     * Anda o prazo de cada proposta pendente (issue #63) e expira as que já
+     * não têm o que negociar — o jogador saiu do elenco do vendedor (revisão do
+     * PR #94). A regra é do domínio (`TransferOffer.advance`); a gravação é
+     * condicional a a proposta ainda estar pendente, então um aceite ou recusa
+     * que chegue no meio do caminho vence e o `false` daqui é ignorado.
+     *
+     * Os elencos são lidos DEPOIS dos efeitos e da virada (aposentadorias
+     * incluídas) e só quando há proposta pendente — o caso comum não paga a
+     * leitura extra.
+     */
+    private suspend fun advanceOfferDeadlines() {
+        val pending = offerRepo.findPending()
+        if (pending.isEmpty()) return
+        val squadsBySeller = clubRepo.findAll().associate { club -> club.id to club.squad.mapTo(HashSet()) { it.id } }
+        for (offer in pending) {
+            val stillWithSeller = offer.playerId in squadsBySeller[offer.sellerClubId].orEmpty()
+            offerRepo.saveIfPending(offer.advance(stillWithSeller))
         }
     }
 

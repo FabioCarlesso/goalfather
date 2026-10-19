@@ -67,7 +67,8 @@ goalfather/
 │       │       ├── useStandings.ts
 │       │       ├── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
 │       │       ├── useCup.ts          # chave da copa mata-mata; 404 vira `null` (issue #61)
-│       │       └── useBoard.ts        # painel da diretoria: meta + confiança (issue #62)
+│       │       ├── useBoard.ts        # painel da diretoria: meta + confiança (issue #62)
+│       │       └── useOffers.ts       # propostas entre técnicos: lista com polling + comandos (issue #63)
 │       ├── mocks/
 │       │   ├── browser.ts            # setupWorker do MSW
 │       │   ├── handlers.ts           # handlers HTTP
@@ -75,7 +76,8 @@ goalfather/
 │       │   ├── seed.ts               # dados iniciais (espelha protótipo)
 │       │   ├── engine.ts             # simulação local de partida (porta JS da engine Kotlin)
 │       │   ├── cup.ts                # sorteio/avanço da copa + calendário (espelha CupRules.kt, issue #61)
-│       │   └── board.ts              # meta, confiança e veredito da diretoria (espelha BoardRules.kt, issue #62)
+│       │   ├── board.ts              # meta, confiança e veredito da diretoria (espelha BoardRules.kt, issue #62)
+│       │   └── offers.ts             # regras das propostas entre técnicos (espelha TransferOfferRules.kt, issue #63)
 │       ├── pages/
 │       │   ├── DashboardPage.tsx
 │       │   ├── LineupPage.tsx
@@ -84,12 +86,14 @@ goalfather/
 │       │   ├── StandingsPage.tsx
 │       │   ├── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
 │       │   ├── CupPage.tsx           # chave (bracket) da copa mata-mata (issue #61)
-│       │   └── FiredPage.tsx         # game over: demissão + resumo da carreira + recomeçar (issue #62)
+│       │   ├── FiredPage.tsx         # game over: demissão + resumo da carreira + recomeçar (issue #62)
+│       │   └── ClubPage.tsx          # elenco de um rival + formulário de proposta (issue #63)
 │       ├── components/               # apresentação pura, sem fetch
 │       │   ├── PlayerCard.tsx
 │       │   ├── FormationGrid.tsx
 │       │   ├── MatchEventFeed.tsx
 │       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
+│       │   ├── OffersPanel.tsx       # propostas recebidas/enviadas na Dashboard (issue #63)
 │       │   └── ...
 │       ├── domain/                   # tipos e helpers cross-tela
 │       │   ├── types.ts              # re-exporta tipos do OpenAPI
@@ -218,6 +222,8 @@ A **bilheteria (issues #4 e #59)** mudou de casa por causa dessa mesma regra: a 
 A **copa mata-mata (issue #61)** segue a mesma linha. O sorteio da chave, o avanço dos vencedores, o prêmio por fase (`CUP_PRIZE_CENTS`) e o calendário que intercala fases de copa com rodadas de liga (`seasonCalendar`) espelham `CupRules.kt`/`SeasonCalendar.kt` em `src/mocks/cup.ts`; a disputa de pênaltis (`penaltyShootout`) espelha `PenaltyRules.kt` em `src/mocks/engine.ts`. A app não decide nada disso: a `CupPage` desenha o que chega em `GET /api/league/cup` — quem passou vem em `winnerId` (pênaltis incluídos), o prêmio em `phases[].prizeCents` — e a `RoundPage` lê da `Round.stage` (`oneOf` `League`/`Cup`, `switch` exaustivo em `domain/cup.ts`) se a data é rodada de liga ou fase de copa. Em `src/domain/cup.ts` moram só os rótulos das fases. A fase de copa usa o MESMO fluxo de prontidão, botão e WebSocket da rodada de liga — não existe "modo copa" na app.
 
 A **diretoria (issue #62)** também. A meta de cada clube (força do elenco contra a própria divisão), o andar da confiança por rodada de liga, o limiar de demissão e o veredito de fim de temporada espelham `BoardRules.kt` em `src/mocks/board.ts`, testados em `src/mocks/board.test.ts` com os invariantes do `BoardRulesTest.kt`. A app não calcula nada disso: o `BoardPanel` desenha o `BoardStatus` de `GET /api/clubs/{id}/board` — humor (`mood`) e limiar (`firingConfidence`) vêm prontos —, a `RoundPage` mostra o `boardReviews` do `SeasonFinished` (`switch` exaustivo sobre `BoardVerdict` em `src/domain/board.ts`, que só guarda rótulos) e a demissão chega como `AuthUser.dismissal`: o guarda `RequireClub` manda quem está sem clube **por demissão** para `/fired`, a tela de game over, que leva à seleção de clube. Reivindicar um clube apaga a demissão no servidor.
+
+As **propostas entre técnicos (issue #63)** seguem o mesmo desenho. As regras que bloqueiam uma transferência (valor mínimo, vendedor humano, caixa, elenco cheio, elenco mínimo do vendedor) e o prazo em rodadas espelham `TransferOfferRules.kt` em `src/mocks/offers.ts` (testado em `src/mocks/offers.test.ts`); os handlers só guardam estado e mantêm a posse em `clubOwners`, a fonte persistida do mock. A app não valida nada disso: o `OffersPanel` desenha a lista de `GET /api/clubs/{id}/offers`, e cada comando devolve um `TransferOfferResult` cujo erro vira mensagem em `offerErrorMessage` (`switch` exaustivo). A notificação da v1 é polling (`OFFERS_POLL_MS`) na mesma query que alimenta o badge do menu. O E2E (`e2e/offers.spec.ts`) cria o segundo técnico pela API de dentro da página, então roda igual contra o MSW e contra o backend real.
 
 O mesmo confinamento vale para a **issue #57**: `SCORING_WEIGHT` (peso de cada posição no sorteio de quem finaliza) e `matchStats()` (projeção do stream em finalizações/defesas/cartões) espelham `Position.scoringWeight` e `domain/event/MatchStats.kt`, e vivem só em `src/mocks/engine.ts`. O componente `MatchStatsSummary` **não conta nada**: recebe o `MatchStats` que veio pronto no evento `FullTime` e só desenha. Como o elenco agora pesa por posição, a engine de mock recebe `SquadMember[]` (`{ id, pos }`) em vez de uma lista de ids.
 

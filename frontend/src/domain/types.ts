@@ -57,6 +57,14 @@ export type BoardVerdict   = components['schemas']['BoardVerdict']
 export type BoardReview    = components['schemas']['BoardReview']
 export type Dismissal      = components['schemas']['Dismissal']
 
+// Propostas de transferência entre técnicos (issue #63)
+export type TransferOffer       = components['schemas']['TransferOffer']
+export type OfferStatus         = components['schemas']['OfferStatus']
+export type ExpiryReason        = components['schemas']['ExpiryReason']
+export type SquadViolation      = components['schemas']['SquadViolation']
+export type TransferOfferResult = components['schemas']['TransferOfferResult']
+export type CreateOfferRequest  = components['schemas']['CreateOfferRequest']
+
 // Auth (issue #18) + seleção de clube (issue #19)
 export type AuthUser        = components['schemas']['AuthUser']
 export type AuthResponse    = components['schemas']['AuthResponse']

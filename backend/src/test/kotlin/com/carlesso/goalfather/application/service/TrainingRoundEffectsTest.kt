@@ -50,6 +50,7 @@ class TrainingRoundEffectsTest {
             mockk(relaxed = true),
             InMemoryCupRepository(),
             mockk(relaxed = true),
+            mockk(relaxed = true),
         )
 
     // Elenco jovem e cansado: o foco FISICO tem o que recuperar, e a chance de

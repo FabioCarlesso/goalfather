@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { errorMessage, isClubWriteConflict, transferErrorMessage } from './errorMessages'
+import { errorMessage, isClubWriteConflict, offerErrorMessage, transferErrorMessage } from './errorMessages'
 import { ApiError } from './client'
 
 describe('errorMessage', () => {
@@ -51,5 +51,38 @@ describe('errorMessage', () => {
 
   it('fallback para valores não-Error', () => {
     expect(errorMessage('algo')).toBe('Ocorreu um erro inesperado.')
+  })
+
+  it('explica os erros de negócio das propostas entre técnicos (issue #63)', () => {
+    expect(offerErrorMessage({ type: 'SellerSquadInvalid', violation: 'NO_GOALKEEPER', minSquadSize: 11 }, 'buyer'))
+      .toBe('O vendedor não pode ficar sem goleiro.')
+    expect(offerErrorMessage({ type: 'SellerSquadInvalid', violation: 'TOO_FEW_PLAYERS', minSquadSize: 11 }, 'buyer'))
+      .toBe('O vendedor não pode ficar com menos de 11 jogadores.')
+    expect(offerErrorMessage({ type: 'OfferExpired', offerId: 1, reason: 'PLAYER_TRANSFERRED' }, 'seller'))
+      .toBe('Esta proposta expirou: o jogador deixou o clube vendedor.')
+    expect(offerErrorMessage({ type: 'OfferNotPending', offerId: 1, status: { type: 'Rejected' } }, 'buyer'))
+      .toBe('Esta proposta já foi recusada.')
+    expect(offerErrorMessage({ type: 'OfferAlreadyPending', offerId: 3 }, 'buyer'))
+      .toBe('Você já tem uma proposta pendente por este jogador — retire-a para mudar o valor.')
+    expect(offerErrorMessage({ type: 'RoundInProgress', roundNumber: 4 }, 'seller'))
+      .toBe('A rodada 4 está em andamento — aceite depois que ela terminar.')
+    expect(errorMessage(new ApiError(404, { code: 'OFFER_NOT_FOUND', message: 'x' })))
+      .toBe('Proposta não encontrada.')
+  })
+
+  it('explica o comprador que perdeu o técnico (revisão do PR #94)', () => {
+    expect(offerErrorMessage({ type: 'BuyerNotHuman', clubId: 2 }, 'seller'))
+      .toBe('O técnico que fez esta proposta deixou o clube — ela não vale mais.')
+    expect(offerErrorMessage({ type: 'OfferExpired', offerId: 1, reason: 'MANAGER_LEFT' }, 'buyer'))
+      .toBe('Esta proposta expirou: o técnico de um dos clubes deixou o cargo.')
+  })
+
+  it('fala com o vendedor na segunda pessoa quando é ele quem aceita (revisão do PR #94)', () => {
+    expect(offerErrorMessage({ type: 'SellerSquadInvalid', violation: 'TOO_FEW_PLAYERS', minSquadSize: 11 }, 'seller'))
+      .toBe('Seu elenco não pode ficar com menos de 11 jogadores.')
+    expect(offerErrorMessage({ type: 'SellerSquadInvalid', violation: 'NO_GOALKEEPER', minSquadSize: 11 }, 'seller'))
+      .toBe('Você não pode vender seu último goleiro.')
+    expect(offerErrorMessage({ type: 'InsufficientFunds', available: 100, required: 500 }, 'seller'))
+      .toMatch(/^O comprador não tem mais caixa/)
   })
 })

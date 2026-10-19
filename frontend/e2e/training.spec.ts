@@ -21,7 +21,7 @@ test.describe('Training focus', () => {
     // estado local do componente.
     await page.getByRole('link', { name: 'Tabela' }).click()
     await expect(page.getByRole('heading', { name: 'Tabela' })).toBeVisible()
-    await page.getByRole('link', { name: 'Clube' }).click()
+    await page.getByRole('link', { name: 'Clube', exact: true }).click()
 
     await expect(page.getByRole('button', { name: 'Físico' })).toHaveAttribute(
       'aria-pressed',

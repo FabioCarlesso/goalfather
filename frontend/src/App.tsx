@@ -13,6 +13,10 @@ import { WelcomePage } from './pages/WelcomePage'
 import { LoginPage } from './pages/LoginPage'
 import { SelectClubPage } from './pages/SelectClubPage'
 import { FiredPage } from './pages/FiredPage'
+import { ClubPage } from './pages/ClubPage'
+import { useClubOffers } from './api/queries/useOffers'
+import { useMyClubId } from './auth/useMyClubId'
+import { pendingReceivedCount } from './domain/offers'
 import { isOnboarded } from './lib/onboarding'
 
 const nav = [
@@ -72,6 +76,12 @@ function AppLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
+  // Badge de propostas recebidas pendentes (issue #63): a mesma query com
+  // polling que a Dashboard usa — o técnico fica sabendo em qualquer tela.
+  const myClubId = useMyClubId()
+  const { data: offers } = useClubOffers(myClubId)
+  const pendingOffers = offers ? pendingReceivedCount(offers, myClubId) : 0
+
   const onLogout = () => {
     logout()
     navigate('/login')
@@ -96,6 +106,14 @@ function AppLayout() {
                 }
               >
                 {n.label}
+                {n.to === '/dashboard' && pendingOffers > 0 && (
+                  <span
+                    className="ml-1.5 rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-slate-950"
+                    title={`${pendingOffers} proposta(s) aguardando resposta`}
+                  >
+                    {pendingOffers}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -158,6 +176,7 @@ export function App() {
                   <Route path="/round/match/:matchId" element={<MatchPage />} />
                   <Route path="/market"    element={<MarketPage />} />
                   <Route path="/standings" element={<StandingsPage />} />
+                  <Route path="/clubs/:id" element={<ClubPage />} />
                   <Route path="/cup"       element={<CupPage />} />
                   <Route path="/history"   element={<HistoryPage />} />
                 </Route>

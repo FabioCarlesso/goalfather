@@ -8,15 +8,19 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
+import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.MarketEntry
+import com.carlesso.goalfather.domain.model.OfferId
+import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundFinance
@@ -26,6 +30,7 @@ import com.carlesso.goalfather.domain.model.SeasonRecord
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainingFocus
+import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
@@ -33,6 +38,7 @@ import com.carlesso.goalfather.test.makePlayer
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
@@ -68,8 +74,10 @@ class PlayRoundServiceTest {
     // relaxed: só a demissão (issue #62) libera clube; os testes que a
     // verificam checam a chamada explicitamente.
     private val claimRepo: ClubClaimRepository = mockk(relaxed = true)
+    // relaxed: só os testes do prazo das propostas (issue #63) o stubam.
+    private val offerRepo: TransferOfferRepository = mockk(relaxed = true)
     private val service =
-        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo, claimRepo)
+        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo, claimRepo, offerRepo)
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
@@ -888,6 +896,63 @@ class PlayRoundServiceTest {
 
         // Prontidão da rodada 1 é zerada exatamente uma vez.
         coVerify(exactly = 1) { readinessRepo.reset(1) }
+    }
+
+    @Test
+    fun `cada rodada encerrada anda o prazo das propostas pendentes (issue 63)`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val offer = TransferOffer(
+            id = OfferId(1),
+            buyerClubId = ClubId(1),
+            buyerClubName = "Home FC",
+            sellerClubId = ClubId(2),
+            sellerClubName = "Away FC",
+            playerId = PlayerId(5),
+            playerName = "Alvo",
+            amount = 100_000_00,
+            roundsLeft = 2,
+        )
+        val lastRound = offer.copy(id = OfferId(2), roundsLeft = 1)
+        // Jogador que já não está no elenco do vendedor (revisão do PR #94).
+        val orphan = offer.copy(id = OfferId(3), playerId = PlayerId(999))
+        coEvery { offerRepo.findPending() } returns listOf(offer, lastRound, orphan)
+        val saved = mutableListOf<TransferOffer>()
+        coEvery { offerRepo.saveIfPending(capture(saved)) } returns true
+
+        service.stream(1).toList()
+
+        // Uma rodada a menos; quem estava na última expira por prazo; a do
+        // jogador que saiu do vendedor expira na hora.
+        assertEquals(listOf(1, 0), saved.take(2).map { it.roundsLeft })
+        assertEquals(OfferStatus.Pending, saved[0].status)
+        assertEquals(OfferStatus.Expired(ExpiryReason.DEADLINE), saved[1].status)
+        assertEquals(OfferStatus.Expired(ExpiryReason.PLAYER_TRANSFERRED), saved[2].status)
+        // Depois do agendamento da próxima rodada (revisão do PR #94): uma falha
+        // aqui não pode deixar a rodada encerrada sem sucessora.
+        coVerifyOrder {
+            leagueRepo.saveRound(any())
+            offerRepo.findPending()
+        }
+    }
+
+    @Test
+    fun `replay da rodada nao anda o prazo das propostas (issue 63)`() = runTest {
+        coEvery { leagueRepo.findRound(1) } returns round.copy(status = RoundStatus.Finished)
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+
+        service.stream(1).toList()
+
+        coVerify(exactly = 0) { offerRepo.findPending() }
+        coVerify(exactly = 0) { offerRepo.saveIfPending(any()) }
     }
 
     @Test

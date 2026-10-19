@@ -55,6 +55,7 @@ import {
 } from './engine'
 import { recordCupRound } from './cup'
 import { boardStatusOf, forNewManager } from './board'
+import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_ROUNDS } from './offers'
 import type {
   TransferResult,
   Club,
@@ -68,6 +69,8 @@ import type {
   AuthResponse,
   AuthUser,
   AvailableClub,
+  TransferOffer,
+  TransferOfferResult,
 } from '../domain/types'
 import type { components } from '../api/generated'
 
@@ -77,6 +80,7 @@ type LineupRequest         = components['schemas']['LineupRequest']
 type ExpandStadiumRequest  = components['schemas']['ExpandStadiumRequest']
 type TrainingFocusRequest  = components['schemas']['TrainingFocusRequest']
 type TicketPriceRequest    = components['schemas']['TicketPriceRequest']
+type CreateOfferRequest    = components['schemas']['CreateOfferRequest']
 
 // ─── WebSocket de partida e rodada ────────────────────────────────────────
 // MSW intercepta o construtor global de WebSocket. Quando MatchPage/RoundPage
@@ -147,6 +151,61 @@ const toAuthUser = (u: MockUser): AuthUser => ({
   clubId: u.clubId,
   dismissal: u.dismissal ?? null,
 })
+
+// ─── Propostas entre técnicos (issue #63) ─────────────────────────────────
+// As regras moram em ./offers (espelho de TransferOfferRules.kt); aqui só o
+// estado e o HTTP. Clubes da IA também são materializados sob demanda, como
+// no getClub — o vendedor da proposta precisa de elenco real.
+
+const forbidden = (): ErrorResponse => ({
+  code: 'FORBIDDEN',
+  message: 'Você não é dono do clube desta operação',
+})
+
+const offerNotFound = (id: number): ErrorResponse => ({
+  code: 'OFFER_NOT_FOUND',
+  message: `Proposta ${id} não encontrada`,
+})
+
+/**
+ * Clube por id, materializando o da IA na primeira vez (mesma regra do getClub).
+ * O dono vem de `clubOwners`, a posse PERSISTIDA do mock: depois de um reload o
+ * `state.clubs[1]` volta ao seed sem dono, mas o técnico continua sendo dele.
+ */
+const loadClub = (id: number): StoredClub | undefined => {
+  if (!state.clubs[id] && clubMeta[id]) materializeClub(id)
+  const club = state.clubs[id]
+  return club && { ...club, ownerId: clubOwners[id] ?? null }
+}
+
+const requesterOf = (request: Request): number | null =>
+  userIdFromAuthHeader(request.headers.get('Authorization'))
+
+const replaceOffer = (offer: TransferOffer): void => {
+  state.offers = state.offers.map((o) => (o.id === offer.id ? offer : o))
+}
+
+/**
+ * Recusa e retirada: só a proposta muda. `side` diz qual clube o usuário
+ * precisa possuir — espelha `TransferOfferService.resolve`.
+ */
+async function resolveOffer(
+  params: Record<string, unknown>,
+  request: Request,
+  side: (offer: TransferOffer) => number,
+  status: TransferOffer['status'],
+) {
+  await delay(SIMULATED_LATENCY_MS)
+  const offer = state.offers.find((o) => o.id === Number(params.id))
+  if (!offer) return HttpResponse.json(offerNotFound(Number(params.id)), { status: 404 })
+  if (loadClub(side(offer))?.ownerId !== requesterOf(request)) {
+    return HttpResponse.json(forbidden(), { status: 403 })
+  }
+  if (offer.status.type !== 'Pending') return HttpResponse.json(closedOfferResult(offer) satisfies TransferOfferResult)
+  const next: TransferOffer = { ...offer, status }
+  replaceOffer(next)
+  return HttpResponse.json({ type: 'Success', offer: next } satisfies TransferOfferResult)
+}
 
 export const handlers = [
 
@@ -477,6 +536,104 @@ export const handlers = [
       { type: 'Success', club: toClubResponse(updatedClub), player } satisfies TransferResult,
     )
   }),
+
+  // ─── listClubOffers (issue #63) ───────────────────────────────────────
+  http.get('/api/clubs/:id/offers', async ({ params, request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const club = loadClub(Number(params.id))
+    if (!club) return HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+    if (club.ownerId !== requesterOf(request)) return HttpResponse.json(forbidden(), { status: 403 })
+    const mine = state.offers.filter((o) => o.buyerClubId === club.id || o.sellerClubId === club.id)
+    return HttpResponse.json(mine.slice(0, 50))
+  }),
+
+  // ─── createOffer (issue #63) ──────────────────────────────────────────
+  http.post('/api/offers', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const body = (await request.json()) as CreateOfferRequest
+    const buyer = loadClub(body.buyerClubId)
+    const seller = loadClub(body.sellerClubId)
+    if (!buyer || !seller) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
+    if (buyer.ownerId !== requesterOf(request)) return HttpResponse.json(forbidden(), { status: 403 })
+
+    const blocker = offerBlocker(buyer, seller, body.playerId, body.amount)
+    if (blocker) return HttpResponse.json(blocker satisfies TransferOfferResult)
+    // Uma pendente por comprador × jogador (revisão do PR #94).
+    const duplicate = state.offers.find((o) =>
+      o.buyerClubId === buyer.id && o.playerId === body.playerId && o.status.type === 'Pending')
+    if (duplicate) {
+      return HttpResponse.json({ type: 'OfferAlreadyPending', offerId: duplicate.id } satisfies TransferOfferResult)
+    }
+
+    const player = seller.squad.find((p) => p.id === body.playerId)!
+    const offer: TransferOffer = {
+      id: state.nextOfferId++,
+      buyerClubId: buyer.id,
+      buyerClubName: buyer.name,
+      sellerClubId: seller.id,
+      sellerClubName: seller.name,
+      playerId: player.id,
+      playerName: player.name,
+      amount: body.amount,
+      roundsLeft: OFFER_DEADLINE_ROUNDS,
+      status: { type: 'Pending' },
+    }
+    state.offers = [offer, ...state.offers]
+    return HttpResponse.json({ type: 'Success', offer } satisfies TransferOfferResult)
+  }),
+
+  // ─── acceptOffer (issue #63) ──────────────────────────────────────────
+  // Espelha `TransferOfferService.accept`: revalida as regras, move jogador e
+  // dinheiro e expira as rivais. O mock é single-thread — a corrida entre
+  // aceites só existe (e só é testada) no backend.
+  http.post('/api/offers/:id/accept', async ({ params, request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const offer = state.offers.find((o) => o.id === Number(params.id))
+    if (!offer) return HttpResponse.json(offerNotFound(Number(params.id)), { status: 404 })
+    const seller = loadClub(offer.sellerClubId)
+    const buyer = loadClub(offer.buyerClubId)
+    if (!seller || !buyer) return HttpResponse.json(notFound('Clube não encontrado'), { status: 404 })
+    if (seller.ownerId !== requesterOf(request)) return HttpResponse.json(forbidden(), { status: 403 })
+    if (offer.status.type !== 'Pending') return HttpResponse.json(closedOfferResult(offer) satisfies TransferOfferResult)
+    if (state.currentRound.status === 'InProgress') {
+      return HttpResponse.json(
+        { type: 'RoundInProgress', roundNumber: state.currentRound.number } satisfies TransferOfferResult,
+      )
+    }
+    const blocker = offerBlocker(buyer, seller, offer.playerId, offer.amount)
+    // Jogador que já saiu do vendedor: a proposta expira na hora (revisão do PR #94).
+    if (blocker?.type === 'PlayerNotAvailable') {
+      const expired: TransferOffer = { ...offer, status: { type: 'Expired', reason: 'PLAYER_TRANSFERRED' } }
+      replaceOffer(expired)
+      return HttpResponse.json(closedOfferResult(expired) satisfies TransferOfferResult)
+    }
+    if (blocker) return HttpResponse.json(blocker satisfies TransferOfferResult)
+
+    const player = seller.squad.find((p) => p.id === offer.playerId)!
+    state.clubs[seller.id] = {
+      ...seller,
+      cash: seller.cash + offer.amount,
+      squad: seller.squad.filter((p) => p.id !== player.id),
+    }
+    state.clubs[buyer.id] = { ...buyer, cash: buyer.cash - offer.amount, squad: [...buyer.squad, player] }
+
+    const accepted: TransferOffer = { ...offer, status: { type: 'Accepted' } }
+    state.offers = state.offers.map((o) => {
+      if (o.id === offer.id) return accepted
+      if (o.playerId === offer.playerId && o.status.type === 'Pending') {
+        return { ...o, status: { type: 'Expired', reason: 'PLAYER_TRANSFERRED' } }
+      }
+      return o
+    })
+    return HttpResponse.json({ type: 'Success', offer: accepted } satisfies TransferOfferResult)
+  }),
+
+  // ─── rejectOffer / withdrawOffer (issue #63) ──────────────────────────
+  http.post('/api/offers/:id/reject', ({ params, request }) =>
+    resolveOffer(params, request, (o) => o.sellerClubId, { type: 'Rejected' })),
+
+  http.post('/api/offers/:id/withdraw', ({ params, request }) =>
+    resolveOffer(params, request, (o) => o.buyerClubId, { type: 'Withdrawn' })),
 
   // ─── getStandings ─────────────────────────────────────────────────────
   http.get('/api/league/standings', async () => {
@@ -873,6 +1030,14 @@ export const handlers = [
         // Avança para a próxima rodada (cliente busca via getCurrentRound depois)
         state.currentRound = state.nextRound()
       }
+
+      // Prazo das propostas entre técnicos (issue #63), DEPOIS de avançar o
+      // calendário, como no backend (revisão do PR #94); quem perdeu o jogador
+      // do vendedor expira na hora.
+      state.offers = state.offers.map((o) => advanceOffer(
+        o,
+        state.clubs[o.sellerClubId]?.squad.some((p) => p.id === o.playerId) ?? true,
+      ))
 
       // Extrato de TODOS os clubes da liga, como o backend — inclusive de
       // quem folgou ou já caiu na copa (review do PR #78).

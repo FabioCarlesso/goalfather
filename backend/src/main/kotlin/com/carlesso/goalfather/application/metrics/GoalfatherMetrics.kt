@@ -23,6 +23,13 @@ object GoalfatherMetrics {
     /** Counter de transferências no mercado, dimensionado por [TAG_RESULT]. */
     const val MARKET_TRANSFERS = "goalfather.market.transfers"
 
+    /**
+     * Counter dos comandos sobre propostas entre técnicos (issue #63),
+     * dimensionado por [TAG_ACTION] (`create`/`accept`/`reject`/`withdraw`) e
+     * [TAG_RESULT] (o desfecho em snake_case: `success`, `offer_expired`, ...).
+     */
+    const val TRANSFER_OFFERS = "goalfather.transfer.offers"
+
     /** Counter de tentativas de login, dimensionado por [TAG_RESULT]. */
     const val AUTH_LOGINS = "goalfather.auth.logins"
 
@@ -36,4 +43,7 @@ object GoalfatherMetrics {
 
     /** Tag que dimensiona o desfecho (`success`, `conflict`, `failure`, ...). */
     const val TAG_RESULT = "result"
+
+    /** Tag que dimensiona o comando (`create`, `accept`, ...) — propostas (issue #63). */
+    const val TAG_ACTION = "action"
 }

@@ -64,6 +64,8 @@ tags:
     description: Copa mata-mata paralela ao campeonato
   - name: Board
     description: Diretoria — meta da temporada, confiança no técnico e demissão
+  - name: Offers
+    description: Propostas de transferência entre técnicos humanos
 
 paths:
   /api/auth/register:
@@ -526,6 +528,164 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/clubs/{id}/offers:
+    get:
+      tags: [Offers]
+      operationId: listClubOffers
+      summary: Propostas recebidas e enviadas pelo clube
+      description: |
+        Propostas em que o clube é comprador OU vendedor (issue #63): TODAS as
+        pendentes, seguidas das 50 resolvidas mais recentes — cada grupo da mais
+        nova para a mais antiga. A UI separa recebidas
+        (`sellerClubId` = o clube) de enviadas e consulta este endpoint com
+        polling para avisar o técnico de proposta nova. Só o dono do clube lê.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      responses:
+        '200':
+          description: Propostas do clube
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TransferOffer' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: O usuário não é dono do clube (`FORBIDDEN`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/offers:
+    post:
+      tags: [Offers]
+      operationId: createOffer
+      summary: Fazer proposta por um jogador de outro técnico
+      description: |
+        Proposta em dinheiro por um jogador do elenco de outro clube com dono
+        humano (issue #63). Nada muda de mãos aqui: a proposta fica pendente
+        por `roundsLeft` rodadas, até o vendedor aceitar ou recusar, o
+        comprador retirar ou o prazo vencer.
+
+        As mesmas regras do aceite já valem na criação — valor mínimo, caixa do
+        comprador, elenco cheio, vendedor humano e elenco mínimo do vendedor
+        (11 jogadores, sem vender o último goleiro) — e voltam como variantes de
+        `TransferOfferResult` no 200. Uma proposta pendente por comprador ×
+        jogador: a segunda volta `OfferAlreadyPending` (retire a antiga para
+        mudar o valor).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateOfferRequest' }
+      responses:
+        '200':
+          description: Resultado (proposta criada ou erro de negócio)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferOfferResult' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: O usuário não é dono do clube comprador (`FORBIDDEN`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/offers/{id}/accept:
+    post:
+      tags: [Offers]
+      operationId: acceptOffer
+      summary: Aceitar proposta (vendedor)
+      description: |
+        Executa a transferência atomicamente (issue #63): debita o comprador,
+        credita o vendedor, move o jogador e expira as outras propostas
+        pendentes pelo mesmo jogador (`OfferExpired` com
+        `PLAYER_TRANSFERRED`) — tudo ou nada. As regras são revalidadas aqui,
+        porque o caixa e os elencos podem ter mudado desde a proposta.
+
+        Dois aceites simultâneos pelo mesmo jogador: exatamente um vence; o
+        outro recebe `OfferExpired`. Bloqueado durante a simulação da rodada
+        (`RoundInProgress`). Se o jogador já saiu do elenco do vendedor, a
+        proposta expira na hora (`OfferExpired` com `PLAYER_TRANSFERRED`).
+      parameters:
+        - $ref: '#/components/parameters/OfferIdPath'
+      responses:
+        '200':
+          description: Resultado (transferência feita ou erro de negócio)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferOfferResult' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: O usuário não é dono do clube vendedor (`FORBIDDEN`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Proposta (`OFFER_NOT_FOUND`) ou clube inexistente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/offers/{id}/reject:
+    post:
+      tags: [Offers]
+      operationId: rejectOffer
+      summary: Recusar proposta (vendedor)
+      parameters:
+        - $ref: '#/components/parameters/OfferIdPath'
+      responses:
+        '200':
+          description: Resultado (proposta recusada ou erro de negócio)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferOfferResult' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: O usuário não é dono do clube vendedor (`FORBIDDEN`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Proposta (`OFFER_NOT_FOUND`) ou clube inexistente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/offers/{id}/withdraw:
+    post:
+      tags: [Offers]
+      operationId: withdrawOffer
+      summary: Retirar proposta (comprador)
+      parameters:
+        - $ref: '#/components/parameters/OfferIdPath'
+      responses:
+        '200':
+          description: Resultado (proposta retirada ou erro de negócio)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferOfferResult' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: O usuário não é dono do clube comprador (`FORBIDDEN`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Proposta (`OFFER_NOT_FOUND`) ou clube inexistente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /api/league/standings:
     get:
       tags: [League]
@@ -862,6 +1022,12 @@ components:
       in: path
       required: true
       description: ID do clube
+      schema: { type: integer, format: int64 }
+    OfferIdPath:
+      name: id
+      in: path
+      required: true
+      description: ID da proposta
       schema: { type: integer, format: int64 }
 
   responses:
@@ -1356,6 +1522,250 @@ components:
       properties:
         type:   { type: string, enum: [Conflict] }
         clubId: { type: integer, format: int64 }
+
+    # ─── Offers (propostas entre técnicos, issue #63) ─────────────────────
+    CreateOfferRequest:
+      type: object
+      required: [buyerClubId, sellerClubId, playerId, amount]
+      properties:
+        buyerClubId:  { type: integer, format: int64, description: Clube de quem propõe (o do usuário) }
+        sellerClubId: { type: integer, format: int64, description: Clube dono do jogador }
+        playerId:     { type: integer, format: int64 }
+        amount:
+          type: integer
+          format: int64
+          description: Valor oferecido, em centavos (mínimo R$ 1.000 — `InvalidAmount` abaixo disso)
+
+    TransferOffer:
+      description: |
+        Proposta em dinheiro de um técnico por um jogador de outro (issue #63).
+        Os nomes são uma foto do momento da proposta: o histórico segue legível
+        depois que o jogador muda de clube ou se aposenta.
+      type: object
+      required:
+        - id
+        - buyerClubId
+        - buyerClubName
+        - sellerClubId
+        - sellerClubName
+        - playerId
+        - playerName
+        - amount
+        - roundsLeft
+        - status
+      properties:
+        id:             { type: integer, format: int64 }
+        buyerClubId:    { type: integer, format: int64 }
+        buyerClubName:  { type: string }
+        sellerClubId:   { type: integer, format: int64 }
+        sellerClubName: { type: string }
+        playerId:       { type: integer, format: int64 }
+        playerName:     { type: string }
+        amount:         { type: integer, format: int64, description: Valor em centavos }
+        roundsLeft:
+          type: integer
+          minimum: 0
+          description: Rodadas até a proposta expirar sem resposta (anda a cada rodada encerrada).
+        status: { $ref: '#/components/schemas/OfferStatus' }
+      # Exemplo explícito: o Swagger UI não monta um a partir do `oneOf` do
+      # `status` e mostrava `"status": {}` (revisão do PR #94).
+      example:
+        id: 7
+        buyerClubId: 1
+        buyerClubName: Goal Father FC
+        sellerClubId: 2
+        sellerClubName: Atlético Bonsucesso
+        playerId: 2004
+        playerName: Daniel Valente
+        amount: 50000000
+        roundsLeft: 3
+        status: { type: Pending }
+
+    OfferStatus:
+      description: |
+        Ciclo de vida da proposta — espelha o `sealed interface OfferStatus` do
+        domínio. Só `Pending` tem saída; os demais são terminais. O motivo da
+        expiração só existe DENTRO de `Expired`. No TS, `switch (status.type)`
+        exaustivo.
+      oneOf:
+        - $ref: '#/components/schemas/PendingOfferStatus'
+        - $ref: '#/components/schemas/AcceptedOfferStatus'
+        - $ref: '#/components/schemas/RejectedOfferStatus'
+        - $ref: '#/components/schemas/WithdrawnOfferStatus'
+        - $ref: '#/components/schemas/ExpiredOfferStatus'
+      discriminator:
+        propertyName: type
+        mapping:
+          Pending:   '#/components/schemas/PendingOfferStatus'
+          Accepted:  '#/components/schemas/AcceptedOfferStatus'
+          Rejected:  '#/components/schemas/RejectedOfferStatus'
+          Withdrawn: '#/components/schemas/WithdrawnOfferStatus'
+          Expired:   '#/components/schemas/ExpiredOfferStatus'
+
+    PendingOfferStatus:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [Pending] }
+
+    AcceptedOfferStatus:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [Accepted] }
+
+    RejectedOfferStatus:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [Rejected] }
+
+    WithdrawnOfferStatus:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [Withdrawn] }
+
+    ExpiredOfferStatus:
+      type: object
+      required: [type, reason]
+      properties:
+        type:   { type: string, enum: [Expired] }
+        reason: { $ref: '#/components/schemas/ExpiryReason' }
+
+    ExpiryReason:
+      type: string
+      enum: [DEADLINE, PLAYER_TRANSFERRED, MANAGER_LEFT]
+      description: |
+        `DEADLINE` — o prazo em rodadas venceu sem resposta.
+        `PLAYER_TRANSFERRED` — o jogador deixou o elenco do vendedor: outra
+        proposta por ele foi aceita, ou ele foi vendido ao mercado/se aposentou.
+        `MANAGER_LEFT` — o técnico de um dos dois clubes foi demitido: a
+        negociação era dele, e o clube (agora da IA) não a herda.
+
+    SquadViolation:
+      type: string
+      enum: [TOO_FEW_PLAYERS, NO_GOALKEEPER]
+      description: |
+        Por que o elenco do vendedor ficaria inválido: menos de
+        `minSquadSize` jogadores, ou sem o último goleiro.
+
+    TransferOfferResult:
+      description: |
+        Mapeia os erros de negócio de `OfferResult` no domínio Kotlin (issue
+        #63), mais o `Success`. Discriminado por `type` — o frontend usa
+        `switch (result.type)` exaustivo. Posse (403) e existência (404) NÃO
+        estão aqui: viram status HTTP.
+
+        `InsufficientFunds`, `SquadFull`, `PlayerNotAvailable` e `Conflict`
+        reusam os schemas do `TransferResult` do mercado: mesmo significado,
+        mesma forma.
+      oneOf:
+        - $ref: '#/components/schemas/OfferSuccess'
+        - $ref: '#/components/schemas/InvalidOfferAmount'
+        - $ref: '#/components/schemas/InsufficientFunds'
+        - $ref: '#/components/schemas/SquadFull'
+        - $ref: '#/components/schemas/PlayerNotAvailable'
+        - $ref: '#/components/schemas/SellerNotHuman'
+        - $ref: '#/components/schemas/BuyerNotHuman'
+        - $ref: '#/components/schemas/SellerSquadInvalid'
+        - $ref: '#/components/schemas/OfferAlreadyPending'
+        - $ref: '#/components/schemas/OfferNotPending'
+        - $ref: '#/components/schemas/OfferExpired'
+        - $ref: '#/components/schemas/RoundInProgress'
+        - $ref: '#/components/schemas/TransferConflict'
+      discriminator:
+        propertyName: type
+        mapping:
+          Success:            '#/components/schemas/OfferSuccess'
+          InvalidAmount:      '#/components/schemas/InvalidOfferAmount'
+          InsufficientFunds:  '#/components/schemas/InsufficientFunds'
+          SquadFull:          '#/components/schemas/SquadFull'
+          PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
+          SellerNotHuman:     '#/components/schemas/SellerNotHuman'
+          BuyerNotHuman:      '#/components/schemas/BuyerNotHuman'
+          SellerSquadInvalid: '#/components/schemas/SellerSquadInvalid'
+          OfferAlreadyPending: '#/components/schemas/OfferAlreadyPending'
+          OfferNotPending:    '#/components/schemas/OfferNotPending'
+          OfferExpired:       '#/components/schemas/OfferExpired'
+          RoundInProgress:    '#/components/schemas/RoundInProgress'
+          Conflict:           '#/components/schemas/TransferConflict'
+
+    OfferSuccess:
+      description: Comando aplicado — `offer` traz o estado novo da proposta.
+      type: object
+      required: [type, offer]
+      properties:
+        type:  { type: string, enum: [Success] }
+        offer: { $ref: '#/components/schemas/TransferOffer' }
+
+    InvalidOfferAmount:
+      type: object
+      required: [type, minimum]
+      properties:
+        type:    { type: string, enum: [InvalidAmount] }
+        minimum: { type: integer, format: int64, description: Menor proposta aceita, em centavos }
+
+    SellerNotHuman:
+      description: O clube vendedor é da IA — proposta é só entre técnicos humanos.
+      type: object
+      required: [type, clubId]
+      properties:
+        type:   { type: string, enum: [SellerNotHuman] }
+        clubId: { type: integer, format: int64 }
+
+    BuyerNotHuman:
+      description: |
+        O clube comprador não tem mais técnico humano (o técnico que propôs foi
+        demitido) — o clube da IA não paga a proposta dele.
+      type: object
+      required: [type, clubId]
+      properties:
+        type:   { type: string, enum: [BuyerNotHuman] }
+        clubId: { type: integer, format: int64 }
+
+    SellerSquadInvalid:
+      type: object
+      required: [type, violation, minSquadSize]
+      properties:
+        type:         { type: string, enum: [SellerSquadInvalid] }
+        violation:    { $ref: '#/components/schemas/SquadViolation' }
+        minSquadSize: { type: integer }
+
+    OfferAlreadyPending:
+      description: |
+        O comprador já tem uma proposta pendente por este jogador (`offerId`).
+        Para mudar o valor, retire-a e faça outra.
+      type: object
+      required: [type, offerId]
+      properties:
+        type:    { type: string, enum: [OfferAlreadyPending] }
+        offerId: { type: integer, format: int64 }
+
+    OfferNotPending:
+      description: A proposta já foi aceita, recusada ou retirada.
+      type: object
+      required: [type, offerId, status]
+      properties:
+        type:    { type: string, enum: [OfferNotPending] }
+        offerId: { type: integer, format: int64 }
+        status:  { $ref: '#/components/schemas/OfferStatus' }
+
+    OfferExpired:
+      type: object
+      required: [type, offerId, reason]
+      properties:
+        type:    { type: string, enum: [OfferExpired] }
+        offerId: { type: integer, format: int64 }
+        reason:  { $ref: '#/components/schemas/ExpiryReason' }
+
+    RoundInProgress:
+      description: Aceite bloqueado enquanto a rodada é simulada — o jogador não troca de clube no meio dela.
+      type: object
+      required: [type, roundNumber]
+      properties:
+        type:        { type: string, enum: [RoundInProgress] }
+        roundNumber: { type: integer }
 
     # ─── Match (sealed MatchEvent + summary) ─────────────────────────────
     MatchEvent:
