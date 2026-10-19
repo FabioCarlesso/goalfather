@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.event
 
+import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.RoundFinance
@@ -61,6 +62,10 @@ sealed interface RoundEvent {
      * `cupChampion` (issue #61) é o vencedor da copa mata-mata da temporada
      * que acabou — o mesmo que vai para o histórico. Nulo quando não houve
      * copa ou ela não chegou à final.
+     *
+     * `boardReviews` (issue #62) é o balanço da diretoria de cada clube: meta,
+     * posição final e o veredito (bônus, permanência ou demissão). Vem de TODOS
+     * os clubes com meta na temporada — cabe ao cliente filtrar o do técnico.
      */
     @Serializable
     @SerialName("SeasonFinished")
@@ -70,5 +75,6 @@ sealed interface RoundEvent {
         val standings: List<Standings>,
         val retirements: List<Retirement> = emptyList(),
         val cupChampion: CupClub? = null,
+        val boardReviews: List<BoardReview> = emptyList(),
     ) : RoundEvent
 }

@@ -12,6 +12,7 @@ import { MatchPage } from './pages/MatchPage'
 import { WelcomePage } from './pages/WelcomePage'
 import { LoginPage } from './pages/LoginPage'
 import { SelectClubPage } from './pages/SelectClubPage'
+import { FiredPage } from './pages/FiredPage'
 import { isOnboarded } from './lib/onboarding'
 
 const nav = [
@@ -33,10 +34,15 @@ function RequireAuth() {
   return <Outlet />
 }
 
-/** Autenticado mas sem clube → escolhe um primeiro (issue #19). */
+/**
+ * Autenticado mas sem clube → escolhe um primeiro (issue #19). Sem clube POR
+ * DEMISSÃO (issue #62) → antes, a tela de game over, que leva à escolha.
+ */
 function RequireClub() {
   const { user } = useAuth()
-  if (user?.clubId == null) return <Navigate to="/select-club" replace />
+  if (user?.clubId == null) {
+    return <Navigate to={user?.dismissal ? '/fired' : '/select-club'} replace />
+  }
   return <Outlet />
 }
 
@@ -136,6 +142,7 @@ export function App() {
               </Route>
               <Route element={<RequireAuth />}>
                 <Route path="/select-club" element={<SelectClubPage />} />
+                <Route path="/fired" element={<FiredPage />} />
               </Route>
             </Route>
 

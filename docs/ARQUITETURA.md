@@ -346,6 +346,7 @@ class PlayMatchService(
 | `POST` | `/api/clubs/{id}/medical` | Departamento médico: recupera stamina e encurta lesões — issue #54 |
 | `POST` | `/api/clubs/{id}/training` | Foco de treino da semana (`ATAQUE`/`DEFESA`/`FISICO`/`DESCANSO`) — issue #58 |
 | `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (R$ 10–200, em centavos) — issue #59 |
+| `GET` | `/api/clubs/{id}/board` | Painel da diretoria: meta da temporada, posição e confiança no técnico — issue #62 |
 | `GET` | `/api/league/standings` | Tabela de classificação |
 | `GET` | `/api/league/cup?season=` | Chave da copa mata-mata (sem `season` = a mais recente) — issue #61 |
 | `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
@@ -773,6 +774,59 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   travando a liga depois da 1ª temporada contra o backend real (o E2E roda no
   MSW, que guarda a rodada em memória). Agora a ordenação é `season DESC,
   number DESC`; `CurrentRoundIntegrationTest` reproduz a virada contra o H2.
+- [x] **6.9** Metas da diretoria: objetivo de temporada, bônus e demissão — issue #62
+  (o jogo não tinha condição de derrota. Agora, no início de cada temporada, a
+  diretoria fixa uma meta de posição para cada clube — regra pura
+  `boardExpectations` em `domain/rules/BoardRules.kt`, determinística dada a
+  composição da liga: cada clube é ranqueado pela força do ELENCO
+  (`squadRating`, soma dos 11 melhores ÷ 11, sem fadiga nem escalação) contra
+  os da própria divisão. Os ~15% mais fortes (3 numa liga de 20, 1 numa de 6)
+  miram o título, a metade de cima mira a metade de cima e o resto, o meio da
+  tabela. `BoardObjective` carrega o bônus como propriedade do valor, no idioma
+  de `TrainingFocus`.)
+
+  **Confiança por rodada.** Cada rodada de LIGA move a confiança (0..100) pela
+  distância posição × meta, dentro da MESMA gravação por clube dos demais
+  efeitos (`persistRoundEffects`) — por isso a tabela da rodada passou a ser
+  calculada antes dos efeitos. Sobe devagar e cai rápido, com teto por rodada
+  para uma rodada só não decidir a temporada. Data de copa não mexe na tabela
+  e, pelo mesmo `when` sobre o `sealed` `RoundStage`, não mexe na confiança.
+  Só as divisões que JOGARAM a data são avaliadas: com divisões de tamanhos
+  diferentes, a menor folga no fim do calendário, e reavaliar a tabela parada
+  dela empurraria a confiança (até a demissão) sem jogo. Quem assume um clube
+  no meio da temporada (claim) herda a meta, mas a confiança volta ao valor
+  inicial: o técnico novo não responde pelo que veio antes dele.
+
+  **Veredito como valor.** Na virada, `BoardVerdict` é `sealed`: `TargetMet`
+  (bônus do objetivo no caixa, como delta), `TargetMissed` (fica, sem bônus)
+  ou `Fired` — meta perdida com a confiança em `FIRING_CONFIDENCE` ou abaixo.
+  Usar a confiança, e não só a posição final, separa "afundou a temporada
+  inteira" de "tropeçou na última rodada com a diretoria satisfeita". O
+  balanço de todos os clubes viaja no `SeasonFinished` (`boardReviews`), e a
+  meta da temporada nova é fixada DEPOIS do envelhecimento e da troca de
+  divisão.
+
+  **Demissão = claim ao contrário.** `ClubClaimRepository.release` devolve o
+  clube ao pool da IA e tira o clube do usuário na MESMA transação, registrando
+  a `Dismissal` (migration V13: colunas `board_*` em `clubs` e
+  `users.dismissal_json`). O UPDATE do clube é condicional ao DONO e incrementa
+  a versão, então não disputa lock com ninguém e invalida um `save` baseado na
+  leitura antiga. A `Dismissal` só é gravada se o usuário ainda aponta para o
+  clube (`BoardReview.toDismissal()` monta o registro no domínio). Clube da IA
+  "demitido" não tem efeito. Na v1 isso é o game over: o `AuthUser` passa a
+  carregar `dismissal` — a `RoundPage` rebusca `/me` sozinha quando chega o
+  `Fired` do próprio clube —, a UI mostra a tela de demissão com o histórico do
+  clube (#60) e o técnico recomeça escolhendo outro clube — o claim apaga a
+  demissão. No multiplayer, o mesmo `release` já
+  devolve o clube do humano demitido à IA.
+
+  **Saves anteriores à issue.** Clube sem meta (colunas nulas) recebe a meta na
+  boot (`DataInitializer.backfillBoards`, pela mesma regra e uma vez só); a
+  primeira rodada e o `GET /api/clubs/{id}/board` ainda derivam a meta como rede
+  de segurança, se o backfill perder uma corrida de lock. Liga nova já nasce com
+  as metas no seed (`DataInitializer`). O `BoardStatus` traz `onTarget` pronto,
+  para a UI não recomparar posições. A engine
+  de partida não mudou.
 - [ ] Mercado dinâmico / variação de preços — *futuro*
 
 ##### Por que `AgingOutcome` e não `Player?`

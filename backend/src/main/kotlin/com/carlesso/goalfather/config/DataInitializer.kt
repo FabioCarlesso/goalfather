@@ -2,6 +2,7 @@ package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
+import com.carlesso.goalfather.adapter.out.persistence.mapper.applyBoard
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.CupJpaRepository
@@ -9,8 +10,12 @@ import com.carlesso.goalfather.adapter.out.persistence.repository.MarketEntryJpa
 import com.carlesso.goalfather.adapter.out.persistence.repository.PlayerJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.StandingsJpaRepository
+import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.seed.dsl.League
 import com.carlesso.goalfather.application.seed.initialLeague
+import com.carlesso.goalfather.domain.rules.boardExpectations
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Configuration
@@ -44,15 +49,44 @@ class DataInitializer(
     private val standingsRepo: StandingsJpaRepository,
     private val cupRepo: CupJpaRepository,
     private val json: Json,
+    private val clubs: ClubRepository,
+    private val league: LeagueRepository,
 ) : CommandLineRunner {
 
     override fun run(vararg args: String?) {
-        if (clubRepo.count() > 0L) return
+        if (clubRepo.count() > 0L) {
+            backfillBoards()
+            return
+        }
         persist(initialLeague())
+    }
+
+    /**
+     * Save anterior à issue #62: fixa uma vez, no boot, a meta da temporada
+     * corrente de quem ainda não tem. Sem isto o `GET /board` derivaria a meta
+     * da liga inteira a cada chamada até a primeira rodada — e ela poderia
+     * mudar entre chamadas se o mercado mexesse nos elencos.
+     *
+     * Passa pelos PORTS (não pelas entidades) porque a meta é regra de domínio
+     * sobre o `Club` completo, com elenco. `runBlocking` faz a ponte para os
+     * ports `suspend` — aceitável aqui: é o boot, não há thread de request a
+     * bloquear. O `save` respeita o lock otimista; um `Conflict` (alguém gravou
+     * o clube no meio) é ignorado, porque a rodada ainda fixa a meta que faltar.
+     */
+    private fun backfillBoards() = runBlocking {
+        val season = league.currentStandings().firstOrNull()?.season ?: return@runBlocking
+        val all = clubs.findAll()
+        val missing = all.filter { it.board?.season != season }
+        if (missing.isEmpty()) return@runBlocking
+        val boards = boardExpectations(season, all)
+        for (club in missing) clubs.save(club.copy(board = boards[club.id]))
     }
 
     /** Traduz o agregado de domínio para entidades JPA e grava. */
     private fun persist(league: League) {
+        // Metas da diretoria da 1ª temporada (issue #62), fixadas já no seed:
+        // a meta é função da liga como ela COMEÇA, antes de qualquer compra.
+        val boards = boardExpectations(league.season, league.clubs)
         for (club in league.clubs) {
             clubRepo.save(
                 ClubEntity(
@@ -61,7 +95,7 @@ class DataInitializer(
                     cash = club.cash,
                     stadiumCapacity = club.stadiumCapacity,
                     division = club.division.value,
-                ),
+                ).apply { applyBoard(boards[club.id]) },
             )
             for (player in club.squad) {
                 playerRepo.save(player.toEntity(clubId = club.id.value))

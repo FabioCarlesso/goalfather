@@ -4,10 +4,14 @@ import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.UserRepository
+import com.carlesso.goalfather.domain.model.BoardExpectation
+import com.carlesso.goalfather.domain.model.BoardObjective
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
+import com.carlesso.goalfather.domain.rules.INITIAL_BOARD_CONFIDENCE
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -99,6 +103,91 @@ class ClaimClubIntegrationTest {
         assertIs<ClubSaveResult.Saved>(clubRepo.save(club.copy(stadiumCapacity = club.stadiumCapacity + 1000)))
 
         assertEquals(club.stadiumCapacity + 1000, clubRepo.findById(clubId)!!.stadiumCapacity)
+    }
+
+    private fun dismissalOf(clubId: ClubId) = Dismissal(
+        clubId = clubId,
+        clubName = "Clube $clubId",
+        season = 2026,
+        objective = BoardObjective.TITLE,
+        targetPosition = 1,
+        finalPosition = 6,
+    )
+
+    @Test
+    fun `release devolve o clube a IA e registra a demissao no usuario (issue 62)`() = runBlocking {
+        val user = newUser("fired-${System.nanoTime()}")
+        val clubId = anyAvailableClubId()
+        assertIs<ClaimResult.Success>(claimRepo.claim(clubId, user.id))
+
+        val released = claimRepo.release(clubId, dismissalOf(clubId))
+
+        // Claim ao contrário: clube sem dono e de volta ao pool, usuário sem clube.
+        assertNull(clubRepo.findById(clubId)!!.ownerId)
+        assertTrue(clubRepo.findAvailable().any { it.id == clubId })
+        val reloaded = userRepo.findById(user.id)!!
+        assertNull(reloaded.clubId)
+        assertEquals(dismissalOf(clubId), reloaded.dismissal)
+        assertEquals(reloaded, released)
+    }
+
+    @Test
+    fun `novo claim apaga a demissao anterior (issue 62)`() = runBlocking {
+        val user = newUser("rehired-${System.nanoTime()}")
+        val clubId = anyAvailableClubId()
+        assertIs<ClaimResult.Success>(claimRepo.claim(clubId, user.id))
+        claimRepo.release(clubId, dismissalOf(clubId))
+
+        val newClubId = anyAvailableClubId()
+        val again = claimRepo.claim(newClubId, user.id)
+
+        assertIs<ClaimResult.Success>(again)
+        assertNull(again.user.dismissal)
+        assertNull(userRepo.findById(user.id)!!.dismissal)
+        // Devolve o clube ao pool: o H2 é compartilhado pelas suítes e os 12
+        // clubes do seed são o limite de claims da execução inteira.
+        claimRepo.release(newClubId, dismissalOf(newClubId))
+    }
+
+    @Test
+    fun `claim reinicia a confianca da diretoria herdada da IA (issue 62)`() = runBlocking {
+        val user = newUser("newboss-${System.nanoTime()}")
+        val clubId = anyAvailableClubId()
+        val club = clubRepo.findById(clubId)!!
+        val sunk = BoardExpectation(season = 2026, objective = BoardObjective.TITLE, targetPosition = 1, confidence = 5)
+        assertIs<ClubSaveResult.Saved>(clubRepo.save(club.copy(board = sunk)))
+
+        assertIs<ClaimResult.Success>(claimRepo.claim(clubId, user.id))
+
+        // A meta é do clube e fica; a confiança é do técnico e recomeça.
+        assertEquals(sunk.copy(confidence = INITIAL_BOARD_CONFIDENCE), clubRepo.findById(clubId)!!.board)
+        claimRepo.release(clubId, dismissalOf(clubId))
+    }
+
+    @Test
+    fun `release nao registra demissao se o usuario ja esta em outro clube (issue 62)`() = runBlocking {
+        val user = newUser("moved-${System.nanoTime()}")
+        val oldClubId = anyAvailableClubId()
+        assertIs<ClaimResult.Success>(claimRepo.claim(oldClubId, user.id))
+        val newClubId = anyAvailableClubId()
+        assertIs<ClaimResult.Success>(claimRepo.claim(newClubId, user.id))
+
+        // O clube antigo ainda tem o usuário como dono, mas ele já está no novo.
+        assertNull(claimRepo.release(oldClubId, dismissalOf(oldClubId)))
+
+        assertNull(clubRepo.findById(oldClubId)!!.ownerId)
+        val reloaded = userRepo.findById(user.id)!!
+        assertEquals(newClubId, reloaded.clubId)
+        assertNull(reloaded.dismissal)
+        claimRepo.release(newClubId, dismissalOf(newClubId))
+    }
+
+    @Test
+    fun `release de clube sem dono nao faz nada (issue 62)`(): Unit = runBlocking {
+        val clubId = anyAvailableClubId()
+
+        assertNull(claimRepo.release(clubId, dismissalOf(clubId)))
+        assertNull(clubRepo.findById(clubId)!!.ownerId)
     }
 
     @Test

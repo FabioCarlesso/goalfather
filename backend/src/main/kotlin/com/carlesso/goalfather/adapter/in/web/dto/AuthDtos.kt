@@ -21,6 +21,8 @@ data class AuthUserDto(
     val id: Long,
     val username: String,
     val clubId: Long? = null,
+    /** Demissão mais recente (issue #62) — presente, a UI abre a tela de game over. */
+    val dismissal: DismissalDto? = null,
 )
 
 @Serializable
@@ -41,6 +43,7 @@ fun User.toDto(): AuthUserDto = AuthUserDto(
     id = id.value,
     username = username,
     clubId = clubId?.value,
+    dismissal = dismissal?.toDto(),
 )
 
 /** Resumo de um clube disponível — média do `overall` do elenco (0 se vazio). */

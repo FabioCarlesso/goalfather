@@ -30,4 +30,8 @@ class UserEntity(
 
     @Column(name = "club_id")
     var clubId: Long? = null,
+
+    /** Demissão mais recente (issue #62), como JSON — ver `UserMapper`. */
+    @Column(name = "dismissal_json", columnDefinition = "TEXT")
+    var dismissalJson: String? = null,
 )

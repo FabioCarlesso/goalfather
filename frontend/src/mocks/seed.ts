@@ -3,11 +3,13 @@
 // Quando o backend Kotlin estiver pronto, esta pasta inteira (mocks/) é removida.
 
 import type {
+  BoardReview,
   CareerCampaign,
   Club,
   ClubCareer,
   Cup,
   CupClub,
+  Dismissal,
   Player,
   MarketEntry,
   Position,
@@ -28,6 +30,15 @@ import {
   type SquadMember,
 } from './engine'
 import { canHoldCup, cupRound, drawCup, seasonCalendar } from './cup'
+import {
+  boardExpectations,
+  boardsAfterRound,
+  seasonBoardReviews,
+  squadRating,
+  toDismissal,
+  type BoardClub,
+  type MockBoard,
+} from './board'
 
 const player = (
   id: number,
@@ -359,6 +370,9 @@ export const state = {
   // Copa da temporada corrente (issue #61).
   cup: drawSeasonCup(2026) as Cup | null,
   currentRound: generateRound(1, 2026) as Round,
+  // Metas da diretoria da temporada corrente, por clube (issue #62) —
+  // preenchidas logo abaixo, porque a força do clube 1 sai de `state.clubs`.
+  boards: {} as Record<number, MockBoard>,
   /** Próxima data do calendário — rodada de liga ou fase de copa. */
   nextRound: (): Round => {
     const { number, season } = state.currentRound
@@ -366,6 +380,72 @@ export const state = {
     if (next?.type === 'Cup' && state.cup) return cupRound(number + 1, season, state.cup, divisionOf)
     return generateRound(number + 1, season, next?.type === 'League' ? next.matchday : number + 1)
   },
+}
+
+// ─── Diretoria (issue #62) ───────────────────────────────────────────────
+// As regras vivem em ./board (espelho de BoardRules.kt); aqui só o estado.
+
+/**
+ * Força de cada clube para a diretoria: elenco real de quem foi materializado
+ * (o clube 1 e os reivindicados), força média do seed para os da IA.
+ */
+function boardClubs(): BoardClub[] {
+  return allClubIds.map((id) => {
+    const club = state.clubs[id]
+    return {
+      id,
+      division: divisionOf(id),
+      rating: club ? squadRating(club.squad.map((p) => p.overall)) : clubMeta[id]!.strength,
+    }
+  })
+}
+
+state.boards = boardExpectations(2026, boardClubs())
+
+/**
+ * Rodada de LIGA encerrada: a confiança de cada técnico anda conforme a posição
+ * × a meta, só nas divisões que jogaram (data de copa não chama isto — a
+ * tabela não mexe).
+ */
+export function evaluateBoards(tables: Standings[], playedClubIds: ReadonlySet<number>): void {
+  state.boards = boardsAfterRound(state.boards, tables, playedClubIds)
+}
+
+/**
+ * Veredito da diretoria na virada (issue #62) — chamar ANTES de
+ * `startNewSeason`, que fixa as metas da temporada nova. Bônus entra no caixa
+ * de quem tem caixa no mock (clubes materializados); a demissão de um clube com
+ * dono humano devolve o clube à IA e registra a `dismissal` no usuário — o
+ * claim ao contrário, como no backend.
+ */
+export function applyBoardTurnover(endedSeason: number, finalTables: Standings[]): BoardReview[] {
+  const reviews = seasonBoardReviews(endedSeason, finalTables, state.boards, (id) => clubMeta[id]?.name ?? `Clube ${id}`)
+  for (const review of reviews) {
+    const club = state.clubs[review.clubId]
+    switch (review.verdict.type) {
+      case 'TargetMet':
+        if (club) state.clubs[review.clubId] = { ...club, cash: club.cash + review.verdict.bonusCents }
+        break
+      case 'TargetMissed':
+        break
+      case 'Fired': {
+        const ownerId = clubOwners[review.clubId]
+        if (ownerId == null) break
+        clubOwners[review.clubId] = null
+        if (club) state.clubs[review.clubId] = { ...club, ownerId: null }
+        // Demissão só para quem AINDA aponta para este clube — como o
+        // `release` do backend; quem já está em outro clube não é demitido.
+        const owner = auth.users.find((u) => u.id === ownerId && u.clubId === review.clubId)
+        if (owner) {
+          owner.clubId = null
+          owner.dismissal = toDismissal(review)
+        }
+        persistMockAuth()
+        break
+      }
+    }
+  }
+  return reviews
 }
 
 // ─── Auth + seleção de clube (issues #18/#19) ─────────────────────────────
@@ -379,6 +459,8 @@ export interface MockUser {
   username: string
   password: string
   clubId: number | null
+  /** Demissão mais recente (issue #62); some ao reivindicar outro clube. */
+  dismissal?: Dismissal | null
 }
 
 // Persistência do estado de auth do mock no localStorage: sobrevive ao reload
@@ -587,6 +669,9 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
   state.standings = freshStandings(season, divisionAssignments)
   state.cup = drawSeasonCup(season)
   state.currentRound = generateRound(1, season)
+  // Metas da temporada nova (issue #62), com o elenco já envelhecido e os
+  // clubes já nas divisões novas — mesma ordem do backend.
+  state.boards = boardExpectations(season, boardClubs())
   return retirements
 }
 

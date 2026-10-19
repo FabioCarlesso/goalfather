@@ -63,6 +63,7 @@ class ClubWriteConflictResponseTest {
         setTrainingFocus = setTrainingFocus,
         setTicketPrice = setTicketPrice,
         expandStadium = expandStadium,
+        board = mockk(),
         json = json,
     )
 

@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
+import com.carlesso.goalfather.adapter.out.persistence.mapper.applyBoard
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toDomain
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
@@ -134,6 +135,7 @@ class ClubSaveTransaction(
         entity.division = club.division.value
         entity.trainingFocus = club.trainingFocus.name
         entity.ticketPriceCents = club.ticketPriceCents
+        entity.applyBoard(club.board)
         // `saveAndFlush`: o UPDATE (e a checagem do `@Version`) acontece AGORA,
         // então `saved.version` já é a versão que fica no banco após o commit.
         val saved = clubRepo.saveAndFlush(entity)

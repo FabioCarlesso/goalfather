@@ -66,14 +66,16 @@ goalfather/
 │       │       ├── useMarket.ts
 │       │       ├── useStandings.ts
 │       │       ├── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
-│       │       └── useCup.ts          # chave da copa mata-mata; 404 vira `null` (issue #61)
+│       │       ├── useCup.ts          # chave da copa mata-mata; 404 vira `null` (issue #61)
+│       │       └── useBoard.ts        # painel da diretoria: meta + confiança (issue #62)
 │       ├── mocks/
 │       │   ├── browser.ts            # setupWorker do MSW
 │       │   ├── handlers.ts           # handlers HTTP
 │       │   ├── ws.ts                 # mock de WebSocket para partida ao vivo
 │       │   ├── seed.ts               # dados iniciais (espelha protótipo)
 │       │   ├── engine.ts             # simulação local de partida (porta JS da engine Kotlin)
-│       │   └── cup.ts                # sorteio/avanço da copa + calendário (espelha CupRules.kt, issue #61)
+│       │   ├── cup.ts                # sorteio/avanço da copa + calendário (espelha CupRules.kt, issue #61)
+│       │   └── board.ts              # meta, confiança e veredito da diretoria (espelha BoardRules.kt, issue #62)
 │       ├── pages/
 │       │   ├── DashboardPage.tsx
 │       │   ├── LineupPage.tsx
@@ -81,11 +83,13 @@ goalfather/
 │       │   ├── MarketPage.tsx
 │       │   ├── StandingsPage.tsx
 │       │   ├── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
-│       │   └── CupPage.tsx           # chave (bracket) da copa mata-mata (issue #61)
+│       │   ├── CupPage.tsx           # chave (bracket) da copa mata-mata (issue #61)
+│       │   └── FiredPage.tsx         # game over: demissão + resumo da carreira + recomeçar (issue #62)
 │       ├── components/               # apresentação pura, sem fetch
 │       │   ├── PlayerCard.tsx
 │       │   ├── FormationGrid.tsx
 │       │   ├── MatchEventFeed.tsx
+│       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
 │       │   └── ...
 │       ├── domain/                   # tipos e helpers cross-tela
 │       │   ├── types.ts              # re-exporta tipos do OpenAPI
@@ -212,6 +216,8 @@ E vale de novo para o **treino semanal (issue #58)**: `TRAINING_FOCUS_EFFECTS` (
 A **bilheteria (issues #4 e #59)** mudou de casa por causa dessa mesma regra: a ocupação, o preço justo e a receita viviam soltas em `src/mocks/handlers.ts` enquanto eram uma conta de duas linhas. Com a curva de demanda da issue #59 elas viraram regra de simulação de verdade e foram para `src/mocks/engine.ts` (`attendanceRate`, `fairTicketPriceCents`, `ticketPriceDemandFactor`, `ticketRevenueOf`), espelhando `domain/rules/FinanceRules.kt` e testadas em `src/mocks/ticketing.test.ts` com os mesmos invariantes do `FinanceRulesTest.kt`. Em `handlers.ts` ficaram só os números do cenário mockado (capacidade e folha da IA). O painel da Dashboard **escolhe** o preço; público e receita chegam prontos no `RoundFinance` do `RoundFinished`.
 
 A **copa mata-mata (issue #61)** segue a mesma linha. O sorteio da chave, o avanço dos vencedores, o prêmio por fase (`CUP_PRIZE_CENTS`) e o calendário que intercala fases de copa com rodadas de liga (`seasonCalendar`) espelham `CupRules.kt`/`SeasonCalendar.kt` em `src/mocks/cup.ts`; a disputa de pênaltis (`penaltyShootout`) espelha `PenaltyRules.kt` em `src/mocks/engine.ts`. A app não decide nada disso: a `CupPage` desenha o que chega em `GET /api/league/cup` — quem passou vem em `winnerId` (pênaltis incluídos), o prêmio em `phases[].prizeCents` — e a `RoundPage` lê da `Round.stage` (`oneOf` `League`/`Cup`, `switch` exaustivo em `domain/cup.ts`) se a data é rodada de liga ou fase de copa. Em `src/domain/cup.ts` moram só os rótulos das fases. A fase de copa usa o MESMO fluxo de prontidão, botão e WebSocket da rodada de liga — não existe "modo copa" na app.
+
+A **diretoria (issue #62)** também. A meta de cada clube (força do elenco contra a própria divisão), o andar da confiança por rodada de liga, o limiar de demissão e o veredito de fim de temporada espelham `BoardRules.kt` em `src/mocks/board.ts`, testados em `src/mocks/board.test.ts` com os invariantes do `BoardRulesTest.kt`. A app não calcula nada disso: o `BoardPanel` desenha o `BoardStatus` de `GET /api/clubs/{id}/board` — humor (`mood`) e limiar (`firingConfidence`) vêm prontos —, a `RoundPage` mostra o `boardReviews` do `SeasonFinished` (`switch` exaustivo sobre `BoardVerdict` em `src/domain/board.ts`, que só guarda rótulos) e a demissão chega como `AuthUser.dismissal`: o guarda `RequireClub` manda quem está sem clube **por demissão** para `/fired`, a tela de game over, que leva à seleção de clube. Reivindicar um clube apaga a demissão no servidor.
 
 O mesmo confinamento vale para a **issue #57**: `SCORING_WEIGHT` (peso de cada posição no sorteio de quem finaliza) e `matchStats()` (projeção do stream em finalizações/defesas/cartões) espelham `Position.scoringWeight` e `domain/event/MatchStats.kt`, e vivem só em `src/mocks/engine.ts`. O componente `MatchStatsSummary` **não conta nada**: recebe o `MatchStats` que veio pronto no evento `FullTime` e só desenha. Como o elenco agora pesa por posição, a engine de mock recebe `SquadMember[]` (`{ id, pos }`) em vez de uma lista de ids.
 

@@ -23,8 +23,11 @@ import {
   markRoundReady,
   resetRoundReadiness,
   squadOf,
+  evaluateBoards,
+  applyBoardTurnover,
   DEFAULT_POSITIONS,
   type ClubMeta,
+  type MockUser,
   type StoredClub,
 } from './seed'
 import {
@@ -51,6 +54,7 @@ import {
   type TeamTactics,
 } from './engine'
 import { recordCupRound } from './cup'
+import { boardStatusOf, forNewManager } from './board'
 import type {
   TransferResult,
   Club,
@@ -137,10 +141,11 @@ const notFound = (msg: string): ErrorResponse => ({
 
 type AuthBody = components['schemas']['RegisterRequest']
 
-const toAuthUser = (u: { id: number; username: string; clubId: number | null }): AuthUser => ({
+const toAuthUser = (u: MockUser): AuthUser => ({
   id: u.id,
   username: u.username,
   clubId: u.clubId,
+  dismissal: u.dismissal ?? null,
 })
 
 export const handlers = [
@@ -225,7 +230,12 @@ export const handlers = [
     clubOwners[clubId] = user.id
     materializeClub(clubId)
     state.clubs[clubId] = { ...state.clubs[clubId]!, ownerId: user.id }
+    // Técnico novo não herda a confiança da IA (issue #62).
+    const board = state.boards[clubId]
+    if (board) state.boards[clubId] = forNewManager(board)
     user.clubId = clubId
+    // Clube novo, carreira nova: a demissão anterior deixa de valer (issue #62).
+    user.dismissal = null
     persistMockAuth()
     return HttpResponse.json(toAuthUser(user))
   }),
@@ -244,6 +254,19 @@ export const handlers = [
     return club
       ? HttpResponse.json(toClubResponse(club))
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+  }),
+
+  // ─── getBoardStatus (diretoria, issue #62) ────────────────────────────
+  http.get('/api/clubs/:id/board', async ({ params }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const clubId = Number(params.id)
+    const status = boardStatusOf(clubId, state.boards[clubId], state.standings)
+    return status
+      ? HttpResponse.json(status)
+      : HttpResponse.json(
+          { code: 'BOARD_NOT_FOUND', message: `Clube ${clubId} sem meta da diretoria` } satisfies ErrorResponse,
+          { status: 404 },
+        )
   }),
 
   // ─── saveLineup ───────────────────────────────────────────────────────
@@ -703,6 +726,11 @@ export const handlers = [
       // divisão em questão contam (issue #47).
       state.standings = state.standings.map((table) =>
         applyRoundToStandings(state.currentRound, table))
+      // Rodada de LIGA mexe na confiança da diretoria (issue #62).
+      // Só as divisões que jogaram: a que folga fica com a confiança parada.
+      if (!knockout) {
+        evaluateBoards(state.standings, new Set(round.matches.flatMap((m) => [m.homeClubId, m.awayClubId])))
+      }
 
       // Rodada consumida: zera a prontidão para a próxima começar limpa (issue #20).
       resetRoundReadiness(round.number)
@@ -825,6 +853,9 @@ export const handlers = [
         const elite = finalStandings.find((t) => t.division === 1) ?? finalStandings[0]!
         // Campeão da copa capturado ANTES da virada, que sorteia a copa nova.
         const cupChampion = state.cup?.champion
+        // Veredito da diretoria (issue #62) ANTES da virada, que fixa as metas
+        // da temporada nova.
+        const boardReviews = applyBoardTurnover(round.season, finalStandings)
         // A virada roda ANTES do evento: é ela que produz as aposentadorias
         // (issue #55), que viajam junto do campeão.
         const retirements = startNewSeason(round.season + 1, finalStandings)
@@ -835,6 +866,7 @@ export const handlers = [
           standings: finalStandings,
           retirements,
           ...(cupChampion ? { cupChampion } : {}),
+          boardReviews,
         }
         client.send(JSON.stringify(seasonFin))
       } else {

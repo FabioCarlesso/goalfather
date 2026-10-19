@@ -15,10 +15,15 @@ value class UserId(val value: Long)
  * a verificação de login pertence à regra de autenticação; ainda assim é
  * só uma `String` (BCrypt), sem qualquer dependência de framework — o
  * domínio segue puro. Nunca é exposto na API (DTOs separam o que sai).
+ *
+ * `dismissal` (issue #62) é a demissão mais recente: preenchida quando a
+ * diretoria demite o técnico (e o clube volta para a IA), apagada quando ele
+ * reivindica um clube novo. É o que leva a UI à tela de "game over".
  */
 data class User(
     val id: UserId,
     val username: String,
     val passwordHash: String,
     val clubId: ClubId? = null,
+    val dismissal: Dismissal? = null,
 )

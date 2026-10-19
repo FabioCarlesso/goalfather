@@ -41,6 +41,16 @@ describe('DashboardPage', () => {
     expect(screen.getByText(/0 lesionados · 0 desgastados/)).toBeInTheDocument()
   })
 
+  it('mostra o painel da diretoria com a meta da temporada (issue #62)', async () => {
+    renderWithProviders(<DashboardPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Diretoria' })).toBeInTheDocument()
+    // Clube 1 tem o elenco mais forte da elite no seed: a diretoria cobra o título.
+    expect(screen.getByText('Conquistar o título')).toBeInTheDocument()
+    expect(screen.getByText('temporada ainda não começou')).toBeInTheDocument()
+    expect(screen.getByRole('meter', { name: 'Confiança da diretoria' })).toHaveAttribute('aria-valuenow', '50')
+  })
+
   it('escolhe o foco de treino da semana (issue #58)', async () => {
     const user = userEvent.setup()
     renderWithProviders(<DashboardPage />)

@@ -31,6 +31,10 @@ value class ClubId(val value: Long)
  * vale até o técnico mexer e alimenta a curva de demanda em `FinanceRules`.
  * Quem nunca mexeu — e todo clube da IA — cobra `DEFAULT_TICKET_PRICE_CENTS`.
  *
+ * `board` (issue #62) é a meta da diretoria para a temporada e a confiança
+ * corrente no técnico. Nula só em save anterior à issue, até a primeira rodada
+ * fixar a meta — ausência real, modelada no tipo.
+ *
  * `version` (issue #89) é a versão do agregado NO MOMENTO DA LEITURA — dado
  * puro, um `Long` sem anotação JPA (regra de ouro do CLAUDE.md). Ela viaja
  * dentro do `copy()` de cada comando até o `ClubRepository.save`, que só grava
@@ -50,6 +54,7 @@ data class Club(
     val division: Division = Division.FIRST,
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
     val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
+    val board: BoardExpectation? = null,
     val version: Long = 0,
 ) {
     init {

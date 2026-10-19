@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -64,8 +65,11 @@ class PlayRoundServiceTest {
     // Copa (issue #61): fake em memória, vazia por padrão — os testes de liga
     // seguem sem copa; os de copa a semeiam.
     private val cupRepo = InMemoryCupRepository()
+    // relaxed: só a demissão (issue #62) libera clube; os testes que a
+    // verificam checam a chamada explicitamente.
+    private val claimRepo: ClubClaimRepository = mockk(relaxed = true)
     private val service =
-        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo)
+        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo, claimRepo)
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
