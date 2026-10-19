@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useClub } from '../api/queries/useClub'
 import { useBoard } from '../api/queries/useBoard'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
+import { useClubOffers, useOfferAction } from '../api/queries/useOffers'
 import {
   useExpandStadium,
   COST_PER_SEAT_CENTS,
@@ -18,6 +19,7 @@ import { ApiError } from '../api/client'
 import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import { BoardPanel } from '../components/BoardPanel'
+import { OffersPanel } from '../components/OffersPanel'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import { TRAINING_FOCUSES, TRAINING_FOCUS_HINT, TRAINING_FOCUS_LABEL } from '../domain/training'
 import { isInjured, injuryRoundsOut, staminaLevel } from '../domain/players'
@@ -29,6 +31,9 @@ export function DashboardPage() {
   // Painel da diretoria (issue #62): consulta à parte, para um erro nela não
   // derrubar a Dashboard inteira — sem painel, o resto do clube segue de pé.
   const { data: board } = useBoard(myClubId)
+  // Propostas entre técnicos (issue #63): também à parte, pelo mesmo motivo.
+  const { data: offers } = useClubOffers(myClubId)
+  const offerAction = useOfferAction(myClubId)
   const sell = useSellPlayer()
   const [lastResult, setLastResult] = useState<TransferResult | null>(null)
 
@@ -63,6 +68,15 @@ export function DashboardPage() {
       )}
 
       {board && <BoardPanel status={board} />}
+
+      {offers && (
+        <OffersPanel
+          offers={offers}
+          clubId={club.id}
+          onAction={(offerId, action) => offerAction.mutate({ offerId, action })}
+          busyOfferId={offerAction.isPending ? offerAction.variables?.offerId : null}
+        />
+      )}
 
       <TrainingPanel club={club} />
 

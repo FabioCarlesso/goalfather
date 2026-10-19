@@ -51,6 +51,7 @@ class SimulationMetricsTest {
         mockk(relaxed = true),
         InMemoryCupRepository(),
         mockk(relaxed = true),
+        mockk(relaxed = true),
         meterRegistry = registry,
     )
 
@@ -138,6 +139,7 @@ class SimulationMetricsTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             InMemoryCupRepository(),
+            mockk(relaxed = true),
             mockk(relaxed = true),
             simulator = simulator,
             meterRegistry = clockedRegistry,

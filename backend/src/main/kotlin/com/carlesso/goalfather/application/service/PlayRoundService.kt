@@ -11,6 +11,7 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
+import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
@@ -100,6 +101,9 @@ import kotlin.random.Random
  * em cada técnico (posição × meta), dentro da mesma gravação por clube dos
  * demais efeitos. Na virada, a diretoria dá o veredito — bônus, permanência ou
  * demissão — e fixa a meta da temporada nova. A engine de partida não muda.
+ *
+ * **Propostas entre técnicos (issue #63).** Cada rodada encerrada anda uma
+ * rodada no prazo das propostas pendentes; quem chega a zero expira.
  */
 class PlayRoundService(
     private val clubRepo: ClubRepository,
@@ -119,6 +123,9 @@ class PlayRoundService(
     // Diretoria (issue #62): o técnico demitido devolve o clube à IA — o claim
     // da issue #19 na direção inversa.
     private val claimRepo: ClubClaimRepository,
+    // Propostas entre técnicos (issue #63): o prazo delas anda com o relógio
+    // do jogo, uma rodada a cada rodada encerrada.
+    private val offerRepo: TransferOfferRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
     // Default = registry isolado: mantém os testes existentes construindo o
     // service sem passar métrica; em produção o BeanConfig injeta o registry real
@@ -308,6 +315,11 @@ class PlayRoundService(
         // (issue #20). Os técnicos sinalizam de novo na rodada seguinte.
         readinessRepo.reset(round.number)
 
+        // Prazo das propostas entre técnicos (issue #63): uma rodada a menos
+        // para cada pendente, e quem chega a zero expira. Aqui, depois do claim
+        // da rodada (issue #46), o relógio anda exatamente uma vez por rodada.
+        advanceOfferDeadlines()
+
         // Avança o calendário. Num turno único (Berger), a liga dura o turno
         // da MAIOR divisão (N-1 rodadas para N clubes), e as fases da copa são
         // intercaladas entre elas (issue #61) — `seasonCalendar` diz o que cada
@@ -487,6 +499,17 @@ class PlayRoundService(
                 ?: return club.board
             return expectation.afterRound(position)
         }
+    }
+
+    /**
+     * Anda o prazo de cada proposta pendente (issue #63). A regra é do domínio
+     * (`TransferOffer.afterRound`); a gravação é condicional a a proposta
+     * ainda estar pendente, então um aceite ou recusa que chegue no meio do
+     * caminho vence e o `false` daqui é simplesmente ignorado — não há o que
+     * vencer numa proposta que já foi resolvida.
+     */
+    private suspend fun advanceOfferDeadlines() {
+        for (offer in offerRepo.findPending()) offerRepo.saveIfPending(offer.afterRound())
     }
 
     /**

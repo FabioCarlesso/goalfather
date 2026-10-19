@@ -44,6 +44,7 @@ class PlayerStatsPersistenceTest {
             mockk(relaxed = true),
             InMemoryCupRepository(),
             mockk(relaxed = true),
+            mockk(relaxed = true),
         )
 
     private val home = makeClub(id = 1, name = "Home FC")

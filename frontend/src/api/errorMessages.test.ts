@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { errorMessage, isClubWriteConflict, transferErrorMessage } from './errorMessages'
+import { errorMessage, isClubWriteConflict, offerErrorMessage, transferErrorMessage } from './errorMessages'
 import { ApiError } from './client'
 
 describe('errorMessage', () => {
@@ -51,5 +51,20 @@ describe('errorMessage', () => {
 
   it('fallback para valores não-Error', () => {
     expect(errorMessage('algo')).toBe('Ocorreu um erro inesperado.')
+  })
+
+  it('explica os erros de negócio das propostas entre técnicos (issue #63)', () => {
+    expect(offerErrorMessage({ type: 'SellerSquadInvalid', violation: 'NO_GOALKEEPER', minSquadSize: 11 }))
+      .toBe('O vendedor não pode ficar sem goleiro.')
+    expect(offerErrorMessage({ type: 'SellerSquadInvalid', violation: 'TOO_FEW_PLAYERS', minSquadSize: 11 }))
+      .toBe('O vendedor não pode ficar com menos de 11 jogadores.')
+    expect(offerErrorMessage({ type: 'OfferExpired', offerId: 1, reason: 'PLAYER_TRANSFERRED' }))
+      .toBe('Esta proposta expirou: o jogador foi vendido a outro clube.')
+    expect(offerErrorMessage({ type: 'OfferNotPending', offerId: 1, status: { type: 'Rejected' } }))
+      .toBe('Esta proposta já foi recusada.')
+    expect(offerErrorMessage({ type: 'RoundInProgress', roundNumber: 4 }))
+      .toBe('A rodada 4 está em andamento — aceite depois que ela terminar.')
+    expect(errorMessage(new ApiError(404, { code: 'OFFER_NOT_FOUND', message: 'x' })))
+      .toBe('Proposta não encontrada.')
   })
 })

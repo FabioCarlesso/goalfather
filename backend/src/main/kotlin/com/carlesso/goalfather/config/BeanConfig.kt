@@ -14,6 +14,7 @@ import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
+import com.carlesso.goalfather.application.port.`in`.TransferOfferUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
@@ -24,6 +25,7 @@ import com.carlesso.goalfather.application.port.out.PasswordHasher
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
+import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BoardService
 import com.carlesso.goalfather.application.service.BuyPlayerService
@@ -39,6 +41,7 @@ import com.carlesso.goalfather.application.service.SeasonHistoryService
 import com.carlesso.goalfather.application.service.SellPlayerService
 import com.carlesso.goalfather.application.service.SetTicketPriceService
 import com.carlesso.goalfather.application.service.SetTrainingFocusService
+import com.carlesso.goalfather.application.service.TransferOfferService
 import com.carlesso.goalfather.application.service.TreatSquadService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import io.micrometer.core.instrument.MeterRegistry
@@ -125,6 +128,8 @@ class BeanConfig {
         cupRepo: CupRepository,
         // Diretoria (issue #62): demissão devolve o clube à IA.
         claimRepo: ClubClaimRepository,
+        // Propostas entre técnicos (issue #63): o prazo anda a cada rodada.
+        offerRepo: TransferOfferRepository,
         simulator: MatchSimulator,
         // MeterRegistry é provido pelo actuator; injetado para o timer da
         // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
@@ -138,9 +143,18 @@ class BeanConfig {
         historyRepo,
         cupRepo,
         claimRepo,
+        offerRepo,
         simulator,
         meterRegistry,
     )
+
+    /** Propostas de transferência entre técnicos humanos (issue #63). */
+    @Bean
+    fun transferOfferUseCase(
+        offerRepo: TransferOfferRepository,
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+    ): TransferOfferUseCase = TransferOfferService(offerRepo, clubRepo, leagueRepo)
 
     /** Painel da diretoria: meta da temporada e confiança no técnico (issue #62). */
     @Bean

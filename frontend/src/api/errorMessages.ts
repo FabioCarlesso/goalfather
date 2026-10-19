@@ -4,7 +4,8 @@
 import { ApiError } from './client'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import { MIN_STADIUM_EXPANSION_SEATS } from './queries/useExpandStadium'
-import type { TransferResult } from '../domain/types'
+import type { TransferOfferResult, TransferResult } from '../domain/types'
+import { offerStatusLabel, expiryReasonLabel } from '../domain/offers'
 
 /** Mensagens por `code` estável do ErrorResponse (não pela mensagem livre). */
 const MESSAGES: Record<string, string> = {
@@ -18,6 +19,8 @@ const MESSAGES: Record<string, string> = {
   INVALID_STADIUM_EXPANSION: `A ampliação mínima é de ${formatSeats(MIN_STADIUM_EXPANSION_SEATS)} assentos.`,
   // Lock otimista do clube (issue #89): nada foi aplicado.
   CLUB_WRITE_CONFLICT: 'O clube foi alterado por outra operação ao mesmo tempo. Confira os dados e tente de novo.',
+  OFFER_NOT_FOUND: 'Proposta não encontrada.',
+  FORBIDDEN: 'Você não é dono do clube desta operação.',
   NOT_FOUND: 'Recurso não encontrado.',
   MALFORMED_REQUEST: 'Requisição inválida — os dados enviados não puderam ser lidos.',
   INVALID_PARAMETER: 'Parâmetro inválido na requisição.',
@@ -62,5 +65,37 @@ export function transferErrorMessage(result: Exclude<TransferResult, { type: 'Su
       return `Jogador #${result.playerId} indisponível.`
     case 'Conflict':
       return 'O clube foi alterado por outra operação ao mesmo tempo — nada foi aplicado. Tente de novo.'
+  }
+}
+
+/**
+ * Mensagem para os erros de negócio das propostas entre técnicos (issue #63),
+ * que chegam no 200 como variantes de `TransferOfferResult`. `switch`
+ * exaustivo: uma variante nova no contrato quebra a compilação aqui.
+ */
+export function offerErrorMessage(result: Exclude<TransferOfferResult, { type: 'Success' }>): string {
+  switch (result.type) {
+    case 'InvalidAmount':
+      return `A proposta mínima é de ${formatMoney(result.minimum)}.`
+    case 'InsufficientFunds':
+      return `Caixa insuficiente: necessário ${formatMoney(result.required)}, disponível ${formatMoney(result.available)}.`
+    case 'SquadFull':
+      return `Elenco do comprador cheio — limite de ${result.maxSize} jogadores.`
+    case 'PlayerNotAvailable':
+      return 'O jogador não está mais no elenco do vendedor.'
+    case 'SellerNotHuman':
+      return 'Clubes da IA não negociam — propostas são só entre técnicos.'
+    case 'SellerSquadInvalid':
+      return result.violation === 'NO_GOALKEEPER'
+        ? 'O vendedor não pode ficar sem goleiro.'
+        : `O vendedor não pode ficar com menos de ${result.minSquadSize} jogadores.`
+    case 'OfferNotPending':
+      return `Esta proposta já foi ${offerStatusLabel(result.status).toLowerCase()}.`
+    case 'OfferExpired':
+      return `Esta proposta expirou: ${expiryReasonLabel(result.reason)}.`
+    case 'RoundInProgress':
+      return `A rodada ${result.roundNumber} está em andamento — aceite depois que ela terminar.`
+    case 'Conflict':
+      return 'Um dos clubes foi alterado por outra operação ao mesmo tempo — nada foi aplicado. Tente de novo.'
   }
 }

@@ -10,6 +10,7 @@ import type {
   Cup,
   CupClub,
   Dismissal,
+  TransferOffer,
   Player,
   MarketEntry,
   Position,
@@ -373,6 +374,10 @@ export const state = {
   // Metas da diretoria da temporada corrente, por clube (issue #62) —
   // preenchidas logo abaixo, porque a força do clube 1 sai de `state.clubs`.
   boards: {} as Record<number, MockBoard>,
+  // Propostas entre técnicos (issue #63), da mais nova para a mais antiga —
+  // estado de sessão, como o resto do mock.
+  offers: [] as TransferOffer[],
+  nextOfferId: 1,
   /** Próxima data do calendário — rodada de liga ou fase de copa. */
   nextRound: (): Round => {
     const { number, season } = state.currentRound

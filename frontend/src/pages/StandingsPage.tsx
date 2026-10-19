@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useStandings } from '../api/queries/useStandings'
 import type { Standings } from '../domain/types'
 
@@ -89,7 +90,12 @@ function DivisionTable({ table }: { table: Standings }) {
                 }
               >
                 <td className="py-2 pr-2 pl-2 text-slate-500">{r.position}</td>
-                <td className="py-2 pr-2 text-slate-100">{r.clubName}</td>
+                <td className="py-2 pr-2 text-slate-100">
+                  {/* Elenco do clube — de onde sai a proposta entre técnicos (issue #63). */}
+                  <Link to={`/clubs/${r.clubId}`} className="hover:text-emerald-300 hover:underline">
+                    {r.clubName}
+                  </Link>
+                </td>
                 <td className="py-2 text-center text-slate-300">{r.played}</td>
                 <td className="py-2 text-center text-slate-300">{r.wins}</td>
                 <td className="py-2 text-center text-slate-300">{r.draws}</td>

@@ -55,6 +55,7 @@ class BoardRoundFlowTest {
         mockk(relaxed = true),
         InMemoryCupRepository(),
         claimRepo,
+        mockk(relaxed = true),
     )
 
     private val savedClubs = mutableListOf<Club>()

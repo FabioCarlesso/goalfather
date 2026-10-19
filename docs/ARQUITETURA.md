@@ -347,6 +347,11 @@ class PlayMatchService(
 | `POST` | `/api/clubs/{id}/training` | Foco de treino da semana (`ATAQUE`/`DEFESA`/`FISICO`/`DESCANSO`) — issue #58 |
 | `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (R$ 10–200, em centavos) — issue #59 |
 | `GET` | `/api/clubs/{id}/board` | Painel da diretoria: meta da temporada, posição e confiança no técnico — issue #62 |
+| `GET` | `/api/clubs/{id}/offers` | Propostas recebidas e enviadas pelo clube (só o dono) — issue #63 |
+| `POST` | `/api/offers` | Proposta em dinheiro por jogador de outro técnico humano — issue #63 |
+| `POST` | `/api/offers/{id}/accept` | Vendedor aceita: transferência atômica, rivais expiram — issue #63 |
+| `POST` | `/api/offers/{id}/reject` | Vendedor recusa — issue #63 |
+| `POST` | `/api/offers/{id}/withdraw` | Comprador retira — issue #63 |
 | `GET` | `/api/league/standings` | Tabela de classificação |
 | `GET` | `/api/league/cup?season=` | Chave da copa mata-mata (sem `season` = a mais recente) — issue #61 |
 | `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
@@ -491,6 +496,52 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   Agora `Club.version` (um `Long` puro, sem JPA) viaja da leitura até o `save`,
   e o port devolve `ClubSaveResult` (`Saved` | `Conflict`). Detalhes na decisão
   "lock otimista do clube" abaixo.
+- [x] **Transferências diretas entre técnicos** (proposta e aceite) — issue #63
+  (a primeira mecânica social: o técnico A oferece dinheiro por um jogador do
+  elenco do técnico B, e B aceita ou recusa. Sem contraoferta na v1.)
+
+  **Máquina de estados como `sealed`.** O agregado novo `TransferOffer` carrega
+  um `OfferStatus` `sealed` — `Pending`, `Accepted`, `Rejected`, `Withdrawn` e
+  `Expired(reason)` —, e as transições (`accept()`, `reject()`, `withdraw()`,
+  `expire()`, `afterRound()`) são funções puras com `when` exaustivo: só
+  `Pending` tem saída, e transição a partir de estado terminal devolve `null`.
+  O motivo da expiração (`DEADLINE` ou `PLAYER_TRANSFERRED`) só existe DENTRO de
+  `Expired`. O prazo é um contador de rodadas (`roundsLeft`, 3 por padrão), e
+  não "rodada de vencimento": o número da rodada recomeça a cada temporada.
+
+  **Regras puras** em `domain/rules/TransferOfferRules.kt`: `offerBlocker`
+  (valor mínimo, jogador no elenco do vendedor, vendedor humano, caixa do
+  comprador, elenco cheio) e `squadViolationAfterSale` — o vendedor não fica
+  com menos de 11 nem entrega o último goleiro. Rodam na criação (feedback
+  imediato) e de novo no aceite, que é a checagem que vale.
+
+  **Erros como valor em dois níveis.** `OfferResult` tem uma sub-hierarquia
+  `sealed interface Rejection` com os erros de NEGÓCIO (vão no 200, contrato
+  `TransferOfferResult`), separada de `NotOwner`/`ClubNotFound`/`OfferNotFound`
+  (403/404). O controller faz `when` com `is Rejection` e segue exaustivo.
+
+  **Aceite atômico.** `TransferOfferRepository.completeTransfer` grava vendedor
+  e comprador (sob o compare-and-set de versão da issue #89), marca a proposta
+  como aceita e expira as rivais pelo mesmo jogador — numa transação só, no bean
+  não-suspend `TransferOfferTransaction`; falha vira `setRollbackOnly` + valor.
+  Os clubes são travados **em ordem crescente de id e antes das propostas**:
+  dois aceites pelo mesmo jogador disputam primeiro a linha do vendedor (o
+  segundo perde com `Conflict`, relê e encontra a própria proposta expirada →
+  `OfferExpired`), e A vendendo para B enquanto B vende para A não fazem
+  deadlock. Toda gravação de proposta é `UPDATE ... WHERE status = 'PENDING'`:
+  como os outros estados são terminais, o status já é a versão — sem
+  `@Version` na tabela (migration V14). `TransferOfferConcurrencyIntegrationTest`
+  cobre as duas corridas contra o H2.
+
+  **Rodada.** O aceite é bloqueado com a rodada `InProgress` (`RoundInProgress`)
+  — guarda de leitura; a consistência sob a corrida rodada × aceite continua
+  vindo do lock otimista dos clubes. O `PlayRoundService` anda o prazo das
+  pendentes uma vez por rodada encerrada, depois do claim da #46.
+
+  **UI.** Painel "Propostas" na Dashboard (aceitar/recusar/retirar), badge no
+  menu e página `/clubs/{id}` com o elenco do rival, a partir da Tabela.
+  Notificação por polling (15s); WebSocket fica para a v2, junto de contraoferta,
+  troca de jogadores e empréstimos.
 - **Foco de estudo:** coroutines + concorrência, transações otimistas
 
 ### Fase 6 — Profundidade de gestão

@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
+import com.carlesso.goalfather.domain.rules.MAX_SQUAD_SIZE
 
 /**
  * Implementação de `BuyPlayerUseCase`. Orquestra dois ports
@@ -69,6 +70,7 @@ class BuyPlayerService(
     }
 
     companion object {
-        const val DEFAULT_MAX_SQUAD: Int = 25
+        // Mesmo teto das propostas entre técnicos (issue #63): uma fonte só.
+        const val DEFAULT_MAX_SQUAD: Int = MAX_SQUAD_SIZE
     }
 }

@@ -3,6 +3,9 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DashboardPage } from './DashboardPage'
 import { renderWithProviders } from '../test/render'
+import { server } from '../test/setup'
+import { http, HttpResponse } from 'msw'
+import type { TransferOffer, TransferOfferResult } from '../domain/types'
 
 describe('DashboardPage', () => {
   it('renderiza o clube e elenco do mock', async () => {
@@ -123,5 +126,38 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Elenco tratado ✓')).toBeInTheDocument()
     })
+  })
+
+  it('lista a proposta recebida e a recusa (issue #63)', async () => {
+    const user = userEvent.setup()
+    const offer: TransferOffer = {
+      id: 41,
+      buyerClubId: 2,
+      buyerClubName: 'Atlético Bonsucesso',
+      sellerClubId: 1,
+      sellerClubName: 'Goal Father FC',
+      playerId: 10,
+      playerName: 'Renato Silva',
+      amount: 900_000_00,
+      roundsLeft: 3,
+      status: { type: 'Pending' },
+    }
+    let current = offer
+    server.use(
+      http.get('/api/clubs/1/offers', () => HttpResponse.json([current])),
+      http.post('/api/offers/41/reject', () => {
+        current = { ...offer, status: { type: 'Rejected' } }
+        return HttpResponse.json({ type: 'Success', offer: current } satisfies TransferOfferResult)
+      }),
+    )
+    renderWithProviders(<DashboardPage />)
+
+    expect(await screen.findByRole('heading', { name: /Propostas/ })).toHaveTextContent('1 nova')
+    expect(screen.getByText('Atlético Bonsucesso')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Recusar' }))
+
+    expect(await screen.findByText('Recusada')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aceitar' })).not.toBeInTheDocument()
   })
 })

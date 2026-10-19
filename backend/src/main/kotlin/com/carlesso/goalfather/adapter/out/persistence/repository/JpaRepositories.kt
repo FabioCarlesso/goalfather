@@ -11,6 +11,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsId
+import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.UserEntity
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
@@ -169,6 +170,36 @@ interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, Roun
 interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, Int> {
     /** Da temporada mais recente para a mais antiga — ordem de exibição. */
     fun findAllByOrderBySeasonDesc(): List<SeasonHistoryEntity>
+}
+
+/** Propostas de transferência entre técnicos (issue #63). */
+interface TransferOfferJpaRepository : JpaRepository<TransferOfferEntity, Long> {
+    /** Propostas de um clube (comprador ou vendedor), da mais nova para a mais antiga. */
+    fun findTop50ByBuyerClubIdOrSellerClubIdOrderByIdDesc(buyerClubId: Long, sellerClubId: Long): List<TransferOfferEntity>
+
+    fun findAllByStatus(status: String): List<TransferOfferEntity>
+
+    fun findAllByPlayerIdAndStatus(playerId: Long, status: String): List<TransferOfferEntity>
+
+    /**
+     * Compare-and-set da máquina de estados: grava status, motivo e prazo SÓ se
+     * a proposta ainda está `PENDING`. Devolve as linhas afetadas — `0` = outra
+     * escrita já a resolveu (aceite, recusa, retirada ou prazo). O UPDATE segura
+     * o lock da linha até o commit, então um concorrente que leu `PENDING`
+     * espera e, ao seguir, encontra o status novo → 0 linhas.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(
+        "update TransferOfferEntity o " +
+            "set o.status = :status, o.expiryReason = :expiryReason, o.roundsLeft = :roundsLeft " +
+            "where o.id = :id and o.status = '${TransferOfferEntity.PENDING}'",
+    )
+    fun saveIfPending(
+        @Param("id") id: Long,
+        @Param("status") status: String,
+        @Param("expiryReason") expiryReason: String?,
+        @Param("roundsLeft") roundsLeft: Int,
+    ): Int
 }
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, StandingsId> {
