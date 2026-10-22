@@ -13,7 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  *
  * Esta config faz o Spring serializar/deserializar:
  * - `MatchEvent` como `{"type":"Goal",...}` (discriminator)
- * - `RoundEvent` como `{"type":"MatchUpdate",...}` ou `{"type":"RoundFinished",...}`
+ * - `RoundEventDto` (WS de rodada) como `{"type":"MatchUpdate",...}` ou `{"type":"RoundFinished",...}`
  * - `TransferResult` com seu discriminator
  *
  * `ignoreUnknownKeys = true` deixa o backend tolerante a campos extras

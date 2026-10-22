@@ -366,6 +366,8 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 >
 > Hoje os DTOs de resposta vivem em `adapter/in/web/dto/Responses.kt` (`ClubDto`/`LineupDto`/`PlayerDto`/`MarketEntryDto`/`TransferResultDto`), e `ResponsesTest` compara o **JSON literal** com o que o spec declara. Enums e sealed types do domínio cuja forma JSON já é a do contrato (`Position`, `Formation`, `Posture`, `Availability`) são reusados de propósito — duplicá-los criaria duas fontes de verdade para o mesmo conjunto fechado de valores.
 >
+> A issue #72 estendeu a fronteira ao **WebSocket**: o `RoundWebSocketHandler` serializa `RoundEventDto` (em `RoundEventDtos.kt`), não o `RoundEvent` de domínio — que embutia `Player` em `retirements` e nos eventos de treino, e por isso perdia `star` no WS enquanto o REST já o emitia. `RoundEventDtosTest` cobre o JSON literal de cada variante. `MatchEvent` (`/ws/matches/{id}`) segue saindo do domínio por decisão consciente: só carrega ids e sua forma já é a do contrato.
+>
 > **Lição para o resto do projeto:** um contrato só é fonte de verdade se algo o comparar com as DUAS implementações. Mock que implementa o spec testa o spec, não o backend.
 
 ### Persistência
