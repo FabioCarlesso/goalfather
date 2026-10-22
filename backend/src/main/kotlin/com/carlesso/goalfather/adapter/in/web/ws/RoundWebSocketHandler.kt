@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.adapter.`in`.web.ws
 
+import com.carlesso.goalfather.adapter.`in`.web.dto.RoundEventDto
+import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.domain.event.RoundEvent
 import kotlinx.coroutines.CancellationException
@@ -18,7 +20,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 /**
  * Handler do WebSocket `/ws/round/{number}`. Sobe quando o cliente abre
  * a conexao, dispara o stream do `PlayRoundUseCase` e envia cada
- * `RoundEvent` como JSON.
+ * `RoundEvent` como JSON — sempre via `RoundEventDto` (issue #72): o domínio
+ * não cruza a fronteira web, nem por REST nem por WebSocket.
  *
  * Pequenos delays entre frames (80ms por minuto) sao responsabilidade
  * DESTE adapter — o use case retorna o Flow inteiro de uma vez. Aqui
@@ -72,7 +75,7 @@ class RoundWebSocketHandler(
                     // rodada corre até o fim sem esperar (ver KDoc da classe).
                     if (delayMs > 0 && session.isOpen) kotlinx.coroutines.delay(delayMs)
                     if (session.isOpen) {
-                        val payload = json.encodeToString(RoundEvent.serializer(), event)
+                        val payload = json.encodeToString(RoundEventDto.serializer(), event.toDto())
                         session.sendMessage(TextMessage(payload))
                     }
                 }
