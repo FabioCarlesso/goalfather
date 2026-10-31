@@ -115,8 +115,10 @@ data class BoardReviewDto(
 )
 
 /**
- * Espelha o `oneOf` + `discriminator: type` de `RoundEvent` no contrato. Os
- * `@SerialName` são os MESMOS do sealed de domínio — o frontend não muda nada.
+ * Espelha o `oneOf` + `discriminator: type` de `RoundEvent` no contrato. É o
+ * ÚNICO formato de fio do stream de rodada: o sealed de domínio deixou de ser
+ * `@Serializable` (issue #96), então os `@SerialName` daqui é que fixam os
+ * nomes das variantes que o frontend lê.
  */
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable

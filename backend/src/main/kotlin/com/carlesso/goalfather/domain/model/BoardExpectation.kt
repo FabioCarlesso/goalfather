@@ -97,8 +97,9 @@ sealed interface BoardVerdict {
  * viaja no `RoundEvent.SeasonFinished`, de todos os clubes, como as
  * aposentadorias. O nome é copiado: o clube do técnico demitido volta ao pool
  * da IA, mas a notícia continua sendo dele.
+ *
+ * Não é `@Serializable` (issue #96): no fio vira `BoardReviewDto`.
  */
-@Serializable
 data class BoardReview(
     val clubId: ClubId,
     val clubName: String,

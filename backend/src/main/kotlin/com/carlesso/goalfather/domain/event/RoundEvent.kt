@@ -6,24 +6,19 @@ import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonClassDiscriminator
 
 /**
- * Mensagem do stream de rodada (WS `/ws/round/{n}`).
+ * Mensagem do stream de rodada: multiplexa eventos de várias partidas + sinal
+ * de fim de rodada/temporada.
  *
- * Multiplexa eventos de várias partidas + sinal de fim de rodada.
- * Mapeia o schema `RoundEvent` no `contract/openapi.yaml` (oneOf +
- * discriminator `type`).
+ * Tipo de DOMÍNIO, não formato de fio (issue #96): quem vai para o WebSocket
+ * `/ws/round/{n}` é o `RoundEventDto` (`adapter/in/web/dto/RoundEventDtos.kt`),
+ * que espelha o `oneOf` + `discriminator` do `contract/openapi.yaml`. Por isso
+ * este sealed NÃO é `@Serializable` — tentar serializá-lo direto é erro de
+ * compilação, e não um vazamento silencioso como o do `Player.star` (issue #72).
  */
-@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
-@Serializable
-@JsonClassDiscriminator("type")
 sealed interface RoundEvent {
 
-    @Serializable
-    @SerialName("MatchUpdate")
     data class MatchUpdate(
         val matchId: Long,
         val event: MatchEvent,
@@ -36,11 +31,9 @@ sealed interface RoundEvent {
      * `training` (issue #58) conta a semana de treino de cada clube: o foco
      * aplicado e quem evoluiu ou se machucou nele. Vem de TODOS os clubes,
      * como `finances` — cabe ao cliente filtrar o do técnico. Default vazio
-     * para não quebrar quem já consumia o evento (e é o que o replay de uma
-     * rodada já encerrada emite: os efeitos não são reaplicados).
+     * porque o replay de uma rodada já encerrada não reaplica os efeitos:
+     * só há tabela para contar.
      */
-    @Serializable
-    @SerialName("RoundFinished")
     data class RoundFinished(
         val standings: List<Standings>,
         val finances: List<RoundFinance> = emptyList(),
@@ -56,8 +49,7 @@ sealed interface RoundEvent {
      *
      * `retirements` conta a outra história da virada (issue #55): quem
      * pendurou as chuteiras e qual garoto da base assumiu a vaga. Vem de TODOS
-     * os clubes — cabe ao cliente filtrar o que interessa ao técnico. Default
-     * vazio para não quebrar quem já consumia o evento.
+     * os clubes — cabe ao cliente filtrar o que interessa ao técnico.
      *
      * `cupChampion` (issue #61) é o vencedor da copa mata-mata da temporada
      * que acabou — o mesmo que vai para o histórico. Nulo quando não houve
@@ -67,8 +59,6 @@ sealed interface RoundEvent {
      * posição final e o veredito (bônus, permanência ou demissão). Vem de TODOS
      * os clubes com meta na temporada — cabe ao cliente filtrar o do técnico.
      */
-    @Serializable
-    @SerialName("SeasonFinished")
     data class SeasonFinished(
         val season: Int,
         val champion: StandingRow,

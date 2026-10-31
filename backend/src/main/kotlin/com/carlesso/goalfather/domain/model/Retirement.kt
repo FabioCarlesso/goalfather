@@ -1,10 +1,10 @@
 package com.carlesso.goalfather.domain.model
 
-import kotlinx.serialization.Serializable
-
 /**
  * Um jogador pendurou as chuteiras na virada de temporada e a base do clube
- * assumiu a vaga (issue #55). Espelha `Retirement` no `contract/openapi.yaml`.
+ * assumiu a vaga (issue #55). No fio, quem espelha `Retirement` do
+ * `contract/openapi.yaml` é o `RetirementDto` — este tipo não é `@Serializable`
+ * (issue #96).
  *
  * O par `retired` + `promoted` é o que dá a notícia por inteiro — "Fulano, 37,
  * se aposentou; entra Sicrano, 18". Sem ele o técnico só perceberia a troca
@@ -13,7 +13,6 @@ import kotlinx.serialization.Serializable
  * A promoção é 1:1 por decisão de regra: elenco que só encolhe acaba em time
  * incompleto (ver `AgingRules`), então quem sai é sempre substituído.
  */
-@Serializable
 data class Retirement(
     val clubId: ClubId,
     val retired: Player,

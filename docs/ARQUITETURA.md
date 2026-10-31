@@ -366,7 +366,7 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 >
 > Hoje os DTOs de resposta vivem em `adapter/in/web/dto/Responses.kt` (`ClubDto`/`LineupDto`/`PlayerDto`/`MarketEntryDto`/`TransferResultDto`), e `ResponsesTest` compara o **JSON literal** com o que o spec declara. Enums e sealed types do domínio cuja forma JSON já é a do contrato (`Position`, `Formation`, `Posture`, `Availability`) são reusados de propósito — duplicá-los criaria duas fontes de verdade para o mesmo conjunto fechado de valores.
 >
-> A issue #72 estendeu a fronteira ao **WebSocket**: o `RoundWebSocketHandler` serializa `RoundEventDto` (em `RoundEventDtos.kt`), não o `RoundEvent` de domínio — que embutia `Player` em `retirements` e nos eventos de treino, e por isso perdia `star` no WS enquanto o REST já o emitia. `RoundEventDtosTest` cobre o JSON literal de cada variante. `MatchEvent` (`/ws/matches/{id}`) segue saindo do domínio por decisão consciente: só carrega ids e sua forma já é a do contrato.
+> A issue #72 estendeu a fronteira ao **WebSocket**: o `RoundWebSocketHandler` serializa `RoundEventDto` (em `RoundEventDtos.kt`), não o `RoundEvent` de domínio — que embutia `Player` em `retirements` e nos eventos de treino, e por isso perdia `star` no WS enquanto o REST já o emitia. `RoundEventDtosTest` cobre o JSON literal de cada variante. `MatchEvent` (`/ws/matches/{id}`) segue saindo do domínio por decisão consciente: só carrega ids e sua forma já é a do contrato. A issue #96 fechou a porta de volta: `RoundEvent`, `TrainingEvent`/`TrainingReport`, `Retirement` e `BoardReview` deixaram de ser `@Serializable`, então serializar o domínio direto no WS virou erro de compilação em vez de regressão silenciosa.
 >
 > **Lição para o resto do projeto:** um contrato só é fonte de verdade se algo o comparar com as DUAS implementações. Mock que implementa o spec testa o spec, não o backend.
 
@@ -400,7 +400,7 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 ### Fase 3 — API REST + frontend (mock-first) ✅
 - [x] Definir `contract/openapi.yaml` cobrindo os 9 endpoints (compartilhado com frontend)
 - [x] Controllers REST + DTOs de request (responses reusam domínio @Serializable)
-- [x] kotlinx.serialization com `@JsonClassDiscriminator("type")` para todos os `sealed` (MatchEvent, RoundEvent, TransferResult, LineupResult)
+- [x] kotlinx.serialization com `@JsonClassDiscriminator("type")` para todos os `sealed` que cruzam o fio (MatchEvent, RoundEventDto, TransferResult, LineupResult)
 - [x] WebSocket `/ws/round/{n}` multiplexado para rodada ao vivo (stream de `Flow<RoundEvent>` → cliente)
 - [x] Frontend Vite+TS+MSW consumindo o mesmo contrato (ver [`FRONTEND.md`](FRONTEND.md))
 - [x] Swap incremental: cada endpoint pronto desliga seu handler MSW; **E2E Playwright `npm run e2e:real` passa contra o backend Spring**
