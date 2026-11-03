@@ -6,10 +6,12 @@ const REAL_BACKEND = process.env.VITE_USE_MOCKS === 'false'
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // Contra o backend real há UMA liga, resetada a cada teste (issue #101):
+  // dois workers resetariam o estado um do outro no meio do teste.
+  fullyParallel: !REAL_BACKEND,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI || REAL_BACKEND ? 1 : undefined,
   reporter: process.env.CI ? 'github' : 'list',
 
   use: {

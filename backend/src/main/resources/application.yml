@@ -100,3 +100,27 @@ spring:
     username: ${DB_USER:goalfather}
     password: ${DB_PASSWORD:goalfather}
     driver-class-name: org.postgresql.Driver
+
+# ─── E2E contra o backend real: profile `e2e` (issue #101) ────────────────
+# `SPRING_PROFILES_ACTIVE=dev,e2e ./gradlew bootRun` + `npm run e2e:real`. Liga o
+# reset `POST /test-support/reset` (E2eStateReset), que o helper do Playwright
+# chama antes de cada teste. H2 em MEMÓRIA, não o arquivo de ./data: o reset
+# apaga tudo, e o save de desenvolvimento não pode ser a vítima. O SQL do reset
+# é do H2 — não combine este profile com `postgres`. Vem junto de `dev`, como
+# no `dev,postgres` do Docker (issue #67): o JwtSecretGuard só aceita o segredo
+# default em dev/test, e E2E é ambiente de desenvolvimento.
+---
+spring:
+  config:
+    activate:
+      on-profile: e2e
+  datasource:
+    url: jdbc:h2:mem:goalfather-e2e;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+app:
+  rate-limit:
+    register:
+      # Cada teste cadastra um técnico do mesmo IP; 3 runs seguidos da suíte
+      # passariam do limite de 20/h do default.
+      max-attempts: 100000
+  round-readiness:
+    timeout: 5s

@@ -304,7 +304,13 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 
 **Suíte E2E em dois modos** (critério "endpoint pronto" do roadmap):
 - `npm run e2e` → MSW ligado. Rápido, determinístico, roda no CI sem backend.
-- `npm run e2e:real` → `VITE_USE_MOCKS=false`. Exige backend em `localhost:8080`. Mesmas specs.
+- `npm run e2e:real` → `VITE_USE_MOCKS=false`. Exige o backend em `localhost:8080` no profile `e2e`: `SPRING_PROFILES_ACTIVE=dev,e2e ./gradlew bootRun`. Mesmas specs.
+
+**Isolamento no modo real (issue #101):** as specs foram escritas para o MSW, onde cada teste começa com estado limpo. Contra o backend real todas dividem uma liga só. Antes disso, a suíte falhava até no `main`: clubes esgotavam (12 na seed, um por teste), o calendário andava e o gate de prontidão travava. Hoje:
+- `authenticate` (em `e2e/helpers.ts`) chama `POST /test-support/reset` antes de cadastrar o técnico. O backend apaga todas as tabelas, regrava a seed e esvazia os caches.
+- O reset só existe no profile `e2e` (H2 em memória: o save de `backend/data/` não é tocado). Fora dele, a rota responde 404, e o helper falha com uma mensagem dizendo como subir o backend.
+- `workers: 1` e sem `fullyParallel` no modo real: dois testes simultâneos resetariam a liga um do outro. A suíte leva ~1,2 min.
+- Limitação conhecida: uma simulação de rodada que ainda esteja rodando quando o teste acaba pode gravar depois do reset. Sem cliente no WS ela termina em milissegundos, e nos runs de validação isso não apareceu.
 
 **Decisão registrada:** WS handlers do MSW são no-op em `setupServer` (`msw/node`). Para validar o stream de partida ao vivo, usa-se Playwright (browser real) com MSW interceptando o `new WebSocket()`.
 

@@ -1,22 +1,11 @@
 package com.carlesso.goalfather.config
 
-import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
-import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
-import com.carlesso.goalfather.adapter.out.persistence.mapper.applyBoard
-import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
-import com.carlesso.goalfather.adapter.out.persistence.repository.CupJpaRepository
-import com.carlesso.goalfather.adapter.out.persistence.repository.MarketEntryJpaRepository
-import com.carlesso.goalfather.adapter.out.persistence.repository.PlayerJpaRepository
-import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
-import com.carlesso.goalfather.adapter.out.persistence.repository.StandingsJpaRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
-import com.carlesso.goalfather.application.seed.dsl.League
 import com.carlesso.goalfather.application.seed.initialLeague
 import com.carlesso.goalfather.domain.rules.boardExpectations
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Configuration
 
@@ -30,10 +19,10 @@ import org.springframework.context.annotation.Configuration
  * (issue #61) — 12 clubes numa chave de 16, com 4 folgas.
  *
  * A descrição do estado vive em [initialLeague] (`application/seed`, escrita
- * com a DSL de seed), que produz um [League] imutável — e por ser pura dá
- * para testá-la sem Spring (issue #88). Este runner só faz a tradução
- * `domínio → entidades JPA` e persiste. Idempotente: só insere se o DB
- * estiver vazio.
+ * com a DSL de seed), que produz um `League` imutável — e por ser pura dá
+ * para testá-la sem Spring (issue #88). A tradução `domínio → entidades JPA`
+ * mora em [SeedWriter], que o reset do E2E (issue #101) também usa; este
+ * runner só decide QUANDO gravar. Idempotente: só insere se o DB estiver vazio.
  *
  * Nota: os atributos secundários (pace/shooting/passing/defending) passam a
  * herdar o `overall` por padrão na DSL — antes havia uma variação cosmética
@@ -43,12 +32,7 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class DataInitializer(
     private val clubRepo: ClubJpaRepository,
-    private val playerRepo: PlayerJpaRepository,
-    private val marketRepo: MarketEntryJpaRepository,
-    private val roundRepo: RoundJpaRepository,
-    private val standingsRepo: StandingsJpaRepository,
-    private val cupRepo: CupJpaRepository,
-    private val json: Json,
+    private val seed: SeedWriter,
     private val clubs: ClubRepository,
     private val league: LeagueRepository,
 ) : CommandLineRunner {
@@ -58,7 +42,7 @@ class DataInitializer(
             backfillBoards()
             return
         }
-        persist(initialLeague())
+        seed.write(initialLeague())
     }
 
     /**
@@ -80,41 +64,5 @@ class DataInitializer(
         if (missing.isEmpty()) return@runBlocking
         val boards = boardExpectations(season, all)
         for (club in missing) clubs.save(club.copy(board = boards[club.id]))
-    }
-
-    /** Traduz o agregado de domínio para entidades JPA e grava. */
-    private fun persist(league: League) {
-        // Metas da diretoria da 1ª temporada (issue #62), fixadas já no seed:
-        // a meta é função da liga como ela COMEÇA, antes de qualquer compra.
-        val boards = boardExpectations(league.season, league.clubs)
-        for (club in league.clubs) {
-            clubRepo.save(
-                ClubEntity(
-                    id = club.id.value,
-                    name = club.name,
-                    cash = club.cash,
-                    stadiumCapacity = club.stadiumCapacity,
-                    division = club.division.value,
-                ).apply { applyBoard(boards[club.id]) },
-            )
-            for (player in club.squad) {
-                playerRepo.save(player.toEntity(clubId = club.id.value))
-            }
-        }
-
-        for (entry in league.market) {
-            playerRepo.save(entry.player.toEntity(clubId = null))
-            marketRepo.save(MarketEntryEntity(playerId = entry.player.id.value, price = entry.price))
-        }
-
-        for (round in league.rounds) {
-            roundRepo.save(round.toEntity(json))
-        }
-
-        for (standings in league.initialStandings()) {
-            standingsRepo.save(standings.toEntity(json))
-        }
-
-        league.initialCup()?.let { cupRepo.save(it.toEntity(json)) }
     }
 }
