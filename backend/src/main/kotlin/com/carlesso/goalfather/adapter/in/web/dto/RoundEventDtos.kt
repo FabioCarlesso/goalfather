@@ -9,8 +9,6 @@ import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.RoundFinance
-import com.carlesso.goalfather.domain.model.StandingRow
-import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainedAttribute
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import kotlinx.serialization.SerialName
@@ -26,41 +24,16 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  * property) não sobrevive ao `kotlinx.serialization`. `GET /api/clubs/{id}`
  * emitia `star`; o WS não.
  *
- * `Standings`, `StandingRow`, `RoundFinance` e `BoardReview` já batiam campo a
- * campo com o contrato — viram DTO por consistência: assim um campo novo no
- * domínio não vaza para o cliente sem passar pelo contrato.
+ * `RoundFinance` e `BoardReview` já batiam campo a campo com o contrato — viram
+ * DTO por consistência: assim um campo novo no domínio não vaza para o cliente
+ * sem passar pelo contrato. As tabelas (`StandingsDto`) moram em
+ * `LeagueDtos.kt`, porque também saem pelo `GET /api/league/standings`.
  *
  * Reusados do domínio, pelo mesmo critério de `Responses.kt` (forma JSON já é
  * EXATAMENTE a do contrato e não embute agregado): os enums `TrainingFocus`,
  * `TrainedAttribute` e `BoardObjective`; o sealed `BoardVerdict` (só um
  * `Long`); e `MatchEvent`, que só carrega ids e está fora do escopo da #72.
  */
-@Serializable
-data class StandingRowDto(
-    val position: Int,
-    val clubId: Long,
-    val clubName: String,
-    val played: Int,
-    val wins: Int,
-    val draws: Int,
-    val losses: Int,
-    val goalsFor: Int,
-    val goalsAgainst: Int,
-    val goalDifference: Int,
-    val points: Int,
-)
-
-@Serializable
-data class StandingsDto(
-    val season: Int,
-    /** `Int` cru: o contrato declara `division` como `integer`, sem o value class. */
-    val division: Int,
-    val round: Int,
-    val promotionSpots: Int,
-    val relegationSpots: Int,
-    val rows: List<StandingRowDto>,
-)
-
 @Serializable
 data class RoundFinanceDto(
     val clubId: Long,
@@ -151,29 +124,6 @@ sealed interface RoundEventDto {
 }
 
 // ─── Mapeamento domínio → DTO ─────────────────────────────────────────────
-
-fun StandingRow.toDto(): StandingRowDto = StandingRowDto(
-    position = position,
-    clubId = clubId.value,
-    clubName = clubName,
-    played = played,
-    wins = wins,
-    draws = draws,
-    losses = losses,
-    goalsFor = goalsFor,
-    goalsAgainst = goalsAgainst,
-    goalDifference = goalDifference,
-    points = points,
-)
-
-fun Standings.toDto(): StandingsDto = StandingsDto(
-    season = season,
-    division = division.value,
-    round = round,
-    promotionSpots = promotionSpots,
-    relegationSpots = relegationSpots,
-    rows = rows.map { it.toDto() },
-)
 
 fun RoundFinance.toDto(): RoundFinanceDto = RoundFinanceDto(
     clubId = clubId.value,

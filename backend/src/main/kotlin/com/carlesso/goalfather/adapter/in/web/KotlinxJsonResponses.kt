@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity
 /**
  * `200 OK` com o corpo serializado pelo kotlinx.serialization — mesmo num
  * handler que declara `ResponseEntity<Any>` (issue #61). Usado em todo corpo
- * de sucesso que carrega um `sealed`: `Round` (`stage`), `CupDto` (confrontos),
+ * de sucesso que carrega um `sealed`: `RoundDto` (`stage`), `CupDto` (confrontos),
  * `ClubDto` (`availability` de cada jogador) e `TransferResultDto`.
  *
  * Por que isto existe: o conversor `KotlinSerializationJsonHttpMessageConverter`

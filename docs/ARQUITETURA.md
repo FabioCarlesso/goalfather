@@ -368,6 +368,8 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 >
 > A issue #72 estendeu a fronteira ao **WebSocket**: o `RoundWebSocketHandler` serializa `RoundEventDto` (em `RoundEventDtos.kt`), não o `RoundEvent` de domínio — que embutia `Player` em `retirements` e nos eventos de treino, e por isso perdia `star` no WS enquanto o REST já o emitia. `RoundEventDtosTest` cobre o JSON literal de cada variante. `MatchEvent` (`/ws/matches/{id}`) segue saindo do domínio por decisão consciente: só carrega ids e sua forma já é a do contrato. A issue #96 fechou a porta de volta: `RoundEvent`, `TrainingEvent`/`TrainingReport`, `Retirement` e `BoardReview` deixaram de ser `@Serializable`, então serializar o domínio direto no WS virou erro de compilação em vez de regressão silenciosa.
 >
+> A issue #97 fechou o último controller: o `LeagueController` devolvia `Standings`, `SeasonRecord`, `ClubCareer`, `Round` e `ReadinessStatus` direto. Hoje todo corpo de sucesso dele passa por um DTO de `LeagueDtos.kt` (onde também passaram a morar `StandingsDto`/`StandingRowDto`, compartilhados com o WS) e sai pelo kotlinx (`okJson`), com `LeagueDtosTest` comparando o JSON literal com o schema. Efeito colateral visível: `GET /round/readiness` e `POST /round/ready` saíam pelo Jackson, que serializa getters, e por isso emitiam `allReady`/`canStart` fora do contrato. Esses campos sumiram do payload (o frontend já não os lia).
+>
 > **Lição para o resto do projeto:** um contrato só é fonte de verdade se algo o comparar com as DUAS implementações. Mock que implementa o spec testa o spec, não o backend.
 
 ### Persistência

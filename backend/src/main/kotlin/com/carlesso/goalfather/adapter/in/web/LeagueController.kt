@@ -20,6 +20,13 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * Endpoints da liga. Nenhum corpo de sucesso é tipo de domínio (issue #97): todo
+ * handler mapeia para o DTO de `LeagueDtos.kt`/`CupDtos.kt` e serializa pelo
+ * kotlinx (`okJson`). Assim o JSON que sai é o que os testes de DTO verificam —
+ * pelo Jackson, que o Spring usa quando o tipo declarado é `Any`, sairiam
+ * também os getters computados do domínio (ex.: `ReadinessStatus.allReady`).
+ */
 @RestController
 @RequestMapping("/api/league")
 class LeagueController(
@@ -63,7 +70,7 @@ class LeagueController(
      */
     @GetMapping("/history")
     suspend fun getHistory(): ResponseEntity<Any> =
-        ResponseEntity.ok(history.history())
+        json.okJson(history.history().map { it.toDto() })
 
     /** Uma temporada do histórico, com a classificação final de cada divisão. */
     @GetMapping("/history/{season}")
@@ -77,7 +84,7 @@ class LeagueController(
                 ),
             )
         } else {
-            ResponseEntity.ok(record)
+            json.okJson(record.toDto())
         }
     }
 
@@ -98,7 +105,7 @@ class LeagueController(
                 ),
             )
         } else {
-            ResponseEntity.ok(career)
+            json.okJson(career.toDto())
         }
     }
 
@@ -106,7 +113,7 @@ class LeagueController(
     suspend fun getStandings(@RequestParam(required = false) season: Int?): ResponseEntity<Any> {
         if (season == null) {
             // Uma tabela por divisão, da elite para baixo (issue #47).
-            return ResponseEntity.ok(leagueRepo.currentStandings())
+            return json.okJson(leagueRepo.currentStandings().map { it.toDto() })
         }
         // Histórico: tabelas finais de uma temporada já encerrada (issue #11).
         val standings = leagueRepo.findStandings(season)
@@ -115,7 +122,7 @@ class LeagueController(
                 ErrorResponse(code = "STANDINGS_NOT_FOUND", message = "Temporada $season sem tabela"),
             )
         } else {
-            ResponseEntity.ok(standings)
+            json.okJson(standings.map { it.toDto() })
         }
     }
 
@@ -132,7 +139,7 @@ class LeagueController(
         } else {
             // kotlinx explícito: `stage` é `sealed` (liga × copa, issue #61) e
             // o cliente desambigua pelo `type` — ver `okJson`.
-            json.okJson(current)
+            json.okJson(current.toDto())
         }
     }
 
@@ -142,12 +149,12 @@ class LeagueController(
      */
     @GetMapping("/round/readiness")
     suspend fun getReadiness(): ResponseEntity<Any> =
-        ResponseEntity.ok(readiness.status())
+        json.okJson(readiness.status().toDto())
 
     /** Técnico autenticado sinaliza que está pronto para a rodada (issue #20). */
     @PostMapping("/round/ready")
     suspend fun markReady(@AuthenticationPrincipal userId: Long): ResponseEntity<Any> =
-        ResponseEntity.ok(readiness.markReady(UserId(userId)))
+        json.okJson(readiness.markReady(UserId(userId)).toDto())
 
     /**
      * Inicia a simulação da rodada. Em liga compartilhada só destrava quando

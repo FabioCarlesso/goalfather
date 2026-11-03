@@ -111,4 +111,4 @@ private fun CupTie.toDto(): CupTieDto = when (this) {
 private fun TieResult.toDto(): TieResultDto =
     TieResultDto(homeGoals = homeGoals, awayGoals = awayGoals, penalties = penalties?.toDto())
 
-private fun PenaltyScore.toDto(): PenaltyScoreDto = PenaltyScoreDto(home = home, away = away)
+fun PenaltyScore.toDto(): PenaltyScoreDto = PenaltyScoreDto(home = home, away = away)
