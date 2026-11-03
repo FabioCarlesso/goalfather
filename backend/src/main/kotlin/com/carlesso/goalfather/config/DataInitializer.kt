@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration
  * (issue #61) — 12 clubes numa chave de 16, com 4 folgas.
  *
  * A descrição do estado vive em [initialLeague] (`application/seed`, escrita
- * com a DSL de seed), que produz um [League] imutável — e por ser pura dá
+ * com a DSL de seed), que produz um `League` imutável — e por ser pura dá
  * para testá-la sem Spring (issue #88). A tradução `domínio → entidades JPA`
  * mora em [SeedWriter], que o reset do E2E (issue #101) também usa; este
  * runner só decide QUANDO gravar. Idempotente: só insere se o DB estiver vazio.
