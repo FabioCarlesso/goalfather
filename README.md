@@ -69,6 +69,7 @@ cd backend
 ./gradlew test       # a engine deve ser testável SEM subir contexto Spring
 ./gradlew bootRun    # API em :8080 (H2 file-based: estado persiste entre reinícios)
 rm -rf backend/data/ # reseta o banco de desenvolvimento (recriado no próximo bootRun)
+SPRING_PROFILES_ACTIVE=dev,e2e ./gradlew bootRun  # backend para o `npm run e2e:real` (H2 em memória + reset por teste)
 
 # Frontend (a fazer)
 cd frontend

@@ -13,7 +13,7 @@ import java.time.Duration
  * irmão `RateLimitProperties`): Spring converte `2m`, `120s` ou `PT2M`.
  *
  * Default folgado (2 min) para dar a todos tempo de escalar; sobrescreva com
- * `APP_ROUND_READINESS_TIMEOUT` (ex.: `30s` em dev/E2E). O timeout é avaliado
+ * `ROUND_READINESS_TIMEOUT` (ex.: `30s` em dev; o profile `e2e` usa `5s`). O timeout é avaliado
  * por processo (cada instância corre o próprio relógio); a transição que ele
  * destrava, essa sim, é atômica entre instâncias via lock otimista (issue #46).
  */

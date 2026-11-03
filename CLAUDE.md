@@ -77,7 +77,7 @@ npm run dev               # Vite + MSW em :5173
 npm run gen:api           # regera src/api/generated.d.ts do contract/openapi.yaml
 npm run test              # Vitest (unit + integração com MSW)
 npm run e2e               # Playwright contra mocks
-npm run e2e:real          # Playwright contra backend real (precisa bootRun)
+npm run e2e:real          # Playwright contra backend real (precisa `SPRING_PROFILES_ACTIVE=dev,e2e ./gradlew bootRun`)
 ```
 
 ## O que NÃO fazer
