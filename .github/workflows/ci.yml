@@ -91,6 +91,88 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
+  # Mesmas specs do job acima, mas contra o backend Spring de verdade (issue
+  # #102): é o critério de "endpoint pronto" do CLAUDE.md. Pega o que o MSW não
+  # pega — campo renomeado só no backend, regra divergente do mock. O profile
+  # `dev,e2e` (#101) dá H2 em memória + `POST /test-support/reset`, que o
+  # helper do Playwright chama antes de cada teste; sem ele a suíte não é
+  # determinística. Retries = 0 neste modo (ver playwright.config.ts).
+  frontend-e2e-real:
+    name: Frontend E2E (backend real)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('backend/**/*.gradle.kts', 'backend/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      # Jar em vez de `bootRun`: compilar fica num passo próprio (erro de build
+      # aparece como erro de build, não como timeout de health) e o processo
+      # em background é só a JVM.
+      - name: Build backend
+        working-directory: backend
+        run: ./gradlew bootJar --no-daemon
+      - name: Subir o backend (dev,e2e)
+        working-directory: backend
+        env:
+          SPRING_PROFILES_ACTIVE: dev,e2e
+        run: nohup java -jar build/libs/goalfather.jar > backend.log 2>&1 &
+      - name: Install
+        working-directory: frontend
+        run: npm install
+      - name: Generate API types
+        working-directory: frontend
+        run: npm run gen:api
+      - name: Install Playwright (chromium)
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      # Por último antes dos testes: o boot corre em paralelo ao npm install.
+      # Falha aqui (e não em 16 erros de conexão) se o backend não subir.
+      - name: Esperar o backend ficar UP
+        run: |
+          for _ in $(seq 1 90); do
+            curl -fs http://localhost:8080/actuator/health | grep -q '"status":"UP"' && exit 0
+            sleep 2
+          done
+          echo "backend não ficou UP em 180s"
+          exit 1
+      - name: E2E (backend real)
+        working-directory: frontend
+        run: npm run e2e:real
+      - name: Log do backend
+        if: failure()
+        run: tail -n 200 backend/backend.log
+      - name: Upload artefatos (em caso de falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-real-failure
+          # test-results/ tem trace + screenshot por teste que falhou (o
+          # reporter `github` do CI não gera o HTML de playwright-report/).
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+            backend/backend.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   # Guarda de regressão do stack Docker. Duas classes de bug passaram batidas
   # aqui porque o CI nunca tocava no compose:
   #   #65 — o build do frontend usava o `generated.d.ts` do disco (gitignorado)

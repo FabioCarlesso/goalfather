@@ -10,7 +10,9 @@ export default defineConfig({
   // dois workers resetariam o estado um do outro no meio do teste.
   fullyParallel: !REAL_BACKEND,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // Sem retry no modo real (issue #102): um teste que só passa na segunda
+  // tentativa esconderia a dependência de ordem/estado que a #101 eliminou.
+  retries: process.env.CI && !REAL_BACKEND ? 2 : 0,
   workers: process.env.CI || REAL_BACKEND ? 1 : undefined,
   reporter: process.env.CI ? 'github' : 'list',
 
