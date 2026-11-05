@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
 import { useCreateOffer, MIN_OFFER_CENTS } from '../api/queries/useOffers'
@@ -28,6 +29,7 @@ export function ClubPage() {
 
   return (
     <section className="space-y-6">
+      <PageTitle>{club.name}</PageTitle>
       <header>
         <Link to="/standings" className="text-xs text-slate-500 hover:text-slate-300">← Tabela</Link>
         <h1 className="text-3xl font-bold text-slate-100">{club.name}</h1>

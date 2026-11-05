@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { useMarket } from '../api/queries/useMarket'
 import { useBuyPlayer } from '../api/queries/useBuyPlayer'
 import { useMyClubId } from '../auth/useMyClubId'
@@ -24,6 +25,7 @@ export function MarketPage() {
 
   return (
     <section>
+      <PageTitle>Mercado</PageTitle>
       <h1 className="text-3xl font-bold text-slate-100 mb-4">Mercado</h1>
 
       {lastResult && (

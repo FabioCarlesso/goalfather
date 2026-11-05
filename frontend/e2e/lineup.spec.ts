@@ -11,6 +11,7 @@ import { expect, test } from './helpers'
 test.describe('Lineup flow', () => {
   test('salvar a escalação e mantê-la após navegar', async ({ page }) => {
     await page.goto('/lineup')
+    await expect(page).toHaveTitle(/Escalação · GoalFather/)
     await expect(page.getByRole('heading', { name: 'Escalação' })).toBeVisible()
 
     // Os 11 selects de slot vivem na grade (o select de formação fica no header).

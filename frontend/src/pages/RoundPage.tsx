@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
@@ -261,6 +262,7 @@ export function RoundPage() {
 
   return (
     <section className="space-y-4">
+      <PageTitle>Rodada</PageTitle>
       <header className="flex items-center justify-between">
         <div>
           {/* A data do calendário é rodada de liga OU fase de copa (issue #61). */}

@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { PageTitle } from '../components/PageTitle'
 import { markOnboarded } from '../lib/onboarding'
 
 const cards = [
@@ -18,6 +19,7 @@ export function WelcomePage() {
 
   return (
     <section className="mx-auto max-w-2xl space-y-8">
+      <PageTitle>Bem-vindo</PageTitle>
       <header className="space-y-3 text-center">
         <h1 className="text-4xl font-bold text-slate-100">Bem-vindo ao GoalFather ⚽</h1>
         <p className="text-slate-400">

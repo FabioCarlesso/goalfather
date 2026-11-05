@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { errorMessage } from '../api/errorMessages'
@@ -39,6 +40,7 @@ export function LoginPage() {
 
   return (
     <section className="mx-auto max-w-sm space-y-6">
+      <PageTitle>Entrar</PageTitle>
       <header className="space-y-2 text-center">
         <h1 className="text-3xl font-bold text-slate-100">⚽ GoalFather</h1>
         <p className="text-slate-400">

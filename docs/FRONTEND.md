@@ -92,6 +92,7 @@ goalfather/
 │       │   ├── PlayerCard.tsx
 │       │   ├── FormationGrid.tsx
 │       │   ├── MatchEventFeed.tsx
+│       │   ├── PageTitle.tsx         # <title> por rota, içado ao <head> pelo React 19 (issue #114)
 │       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
 │       │   ├── OffersPanel.tsx       # propostas recebidas/enviadas na Dashboard (issue #63)
 │       │   └── ...

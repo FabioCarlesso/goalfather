@@ -125,9 +125,13 @@ function AppLayout() {
             >
               Sair
             </button>
-            <span className="text-xs text-slate-500 font-mono">
-              {import.meta.env.VITE_USE_MOCKS === 'false' ? 'API real' : 'MSW mock'}
-            </span>
+            {/* Indicador de ambiente só em dev (issue #114): o build de produção
+                elimina o ramo, pois `import.meta.env.DEV` vira `false` literal. */}
+            {import.meta.env.DEV && (
+              <span className="text-xs text-slate-500 font-mono">
+                {import.meta.env.VITE_USE_MOCKS === 'false' ? 'API real' : 'MSW mock'}
+              </span>
+            )}
           </div>
         </div>
       </header>
