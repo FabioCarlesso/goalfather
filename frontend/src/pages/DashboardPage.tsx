@@ -20,6 +20,9 @@ import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import { BoardPanel } from '../components/BoardPanel'
 import { OffersPanel } from '../components/OffersPanel'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Stat } from '../components/ui/Stat'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import { TRAINING_FOCUSES, TRAINING_FOCUS_HINT, TRAINING_FOCUS_LABEL } from '../domain/training'
 import { isInjured, injuryRoundsOut, staminaLevel } from '../domain/players'
@@ -128,11 +131,11 @@ function TrainingPanel({ club }: { club: Club }) {
   const selected = setFocus.isPending ? setFocus.variables : club.trainingFocus
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-100">Treino da semana</h2>
-        <span className="text-xs text-slate-500">aplicado na próxima rodada</span>
-      </div>
+    <Card
+      title="Treino da semana"
+      actions={<span className="text-xs text-slate-500">aplicado na próxima rodada</span>}
+      className="space-y-3"
+    >
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {TRAINING_FOCUSES.map((focus) => (
           <button
@@ -154,7 +157,7 @@ function TrainingPanel({ club }: { club: Club }) {
       {setFocus.isError && (
         <p className="text-sm text-red-400">{errorMessage(setFocus.error)}</p>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -178,13 +181,15 @@ function TicketPricePanel({ club }: { club: Club }) {
   const changed = cents !== club.ticketPriceCents
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-100">Preço do ingresso</h2>
+    <Card
+      title="Preço do ingresso"
+      actions={
         <span className="text-xs text-slate-500">
           em vigor: {formatMoney(club.ticketPriceCents)}
         </span>
-      </div>
+      }
+      className="space-y-3"
+    >
       <p className="text-sm text-slate-400">
         Ingresso caro rende mais por torcedor e esvazia o estádio; barato lota
         mas rende pouco. Time melhor suporta preço maior — vale entre{' '}
@@ -203,13 +208,12 @@ function TicketPricePanel({ club }: { club: Club }) {
             className="mt-1 block w-32 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
           />
         </label>
-        <button
+        <Button
           onClick={() => valid && setPrice.mutate(cents)}
           disabled={!valid || !changed || setPrice.isPending}
-          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
         >
           {setPrice.isPending ? 'Salvando…' : 'Definir preço'}
-        </button>
+        </Button>
       </div>
       {!valid && (
         <p className="text-xs text-amber-300">
@@ -223,7 +227,7 @@ function TicketPricePanel({ club }: { club: Club }) {
       {setPrice.isSuccess && !changed && (
         <p className="text-sm text-emerald-400">Preço atualizado ✓</p>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -236,11 +240,11 @@ function StadiumExpandPanel({ club }: { club: Club }) {
   const cost = seats * COST_PER_SEAT_CENTS
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-100">Ampliar estádio</h2>
-        <span className="text-xs text-slate-500">{formatMoney(COST_PER_SEAT_CENTS)} / assento</span>
-      </div>
+    <Card
+      title="Ampliar estádio"
+      actions={<span className="text-xs text-slate-500">{formatMoney(COST_PER_SEAT_CENTS)} / assento</span>}
+      className="space-y-3"
+    >
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-400">
           Novos assentos
@@ -256,13 +260,12 @@ function StadiumExpandPanel({ club }: { club: Club }) {
         <div className="text-sm text-slate-400">
           Custo total: <span className="font-mono text-slate-200">{formatMoney(cost)}</span>
         </div>
-        <button
+        <Button
           onClick={() => valid && expand.mutate({ additionalSeats: seats })}
           disabled={!valid || expand.isPending}
-          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
         >
           {expand.isPending ? 'Ampliando…' : 'Ampliar'}
-        </button>
+        </Button>
       </div>
       {!valid && <p className="text-xs text-amber-300">Informe um número inteiro de pelo menos {formatSeats(MIN_STADIUM_EXPANSION_SEATS)} assentos.</p>}
       {expand.isError && (
@@ -273,7 +276,7 @@ function StadiumExpandPanel({ club }: { club: Club }) {
         </p>
       )}
       {expand.isSuccess && <p className="text-sm text-emerald-400">Capacidade ampliada ✓</p>}
-    </div>
+    </Card>
   )
 }
 
@@ -289,11 +292,11 @@ function MedicalDepartmentPanel({ club }: { club: Club }) {
   const affordable = club.cash >= MEDICAL_COST_CENTS
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-100">Departamento médico</h2>
-        <span className="text-xs text-slate-500">{formatMoney(MEDICAL_COST_CENTS)} / sessão</span>
-      </div>
+    <Card
+      title="Departamento médico"
+      actions={<span className="text-xs text-slate-500">{formatMoney(MEDICAL_COST_CENTS)} / sessão</span>}
+      className="space-y-3"
+    >
       <p className="text-sm text-slate-400">
         Recupera forma física do elenco e encurta as lesões em uma rodada.
         {' '}
@@ -322,7 +325,7 @@ function MedicalDepartmentPanel({ club }: { club: Club }) {
         </p>
       )}
       {treat.isSuccess && <p className="text-sm text-emerald-400">Elenco tratado ✓</p>}
-    </div>
+    </Card>
   )
 }
 
@@ -367,15 +370,6 @@ function PlayerStats({ player }: { player: import('../domain/types').Player }) {
       {player.yellowCards > 0 && <span className="text-yellow-300" title="Cartões amarelos">🟨 {player.yellowCards}</span>}
       {player.redCards > 0 && <span className="text-red-400" title="Cartões vermelhos">🟥 {player.redCards}</span>}
     </span>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="text-lg font-semibold text-slate-100 mt-1">{value}</div>
-    </div>
   )
 }
 

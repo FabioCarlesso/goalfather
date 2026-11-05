@@ -13,6 +13,7 @@ import {
 } from '../domain/formations'
 import { isInjured } from '../domain/players'
 import type { Club, Formation, Player, Posture } from '../domain/types'
+import { Button } from '../components/ui/Button'
 
 /**
  * Carrega o clube e só então monta o formulário. O `key={club.id}` remonta
@@ -141,13 +142,12 @@ function LineupForm({ club }: { club: Club }) {
 
       <div className="flex items-center justify-between gap-3">
         <SaveFeedback save={save} />
-        <button
+        <Button
           onClick={onSubmit}
           disabled={!complete || save.isPending}
-          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
         >
           {save.isPending ? 'Salvando…' : 'Salvar escalação'}
-        </button>
+        </Button>
       </div>
     </section>
   )

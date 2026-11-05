@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useClubCareer } from '../api/queries/useSeasonHistory'
 import { BOARD_OBJECTIVE_LABEL, ordinal } from '../domain/board'
 import type { ClubCareer, Dismissal } from '../domain/types'
+import { Button } from '../components/ui/Button'
 
 /**
  * Game over da v1 (issue #62): a diretoria demitiu o técnico na virada de
@@ -35,12 +36,11 @@ export function FiredPage() {
 
       <CareerSummary clubId={dismissal.clubId} />
 
-      <button
+      <Button
         onClick={() => navigate('/select-club')}
-        className="rounded-md bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 font-medium transition-colors"
       >
         Recomeçar em outro clube
-      </button>
+      </Button>
     </section>
   )
 }
