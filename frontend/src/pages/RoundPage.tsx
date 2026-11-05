@@ -32,6 +32,7 @@ import type {
   Standings,
   TrainingReport,
 } from '../domain/types'
+import { Button } from '../components/ui/Button'
 
 // Variante do union RoundEvent — fim de temporada (issue #11).
 type SeasonFinishedEvent = Extract<RoundEvent, { type: 'SeasonFinished' }>
@@ -270,14 +271,13 @@ export function RoundPage() {
             {round.stage.type === 'Cup' && ' · jogo único, empate vai aos pênaltis'}
           </p>
         </div>
-        <button
+        <Button
           onClick={startRound}
           disabled={busy || !canStart}
           title={!canStart ? 'Aguardando técnicos sinalizarem prontos (ou o timeout expirar)' : undefined}
-          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
         >
           {buttonLabel}
-        </button>
+        </Button>
       </header>
 
       {/* Lobby da rodada compartilhada (issue #20): todos prontos → libera jogar. */}

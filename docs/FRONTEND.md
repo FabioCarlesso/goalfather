@@ -94,6 +94,7 @@ goalfather/
 │       │   ├── MatchEventFeed.tsx
 │       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
 │       │   ├── OffersPanel.tsx       # propostas recebidas/enviadas na Dashboard (issue #63)
+│       │   ├── ui/                   # primitivas visuais: Button, Card, Badge, Stat, Modal (issue #104)
 │       │   └── ...
 │       ├── domain/                   # tipos e helpers cross-tela
 │       │   ├── types.ts              # re-exporta tipos do OpenAPI

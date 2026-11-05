@@ -1,6 +1,7 @@
 // Card de lobby da rodada compartilhada (issue #20). Componente puro: recebe
 // o estado de prontidão por props e emite "estou pronto" via callback — nenhuma
 // chamada de API aqui (segue a regra: só pages/hooks tocam dados).
+import { Button } from './ui/Button'
 
 interface ReadinessCardProps {
   readyCount: number
@@ -76,13 +77,13 @@ export function ReadinessCard({
           {allReady ? 'Pronto ✓' : 'Aguardando outros…'}
         </span>
       ) : (
-        <button
+        <Button
           onClick={onReady}
           disabled={marking}
-          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
+          className="whitespace-nowrap"
         >
           {marking ? 'Enviando…' : 'Estou pronto'}
-        </button>
+        </Button>
       )}
     </div>
   )

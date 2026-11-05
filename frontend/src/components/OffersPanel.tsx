@@ -9,6 +9,7 @@ import {
 } from '../domain/offers'
 import type { TransferOffer } from '../domain/types'
 import type { OfferAction } from '../api/queries/useOffers'
+import { Card } from './ui/Card'
 
 /** Quantas propostas já resolvidas aparecem por lado — o resto é histórico. */
 const RECENT_RESOLVED = 5
@@ -32,21 +33,21 @@ export function OffersPanel({ offers, clubId, onAction, busyOfferId = null }: Pr
   const pendingReceived = received.filter(isPendingOffer).length
 
   return (
-    <section
-      aria-labelledby="offers-heading"
-      className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-4"
-    >
-      <div className="flex items-center justify-between">
-        <h2 id="offers-heading" className="text-lg font-semibold text-slate-100">
+    <Card
+      as="section"
+      title={
+        <>
           Propostas
           {pendingReceived > 0 && (
             <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-slate-950">
               {pendingReceived} nova{pendingReceived === 1 ? '' : 's'}
             </span>
           )}
-        </h2>
-        <span className="text-xs text-slate-500">entre técnicos da liga</span>
-      </div>
+        </>
+      }
+      actions={<span className="text-xs text-slate-500">entre técnicos da liga</span>}
+      className="space-y-4"
+    >
 
       <OfferList
         title="Recebidas"
@@ -96,7 +97,7 @@ export function OffersPanel({ offers, clubId, onAction, busyOfferId = null }: Pr
           />
         )}
       />
-    </section>
+    </Card>
   )
 }
 
@@ -169,7 +170,7 @@ function ActionButton({
   onClick,
 }: { label: string; tone: 'accept' | 'neutral'; disabled: boolean; onClick: () => void }) {
   const toneClasses = tone === 'accept'
-    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-transparent'
+    ? 'bg-accent hover:bg-emerald-500 text-white border-transparent'
     : 'border-slate-700 text-slate-300 hover:border-slate-500'
   return (
     <button

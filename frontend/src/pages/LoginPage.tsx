@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { errorMessage } from '../api/errorMessages'
+import { Button } from '../components/ui/Button'
 
 type Mode = 'login' | 'register'
 
@@ -70,13 +71,13 @@ export function LoginPage() {
 
         {error && <p className="text-sm text-red-400">{error}</p>}
 
-        <button
+        <Button
           type="submit"
           disabled={!valid || submitting}
-          className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-700"
+          className="w-full"
         >
           {submitting ? '…' : mode === 'login' ? 'Entrar' : 'Cadastrar'}
-        </button>
+        </Button>
       </form>
 
       <p className="text-center text-sm text-slate-400">

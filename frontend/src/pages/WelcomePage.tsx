@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { markOnboarded } from '../lib/onboarding'
+import { Button } from '../components/ui/Button'
 
 const cards = [
   { to: '/lineup', icon: '📋', title: 'Escalação', desc: 'Monte os 11 titulares e a formação tática.' },
@@ -43,12 +44,11 @@ export function WelcomePage() {
       </div>
 
       <div className="flex items-center justify-center gap-3">
-        <button
+        <Button
           onClick={finish}
-          className="rounded-md bg-emerald-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
         >
           Começar
-        </button>
+        </Button>
         <button
           onClick={finish}
           className="rounded-md border border-slate-700 px-5 py-2 text-sm text-slate-400 transition-colors hover:text-slate-200"
