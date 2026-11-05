@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useStandings } from '../api/queries/useStandings'
+import { useMyClubId } from '../auth/useMyClubId'
 import type { Standings } from '../domain/types'
 
 export function StandingsPage() {
   const { data, isLoading, error } = useStandings()
+  const myClubId = useMyClubId()
 
   if (isLoading) return <p className="text-slate-400">Carregando tabela…</p>
   if (error)     return <p className="text-red-400">Erro: {String(error)}</p>
@@ -20,19 +22,26 @@ export function StandingsPage() {
         </p>
       </header>
 
-      {data.map((table) => (
-        <DivisionTable key={table.division} table={table} />
-      ))}
+      {/* A divisão do usuário vem primeiro (#108): só reordena a apresentação,
+          sem regra de domínio; as demais mantêm a ordem do contrato. */}
+      {[...data]
+        .sort((a, b) => Number(isMine(b, myClubId)) - Number(isMine(a, myClubId)))
+        .map((table) => (
+          <DivisionTable key={table.division} table={table} myClubId={myClubId} />
+        ))}
     </section>
   )
 }
+
+const isMine = (table: Standings, myClubId: number): boolean =>
+  table.rows.some((r) => r.clubId === myClubId)
 
 /**
  * Tabela de uma divisão com as zonas de promoção (topo) e rebaixamento
  * (fundo) pintadas. Quantas posições compõem cada zona vem do CONTRATO
  * (`promotionSpots`/`relegationSpots`) — o frontend não recalcula a regra.
  */
-function DivisionTable({ table }: { table: Standings }) {
+function DivisionTable({ table, myClubId }: { table: Standings; myClubId: number }) {
   const zoneOf = (position: number): 'promotion' | 'relegation' | null => {
     if (position <= table.promotionSpots) return 'promotion'
     if (position > table.rows.length - table.relegationSpots) return 'relegation'
@@ -42,6 +51,11 @@ function DivisionTable({ table }: { table: Standings }) {
   const zoneClasses = {
     promotion:  'border-l-2 border-emerald-500 bg-emerald-900/15',
     relegation: 'border-l-2 border-red-500 bg-red-900/15',
+  } as const
+  // Na linha do usuário a zona fica só com a borda; o fundo é o do destaque.
+  const zoneBorderClasses = {
+    promotion:  'border-l-2 border-emerald-500',
+    relegation: 'border-l-2 border-red-500',
   } as const
 
   return (
@@ -80,10 +94,18 @@ function DivisionTable({ table }: { table: Standings }) {
         <tbody className="divide-y divide-slate-800">
           {table.rows.map((r) => {
             const zone = zoneOf(r.position)
+            const mine = r.clubId === myClubId
             return (
               <tr
                 key={r.clubId}
-                className={`hover:bg-slate-900/40 ${zone ? zoneClasses[zone] : ''}`}
+                aria-current={mine ? 'true' : undefined}
+                // Clube do usuário: o fundo sky substitui o da zona, mas a borda
+                // esquerda (emerald/red) da zona continua visível.
+                className={
+                  mine
+                    ? `bg-sky-900/40 font-semibold ${zone ? zoneBorderClasses[zone] : ''}`
+                    : `hover:bg-slate-900/40 ${zone ? zoneClasses[zone] : ''}`
+                }
                 title={
                   zone === 'promotion'  ? 'Zona de promoção' :
                   zone === 'relegation' ? 'Zona de rebaixamento' : undefined
@@ -95,6 +117,7 @@ function DivisionTable({ table }: { table: Standings }) {
                   <Link to={`/clubs/${r.clubId}`} className="hover:text-emerald-300 hover:underline">
                     {r.clubName}
                   </Link>
+                  {mine && <span className="sr-only"> (seu clube)</span>}
                 </td>
                 <td className="py-2 text-center text-slate-300">{r.played}</td>
                 <td className="py-2 text-center text-slate-300">{r.wins}</td>
