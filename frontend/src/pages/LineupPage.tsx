@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { useClub } from '../api/queries/useClub'
 import { useSaveLineup } from '../api/queries/useSaveLineup'
 import { useMyClubId } from '../auth/useMyClubId'
@@ -79,6 +80,7 @@ function LineupForm({ club }: { club: Club }) {
 
   return (
     <section>
+      <PageTitle>Escalação</PageTitle>
       <header className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-100">Escalação</h1>

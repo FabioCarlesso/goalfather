@@ -1,4 +1,5 @@
 import { Navigate, useNavigate } from 'react-router-dom'
+import { PageTitle } from '../components/PageTitle'
 import { useAuth } from '../auth/AuthContext'
 import { useClubCareer } from '../api/queries/useSeasonHistory'
 import { BOARD_OBJECTIVE_LABEL, ordinal } from '../domain/board'
@@ -23,6 +24,7 @@ export function FiredPage() {
 
   return (
     <section className="mx-auto max-w-2xl space-y-6 text-center">
+      <PageTitle>Demitido</PageTitle>
       <header className="space-y-2">
         <div className="text-5xl">📉</div>
         <h1 className="text-3xl font-bold text-red-300">Você foi demitido</h1>

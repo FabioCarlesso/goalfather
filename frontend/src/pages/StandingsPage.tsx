@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { PageTitle } from '../components/PageTitle'
 import { useStandings } from '../api/queries/useStandings'
 import { useMyClubId } from '../auth/useMyClubId'
 import type { Standings } from '../domain/types'
@@ -15,6 +16,7 @@ export function StandingsPage() {
 
   return (
     <section className="space-y-8">
+      <PageTitle>Tabela</PageTitle>
       <header>
         <h1 className="text-3xl font-bold text-slate-100">Tabela</h1>
         <p className="text-sm text-slate-400">

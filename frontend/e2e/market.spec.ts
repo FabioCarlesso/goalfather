@@ -10,6 +10,7 @@ import { expect, test } from './helpers'
 test.describe('Market flow', () => {
   test('comprar um jogador reduz o mercado e debita o caixa', async ({ page }) => {
     await page.goto('/market')
+    await expect(page).toHaveTitle(/Mercado · GoalFather/)
     await expect(page.getByRole('heading', { name: 'Mercado' })).toBeVisible()
 
     const buyButtons = page.getByRole('button', { name: 'Comprar' })
@@ -30,6 +31,7 @@ test.describe('Market flow', () => {
     page.on('dialog', (dialog) => dialog.accept())
 
     await page.goto('/dashboard')
+    await expect(page).toHaveTitle(/Clube · GoalFather/)
     await expect(page.getByRole('heading', { name: 'Elenco' })).toBeVisible()
 
     const sellButtons = page.getByRole('button', { name: 'Vender' })

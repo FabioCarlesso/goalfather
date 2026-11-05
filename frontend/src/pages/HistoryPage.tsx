@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { useSeasonHistory, useSeasonRecord, useClubCareer } from '../api/queries/useSeasonHistory'
 import { useMyClubId } from '../auth/useMyClubId'
 import type { ClubCareer, SeasonRecord, SeasonStanding } from '../domain/types'
@@ -20,6 +21,7 @@ export function HistoryPage() {
 
   return (
     <section className="space-y-8">
+      <PageTitle>Histórico</PageTitle>
       <header>
         <h1 className="text-3xl font-bold text-slate-100">Histórico</h1>
         <p className="text-sm text-slate-400">

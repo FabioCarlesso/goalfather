@@ -1,4 +1,5 @@
 import { useCup } from '../api/queries/useCup'
+import { PageTitle } from '../components/PageTitle'
 import { useMyClubId } from '../auth/useMyClubId'
 import { KNOCKOUT_PHASE_LABEL } from '../domain/cup'
 import { formatMoney } from '../domain/formatters'
@@ -22,6 +23,7 @@ export function CupPage() {
   if (!cup) {
     return (
       <section className="space-y-4">
+        <PageTitle>Copa</PageTitle>
         <h1 className="text-3xl font-bold text-slate-100">Copa</h1>
         <p className="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-slate-400">
           Nenhuma copa nesta temporada. A copa é sorteada na virada de temporada.
@@ -34,6 +36,7 @@ export function CupPage() {
 
   return (
     <section className="space-y-6">
+      <PageTitle>Copa</PageTitle>
       <header>
         <h1 className="text-3xl font-bold text-slate-100">Copa {cup.season}</h1>
         <p className="text-sm text-slate-400">

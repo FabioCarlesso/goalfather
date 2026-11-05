@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { Link, useParams } from 'react-router-dom'
 import { useCurrentRound } from '../api/queries/useCurrentRound'
 import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
@@ -115,6 +116,7 @@ function MatchView({ matchId }: { matchId: string }) {
 
   return (
     <section className="space-y-4">
+      <PageTitle>{teams ? `${teams.home} × ${teams.away}` : 'Partida'}</PageTitle>
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-100">Partida</h1>
         <Link to="/round" className="text-sm text-slate-400 hover:text-slate-200">

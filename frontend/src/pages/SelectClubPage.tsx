@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { PageTitle } from '../components/PageTitle'
 import { useAuth } from '../auth/AuthContext'
 import { useAvailableClubs } from '../api/queries/useAvailableClubs'
 import { useClaimClub } from '../api/queries/useClaimClub'
@@ -32,6 +33,7 @@ export function SelectClubPage() {
 
   return (
     <section className="mx-auto max-w-3xl space-y-6">
+      <PageTitle>Escolha seu clube</PageTitle>
       <header className="space-y-2 text-center">
         <h1 className="text-3xl font-bold text-slate-100">Escolha seu clube</h1>
         <p className="text-slate-400">

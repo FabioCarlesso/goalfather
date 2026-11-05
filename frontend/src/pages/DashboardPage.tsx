@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { useClub } from '../api/queries/useClub'
 import { useBoard } from '../api/queries/useBoard'
 import { useSellPlayer } from '../api/queries/useSellPlayer'
@@ -54,6 +55,7 @@ export function DashboardPage() {
 
   return (
     <section className="space-y-6">
+      <PageTitle>Clube</PageTitle>
       <header>
         <h1 className="text-3xl font-bold text-slate-100">{club.name}</h1>
         <p className="text-sm text-slate-400">ID #{club.id}</p>
