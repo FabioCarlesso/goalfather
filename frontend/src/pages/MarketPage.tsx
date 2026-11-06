@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageTitle } from '../components/PageTitle'
 import { MarketFilterBar } from '../components/MarketFilterBar'
@@ -30,6 +31,15 @@ export function MarketPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = parseMarketFilters(searchParams)
 
+  // Última mudança PEDIDA. O router aplica cada navegação numa transição, então
+  // `filters` pode estar atrás dela: partir dele apagaria a mudança anterior, como
+  // uma ordenação perdida na primeira tecla da busca em um aparelho lento.
+  const requestedFilters = useRef(filters)
+  useEffect(() => {
+    // Mudanças externas (voltar do navegador, link do menu) também valem.
+    requestedFilters.current = parseMarketFilters(searchParams)
+  }, [searchParams])
+
   if (market.isPending) {
     return (
       <>
@@ -49,8 +59,11 @@ export function MarketPage() {
     )
   }
 
-  const updateFilters = (patch: Partial<MarketFilterState>, options?: { replace: boolean }) =>
-    setSearchParams(toMarketSearchParams({ ...filters, ...patch }), options)
+  const updateFilters = (patch: Partial<MarketFilterState>, options?: { replace: boolean }) => {
+    const next = { ...requestedFilters.current, ...patch }
+    requestedFilters.current = next
+    setSearchParams(toMarketSearchParams(next), options)
+  }
 
   const visible = applyMarketFilters(market.data, filters)
 

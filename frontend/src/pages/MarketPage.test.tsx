@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { MutationCache, QueryClient } from '@tanstack/react-query'
@@ -164,6 +164,43 @@ describe('MarketPage (issue #111)', () => {
       expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'true')
       expect(screen.getByLabelText('Ordenar por')).toHaveValue('price')
       expect(screen.getByRole('button', { name: 'Ordem: crescente' })).toBeInTheDocument()
+    })
+  })
+
+  describe('mudanças antes de a URL anterior ser aplicada', () => {
+    // O router aplica cada navegação numa transição, então `searchParams` pode
+    // estar atrás da última mudança pedida. Foi o que derrubou o E2E no CI.
+    it('digitar logo depois de mudar a ordem mantém os dois', async () => {
+      renderMarket()
+      await screen.findByText(VIDIGAL)
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'Ordem: crescente' }))
+        fireEvent.change(screen.getByLabelText('Buscar por nome'), { target: { value: 'vi' } })
+      })
+
+      await waitFor(() => expect(search()).toContain('q=vi'))
+      expect(search()).toContain('dir=desc')
+    })
+
+    it('escolher uma posição logo depois de digitar não deixa o campo fora de sincronia', async () => {
+      const user = userEvent.setup()
+      renderMarket()
+      await screen.findByText(VIDIGAL)
+      const field = screen.getByLabelText('Buscar por nome')
+
+      act(() => {
+        fireEvent.change(field, { target: { value: 'vi' } })
+        fireEvent.click(screen.getByRole('button', { name: 'AT', exact: true }))
+      })
+
+      await waitFor(() => expect(search()).toContain('pos=FW'))
+      expect(search()).toContain('q=vi')
+      expect(shownNames()).toEqual([VIDIGAL])
+
+      await user.clear(field)
+      await waitFor(() => expect(search()).not.toContain('q='))
+      expect(field).toHaveValue('')
     })
   })
 

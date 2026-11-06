@@ -27,8 +27,10 @@ test.describe('Erros de tela', () => {
 
     const before = await calls()
     await retry.click()
-    await expect.poll(calls).toBeGreaterThan(before)
-    // Durante o retry a query volta a `pending` e o botão some; espera o erro voltar.
+    // Duas chamadas: a do clique e a retentativa automática (`retry: 1` em `main.tsx`).
+    // Sem esperar a segunda, a falha desligada abaixo deixaria a retentativa se
+    // recuperar sozinha, e o botão nunca voltaria.
+    await expect.poll(calls).toBe(before + 2)
     await expect(retry).toBeVisible()
     await expect(page.getByRole('button', { name: 'Fechar aviso' })).toHaveCount(1)
 
