@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useBlocker } from 'react-router-dom'
 import { PageTitle } from '../components/PageTitle'
 import { useClub } from '../api/queries/useClub'
 import { useSaveLineup } from '../api/queries/useSaveLineup'
+import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import {
   FORMATIONS,
@@ -11,10 +13,32 @@ import {
   POSTURES,
   POSTURE_HINT,
   POSTURE_LABEL,
+  remapSlots,
 } from '../domain/formations'
 import { isInjured } from '../domain/players'
 import type { Club, Formation, Player, Posture } from '../domain/types'
 import { Button } from '../components/ui/Button'
+import { Modal } from '../components/ui/Modal'
+
+/** O que o técnico edita nesta tela. */
+interface LineupDraft {
+  formation: Formation
+  posture: Posture
+  slots: (number | null)[]
+}
+
+const draftFrom = (lineup: Club['effectiveLineup']): LineupDraft => ({
+  formation: lineup.formation,
+  // A postura é opcional no schema `Lineup` — ausente, EQUILIBRADA, o mesmo
+  // default do backend.
+  posture: lineup.posture ?? 'BALANCED',
+  slots: Array.from({ length: 11 }, (_, i) => lineup.playerIds[i] ?? null),
+})
+
+const sameDraft = (a: LineupDraft, b: LineupDraft) =>
+  a.formation === b.formation &&
+  a.posture === b.posture &&
+  a.slots.every((id, i) => id === b.slots[i])
 
 /**
  * Carrega o clube e só então monta o formulário. O `key={club.id}` remonta
@@ -37,14 +61,15 @@ function LineupForm({ club }: { club: Club }) {
   // a engine põe em campo se a rodada começar agora, já com o 4-4-2 automático
   // e os lesionados trocados. Quem decide os titulares é o servidor; aqui só
   // se lê. Edições subsequentes ficam locais ao formulário.
-  const initial = club.effectiveLineup
-  const [formation, setFormation] = useState<Formation>(initial.formation)
-  // A postura é opcional no schema `Lineup` — ausente, EQUILIBRADA, o mesmo
-  // default do backend.
-  const [posture, setPosture] = useState<Posture>(initial.posture ?? 'BALANCED')
-  const [slots, setSlots] = useState<(number | null)[]>(() =>
-    Array.from({ length: 11 }, (_, i) => initial.playerIds[i] ?? null),
-  )
+  const [draft, setDraft] = useState(() => draftFrom(club.effectiveLineup))
+  // Referência de "sem alterações" (issue #109): uma foto tirada ao abrir, ao
+  // salvar e ao restaurar. Não é derivada de `club`, para que um refetch em
+  // segundo plano não marque como alterado o que o técnico não tocou.
+  const [baseline, setBaseline] = useState(draft)
+  const { formation, posture, slots } = draft
+  const dirty = !sameDraft(draft, baseline)
+  const serverDraft = draftFrom(club.effectiveLineup)
+
   const autoNotice = club.lineupIsDefault
     ? 'Escalação automática — é este o time que entra em campo se você não salvar.'
     : club.lineupAdjusted
@@ -55,8 +80,8 @@ function LineupForm({ club }: { club: Club }) {
   const complete = slots.every((id) => id !== null)
 
   const setSlot = (i: number, playerId: number | null) => {
-    setSlots((prev) => {
-      const next = [...prev]
+    setDraft((prev) => {
+      const next = [...prev.slots]
       next[i] = playerId
       // Remove duplicatas: se o mesmo jogador for selecionado em outro slot, limpa o outro
       if (playerId !== null) {
@@ -64,19 +89,41 @@ function LineupForm({ club }: { club: Club }) {
           if (j !== i && next[j] === playerId) next[j] = null
         }
       }
-      return next
+      return { ...prev, slots: next }
     })
   }
 
   const onFormationChange = (f: Formation) => {
-    setFormation(f)
-    setSlots(Array(11).fill(null))
+    setDraft((prev) => ({ ...prev, formation: f, slots: remapSlots(prev.slots, prev.formation, f) }))
   }
 
   const onSubmit = () => {
     if (!complete) return
-    save.mutate({ formation, playerIds: slots as number[], posture })
+    // A foto é o que foi ENVIADO: uma edição feita durante o POST segue pendente.
+    save.mutate(
+      { formation, playerIds: slots as number[], posture },
+      { onSuccess: () => setBaseline(draft) },
+    )
   }
+
+  const onRestore = () => {
+    setDraft(serverDraft)
+    setBaseline(serverDraft)
+    save.reset()
+  }
+
+  // Navegação interna: só mudança de rota conta, não query string nem hash.
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname,
+  )
+
+  // Fechar a aba ou recarregar: o texto do aviso é sempre o do navegador.
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
 
   return (
     <section>
@@ -105,7 +152,7 @@ function LineupForm({ club }: { club: Club }) {
           <select
             id="posture"
             value={posture}
-            onChange={(e) => setPosture(e.target.value as Posture)}
+            onChange={(e) => setDraft((prev) => ({ ...prev, posture: e.target.value as Posture }))}
             className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
           >
             {POSTURES.map((p) => (
@@ -142,15 +189,40 @@ function LineupForm({ club }: { club: Club }) {
         ))}
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <SaveFeedback save={save} />
-        <Button
-          onClick={onSubmit}
-          disabled={!complete || save.isPending}
-        >
-          {save.isPending ? 'Salvando…' : 'Salvar escalação'}
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SaveFeedback save={save} dirty={dirty} />
+        <div className="flex flex-wrap items-center gap-3">
+          {dirty && <span className="text-sm text-amber-400">Alterações não salvas</span>}
+          <Button
+            variant="secondary"
+            onClick={onRestore}
+            disabled={sameDraft(draft, serverDraft) || save.isPending}
+          >
+            Restaurar escalação automática
+          </Button>
+          <Button
+            onClick={onSubmit}
+            disabled={!complete || save.isPending}
+          >
+            {save.isPending ? 'Salvando…' : 'Salvar escalação'}
+          </Button>
+        </div>
       </div>
+
+      {/* `reset`/`proceed` só existem com o blocker em 'blocked', daí o `?.`. */}
+      <Modal
+        open={blocker.state === 'blocked'}
+        onClose={() => blocker.reset?.()}
+        title="Sair sem salvar a escalação?"
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => blocker.reset?.()}>Ficar</Button>
+            <Button variant="danger" onClick={() => blocker.proceed?.()}>Sair sem salvar</Button>
+          </>
+        }
+      >
+        Suas alterações na escalação ainda não foram salvas e serão perdidas.
+      </Modal>
     </section>
   )
 }
@@ -207,8 +279,8 @@ function SlotPicker({
   )
 }
 
-function SaveFeedback({ save }: { save: ReturnType<typeof useSaveLineup> }) {
-  if (save.isError)   return <span className="text-sm text-red-400">Erro: {String(save.error)}</span>
-  if (save.isSuccess) return <span className="text-sm text-emerald-400">Escalação salva ✓</span>
+function SaveFeedback({ save, dirty }: { save: ReturnType<typeof useSaveLineup>; dirty: boolean }) {
+  if (save.isError) return <span className="text-sm text-red-400">Erro: {errorMessage(save.error)}</span>
+  if (save.isSuccess && !dirty) return <span className="text-sm text-emerald-400">Escalação salva ✓</span>
   return <span />
 }
