@@ -23,6 +23,8 @@ import { BoardPanel } from '../components/BoardPanel'
 import { OffersPanel } from '../components/OffersPanel'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 import { Stat } from '../components/ui/Stat'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import { TRAINING_FOCUSES, TRAINING_FOCUS_HINT, TRAINING_FOCUS_LABEL } from '../domain/training'
@@ -31,7 +33,7 @@ import type { Availability, Club, TransferResult } from '../domain/types'
 
 export function DashboardPage() {
   const myClubId = useMyClubId()
-  const { data: club, isLoading, error } = useClub(myClubId)
+  const { data: club, isPending, isLoadingError, error, refetch } = useClub(myClubId)
   // Painel da diretoria (issue #62): consulta à parte, para um erro nela não
   // derrubar a Dashboard inteira — sem painel, o resto do clube segue de pé.
   const { data: board } = useBoard(myClubId)
@@ -41,9 +43,8 @@ export function DashboardPage() {
   const sell = useSellPlayer()
   const [lastResult, setLastResult] = useState<TransferResult | null>(null)
 
-  if (isLoading) return <p className="text-slate-400">Carregando clube…</p>
-  if (error)     return <p className="text-red-400">{errorMessage(error)}</p>
-  if (!club)     return null
+  if (isPending) return <><PageTitle>Clube</PageTitle><LoadingState label="Carregando clube…" shape="cards" /></>
+  if (isLoadingError) return <><PageTitle>Clube</PageTitle><ErrorState error={error} onRetry={refetch} /></>
 
   const onSell = (playerId: number, name: string) => {
     if (!confirm(`Vender ${name}?`)) return
@@ -274,7 +275,7 @@ function StadiumExpandPanel({ club }: { club: Club }) {
         <p className="text-sm text-red-400">
           {expand.error instanceof ApiError && expand.error.status === 402
             ? `Caixa insuficiente — custo ${formatMoney(cost)}, disponível ${formatMoney(club.cash)}.`
-            : `Erro ao ampliar: ${String(expand.error)}`}
+            : errorMessage(expand.error)}
         </p>
       )}
       {expand.isSuccess && <p className="text-sm text-emerald-400">Capacidade ampliada ✓</p>}
@@ -323,7 +324,7 @@ function MedicalDepartmentPanel({ club }: { club: Club }) {
         <p className="text-sm text-red-400">
           {treat.error instanceof ApiError && treat.error.status === 402
             ? `Caixa insuficiente — custo ${formatMoney(MEDICAL_COST_CENTS)}, disponível ${formatMoney(club.cash)}.`
-            : `Erro no tratamento: ${String(treat.error)}`}
+            : errorMessage(treat.error)}
         </p>
       )}
       {treat.isSuccess && <p className="text-sm text-emerald-400">Elenco tratado ✓</p>}

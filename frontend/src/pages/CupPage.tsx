@@ -1,5 +1,8 @@
 import { useCup } from '../api/queries/useCup'
 import { PageTitle } from '../components/PageTitle'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 import { useMyClubId } from '../auth/useMyClubId'
 import { KNOCKOUT_PHASE_LABEL } from '../domain/cup'
 import { formatMoney } from '../domain/formatters'
@@ -15,19 +18,17 @@ import type { Cup, CupClub, CupStage, CupTie, KnockoutPhase } from '../domain/ty
  */
 export function CupPage() {
   const myClubId = useMyClubId()
-  const { data: cup, isLoading, error } = useCup()
+  const { data: cup, isPending, isLoadingError, error, refetch } = useCup()
 
-  if (isLoading) return <p className="text-slate-400">Carregando copa…</p>
-  if (error)     return <p className="text-red-400">Erro: {String(error)}</p>
+  if (isPending) return <><PageTitle>Copa</PageTitle><LoadingState label="Carregando copa…" shape="cards" /></>
+  if (isLoadingError) return <><PageTitle>Copa</PageTitle><ErrorState error={error} onRetry={refetch} /></>
 
   if (!cup) {
     return (
       <section className="space-y-4">
         <PageTitle>Copa</PageTitle>
         <h1 className="text-3xl font-bold text-slate-100">Copa</h1>
-        <p className="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-slate-400">
-          Nenhuma copa nesta temporada. A copa é sorteada na virada de temporada.
-        </p>
+        <EmptyState message="Nenhuma copa nesta temporada. A copa é sorteada na virada de temporada." />
       </section>
     )
   }

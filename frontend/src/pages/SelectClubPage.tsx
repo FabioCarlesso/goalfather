@@ -7,6 +7,9 @@ import { errorMessage } from '../api/errorMessages'
 import { formatMoney, formatSeats } from '../domain/formatters'
 import type { AvailableClub } from '../domain/types'
 import { Button } from '../components/ui/Button'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 
 /**
  * Seleção de clube (issue #19). Exibida quando o usuário tem token mas ainda
@@ -14,7 +17,7 @@ import { Button } from '../components/ui/Button'
  * usuário e leva ao dashboard.
  */
 export function SelectClubPage() {
-  const { data: clubs, isLoading, error } = useAvailableClubs()
+  const { data: clubs, isPending, isLoadingError, error, refetch } = useAvailableClubs()
   const { setClubId } = useAuth()
   const claim = useClaimClub()
   const navigate = useNavigate()
@@ -28,8 +31,8 @@ export function SelectClubPage() {
     })
   }
 
-  if (isLoading) return <p className="text-slate-400">Carregando clubes…</p>
-  if (error) return <p className="text-red-400">{errorMessage(error)}</p>
+  if (isPending) return <><PageTitle>Escolha seu clube</PageTitle><LoadingState label="Carregando clubes…" shape="cards" /></>
+  if (isLoadingError) return <><PageTitle>Escolha seu clube</PageTitle><ErrorState error={error} onRetry={refetch} /></>
 
   return (
     <section className="mx-auto max-w-3xl space-y-6">
@@ -41,13 +44,14 @@ export function SelectClubPage() {
         </p>
       </header>
 
-      {clubs && clubs.length === 0 ? (
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-6 text-center text-slate-400">
-          Todos os clubes já têm dono. (Criar um clube novo virá em uma próxima atualização.)
-        </div>
+      {clubs.length === 0 ? (
+        <EmptyState
+          className="text-center"
+          message="Todos os clubes já têm dono. (Criar um clube novo virá em uma próxima atualização.)"
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {clubs?.map((club) => (
+          {clubs.map((club) => (
             <ClubCard
               key={club.id}
               club={club}
