@@ -59,7 +59,9 @@ jobs:
 
   frontend-e2e:
     name: Frontend E2E (mock)
-    runs-on: ubuntu-latest
+    # Fixado: o Playwright não instala o Chromium no ubuntu26.04, para onde
+    # o `ubuntu-latest` passou a apontar.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -99,7 +101,9 @@ jobs:
   # determinística. Retries = 0 neste modo (ver playwright.config.ts).
   frontend-e2e-real:
     name: Frontend E2E (backend real)
-    runs-on: ubuntu-latest
+    # Fixado: o Playwright não instala o Chromium no ubuntu26.04, para onde
+    # o `ubuntu-latest` passou a apontar.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
