@@ -1,4 +1,4 @@
-import { expect, test } from './helpers'
+import { expect, myClubId, registerRival, test } from './helpers'
 import type { Page } from '@playwright/test'
 
 // Propostas entre técnicos humanos (issue #63). Roda contra MSW (`npm run e2e`)
@@ -12,40 +12,6 @@ import type { Page } from '@playwright/test'
 // Toda navegação do técnico da UI depois do setup é CLIENT-SIDE (cliques no
 // menu): no modo mock, um reload devolveria o estado do mock ao seed e
 // apagaria a compra e a proposta feitas no meio do teste.
-
-interface Rival {
-  token: string
-  clubId: number
-  clubName: string
-}
-
-/** Cadastra um segundo técnico e reivindica o primeiro clube livre. `null` se não houver clube. */
-async function registerRival(page: Page): Promise<Rival | null> {
-  return page.evaluate(async (username) => {
-    const json = { 'Content-Type': 'application/json' }
-    const reg = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: json,
-      body: JSON.stringify({ username, password: 'secret123' }),
-    })
-    const { token } = (await reg.json()) as { token: string }
-    const auth = { Authorization: `Bearer ${token}` }
-    const available = (await (await fetch('/api/clubs/available', { headers: auth })).json()) as
-      { id: number; name: string }[]
-    const club = available[0]
-    if (!club) return null
-    await fetch(`/api/clubs/${club.id}/claim`, { method: 'POST', headers: auth })
-    return { token, clubId: club.id, clubName: club.name }
-  }, `rival_${Date.now()}_${Math.floor(Math.random() * 1e6)}`)
-}
-
-/** Clube do técnico logado na UI (lido de /me com o token da própria sessão). */
-async function myClubId(page: Page): Promise<number> {
-  return page.evaluate(async () => {
-    const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${localStorage.getItem('gf:token')}` } })
-    return ((await res.json()) as { clubId: number }).clubId
-  })
-}
 
 /** Compra pela UI o primeiro jogador do mercado. `false` se o mercado estiver vazio. */
 async function buyFromMarket(page: Page): Promise<boolean> {

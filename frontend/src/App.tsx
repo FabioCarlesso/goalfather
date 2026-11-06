@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { DashboardPage } from './pages/DashboardPage'
@@ -14,21 +14,8 @@ import { LoginPage } from './pages/LoginPage'
 import { SelectClubPage } from './pages/SelectClubPage'
 import { FiredPage } from './pages/FiredPage'
 import { ClubPage } from './pages/ClubPage'
-import { useClubOffers } from './api/queries/useOffers'
-import { useMyClubId } from './auth/useMyClubId'
-import { pendingReceivedCount } from './domain/offers'
+import { AppLayout } from './components/layout/AppLayout'
 import { isOnboarded } from './lib/onboarding'
-
-const nav = [
-  { to: '/dashboard', label: 'Clube' },
-  { to: '/lineup',    label: 'Escalação' },
-  { to: '/round',     label: 'Rodada' },
-  { to: '/market',    label: 'Mercado' },
-  { to: '/standings', label: 'Tabela' },
-  { to: '/cup',       label: 'Copa' },
-  { to: '/history',   label: 'Histórico' },
-  { to: '/welcome',   label: 'Tutorial' },
-] as const
 
 /** Só autenticados passam; senão volta ao login (issue #18). */
 function RequireAuth() {
@@ -68,78 +55,6 @@ function BareLayout() {
     <main className="mx-auto max-w-5xl px-6 py-12">
       <Outlet />
     </main>
-  )
-}
-
-/** Layout do app autenticado — cabeçalho de navegação + logout. */
-function AppLayout() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-
-  // Badge de propostas recebidas pendentes (issue #63): a mesma query com
-  // polling que a Dashboard usa — o técnico fica sabendo em qualquer tela.
-  const myClubId = useMyClubId()
-  const { data: offers } = useClubOffers(myClubId)
-  const pendingOffers = offers ? pendingReceivedCount(offers, myClubId) : 0
-
-  const onLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
-  return (
-    <>
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
-        <div className="mx-auto max-w-5xl px-6 py-3 flex items-center gap-6">
-          <span className="text-xl">⚽ <strong className="text-slate-100">GoalFather</strong></span>
-          <nav className="flex gap-1 ml-4">
-            {nav.map((n) => (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    isActive
-                      ? 'bg-slate-800 text-slate-100'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                  }`
-                }
-              >
-                {n.label}
-                {n.to === '/dashboard' && pendingOffers > 0 && (
-                  <span
-                    className="ml-1.5 rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-slate-950"
-                    title={`${pendingOffers} proposta(s) aguardando resposta`}
-                  >
-                    {pendingOffers}
-                  </span>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-3">
-            {user && <span className="text-xs text-slate-400">{user.username}</span>}
-            <button
-              onClick={onLogout}
-              className="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-400 transition-colors hover:border-red-600 hover:text-red-400"
-            >
-              Sair
-            </button>
-            {/* Indicador de ambiente só em dev (issue #114): o build de produção
-                elimina o ramo, pois `import.meta.env.DEV` vira `false` literal. */}
-            {import.meta.env.DEV && (
-              <span className="text-xs text-slate-500 font-mono">
-                {import.meta.env.VITE_USE_MOCKS === 'false' ? 'API real' : 'MSW mock'}
-              </span>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        <Outlet />
-      </main>
-    </>
   )
 }
 
