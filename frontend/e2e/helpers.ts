@@ -45,6 +45,40 @@ export async function authenticate(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/dashboard$/)
 }
 
+export interface Rival {
+  token: string
+  clubId: number
+  clubName: string
+}
+
+/** Cadastra um segundo técnico e reivindica o primeiro clube livre. `null` se não houver clube. */
+export async function registerRival(page: Page): Promise<Rival | null> {
+  return page.evaluate(async (username) => {
+    const json = { 'Content-Type': 'application/json' }
+    const reg = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: json,
+      body: JSON.stringify({ username, password: 'secret123' }),
+    })
+    const { token } = (await reg.json()) as { token: string }
+    const auth = { Authorization: `Bearer ${token}` }
+    const available = (await (await fetch('/api/clubs/available', { headers: auth })).json()) as
+      { id: number; name: string }[]
+    const club = available[0]
+    if (!club) return null
+    await fetch(`/api/clubs/${club.id}/claim`, { method: 'POST', headers: auth })
+    return { token, clubId: club.id, clubName: club.name }
+  }, `rival_${Date.now()}_${Math.floor(Math.random() * 1e6)}`)
+}
+
+/** Clube do técnico logado na UI (lido de /me com o token da própria sessão). */
+export async function myClubId(page: Page): Promise<number> {
+  return page.evaluate(async () => {
+    const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${localStorage.getItem('gf:token')}` } })
+    return ((await res.json()) as { clubId: number }).clubId
+  })
+}
+
 /**
  * `test` que já entra autenticado e com clube reivindicado. As specs de
  * feature importam daqui em vez de '@playwright/test'.
