@@ -1,4 +1,13 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  RouterProvider,
+  useNavigate,
+} from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { DashboardPage } from './pages/DashboardPage'
@@ -143,52 +152,60 @@ function AppLayout() {
   )
 }
 
+// Data router (issue #109): `useBlocker`, que protege a escalação não salva, só
+// funciona sob `RouterProvider` (e lança erro sob `<BrowserRouter>`). Criado uma
+// única vez, no módulo, porque ele guarda o estado da navegação; recriar em
+// render reiniciaria o histórico.
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <>
+      {/* Públicas / sem clube — layout sem cabeçalho */}
+      <Route element={<BareLayout />}>
+        <Route element={<PublicOnly />}>
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
+        <Route element={<RequireAuth />}>
+          <Route path="/select-club" element={<SelectClubPage />} />
+          <Route path="/fired" element={<FiredPage />} />
+        </Route>
+      </Route>
+
+      {/* App autenticado com clube — cabeçalho de navegação */}
+      <Route element={<RequireAuth />}>
+        <Route element={<RequireClub />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/welcome"   element={<WelcomePage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/lineup"    element={<LineupPage />} />
+            <Route path="/round"     element={<RoundPage />} />
+            <Route path="/round/match/:matchId" element={<MatchPage />} />
+            <Route path="/market"    element={<MarketPage />} />
+            <Route path="/standings" element={<StandingsPage />} />
+            <Route path="/clubs/:id" element={<ClubPage />} />
+            <Route path="/cup"       element={<CupPage />} />
+            <Route path="/history"   element={<HistoryPage />} />
+          </Route>
+        </Route>
+      </Route>
+    </>,
+  ),
+)
+
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            duration: 4000,
-            error: { duration: Infinity }, // erros persistem até dismiss (issue #6)
-            style: { background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' },
-          }}
-        />
-        <div className="min-h-full bg-slate-950 text-slate-200">
-          <Routes>
-            {/* Públicas / sem clube — layout sem cabeçalho */}
-            <Route element={<BareLayout />}>
-              <Route element={<PublicOnly />}>
-                <Route path="/login" element={<LoginPage />} />
-              </Route>
-              <Route element={<RequireAuth />}>
-                <Route path="/select-club" element={<SelectClubPage />} />
-                <Route path="/fired" element={<FiredPage />} />
-              </Route>
-            </Route>
-
-            {/* App autenticado com clube — cabeçalho de navegação */}
-            <Route element={<RequireAuth />}>
-              <Route element={<RequireClub />}>
-                <Route element={<AppLayout />}>
-                  <Route path="/" element={<RootRedirect />} />
-                  <Route path="/welcome"   element={<WelcomePage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/lineup"    element={<LineupPage />} />
-                  <Route path="/round"     element={<RoundPage />} />
-                  <Route path="/round/match/:matchId" element={<MatchPage />} />
-                  <Route path="/market"    element={<MarketPage />} />
-                  <Route path="/standings" element={<StandingsPage />} />
-                  <Route path="/clubs/:id" element={<ClubPage />} />
-                  <Route path="/cup"       element={<CupPage />} />
-                  <Route path="/history"   element={<HistoryPage />} />
-                </Route>
-              </Route>
-            </Route>
-          </Routes>
-        </div>
-      </BrowserRouter>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 4000,
+          error: { duration: Infinity }, // erros persistem até dismiss (issue #6)
+          style: { background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155' },
+        }}
+      />
+      <div className="min-h-full bg-slate-950 text-slate-200">
+        <RouterProvider router={router} />
+      </div>
     </AuthProvider>
   )
 }

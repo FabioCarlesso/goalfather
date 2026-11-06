@@ -301,7 +301,7 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 
 **Setup compartilhado:**
 - `src/test/setup.ts` — wire de `@testing-library/jest-dom/vitest` + ciclo de vida do `setupServer` MSW.
-- `src/test/render.tsx` — `renderWithProviders` envolvendo componente em `QueryClientProvider` + `MemoryRouter`.
+- `src/test/render.tsx` — `renderWithProviders` envolvendo componente em `QueryClientProvider` + `AuthProvider` + data router (`createMemoryRouter`, como o `createBrowserRouter` do app, exigido por `useBlocker`).
 - `playwright.config.ts` — `webServer` sobe `npm run dev` automaticamente; `baseURL = http://localhost:5173`.
 
 **Suíte E2E em dois modos** (critério "endpoint pronto" do roadmap):

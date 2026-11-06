@@ -1,6 +1,6 @@
-import type { ReactElement, ReactNode } from 'react'
+import { useState, type ReactElement, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { render, type RenderOptions } from '@testing-library/react'
 import { AuthProvider, type InitialAuth } from '../auth/AuthContext'
 import type { AuthUser } from '../domain/types'
@@ -26,17 +26,28 @@ interface Options extends Omit<RenderOptions, 'wrapper'> {
   auth?: InitialAuth
 }
 
-/** Renderiza componente sob QueryClient + AuthProvider + MemoryRouter (jsdom). */
+/**
+ * Renderiza componente sob QueryClient + AuthProvider + data router (jsdom).
+ * Data router, igual ao app, porque `useBlocker` lança erro sem ele (issue #109).
+ * A rota curinga aceita qualquer `initialEntries` e `<Routes>` descendentes.
+ * O router guarda o elemento da primeira renderização: o `rerender` do RTL não
+ * troca a UI aqui; para isso, use `render` direto.
+ */
 export function renderWithProviders(ui: ReactElement, options: Options = {}) {
   const { initialEntries = ['/'], queryClient = makeQueryClient(), auth = DEFAULT_AUTH, ...rest } = options
 
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider initialAuth={auth}>
-        <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
-      </AuthProvider>
-    </QueryClientProvider>
-  )
+  const Wrapper = ({ children }: { children: ReactNode }) => {
+    const [router] = useState(() =>
+      createMemoryRouter([{ path: '*', element: children }], { initialEntries }),
+    )
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider initialAuth={auth}>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </QueryClientProvider>
+    )
+  }
 
   return { queryClient, ...render(ui, { wrapper: Wrapper, ...rest }) }
 }
