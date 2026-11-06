@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { useMarket } from '../api/queries/useMarket'
 import { useBuyPlayer } from '../api/queries/useBuyPlayer'
 import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney } from '../domain/formatters'
 import type { TransferResult } from '../domain/types'
+import { Button } from '../components/ui/Button'
 
 export function MarketPage() {
   const myClubId = useMyClubId()
@@ -24,6 +26,7 @@ export function MarketPage() {
 
   return (
     <section>
+      <PageTitle>Mercado</PageTitle>
       <h1 className="text-3xl font-bold text-slate-100 mb-4">Mercado</h1>
 
       {lastResult && (
@@ -51,13 +54,13 @@ export function MarketPage() {
                 <div className="text-slate-100 font-mono">{formatMoney(entry.price)}</div>
                 <div className="text-xs text-slate-500">salário {formatMoney(entry.player.salary)}</div>
               </div>
-              <button
+              <Button
                 onClick={() => onBuy(entry.player.id)}
                 disabled={buy.isPending}
-                className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-3 py-1.5 text-sm font-medium transition-colors"
+                size="sm"
               >
                 {buy.isPending && buy.variables?.playerId === entry.player.id ? '…' : 'Comprar'}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

@@ -1,6 +1,7 @@
 import { formatMoney } from '../domain/formatters'
 import { BOARD_MOOD_LABEL, BOARD_MOOD_TONE, BOARD_OBJECTIVE_LABEL, ordinal } from '../domain/board'
 import type { BoardStatus } from '../domain/types'
+import { Card } from './ui/Card'
 
 /**
  * Painel da diretoria (issue #62). Só desenha o que chega no `BoardStatus`: a
@@ -12,11 +13,11 @@ export function BoardPanel({ status }: { status: BoardStatus }) {
   const tone = BOARD_MOOD_TONE[status.mood]
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-100">Diretoria</h2>
-        <span className={`text-xs font-semibold ${tone.text}`}>{BOARD_MOOD_LABEL[status.mood]}</span>
-      </div>
+    <Card
+      title="Diretoria"
+      actions={<span className={`text-xs font-semibold ${tone.text}`}>{BOARD_MOOD_LABEL[status.mood]}</span>}
+      className="space-y-3"
+    >
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
         <div>
@@ -66,6 +67,6 @@ export function BoardPanel({ status }: { status: BoardStatus }) {
           custa o cargo.
         </p>
       </div>
-    </div>
+    </Card>
   )
 }

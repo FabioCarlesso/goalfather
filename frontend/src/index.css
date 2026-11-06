@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+/*
+ * Tokens semânticos de cor (issue #104). Cada `--color-*` do `@theme` vira
+ * utilitário do Tailwind v4: `bg-surface`, `border-border`, `text-text-muted`,
+ * `bg-accent`… inclusive com opacidade (`bg-surface-raised/60`).
+ *
+ * Os valores apontam para a paleta que o app já usava (slate/emerald/red/amber),
+ * então trocar literal por token não muda a aparência. `inline` faz o utilitário
+ * referenciar direto `var(--color-slate-900)` etc., em vez de uma variável
+ * intermediária — recomendado pelo Tailwind quando o token aponta para outro token.
+ */
+@theme inline {
+  --color-surface: var(--color-slate-950);
+  --color-surface-raised: var(--color-slate-900);
+  --color-border: var(--color-slate-800);
+  --color-text: var(--color-slate-100);
+  --color-text-muted: var(--color-slate-400);
+  --color-accent: var(--color-emerald-600);
+  --color-danger: var(--color-red-600);
+  --color-warning: var(--color-amber-500);
+}
+
 :root {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;

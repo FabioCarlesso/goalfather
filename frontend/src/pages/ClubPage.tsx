@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { PageTitle } from '../components/PageTitle'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
 import { useCreateOffer, MIN_OFFER_CENTS } from '../api/queries/useOffers'
@@ -6,6 +7,7 @@ import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney } from '../domain/formatters'
 import type { Club, Player } from '../domain/types'
+import { Button } from '../components/ui/Button'
 
 /**
  * Elenco de um clube rival (issue #63) — a vitrine de onde sai a proposta.
@@ -28,6 +30,7 @@ export function ClubPage() {
 
   return (
     <section className="space-y-6">
+      <PageTitle>{club.name}</PageTitle>
       <header>
         <Link to="/standings" className="text-xs text-slate-500 hover:text-slate-300">← Tabela</Link>
         <h1 className="text-3xl font-bold text-slate-100">{club.name}</h1>
@@ -78,13 +81,12 @@ function OfferForm({ seller, myClubId }: { seller: Club; myClubId: number }) {
                 className="mt-1 block w-40 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
               />
             </label>
-            <button
+            <Button
               onClick={submit}
               disabled={!valid || create.isPending}
-              className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
             >
               {create.isPending ? 'Enviando…' : 'Enviar proposta'}
-            </button>
+            </Button>
             <button onClick={() => setSelected(null)} className="text-sm text-slate-400 hover:text-slate-200">
               Cancelar
             </button>

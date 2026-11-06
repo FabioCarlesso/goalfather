@@ -1,5 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { PageTitle } from '../components/PageTitle'
 import { markOnboarded } from '../lib/onboarding'
+import { Button } from '../components/ui/Button'
 
 const cards = [
   { to: '/lineup', icon: '📋', title: 'Escalação', desc: 'Monte os 11 titulares e a formação tática.' },
@@ -18,6 +20,7 @@ export function WelcomePage() {
 
   return (
     <section className="mx-auto max-w-2xl space-y-8">
+      <PageTitle>Bem-vindo</PageTitle>
       <header className="space-y-3 text-center">
         <h1 className="text-4xl font-bold text-slate-100">Bem-vindo ao GoalFather ⚽</h1>
         <p className="text-slate-400">
@@ -43,12 +46,11 @@ export function WelcomePage() {
       </div>
 
       <div className="flex items-center justify-center gap-3">
-        <button
+        <Button
           onClick={finish}
-          className="rounded-md bg-emerald-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
         >
           Começar
-        </button>
+        </Button>
         <button
           onClick={finish}
           className="rounded-md border border-slate-700 px-5 py-2 text-sm text-slate-400 transition-colors hover:text-slate-200"
