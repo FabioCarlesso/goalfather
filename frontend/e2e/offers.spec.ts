@@ -55,7 +55,7 @@ async function buyFromMarket(page: Page): Promise<boolean> {
   await expect(buy.first().or(page.getByText('Nenhum jogador disponível'))).toBeVisible()
   if ((await buy.count()) === 0) return false
   await buy.first().click()
-  await expect(page.getByText('Contratação concluída')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/contratado!/)).toBeVisible({ timeout: 10_000 })
   return true
 }
 
