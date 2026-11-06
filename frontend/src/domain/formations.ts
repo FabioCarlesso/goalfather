@@ -36,21 +36,24 @@ export const FORMATION_SLOTS: Record<Formation, readonly Position[]> = {
 
 /**
  * Reencaixa os titulares ao trocar de formação (issue #109): cada jogador segue
- * para o próximo slot da mesma posição, na ordem atual, e quem sobra sai. Olha a
- * posição do SLOT, não a do jogador: um reserva fora de posição na escalação
- * efetiva continua no setor que está cobrindo. Sem regra de força.
+ * para o próximo slot da posição DELE, na ordem atual, e quem sobra sai. Olha a
+ * posição do jogador, não a do slot: a escalação efetiva não vem alinhada aos
+ * slots (o backend desloca os titulares quando há lesionado e completa com
+ * reservas no fim), então o slot não diz quem é zagueiro ou atacante. Sem regra
+ * de força.
  */
 export function remapSlots(
   slots: readonly (number | null)[],
-  from: Formation,
   to: Formation,
+  positionOf: (playerId: number) => Position | undefined,
 ): (number | null)[] {
   const queues = new Map<Position, number[]>()
-  FORMATION_SLOTS[from].forEach((position, i) => {
-    const playerId = slots[i]
-    if (playerId == null) return
+  for (const playerId of slots) {
+    if (playerId == null) continue
+    const position = positionOf(playerId)
+    if (position === undefined) continue
     queues.set(position, [...(queues.get(position) ?? []), playerId])
-  })
+  }
   // `shift` consome a fila: cada jogador ocupa no máximo um slot, sem duplicatas.
   return FORMATION_SLOTS[to].map((position) => queues.get(position)?.shift() ?? null)
 }

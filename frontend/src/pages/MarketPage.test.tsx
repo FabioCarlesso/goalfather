@@ -220,6 +220,7 @@ describe('MarketPage (issue #111)', () => {
       await waitFor(() =>
         expect(toast.error).toHaveBeenCalledWith(
           `Caixa insuficiente: necessário ${formatMoney(450_000_00)}, disponível ${formatMoney(200_000_00)}.`,
+          { id: 'buy-result' },
         ),
       )
       expect(screen.getByText(VIDIGAL)).toBeInTheDocument()
@@ -234,7 +235,7 @@ describe('MarketPage (issue #111)', () => {
 
       await user.click(buyButton(RAMIRES))
 
-      await waitFor(() => expect(toast.success).toHaveBeenCalledWith(`${RAMIRES} contratado!`))
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith(`${RAMIRES} contratado!`, { id: 'buy-result' }))
       expect(toast.error).not.toHaveBeenCalled()
       expect(screen.queryByText('Contratação concluída')).not.toBeInTheDocument()
     })
@@ -253,7 +254,7 @@ describe('MarketPage (issue #111)', () => {
       await user.click(buyButton(RAMIRES))
 
       await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
-      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(message))
+      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(message), { id: 'buy-result' })
       expect(toast.success).not.toHaveBeenCalled()
     })
 

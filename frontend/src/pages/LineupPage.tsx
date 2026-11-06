@@ -68,10 +68,14 @@ export function LineupPage() {
     )
   }
 
-  return <LineupForm key={club.data.id} club={club.data} />
+  // Durante o refetch pós-salvamento, ou se ele falhar, `effectiveLineup` ainda é a
+  // anterior: restaurá-la mostraria como limpo um time diferente do que está salvo.
+  const serverStale = club.isFetching || club.isRefetchError
+
+  return <LineupForm key={club.data.id} club={club.data} serverStale={serverStale} />
 }
 
-function LineupForm({ club }: { club: Club }) {
+function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean }) {
   const save = useSaveLineup(club.id)
 
   // Estado inicializado a partir da escalação EFETIVA (issue #87) — o time que
@@ -111,7 +115,8 @@ function LineupForm({ club }: { club: Club }) {
   }
 
   const onFormationChange = (f: Formation) => {
-    setDraft((prev) => ({ ...prev, formation: f, slots: remapSlots(prev.slots, prev.formation, f) }))
+    const positionOf = (id: number) => club.squad.find((p) => p.id === id)?.position
+    setDraft((prev) => ({ ...prev, formation: f, slots: remapSlots(prev.slots, f, positionOf) }))
   }
 
   const onSubmit = () => {
@@ -133,6 +138,12 @@ function LineupForm({ club }: { club: Club }) {
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname,
   )
+
+  // O salvamento terminou com o diálogo aberto: nada mais se perde, e a saída que
+  // o técnico pediu segue. Sem isso, o diálogo diria que o time salvo será perdido.
+  useEffect(() => {
+    if (!dirty && blocker.state === 'blocked') blocker.proceed()
+  }, [dirty, blocker])
 
   // Fechar a aba ou recarregar: o texto do aviso é sempre o do navegador.
   useEffect(() => {
@@ -213,7 +224,7 @@ function LineupForm({ club }: { club: Club }) {
           <Button
             variant="secondary"
             onClick={onRestore}
-            disabled={sameDraft(draft, serverDraft) || save.isPending}
+            disabled={sameDraft(draft, serverDraft) || save.isPending || serverStale}
           >
             Restaurar escalação automática
           </Button>

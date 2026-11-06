@@ -219,6 +219,44 @@ describe('LineupPage: alterações não salvas', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('salvamento que termina com o diálogo aberto conclui a saída', async () => {
+    let finishSave = () => {}
+    const saving = new Promise<void>((resolve) => {
+      finishSave = resolve
+    })
+    server.use(
+      http.post('/api/clubs/:id/lineup', async () => {
+        await saving
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { user } = await open()
+    await editPosture(user)
+
+    await user.click(screen.getByRole('button', { name: /Salvando|Salvar escalação/ }))
+    await leave(user)
+    await screen.findByRole('dialog')
+
+    finishSave()
+
+    await waitFor(() => expect(path()).toBe('/round'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('refetch pós-salvamento que falha não permite restaurar a escalação anterior', async () => {
+    const { user } = await open()
+    await editPosture(user)
+    server.use(http.get('/api/clubs/:id', () => new HttpResponse(null, { status: 500 })))
+
+    await user.click(screen.getByRole('button', { name: 'Salvar escalação' }))
+    await screen.findByText('Escalação salva ✓')
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Restaurar escalação automática' })).toBeDisabled(),
+    )
+    expect(screen.getByLabelText('Postura')).toHaveValue('OFFENSIVE')
+  })
+
   it('falha ao salvar mostra a mensagem amigável e mantém as alterações pendentes', async () => {
     server.use(http.post('/api/clubs/:id/lineup', () => new HttpResponse(null, { status: 500 })))
     const { user } = await open()

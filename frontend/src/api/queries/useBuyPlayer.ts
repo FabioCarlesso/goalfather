@@ -9,6 +9,10 @@ import type { components } from '../generated'
 
 type BuyPlayerRequest = components['schemas']['BuyPlayerRequest']
 
+// Id fixo: o resultado de uma compra substitui o da anterior, como fazia o banner
+// do Mercado, em vez de empilhar um erro persistente por tentativa.
+const BUY_RESULT_TOAST = 'buy-result'
+
 export function useBuyPlayer() {
   const qc = useQueryClient()
   return useMutation({
@@ -17,11 +21,11 @@ export function useBuyPlayer() {
     onSuccess: (result, vars) => {
       // O endpoint retorna 200 sempre — sucesso/erro vivem no `type` do payload.
       if (result.type === 'Success') {
-        toast.success(`${result.player.name} contratado!`)
+        toast.success(`${result.player.name} contratado!`, { id: BUY_RESULT_TOAST })
         qc.invalidateQueries({ queryKey: clubKey(vars.clubId) })
         qc.invalidateQueries({ queryKey: marketKey })
       } else {
-        toast.error(transferErrorMessage(result))
+        toast.error(transferErrorMessage(result), { id: BUY_RESULT_TOAST })
         // Lock otimista do clube (issue #89): nada foi aplicado, mas o clube em
         // cache está velho — recarrega para o técnico decidir sobre o atual.
         if (result.type === 'Conflict') qc.invalidateQueries({ queryKey: clubKey(vars.clubId) })

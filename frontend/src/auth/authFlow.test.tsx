@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { App } from '../App'
+import { router } from '../router'
 import { makeQueryClient } from '../test/render'
 import { auth, TOKEN_PREFIX } from '../mocks/seed'
 import { setToken } from '../api/token'
@@ -13,9 +14,11 @@ import { setToken } from '../api/token'
  * dashboard daquele clube. Cobre os critérios de aceite principais.
  */
 describe('Fluxo de auth + seleção de clube', () => {
-  beforeEach(() => {
+  // O router é único no módulo (issue #109) e guarda a rota entre os testes; um
+  // `pushState` não chega até ele, então a navegação inicial passa por ele.
+  beforeEach(async () => {
     localStorage.clear()
-    window.history.pushState({}, '', '/')
+    await router.navigate('/')
   })
 
   it('cadastra, escolhe clube e chega ao dashboard', async () => {
@@ -39,10 +42,10 @@ describe('Fluxo de auth + seleção de clube', () => {
     const claimButtons = await screen.findAllByRole('button', { name: /treinar este clube/i })
     await user.click(claimButtons[0]!)
 
-    // Cai no dashboard do clube reivindicado.
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
-    })
+    // Cai no dashboard do clube reivindicado. Confere a rota porque o card da
+    // seleção de clube também tem um heading com esse nome.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'))
+    expect(await screen.findByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
   })
 
   it('técnico demitido cai na tela de game over e recomeça pela seleção (issue #62)', async () => {
@@ -60,7 +63,7 @@ describe('Fluxo de auth + seleção de clube', () => {
     }
     auth.users.push(fired)
     setToken(TOKEN_PREFIX + fired.id)
-    window.history.pushState({}, '', '/dashboard')
+    await router.navigate('/dashboard')
 
     render(
       <QueryClientProvider client={makeQueryClient()}>

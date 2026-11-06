@@ -55,7 +55,9 @@ goalfather/
 │   │   └── mockServiceWorker.js     # gerado pelo MSW
 │   └── src/
 │       ├── main.tsx                  # entrypoint (monta MSW em dev)
-│       ├── App.tsx                   # router
+│       ├── App.tsx                   # providers, toaster e RouterProvider
+│       ├── router.tsx                # data router: rotas e fronteira de erro (issue #109)
+│       ├── routeGuards.tsx           # guardas de autenticação/clube e layout sem cabeçalho
 │       ├── api/
 │       │   ├── client.ts             # fetch wrapper + tipos gerados; 401 inesperado → emite sessionEvents (issue #28)
 │       │   ├── sessionEvents.ts       # pub/sub "sessão expirou": AuthProvider escuta e desloga (issue #28)
