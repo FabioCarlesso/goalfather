@@ -3,11 +3,13 @@ import { PageTitle } from '../components/PageTitle'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
 import { useCreateOffer, MIN_OFFER_CENTS } from '../api/queries/useOffers'
-import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney } from '../domain/formatters'
 import type { Club, Player } from '../domain/types'
 import { Button } from '../components/ui/Button'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 
 /**
  * Elenco de um clube rival (issue #63) — a vitrine de onde sai a proposta.
@@ -18,13 +20,15 @@ export function ClubPage() {
   const { id } = useParams()
   const clubId = Number(id)
   const myClubId = useMyClubId()
-  const { data: club, isLoading, error } = useClub(Number.isFinite(clubId) ? clubId : null)
+  const validId = Number.isFinite(clubId)
+  const { data: club, isPending, isLoadingError, error, refetch } = useClub(validId ? clubId : null)
 
   // O próprio clube já tem tela: a Dashboard.
   if (clubId === myClubId) return <Navigate to="/dashboard" replace />
-  if (isLoading) return <p className="text-slate-400">Carregando clube…</p>
-  if (error)     return <p className="text-red-400">{errorMessage(error)}</p>
-  if (!club)     return null
+  // Sem id válido a query fica desligada e seguiria "pendente" para sempre.
+  if (!validId) return <><PageTitle>Clube</PageTitle><EmptyState message="Clube não encontrado." /></>
+  if (isPending) return <><PageTitle>Clube</PageTitle><LoadingState label="Carregando clube…" shape="list" /></>
+  if (isLoadingError) return <><PageTitle>Clube</PageTitle><ErrorState error={error} onRetry={refetch} /></>
 
   const human = club.ownerId != null
 

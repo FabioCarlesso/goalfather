@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { PageTitle } from '../components/PageTitle'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 import { useSeasonHistory, useSeasonRecord, useClubCareer } from '../api/queries/useSeasonHistory'
 import { useMyClubId } from '../auth/useMyClubId'
 import type { ClubCareer, SeasonRecord, SeasonStanding } from '../domain/types'
@@ -11,13 +14,13 @@ import type { ClubCareer, SeasonRecord, SeasonStanding } from '../domain/types'
  */
 export function HistoryPage() {
   const myClubId = useMyClubId()
-  const { data: seasons, isLoading, error } = useSeasonHistory()
+  const { data: seasons, isPending, isLoadingError, error, refetch } = useSeasonHistory()
   const { data: career } = useClubCareer(myClubId)
   const [selected, setSelected] = useState<number | null>(null)
-  const { data: record, isLoading: loadingRecord } = useSeasonRecord(selected)
+  const seasonRecord = useSeasonRecord(selected)
 
-  if (isLoading) return <p className="text-slate-400">Carregando histórico…</p>
-  if (error)     return <p className="text-red-400">Erro: {String(error)}</p>
+  if (isPending) return <><PageTitle>Histórico</PageTitle><LoadingState label="Carregando histórico…" shape="list" /></>
+  if (isLoadingError) return <><PageTitle>Histórico</PageTitle><ErrorState error={error} onRetry={refetch} /></>
 
   return (
     <section className="space-y-8">
@@ -31,11 +34,8 @@ export function HistoryPage() {
 
       {career && <CareerCard career={career} />}
 
-      {!seasons || seasons.length === 0 ? (
-        <p className="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-slate-400">
-          Nenhuma temporada encerrada ainda. Jogue até a última rodada para
-          escrever o primeiro capítulo.
-        </p>
+      {seasons.length === 0 ? (
+        <EmptyState message="Nenhuma temporada encerrada ainda. Jogue até a última rodada para escrever o primeiro capítulo." />
       ) : (
         <div className="space-y-4">
           <ul className="divide-y divide-slate-800 rounded-lg border border-slate-800">
@@ -52,9 +52,11 @@ export function HistoryPage() {
           </ul>
 
           {selected != null && (
-            loadingRecord || !record
-              ? <p className="text-slate-400">Carregando temporada {selected}…</p>
-              : <SeasonDetail record={record} myClubId={myClubId} />
+            seasonRecord.isPending
+              ? <LoadingState label={`Carregando temporada ${selected}…`} shape="table" withHeader={false} />
+              : seasonRecord.isLoadingError
+                ? <ErrorState error={seasonRecord.error} onRetry={seasonRecord.refetch} />
+                : <SeasonDetail record={seasonRecord.data} myClubId={myClubId} />
           )}
         </div>
       )}

@@ -5,6 +5,8 @@ import { useClubCareer } from '../api/queries/useSeasonHistory'
 import { BOARD_OBJECTIVE_LABEL, ordinal } from '../domain/board'
 import type { ClubCareer, Dismissal } from '../domain/types'
 import { Button } from '../components/ui/Button'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 
 /**
  * Game over da v1 (issue #62): a diretoria demitiu o técnico na virada de
@@ -69,8 +71,10 @@ function DismissalSummary({ dismissal }: { dismissal: Dismissal }) {
  * por isso o título diz "no clube", não "sua carreira".
  */
 function CareerSummary({ clubId }: { clubId: number }) {
-  const { data: career, isLoading } = useClubCareer(clubId)
-  if (isLoading) return <p className="text-slate-400">Carregando histórico…</p>
+  const { data: career, isPending, isLoadingError, error, refetch } = useClubCareer(clubId)
+  if (isPending) return <LoadingState label="Carregando histórico…" shape="cards" rows={1} withHeader={false} />
+  if (isLoadingError) return <ErrorState error={error} onRetry={refetch} />
+  // `null` é o 404 normal: o clube ainda não fechou temporada.
   if (!career) return null
   return <CareerStats career={career} />
 }

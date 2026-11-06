@@ -95,7 +95,7 @@ goalfather/
 │       │   ├── PageTitle.tsx         # <title> por rota, içado ao <head> pelo React 19 (issue #114)
 │       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
 │       │   ├── OffersPanel.tsx       # propostas recebidas/enviadas na Dashboard (issue #63)
-│       │   ├── ui/                   # primitivas visuais: Button, Card, Badge, Stat, Modal (issue #104)
+│       │   ├── ui/                   # primitivas visuais: Button, Card, Badge, Stat, Modal (issue #104); ErrorState, LoadingState, EmptyState (issue #105)
 │       │   ├── layout/               # AppLayout + menus: barra em ≥ lg, botão de menu abaixo (issue #106)
 │       │   └── ...
 │       ├── domain/                   # tipos e helpers cross-tela
@@ -273,6 +273,21 @@ DashboardPage
 ```
 
 Componentes de apresentação (`components/`) **nunca** chamam `fetch` — recebem dados por props. Só `pages/` e hooks de `api/queries/` tocam dados.
+
+**Estados de tela (issue #105).** Toda página com query segue o mesmo desenho, com `<PageTitle>` também nos retornos antecipados:
+
+```tsx
+const { data, isPending, isLoadingError, error, refetch } = useStandings()
+
+if (isPending)      return <><PageTitle>Tabela</PageTitle><LoadingState label="Carregando tabela…" shape="table" /></>
+if (isLoadingError) return <><PageTitle>Tabela</PageTitle><ErrorState error={error} onRetry={refetch} /></>
+if (data.length === 0) // <EmptyState message="…" /> dentro da página
+```
+
+- `isPending`, não `isLoading`: uma query pausada sem rede tem `isLoading` falso e nenhum dado, e cairia no estado vazio. `isPending` mantém o skeleton até a rede voltar. Query com `enabled: false` fica pendente para sempre, então trate o caso antes (ver `ClubPage`).
+- `isLoadingError`, não `error`: só a falha sem dado em cache troca a tela por `ErrorState`. Se um refetch em background falhar, os dados anteriores continuam visíveis, a mesma política do toast em `main.tsx` (issue #23). Depois dessas duas checagens, o TypeScript já sabe que `data` existe.
+- Consultas secundárias que têm fallback (painéis da Dashboard, perfil em `HistoryPage`, lookup de nomes em `MatchPage`) não bloqueiam a página nem mostram `ErrorState`.
+- Erro de mutation exibido inline usa `errorMessage()`, nunca `String(error)`.
 
 ---
 
