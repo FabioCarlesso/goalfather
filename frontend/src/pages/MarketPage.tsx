@@ -4,7 +4,6 @@ import { MarketFilterBar } from '../components/MarketFilterBar'
 import { useMarket } from '../api/queries/useMarket'
 import { useBuyPlayer } from '../api/queries/useBuyPlayer'
 import { useClub } from '../api/queries/useClub'
-import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney } from '../domain/formatters'
 import { POSITION_ABBR } from '../domain/formations'
@@ -16,6 +15,9 @@ import {
 } from '../domain/marketFilters'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 
 export function MarketPage() {
   const myClubId = useMyClubId()
@@ -28,12 +30,24 @@ export function MarketPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = parseMarketFilters(searchParams)
 
-  if (market.isLoading) return <p className="text-slate-400">Carregando mercado…</p>
-  // Falha de refetch mantém a lista já carregada, como o toast global (issue #23).
-  if (market.error && !market.data) {
-    return <p className="text-red-400">{errorMessage(market.error)}</p>
+  if (market.isPending) {
+    return (
+      <>
+        <PageTitle>Mercado</PageTitle>
+        <LoadingState label="Carregando mercado…" shape="table" />
+      </>
+    )
   }
-  if (!market.data) return null
+  // Só falha sem dados troca a tela: falha de refetch mantém a lista já carregada,
+  // como o toast global (issue #23).
+  if (market.isLoadingError) {
+    return (
+      <>
+        <PageTitle>Mercado</PageTitle>
+        <ErrorState error={market.error} onRetry={market.refetch} />
+      </>
+    )
+  }
 
   const updateFilters = (patch: Partial<MarketFilterState>, options?: { replace: boolean }) =>
     setSearchParams(toMarketSearchParams({ ...filters, ...patch }), options)
@@ -52,7 +66,7 @@ export function MarketPage() {
       </div>
 
       {market.data.length === 0 ? (
-        <p className="text-slate-500 italic">Nenhum jogador disponível no momento.</p>
+        <EmptyState message="Nenhum jogador disponível no momento." />
       ) : (
         <>
           <MarketFilterBar

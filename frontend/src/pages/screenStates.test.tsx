@@ -10,6 +10,8 @@ import { CupPage } from './CupPage'
 import { DashboardPage } from './DashboardPage'
 import { FiredPage } from './FiredPage'
 import { HistoryPage } from './HistoryPage'
+import { LineupPage } from './LineupPage'
+import { MarketPage } from './MarketPage'
 import { RoundPage } from './RoundPage'
 import { SelectClubPage } from './SelectClubPage'
 import { StandingsPage } from './StandingsPage'
@@ -46,6 +48,8 @@ const PAGES: PageCase[] = [
   { name: 'DashboardPage', url: '/api/clubs/1', title: 'Clube', ui: <DashboardPage /> },
   { name: 'RoundPage', url: '/api/league/round/current', title: 'Rodada', ui: <RoundPage /> },
   { name: 'SelectClubPage', url: '/api/clubs/available', title: 'Escolha seu clube', ui: <SelectClubPage /> },
+  { name: 'LineupPage', url: '/api/clubs/1', title: 'Escalação', ui: <LineupPage /> },
+  { name: 'MarketPage', url: '/api/market', title: 'Mercado', ui: <MarketPage /> },
   { name: 'ClubPage', url: '/api/clubs/2', title: 'Clube', ui: clubRoute, initialEntries: ['/clubs/2'] },
 ]
 

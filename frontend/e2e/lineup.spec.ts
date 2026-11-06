@@ -153,6 +153,7 @@ test.describe('Lineup flow', () => {
       await expect(page.getByText('11/11 titulares')).toBeVisible()
       await page.locator('#posture').selectOption('OFFENSIVE')
 
+      await page.getByRole('button', { name: /Menu do usuário/ }).click()
       await page.getByRole('button', { name: 'Sair', exact: true }).click()
 
       await expect(page).toHaveURL(/\/login$/)

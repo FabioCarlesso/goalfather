@@ -149,26 +149,12 @@ for (const width of [1024, 1366]) {
 // Rotas autenticadas sem parâmetro + as de detalhe, abertas por deep-link.
 const ROUTES = ['/welcome', '/dashboard', '/lineup', '/round', '/market', '/standings', '/cup', '/history', '/clubs/2']
 
-// Pendentes em 360px: o estouro vem do conteúdo da página, não do layout, e a
-// issue #106 deixa a responsividade de conteúdo fora do escopo. Sair daqui quando
-// a tela for corrigida.
-const PENDING_AT_360: Readonly<Record<string, string>> = {
-  '/lineup': 'a linha do seletor de formação não quebra (531px)',
-  '/round/match/:id': 'o cabeçalho da partida não encolhe: `truncate` sem `min-w-0` (562px)',
-}
-
 for (const width of [360, 768, 1280]) {
-  const fixmeIfPending = (route: string) => {
-    const cause = PENDING_AT_360[route]
-    test.fixme(width === 360 && cause !== undefined, cause)
-  }
-
   test.describe(`Sem rolagem horizontal em ${width}px`, () => {
     test.use({ viewport: { width, height: 800 } })
 
     for (const route of ROUTES) {
       test(route, async ({ page }) => {
-        fixmeIfPending(route)
         await page.goto(route)
         await expect(page.locator('main h1').first()).toBeVisible()
         await page.waitForLoadState('networkidle')
@@ -177,7 +163,6 @@ for (const width of [360, 768, 1280]) {
     }
 
     test('/round/match/:id', async ({ page }) => {
-      fixmeIfPending('/round/match/:id')
       await page.goto('/round')
       await page.locator('a[href^="/round/match/"]').first().click()
       await expect(page).toHaveURL(/\/round\/match\/\d+$/)

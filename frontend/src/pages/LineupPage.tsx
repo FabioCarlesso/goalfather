@@ -18,6 +18,8 @@ import {
 import { isInjured } from '../domain/players'
 import type { Club, Formation, Player, Posture } from '../domain/types'
 import { Button } from '../components/ui/Button'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
 
 /** O que o técnico edita nesta tela. */
@@ -47,11 +49,26 @@ const sameDraft = (a: LineupDraft, b: LineupDraft) =>
  */
 export function LineupPage() {
   const myClubId = useMyClubId()
-  const { data: club, isLoading } = useClub(myClubId)
+  const club = useClub(myClubId)
 
-  if (isLoading || !club) return <p className="text-slate-400">Carregando…</p>
+  if (club.isPending) {
+    return (
+      <>
+        <PageTitle>Escalação</PageTitle>
+        <LoadingState label="Carregando escalação…" shape="list" />
+      </>
+    )
+  }
+  if (club.isLoadingError) {
+    return (
+      <>
+        <PageTitle>Escalação</PageTitle>
+        <ErrorState error={club.error} onRetry={club.refetch} />
+      </>
+    )
+  }
 
-  return <LineupForm key={club.id} club={club} />
+  return <LineupForm key={club.data.id} club={club.data} />
 }
 
 function LineupForm({ club }: { club: Club }) {
@@ -128,14 +145,14 @@ function LineupForm({ club }: { club: Club }) {
   return (
     <section>
       <PageTitle>Escalação</PageTitle>
-      <header className="mb-4 flex items-center justify-between">
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-slate-100">Escalação</h1>
           <p className="text-sm text-slate-400">
             {slots.filter((s) => s !== null).length}/11 titulares
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm text-slate-400" htmlFor="formation">Formação</label>
           <select
             id="formation"
