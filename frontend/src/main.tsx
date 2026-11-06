@@ -22,8 +22,15 @@ const queryClient = new QueryClient({
     // background de uma query que já tem dado falha em silêncio — o usuário
     // continua vendo o dado anterior e não leva um toast vermelho a cada
     // hiccup de rede (issue #23). Erros de mutation seguem sempre notificados.
+    // O id por query evita um toast novo a cada "Tentar novamente" que falha, e
+    // o `onSuccess` o tira da tela quando a query se recupera.
     onError: (error, query) => {
-      if (query.state.data === undefined) toast.error(errorMessage(error))
+      if (query.state.data === undefined) {
+        toast.error(errorMessage(error), { id: `query:${query.queryHash}` })
+      }
+    },
+    onSuccess: (_data, query) => {
+      toast.dismiss(`query:${query.queryHash}`)
     },
   }),
   mutationCache: new MutationCache({
