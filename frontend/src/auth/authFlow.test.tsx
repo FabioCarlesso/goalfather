@@ -44,8 +44,10 @@ describe('Fluxo de auth + seleção de clube', () => {
 
     // Cai no dashboard do clube reivindicado. Confere a rota porque o card da
     // seleção de clube também tem um heading com esse nome.
-    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'))
+    await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/dashboard/))
     expect(await screen.findByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
+    // Com o clube carregado, `/dashboard` redireciona para a aba padrão (issue #107).
+    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard/visao-geral'))
   })
 
   it('técnico demitido cai na tela de game over e recomeça pela seleção (issue #62)', async () => {

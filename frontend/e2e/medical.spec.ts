@@ -8,7 +8,7 @@ import { expect, test } from './helpers'
 
 test.describe('Medical department', () => {
   test('elenco mostra forma física de cada jogador', async ({ page }) => {
-    await page.goto('/dashboard')
+    await page.goto('/dashboard/elenco')
     await expect(page.getByRole('heading', { name: 'Elenco' })).toBeVisible()
 
     // Toda linha do elenco carrega a barra de forma física com o título "Forma física: N%".
@@ -16,7 +16,7 @@ test.describe('Medical department', () => {
   })
 
   test('tratar elenco debita o caixa e confirma o tratamento', async ({ page }) => {
-    await page.goto('/dashboard')
+    await page.goto('/dashboard/departamento')
     await expect(page.getByRole('heading', { name: 'Departamento médico' })).toBeVisible()
 
     const treat = page.getByRole('button', { name: 'Tratar elenco' })

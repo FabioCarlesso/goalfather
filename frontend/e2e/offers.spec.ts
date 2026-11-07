@@ -48,15 +48,22 @@ test.describe('Offers flow', () => {
     }, { rival: rival!, sellerId })
     expect(created).toBe('Success')
 
-    await page.getByRole('navigation').getByRole('link', { name: /^Clube/ }).click()
-    const panel = page.getByRole('region', { name: /Propostas/ })
-    await expect(panel.getByText(rival!.clubName)).toBeVisible({ timeout: 20_000 })
-    const sellButtons = page.getByRole('button', { name: 'Vender' })
+    // O badge do cabeçalho leva à visão geral, onde ficam as propostas; o elenco
+    // é contado na aba Elenco antes e depois do aceite (issue #107).
+    const clubTabs = page.getByRole('navigation', { name: 'Seções do clube' })
+    const sellButtons = page.getByRole('button', { name: /^Vender / })
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: /^Clube/ }).click()
+    await clubTabs.getByRole('link', { name: 'Elenco' }).click()
+    await expect(sellButtons.first()).toBeVisible()
     const before = await sellButtons.count()
 
+    await clubTabs.getByRole('link', { name: 'Visão geral' }).click()
+    const panel = page.getByRole('region', { name: /Propostas/ })
+    await expect(panel.getByText(rival!.clubName)).toBeVisible({ timeout: 20_000 })
     await panel.getByRole('button', { name: 'Aceitar' }).click()
-
     await expect(panel.getByText('Aceita')).toBeVisible({ timeout: 10_000 })
+
+    await clubTabs.getByRole('link', { name: 'Elenco' }).click()
     await expect(sellButtons).toHaveCount(before - 1)
   })
 

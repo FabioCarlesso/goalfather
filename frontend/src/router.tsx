@@ -1,5 +1,6 @@
 import { createBrowserRouter, createRoutesFromElements, Route } from 'react-router-dom'
 import { DashboardPage } from './pages/DashboardPage'
+import { dashboardTabRoutes } from './pages/dashboard/routes'
 import { StandingsPage } from './pages/StandingsPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { CupPage } from './pages/CupPage'
@@ -40,7 +41,7 @@ export const router = createBrowserRouter(
           <Route element={<AppLayout />}>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/welcome"   element={<WelcomePage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />}>{dashboardTabRoutes}</Route>
             <Route path="/lineup"    element={<LineupPage />} />
             <Route path="/round"     element={<RoundPage />} />
             <Route path="/round/match/:matchId" element={<MatchPage />} />

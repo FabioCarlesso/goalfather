@@ -42,7 +42,7 @@ export async function authenticate(page: Page): Promise<void> {
 
   await expect(page.getByRole('heading', { name: 'Escolha seu clube' })).toBeVisible()
   await page.getByRole('button', { name: 'Treinar este clube' }).first().click()
-  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page).toHaveURL(/\/dashboard\/visao-geral$/)
 }
 
 export interface Rival {

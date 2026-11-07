@@ -47,7 +47,7 @@ test.describe('Lineup flow', () => {
 
     // Sai e volta — o clube é refetchado e a escalação salva é recarregada.
     await page.getByRole('link', { name: 'Clube' }).click()
-    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page).toHaveURL(/\/dashboard\/visao-geral$/)
     await page.getByRole('link', { name: 'Escalação' }).click()
 
     await expect(page.getByRole('heading', { name: 'Escalação' })).toBeVisible()
@@ -127,7 +127,7 @@ test.describe('Lineup flow', () => {
 
     // Sai e volta: a postura salva é recarregada do servidor.
     await page.getByRole('link', { name: 'Clube' }).click()
-    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page).toHaveURL(/\/dashboard\/visao-geral$/)
     await page.getByRole('link', { name: 'Escalação' }).click()
     await expect(page.locator('#posture')).toHaveValue('DEFENSIVE', { timeout: 10_000 })
 

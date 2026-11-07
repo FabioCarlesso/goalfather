@@ -81,7 +81,9 @@ goalfather/
 │       │   ├── board.ts              # meta, confiança e veredito da diretoria (espelha BoardRules.kt, issue #62)
 │       │   └── offers.ts             # regras das propostas entre técnicos (espelha TransferOfferRules.kt, issue #63)
 │       ├── pages/
-│       │   ├── DashboardPage.tsx
+│       │   ├── DashboardPage.tsx     # cabeçalho + abas em sub-rotas /dashboard/<aba> com <Outlet> (issue #107)
+│       │   ├── dashboard/            # abas da Dashboard: OverviewTab (stats, diretoria, propostas), SquadTab (elenco + venda),
+│       │   │                         #   FinancesTab (ingresso, estádio), DepartmentTab (treino, médico); routes.tsx e tabs.ts
 │       │   ├── LineupPage.tsx
 │       │   ├── MatchPage.tsx         # consome WS
 │       │   ├── MarketPage.tsx
@@ -97,6 +99,9 @@ goalfather/
 │       │   ├── PageTitle.tsx         # <title> por rota, içado ao <head> pelo React 19 (issue #114)
 │       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
 │       │   ├── OffersPanel.tsx       # propostas recebidas/enviadas na Dashboard (issue #63)
+│       │   ├── TrainingPanel.tsx, TicketPricePanel.tsx, StadiumExpandPanel.tsx, MedicalDepartmentPanel.tsx
+│       │   │                         # painéis das abas da Dashboard: dados e callbacks por props (issue #107)
+│       │   ├── SquadList.tsx         # elenco da Dashboard; SellPlayerModal.tsx confirma a venda, SaleFeedback.tsx (issue #107)
 │       │   ├── ui/                   # primitivas visuais: Button, Card, Badge, Stat, Modal (issue #104); ErrorState, LoadingState, EmptyState (issue #105)
 │       │   ├── layout/               # AppLayout + menus: barra em ≥ lg, botão de menu abaixo (issue #106)
 │       │   └── ...

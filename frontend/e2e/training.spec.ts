@@ -8,7 +8,7 @@ import { expect, test } from './helpers'
 
 test.describe('Training focus', () => {
   test('escolhe o foco da semana e ele persiste no clube', async ({ page }) => {
-    await page.goto('/dashboard')
+    await page.goto('/dashboard/departamento')
     await expect(page.getByRole('heading', { name: 'Treino da semana' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Físico' }).click()
@@ -22,6 +22,7 @@ test.describe('Training focus', () => {
     await page.getByRole('link', { name: 'Tabela' }).click()
     await expect(page.getByRole('heading', { name: 'Tabela' })).toBeVisible()
     await page.getByRole('link', { name: 'Clube', exact: true }).click()
+    await page.getByRole('navigation', { name: 'Seções do clube' }).getByRole('link', { name: 'Departamento' }).click()
 
     await expect(page.getByRole('button', { name: 'Físico' })).toHaveAttribute(
       'aria-pressed',
