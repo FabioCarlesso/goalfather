@@ -1,16 +1,28 @@
 import { Link } from 'react-router-dom'
 import { PageTitle } from '../components/PageTitle'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 import { useStandings } from '../api/queries/useStandings'
 import { useMyClubId } from '../auth/useMyClubId'
 import type { Standings } from '../domain/types'
 
 export function StandingsPage() {
-  const { data, isLoading, error } = useStandings()
+  const { data, isPending, isLoadingError, error, refetch } = useStandings()
   const myClubId = useMyClubId()
 
-  if (isLoading) return <p className="text-slate-400">Carregando tabela…</p>
-  if (error)     return <p className="text-red-400">Erro: {String(error)}</p>
-  if (!data || data.length === 0) return null
+  if (isPending) return <><PageTitle>Tabela</PageTitle><LoadingState label="Carregando tabela…" shape="table" /></>
+  if (isLoadingError) return <><PageTitle>Tabela</PageTitle><ErrorState error={error} onRetry={refetch} /></>
+
+  if (data.length === 0) {
+    return (
+      <section className="space-y-4">
+        <PageTitle>Tabela</PageTitle>
+        <h1 className="text-3xl font-bold text-slate-100">Tabela</h1>
+        <EmptyState message="Nenhuma divisão com tabela por enquanto. A classificação aparece aqui quando a temporada estiver montada." />
+      </section>
+    )
+  }
 
   const first = data[0]!
 

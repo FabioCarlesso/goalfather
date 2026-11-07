@@ -221,7 +221,7 @@ function TeamSide({
   align: 'left' | 'right'
 }) {
   return (
-    <div className={align === 'right' ? 'text-right' : 'text-left'}>
+    <div className={`min-w-0 ${align === 'right' ? 'text-right' : 'text-left'}`}>
       <div className="truncate text-lg font-semibold text-slate-100">{name}</div>
       <div className="font-mono text-xs text-slate-500">OVR {strength.toFixed(1)}</div>
       <span

@@ -3,6 +3,7 @@ import { PageTitle } from '../components/PageTitle'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCurrentRound, usePlayRound, currentRoundKey } from '../api/queries/useCurrentRound'
+import { errorMessage } from '../api/errorMessages'
 import { useRoundReadiness, useMarkReady, roundReadinessKey } from '../api/queries/useRoundReadiness'
 import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
 import { wsUrl } from '../api/wsUrl'
@@ -34,6 +35,8 @@ import type {
   TrainingReport,
 } from '../domain/types'
 import { Button } from '../components/ui/Button'
+import { ErrorState } from '../components/ui/ErrorState'
+import { LoadingState } from '../components/ui/LoadingState'
 
 // Variante do union RoundEvent — fim de temporada (issue #11).
 type SeasonFinishedEvent = Extract<RoundEvent, { type: 'SeasonFinished' }>
@@ -53,7 +56,7 @@ export function RoundPage() {
   const qc = useQueryClient()
   const myClubId = useMyClubId()
   const { user } = useAuth()
-  const { data: round, isLoading } = useCurrentRound()
+  const { data: round, isPending, isLoadingError, error: roundError, refetch } = useCurrentRound()
   const playRound = usePlayRound()
 
   const [events, setEvents] = useState<RoundEvent[]>([])
@@ -186,7 +189,7 @@ export function RoundPage() {
     try {
       await playRound.mutateAsync()
     } catch (e) {
-      setError(`Falha ao iniciar rodada: ${String(e)}`)
+      setError(`Falha ao iniciar rodada: ${errorMessage(e)}`)
       setStatus('error')
       return
     }
@@ -251,7 +254,8 @@ export function RoundPage() {
     return () => wsRef.current?.close()
   }, [])
 
-  if (isLoading || !round) return <p className="text-slate-400">Carregando rodada…</p>
+  if (isPending) return <><PageTitle>Rodada</PageTitle><LoadingState label="Carregando rodada…" shape="cards" /></>
+  if (isLoadingError) return <><PageTitle>Rodada</PageTitle><ErrorState error={roundError} onRetry={refetch} /></>
 
   const busy = status === 'connecting' || status === 'live'
   const buttonLabel =

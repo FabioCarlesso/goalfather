@@ -3,7 +3,7 @@ import { authenticate } from './helpers'
 
 // Auth + onboarding (issues #18/#19): sem sessão, qualquer rota cai no /login.
 // Após cadastrar e escolher um clube, o usuário chega à dashboard; o tutorial
-// (/welcome) continua acessível pelo item de menu. Cada teste do Playwright
+// (/welcome) continua acessível pelo menu de usuário. Cada teste do Playwright
 // roda em contexto isolado, então o localStorage começa vazio (primeiro acesso).
 
 test.describe('Auth + onboarding', () => {
@@ -17,6 +17,7 @@ test.describe('Auth + onboarding', () => {
     await authenticate(page)
     await expect(page.getByRole('heading', { name: 'Goal Father FC' })).toBeVisible()
 
+    await page.getByRole('button', { name: /Menu do usuário/ }).click()
     await page.getByRole('link', { name: 'Tutorial' }).click()
     await expect(page).toHaveURL(/\/welcome$/)
     await expect(page.getByRole('heading', { name: /Bem-vindo ao GoalFather/i })).toBeVisible()
