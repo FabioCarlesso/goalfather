@@ -29,22 +29,22 @@ async function expectNoSeriousViolations(page: Page) {
 }
 
 const ROUTES = [
-  // TEMP onda 3: DashboardPage/LineupPage são reescritas pelas #107/#110; o
-  // contraste delas (text-slate-500, bg-sky-600) é corrigido na integração,
-  // que remove o `fixme`.
-  { name: 'Clube', path: '/dashboard', fixme: true },
-  { name: 'Escalação', path: '/lineup', fixme: false },
-  { name: 'Rodada', path: '/round', fixme: false },
-  { name: 'Mercado', path: '/market', fixme: false },
-  { name: 'Tabela', path: '/standings', fixme: false },
-  { name: 'Copa', path: '/cup', fixme: false },
-  { name: 'Histórico', path: '/history', fixme: false },
+  // Clube tem sub-rotas por aba (#107); cada aba tem markup próprio.
+  { name: 'Clube — visão geral', path: '/dashboard/visao-geral' },
+  { name: 'Clube — elenco', path: '/dashboard/elenco' },
+  { name: 'Clube — finanças', path: '/dashboard/financas' },
+  { name: 'Clube — departamento', path: '/dashboard/departamento' },
+  { name: 'Escalação', path: '/lineup' },
+  { name: 'Rodada', path: '/round' },
+  { name: 'Mercado', path: '/market' },
+  { name: 'Tabela', path: '/standings' },
+  { name: 'Copa', path: '/cup' },
+  { name: 'Histórico', path: '/history' },
 ] as const
 
 test.describe('Acessibilidade (axe)', () => {
-  for (const { name, path, fixme } of ROUTES) {
+  for (const { name, path } of ROUTES) {
     test(`${name} (${path}) sem violações serious/critical`, async ({ page }) => {
-      test.fixme(fixme, 'TEMP onda 3: contraste corrigido na integração com #107/#110')
       await page.goto(path)
       await waitForContent(page)
       await expectNoSeriousViolations(page)

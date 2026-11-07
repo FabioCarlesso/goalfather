@@ -42,7 +42,7 @@ export function MedicalDepartmentPanel({ squad, cash, onTreat, pending, error, s
         type="button"
         onClick={onTreat}
         disabled={!affordable || pending}
-        className="rounded-md bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
+        className="rounded-md bg-sky-700 hover:bg-sky-800 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 text-sm font-medium transition-colors"
       >
         {pending ? 'Tratando…' : 'Tratar elenco'}
       </button>
