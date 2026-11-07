@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from './helpers'
 
 // Escalação (issue #12): preencher os 11 titulares, salvar e validar que a
@@ -8,21 +9,36 @@ import { expect, test } from './helpers'
 // navegação SPA força um refetch do clube — validando o round-trip no servidor
 // em ambos os modos.
 
+// Botões de slot do campinho (FormationGrid). `data-slot` guarda o índice no
+// array da escalação — a ordem visual vai do ataque ao gol.
+const slotButtons = (page: Page) => page.locator('button[data-slot]')
+
+const slotIds = (page: Page) =>
+  slotButtons(page).evaluateAll((els) =>
+    els
+      .map((el) => el as HTMLButtonElement)
+      .sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot))
+      .map((b) => b.dataset.playerId ?? ''),
+  )
+
+const reserves = (page: Page) => page.getByRole('region', { name: /Reservas/ })
+
 test.describe('Lineup flow', () => {
+  // Campinho (issue #110): o elenco-semente tem 11 jogadores, então o 4-4-2
+  // automático já é completo. Trocar para 4-3-3 tira um MC (vai para a reserva)
+  // e abre o 3º AT — montar a partir daí exercita slot → reserva de verdade.
   test('salvar a escalação e mantê-la após navegar', async ({ page }) => {
     await page.goto('/lineup')
     await expect(page).toHaveTitle(/Escalação · GoalFather/)
     await expect(page.getByRole('heading', { name: 'Escalação' })).toBeVisible()
 
-    // Os 11 selects de slot vivem na grade (o select de formação fica no header).
-    const slots = page.locator('div.grid select')
-    await expect(slots).toHaveCount(11)
+    await expect(slotButtons(page)).toHaveCount(11)
+    await page.locator('#formation').selectOption('4-3-3')
+    await expect(page.getByText('10/11 titulares')).toBeVisible()
 
-    // Em 4-4-2 o elenco-semente tem exatamente 1 GK, 4 ZG, 4 MC e 2 AT, então a
-    // primeira opção disponível de cada slot preenche titulares distintos.
-    for (let i = 0; i < 11; i++) {
-      await slots.nth(i).selectOption({ index: 1 })
-    }
+    await page.getByRole('button', { name: 'Atacante 3: vazio' }).click()
+    await reserves(page).getByRole('button', { name: /^Carlos Almeida/ }).click()
+    await expect(page.getByText('11/11 titulares')).toBeVisible()
 
     const saveBtn = page.getByRole('button', { name: 'Salvar escalação' })
     await expect(saveBtn).toBeEnabled()
@@ -36,6 +52,62 @@ test.describe('Lineup flow', () => {
 
     await expect(page.getByRole('heading', { name: 'Escalação' })).toBeVisible()
     await expect(page.getByText('11/11 titulares')).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('#formation')).toHaveValue('4-3-3')
+    await expect(page.getByRole('button', { name: /^Atacante 3: Carlos Almeida.*fora de posição$/ })).toBeVisible()
+  })
+
+  test('montar a escalação só com teclado', async ({ page }) => {
+    await page.goto('/lineup')
+    await expect(page.getByText('11/11 titulares')).toBeVisible()
+
+    // Formação pelo teclado: o select nativo troca de valor com as setas.
+    await page.locator('#formation').focus()
+    await page.keyboard.press('ArrowDown')
+    await expect(page.locator('#formation')).toHaveValue('4-3-3')
+    await expect(page.getByText('10/11 titulares')).toBeVisible()
+
+    // Tab a partir do select de postura entra no campo pelo ataque: AT 1, AT 2, AT 3.
+    await page.locator('#posture').focus()
+    const empty = page.getByRole('button', { name: 'Atacante 3: vazio' })
+    for (let i = 0; i < 10 && !(await empty.evaluate((el) => el === document.activeElement)); i++) {
+      await page.keyboard.press('Tab')
+    }
+    await expect(empty).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(empty).toHaveAttribute('aria-pressed', 'true')
+
+    const benched = reserves(page).getByRole('button', { name: /^Carlos Almeida/ })
+    await benched.focus()
+    await page.keyboard.press('Space')
+    await expect(page.getByText('11/11 titulares')).toBeVisible()
+
+    // Troca dois titulares de lugar, ainda pelo teclado.
+    await page.getByRole('button', { name: /^Goleiro 1:/ }).focus()
+    await page.keyboard.press('Enter')
+    await page.getByRole('button', { name: /^Zagueiro 1:/ }).focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('button', { name: /^Goleiro 1: Rodrigo Alves/ })).toBeVisible()
+
+    const save = page.getByRole('button', { name: 'Salvar escalação' })
+    await save.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByText('Escalação salva ✓')).toBeVisible({ timeout: 10_000 })
+  })
+
+  test('em 375px o campinho cabe sem rolagem horizontal', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 })
+    await page.goto('/lineup')
+    await expect(page.getByText('11/11 titulares')).toBeVisible()
+
+    // 5-3-2 é a linha mais cheia (5 zagueiros lado a lado).
+    for (const formation of ['4-4-2', '5-3-2'] as const) {
+      await page.locator('#formation').selectOption(formation)
+      await expect(slotButtons(page)).toHaveCount(11)
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      )
+      expect(overflow, `rolagem horizontal em ${formation}`).toBeLessThanOrEqual(0)
+    }
   })
 
   // Postura tática (issue #56): a escolha é salva junto da escalação e chega à
@@ -49,10 +121,7 @@ test.describe('Lineup flow', () => {
     await posture.selectOption('DEFENSIVE')
     await expect(page.getByText(/concede bem menos/)).toBeVisible()
 
-    const slots = page.locator('div.grid select')
-    for (let i = 0; i < 11; i++) {
-      await slots.nth(i).selectOption({ index: 1 })
-    }
+    // O 4-4-2 automático já é completo: basta salvar.
     await page.getByRole('button', { name: 'Salvar escalação' }).click()
     await expect(page.getByText('Escalação salva ✓')).toBeVisible({ timeout: 10_000 })
 
@@ -83,14 +152,13 @@ test.describe('Lineup flow', () => {
       await expect(page.getByText('11/11 titulares')).toBeVisible()
       await expect(page.getByText(UNSAVED)).toBeHidden()
 
-      const slots = page.locator('div.grid select')
-      const before = await slots.evaluateAll((els) => els.map((el) => (el as HTMLSelectElement).value))
+      const before = await slotIds(page)
 
       await page.locator('#formation').selectOption('4-3-3')
 
       await expect(page.getByText('10/11 titulares')).toBeVisible()
       await expect(page.getByText(UNSAVED)).toBeVisible()
-      const after = await slots.evaluateAll((els) => els.map((el) => (el as HTMLSelectElement).value))
+      const after = await slotIds(page)
       expect(after).toEqual([...before.slice(0, 8), before[9], before[10], ''])
 
       await page.getByRole('button', { name: 'Restaurar escalação automática' }).click()

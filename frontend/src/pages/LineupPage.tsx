@@ -7,16 +7,13 @@ import { errorMessage } from '../api/errorMessages'
 import { useMyClubId } from '../auth/useMyClubId'
 import {
   FORMATIONS,
-  FORMATION_SLOTS,
-  POSITION_ABBR,
-  POSITION_LABEL,
   POSTURES,
   POSTURE_HINT,
   POSTURE_LABEL,
   remapSlots,
 } from '../domain/formations'
-import { isInjured } from '../domain/players'
-import type { Club, Formation, Player, Posture } from '../domain/types'
+import type { Club, Formation, Posture } from '../domain/types'
+import { FormationGrid } from '../components/FormationGrid'
 import { Button } from '../components/ui/Button'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
@@ -97,7 +94,6 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
       ? 'Escalação ajustada — titulares lesionados ou vendidos foram trocados por reservas. É este o time que entra em campo se você não salvar.'
       : null
 
-  const positions = FORMATION_SLOTS[formation]
   const complete = slots.every((id) => id !== null)
 
   const setSlot = (i: number, playerId: number | null) => {
@@ -110,6 +106,15 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
           if (j !== i && next[j] === playerId) next[j] = null
         }
       }
+      return { ...prev, slots: next }
+    })
+  }
+
+  // Troca de lugar dois titulares (clique slot → slot no campinho, issue #110).
+  const swapSlots = (a: number, b: number) => {
+    setDraft((prev) => {
+      const next = [...prev.slots]
+      ;[next[a], next[b]] = [next[b] ?? null, next[a] ?? null]
       return { ...prev, slots: next }
     })
   }
@@ -203,18 +208,14 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
         {POSTURE_HINT[posture]}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
-        {positions.map((pos, i) => (
-          <SlotPicker
-            key={i}
-            slotIndex={i}
-            position={pos}
-            squad={club.squad}
-            selectedId={slots[i] ?? null}
-            otherSelected={slots.filter((_, j) => j !== i).filter((id): id is number => id !== null)}
-            onChange={(id) => setSlot(i, id)}
-          />
-        ))}
+      <div className="mb-4">
+        <FormationGrid
+          formation={formation}
+          slots={slots}
+          squad={club.squad}
+          onAssign={setSlot}
+          onSwap={swapSlots}
+        />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -252,58 +253,6 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
         Suas alterações na escalação ainda não foram salvas e serão perdidas.
       </Modal>
     </section>
-  )
-}
-
-function SlotPicker({
-  slotIndex,
-  position,
-  squad,
-  selectedId,
-  otherSelected,
-  onChange,
-}: {
-  slotIndex: number
-  position: Player['position']
-  squad: Player[]
-  selectedId: number | null
-  otherSelected: number[]
-  onChange: (id: number | null) => void
-}) {
-  // Lesionados ficam indisponíveis para escalação (issues #2/#54) — o backend
-  // recusa com INJURED_PLAYERS, aqui a opção nem aparece.
-  const available = squad.filter(
-    (p) => p.position === position && !otherSelected.includes(p.id) && !isInjured(p),
-  )
-  // A escalação efetiva (issue #87) não casa posição: o reserva que cobre um
-  // lesionado pode ser de outra posição. Mantém o selecionado visível como
-  // opção, marcado, em vez de o select mostrar o slot como vazio.
-  const selected = squad.find((p) => p.id === selectedId)
-  const offPosition = selected && !available.includes(selected) ? selected : null
-
-  return (
-    <label className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900/40 px-3 py-2">
-      <span className="text-xs uppercase tracking-wide text-slate-500 w-16">
-        {POSITION_ABBR[position]} {slotIndex + 1}
-      </span>
-      <select
-        value={selectedId ?? ''}
-        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-        className="flex-1 bg-transparent text-sm text-slate-100 outline-none"
-      >
-        <option value="">— {POSITION_LABEL[position]} —</option>
-        {offPosition && (
-          <option value={offPosition.id}>
-            {offPosition.name} ({offPosition.overall}) · {POSITION_ABBR[offPosition.position]} fora de posição
-          </option>
-        )}
-        {available.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name} ({p.overall}) · {p.stamina}%
-          </option>
-        ))}
-      </select>
-    </label>
   )
 }
 
