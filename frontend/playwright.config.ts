@@ -4,6 +4,12 @@ import { defineConfig, devices } from '@playwright/test'
 // Em modo padrao (mock-first) usamos Vite + MSW.
 const REAL_BACKEND = process.env.VITE_USE_MOCKS === 'false'
 
+// Porta do Vite configurável para rodar mais de uma suíte ao mesmo tempo
+// (ex.: worktrees em paralelo). Com a porta fixa e `reuseExistingServer`,
+// uma suíte testaria o servidor de outro checkout.
+const PORT = Number(process.env.E2E_PORT ?? 5173)
+const BASE_URL = `http://localhost:${PORT}`
+
 export default defineConfig({
   testDir: './e2e',
   // Contra o backend real há UMA liga, resetada a cada teste (issue #101):
@@ -17,7 +23,7 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: BASE_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     // Chrome Headless Shell exige headless: true
@@ -35,8 +41,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: REAL_BACKEND ? 'VITE_USE_MOCKS=false npm run dev' : 'npm run dev',
-    url: 'http://localhost:5173',
+    command: `${REAL_BACKEND ? 'VITE_USE_MOCKS=false ' : ''}npm run dev -- --port ${PORT} --strictPort`,
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },
