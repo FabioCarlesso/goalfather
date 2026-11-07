@@ -88,7 +88,7 @@ function ClubCard({
             Divisão {club.division}
           </span>
         </div>
-        <p className="text-xs text-slate-500">ID #{club.id}</p>
+        <p className="text-xs text-text-muted">ID #{club.id}</p>
       </div>
       <dl className="grid grid-cols-3 gap-2 text-center">
         <Metric label="Caixa" value={formatMoney(club.cash)} />
@@ -109,7 +109,7 @@ function ClubCard({
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-slate-800/50 px-2 py-1.5">
-      <dt className="text-[10px] uppercase tracking-wide text-slate-500">{label}</dt>
+      <dt className="text-[10px] uppercase tracking-wide text-text-muted">{label}</dt>
       <dd className="text-sm font-semibold text-slate-100">{value}</dd>
     </div>
   )

@@ -71,11 +71,11 @@ function CareerCard({ career }: { career: ClubCareer }) {
       <h2 className="text-lg font-semibold text-slate-100">{career.clubName}</h2>
       <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Temporadas</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Temporadas</dt>
           <dd className="text-2xl font-bold text-slate-100">{career.seasonsPlayed}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Títulos</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Títulos</dt>
           <dd className="text-2xl font-bold text-amber-300">
             {career.titles.length}
             {career.titles.length > 0 && (
@@ -87,7 +87,7 @@ function CareerCard({ career }: { career: ClubCareer }) {
         </div>
         {/* Copa mata-mata (issue #61): títulos já contados no backend. */}
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Copas</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Copas</dt>
           <dd className="text-2xl font-bold text-amber-300">
             {career.cupTitles.length}
             {career.cupTitles.length > 0 && (
@@ -98,7 +98,7 @@ function CareerCard({ career }: { career: ClubCareer }) {
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Melhor campanha</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Melhor campanha</dt>
           <dd className="text-sm text-slate-200">
             {career.bestCampaign
               ? `${positionLabel(career.bestCampaign.standing)} em ${career.bestCampaign.season} · ` +
@@ -132,7 +132,7 @@ function SeasonRow({
         <span className="w-16 font-mono text-slate-400">{season.season}</span>
         <span className="flex-1">
           <span className="text-slate-100">🏆 {season.champion.row.clubName}</span>
-          <span className="ml-2 text-xs text-slate-500">
+          <span className="ml-2 text-xs text-text-muted">
             {season.champion.row.points} pts · {season.champion.pointsPercentage}%
           </span>
           {season.cupChampion && (
@@ -171,14 +171,14 @@ function SeasonDetail({ record, myClubId }: { record: SeasonRecord; myClubId: nu
             Divisão {division}
           </h3>
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-800 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-800 text-xs uppercase tracking-wide text-text-muted">
               <tr>
-                <th className="py-2 pr-2">#</th>
-                <th className="py-2 pr-2">Clube</th>
-                <th className="py-2 text-center">J</th>
-                <th className="py-2 text-center">SG</th>
-                <th className="py-2 text-center font-semibold">Pts</th>
-                <th className="py-2 text-center">%</th>
+                <th scope="col" className="py-2 pr-2"><abbr title="Posição" className="no-underline">#</abbr></th>
+                <th scope="col" className="py-2 pr-2">Clube</th>
+                <th scope="col" className="py-2 text-center"><abbr title="Jogos" className="no-underline">J</abbr></th>
+                <th scope="col" className="py-2 text-center"><abbr title="Saldo de gols" className="no-underline">SG</abbr></th>
+                <th scope="col" className="py-2 text-center font-semibold"><abbr title="Pontos" className="no-underline">Pts</abbr></th>
+                <th scope="col" className="py-2 text-center"><abbr title="Aproveitamento" className="no-underline">%</abbr></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -189,7 +189,7 @@ function SeasonDetail({ record, myClubId }: { record: SeasonRecord; myClubId: nu
                     key={s.row.clubId}
                     className={s.row.clubId === myClubId ? 'bg-sky-900/20' : undefined}
                   >
-                    <td className="py-2 pr-2 pl-2 text-slate-500">{s.row.position}</td>
+                    <td className="py-2 pr-2 pl-2 text-text-muted">{s.row.position}</td>
                     <td className="py-2 pr-2 text-slate-100">{s.row.clubName}</td>
                     <td className="py-2 text-center text-slate-300">{s.row.played}</td>
                     <td className="py-2 text-center text-slate-300">{s.row.goalDifference}</td>

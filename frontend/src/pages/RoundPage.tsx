@@ -13,6 +13,7 @@ import { standingsKey } from '../api/queries/useStandings'
 import { seasonHistoryKey, clubCareerKey } from '../api/queries/useSeasonHistory'
 import { cupKey } from '../api/queries/useCup'
 import { boardKey } from '../api/queries/useBoard'
+import { GoalAnnouncer } from '../components/GoalAnnouncer'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { ReadinessCard } from '../components/ReadinessCard'
@@ -315,7 +316,7 @@ export function RoundPage() {
       {/* Partidas agrupadas por divisão (issue #47) — ou num grupo só, na copa (issue #61). */}
       {matchGroupsOf(round.stage, round.matches).map(([label, matches]) => (
         <div key={label} className="space-y-2">
-          <h2 className="text-sm uppercase tracking-wide text-slate-500">{label}</h2>
+          <h2 className="text-sm uppercase tracking-wide text-text-muted">{label}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {matches.map((m) => (
               <MatchCard
@@ -331,9 +332,15 @@ export function RoundPage() {
 
       {myMatch && (
         <div className="space-y-2">
-          <h2 className="text-sm uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm uppercase tracking-wide text-text-muted">
             Detalhes da sua partida — {myMatch.homeClubName} × {myMatch.awayClubName}
           </h2>
+          {/* Gols da partida do técnico anunciados ao leitor de tela (issue #113). */}
+          <GoalAnnouncer
+            events={myMatchEvents}
+            homeName={myMatch.homeClubName}
+            awayName={myMatch.awayClubName}
+          />
           <MatchEventFeed
             events={myMatchEvents}
             playerLookup={playerLookup}
@@ -503,7 +510,7 @@ export function BoardReviewCard({ review }: { review: BoardReview | undefined })
               setRefreshError(null)
               void leaveClub()
             }}
-            className="rounded-md bg-red-600 hover:bg-red-500 text-white px-4 py-2 text-sm font-medium transition-colors"
+            className="rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium transition-colors"
           >
             Tentar de novo
           </button>
@@ -581,7 +588,7 @@ function RoundProgress({
           {status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />}
           {label}
         </span>
-        <span className="text-slate-500 tabular-nums">{minute}/90′</span>
+        <span className="text-text-muted tabular-nums">{minute}/90′</span>
       </div>
       <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
         <div
@@ -610,7 +617,7 @@ function MatchCard({
   }
 
   const minuteLabel = s.status === 'Finished' ? 'FIM' : s.status === 'InProgress' ? `${s.minute}'` : '—'
-  const minuteColor = s.status === 'InProgress' ? 'text-emerald-400' : 'text-slate-500'
+  const minuteColor = s.status === 'InProgress' ? 'text-emerald-400' : 'text-text-muted'
 
   return (
     <Link
@@ -638,7 +645,7 @@ function MatchCard({
           {match.homeClubName}
         </div>
         <span className="text-2xl font-bold font-mono tabular-nums text-slate-100">{s.homeGoals}</span>
-        <span className="text-2xl font-bold font-mono text-slate-600">×</span>
+        <span className="text-2xl font-bold font-mono text-text-muted">×</span>
         <span className="text-2xl font-bold font-mono tabular-nums text-slate-100">{s.awayGoals}</span>
         <div className="text-sm font-medium text-slate-100 truncate text-left" title={match.awayClubName}>
           {match.awayClubName}

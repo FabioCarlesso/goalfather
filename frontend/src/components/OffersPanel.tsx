@@ -45,7 +45,7 @@ export function OffersPanel({ offers, clubId, onAction, busyOfferId = null }: Pr
           )}
         </>
       }
-      actions={<span className="text-xs text-slate-500">entre técnicos da liga</span>}
+      actions={<span className="text-xs text-text-muted">entre técnicos da liga</span>}
       className="space-y-4"
     >
 
@@ -119,16 +119,16 @@ function OfferList({
 
   return (
     <div>
-      <h3 className="mb-2 text-xs uppercase tracking-wide text-slate-500">{title}</h3>
+      <h3 className="mb-2 text-xs uppercase tracking-wide text-text-muted">{title}</h3>
       {pending.length === 0 && resolved.length === 0 ? (
-        <p className="text-sm italic text-slate-500">{emptyText}</p>
+        <p className="text-sm italic text-text-muted">{emptyText}</p>
       ) : (
         <ul className="divide-y divide-slate-800 rounded-md border border-slate-800">
           {pending.map((o) => (
             <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm text-slate-300">
               <span>
                 {describe(o)}
-                <span className="ml-2 text-xs text-slate-500">
+                <span className="ml-2 text-xs text-text-muted">
                   expira em {o.roundsLeft} rodada{o.roundsLeft === 1 ? '' : 's'}
                 </span>
               </span>
@@ -136,7 +136,7 @@ function OfferList({
             </li>
           ))}
           {resolved.map((o) => (
-            <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm text-slate-500">
+            <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm text-text-muted">
               <span>{describe(o)}</span>
               <StatusTag offer={o} />
             </li>
@@ -170,7 +170,7 @@ function ActionButton({
   onClick,
 }: { label: string; tone: 'accept' | 'neutral'; disabled: boolean; onClick: () => void }) {
   const toneClasses = tone === 'accept'
-    ? 'bg-accent hover:bg-emerald-500 text-white border-transparent'
+    ? 'bg-accent hover:bg-emerald-800 text-white border-transparent'
     : 'border-slate-700 text-slate-300 hover:border-slate-500'
   return (
     <button

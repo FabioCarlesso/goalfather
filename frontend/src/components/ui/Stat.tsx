@@ -9,7 +9,7 @@ export interface StatProps {
 export function Stat({ label, value }: StatProps) {
   return (
     <Card>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-text-muted">{label}</div>
       <div className="text-lg font-semibold text-text mt-1">{value}</div>
     </Card>
   )

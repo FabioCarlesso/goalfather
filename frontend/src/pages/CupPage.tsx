@@ -129,13 +129,13 @@ function PhaseColumn({
           {KNOCKOUT_PHASE_LABEL[phase]}
           {current && <span className="ml-2 text-xs font-normal text-emerald-400">em disputa</span>}
         </h2>
-        <p className="text-xs text-slate-500">Prêmio por vitória: {formatMoney(prizeCents)}</p>
+        <p className="text-xs text-text-muted">Prêmio por vitória: {formatMoney(prizeCents)}</p>
       </div>
       <div className="flex flex-col justify-around gap-2">
         {stage
           ? stage.ties.map((tie) => <TieCard key={tie.index} tie={tie} myClubId={myClubId} />)
           : Array.from({ length: slots }, (_, i) => (
-              <div key={i} className="rounded-md border border-dashed border-slate-800 px-3 py-2 text-xs text-slate-600">
+              <div key={i} className="rounded-md border border-dashed border-slate-800 px-3 py-2 text-xs text-text-muted">
                 A definir
               </div>
             ))}
@@ -153,7 +153,7 @@ function TieCard({ tie, myClubId }: { tie: CupTie; myClubId: number }) {
       return (
         <div className={`rounded-md border px-3 py-2 text-sm ${border}`}>
           <div className="font-medium text-slate-100">{tie.club.name}</div>
-          <div className="text-xs text-slate-500">folga — avança direto</div>
+          <div className="text-xs text-text-muted">folga — avança direto</div>
         </div>
       )
     case 'Fixture': {
@@ -174,7 +174,7 @@ function TieCard({ tie, myClubId }: { tie: CupTie; myClubId: number }) {
             winner={winnerId === tie.away.id}
             decided={winnerId != null}
           />
-          {!result && <div className="mt-1 text-xs text-slate-500">a disputar</div>}
+          {!result && <div className="mt-1 text-xs text-text-muted">a disputar</div>}
         </div>
       )
     }
@@ -194,7 +194,7 @@ function TeamLine({
   winner: boolean
   decided: boolean
 }) {
-  const tone = !decided ? 'text-slate-200' : winner ? 'font-semibold text-slate-100' : 'text-slate-500 line-through'
+  const tone = !decided ? 'text-slate-200' : winner ? 'font-semibold text-slate-100' : 'text-text-muted line-through'
   return (
     <div className="flex items-center justify-between gap-2">
       <span className={`truncate ${tone}`}>{club.name}</span>

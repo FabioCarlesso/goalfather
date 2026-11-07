@@ -36,7 +36,7 @@ export function ClubPage() {
     <section className="space-y-6">
       <PageTitle>{club.name}</PageTitle>
       <header>
-        <Link to="/standings" className="text-xs text-slate-500 hover:text-slate-300">← Tabela</Link>
+        <Link to="/standings" className="text-xs text-text-muted hover:text-slate-300">← Tabela</Link>
         <h1 className="text-3xl font-bold text-slate-100">{club.name}</h1>
         <p className="text-sm text-slate-400">
           {human ? 'Técnico humano — aceita propostas' : 'Controlado pela IA — não negocia propostas'}
@@ -126,7 +126,7 @@ function SquadList({ squad, action }: { squad: Player[]; action?: (player: Playe
           <li key={p.id} className="flex items-center justify-between px-4 py-2">
             <div className="min-w-0">
               <span className="font-medium text-slate-100">{p.name}</span>
-              <span className="ml-2 text-xs text-slate-500">{p.position} · {p.age}a</span>
+              <span className="ml-2 text-xs text-text-muted">{p.position} · {p.age}a</span>
             </div>
             <div className="flex items-center gap-3">
               {p.star && <span className="text-yellow-400" title="Estrela">★</span>}
