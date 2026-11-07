@@ -224,9 +224,13 @@ function SlotButton({
     : `${label}: vazio`
 
   return (
+    // O nome acessível vem de um texto `sr-only`, não de `aria-label`: com
+    // `aria-label` o nome substitui o conteúdo e deixa de conter o texto
+    // visível ("Alves 75"), o que o axe acusa (label-content-name-mismatch,
+    // WCAG 2.5.3) e atrapalha quem usa controle por voz. O visual fica
+    // `aria-hidden` para não ser lido duas vezes.
     <button
       type="button"
-      aria-label={name}
       aria-pressed={selected}
       data-slot={index}
       data-player-id={player?.id ?? ''}
@@ -239,8 +243,9 @@ function SlotButton({
         selected && 'ring-2 ring-yellow-300',
       )}
     >
+      <span className="sr-only">{name}</span>
       {player ? (
-        <>
+        <span aria-hidden="true" className="contents">
           <span className="flex w-full min-w-0 items-center justify-center gap-0.5 text-xs font-medium">
             {player.star && <span aria-hidden="true" className="text-yellow-400">★</span>}
             <span className="truncate">{shortName(player.name)}</span>
@@ -254,9 +259,9 @@ function SlotButton({
             )}
           </span>
           <StaminaBar stamina={player.stamina} />
-        </>
+        </span>
       ) : (
-        <span className="text-xs font-semibold">{POSITION_ABBR[position]}</span>
+        <span aria-hidden="true" className="text-xs font-semibold">{POSITION_ABBR[position]}</span>
       )}
     </button>
   )

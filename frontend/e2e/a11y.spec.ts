@@ -33,7 +33,7 @@ const ROUTES = [
   // contraste delas (text-slate-500, bg-sky-600) é corrigido na integração,
   // que remove o `fixme`.
   { name: 'Clube', path: '/dashboard', fixme: true },
-  { name: 'Escalação', path: '/lineup', fixme: true },
+  { name: 'Escalação', path: '/lineup', fixme: false },
   { name: 'Rodada', path: '/round', fixme: false },
   { name: 'Mercado', path: '/market', fixme: false },
   { name: 'Tabela', path: '/standings', fixme: false },
