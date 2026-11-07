@@ -5,6 +5,7 @@ import { useCurrentRound } from '../api/queries/useCurrentRound'
 import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
 import { wsUrl } from '../api/wsUrl'
 import { useMyClubId } from '../auth/useMyClubId'
+import { GoalAnnouncer } from '../components/GoalAnnouncer'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { MatchStatsSummary } from '../components/MatchStatsSummary'
 import { POSTURE_LABEL } from '../domain/formations'
@@ -131,6 +132,8 @@ function MatchView({ matchId }: { matchId: string }) {
       )}
 
       <Scoreboard teams={teams} score={score} minute={lastMinute} status={status} />
+      {/* Anúncio de gol para leitor de tela (issue #113) — só gols, não o feed todo. */}
+      <GoalAnnouncer events={events} homeName={teams?.home ?? ''} awayName={teams?.away ?? ''} />
 
       <MatchEventFeed
         events={events}
@@ -159,7 +162,7 @@ function Scoreboard({
 }) {
   if (!teams) {
     return (
-      <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-center italic text-slate-600">
+      <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-center italic text-text-muted">
         Aguardando início da partida…
       </div>
     )
@@ -179,9 +182,9 @@ function Scoreboard({
         />
         <div className="flex min-w-[140px] flex-col items-center gap-1">
           <div className="font-mono text-5xl font-bold tabular-nums text-slate-100">
-            {score.home} <span className="text-slate-600">×</span> {score.away}
+            {score.home} <span className="text-text-muted">×</span> {score.away}
           </div>
-          <div className={`font-mono text-xs tracking-widest ${status === 'live' ? 'text-emerald-400' : 'text-slate-500'}`}>
+          <div className={`font-mono text-xs tracking-widest ${status === 'live' ? 'text-emerald-400' : 'text-text-muted'}`}>
             {status === 'live' && <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />}
             {minuteLabel}
           </div>
@@ -223,7 +226,7 @@ function TeamSide({
   return (
     <div className={`min-w-0 ${align === 'right' ? 'text-right' : 'text-left'}`}>
       <div className="truncate text-lg font-semibold text-slate-100">{name}</div>
-      <div className="font-mono text-xs text-slate-500">OVR {strength.toFixed(1)}</div>
+      <div className="font-mono text-xs text-text-muted">OVR {strength.toFixed(1)}</div>
       <span
         className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${POSTURE_TONE[posture]}`}
       >

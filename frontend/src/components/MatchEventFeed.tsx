@@ -34,7 +34,7 @@ export function MatchEventFeed({
       className={`overflow-y-auto rounded-lg border border-slate-800 bg-slate-900/40 p-3 space-y-1 font-mono text-sm ${className}`}
     >
       {events.length === 0 ? (
-        <p className="text-slate-600 italic">{emptyLabel}</p>
+        <p className="text-text-muted italic">{emptyLabel}</p>
       ) : (
         events.map((event, i) => <EventLine key={eventKey(event, i)} event={event} nameOf={nameOf} />)
       )}
@@ -114,7 +114,7 @@ function Line({
 }: { minute: number; color: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3">
-      <span className="w-10 text-slate-500 tabular-nums">{minute}'</span>
+      <span className="w-10 text-text-muted tabular-nums">{minute}'</span>
       <span className={color}>{children}</span>
     </div>
   )

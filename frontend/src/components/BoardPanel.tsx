@@ -21,14 +21,14 @@ export function BoardPanel({ status }: { status: BoardStatus }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
         <div>
-          <div className="text-xs uppercase tracking-wide text-slate-500">Meta {status.season}</div>
+          <div className="text-xs uppercase tracking-wide text-text-muted">Meta {status.season}</div>
           <div className="text-slate-100">{BOARD_OBJECTIVE_LABEL[status.objective]}</div>
           <div className="text-xs text-slate-400">
             até o {ordinal(status.targetPosition)} de {status.divisionSize}
           </div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wide text-slate-500">Posição atual</div>
+          <div className="text-xs uppercase tracking-wide text-text-muted">Posição atual</div>
           <div className={status.onTarget ? 'text-emerald-300' : 'text-amber-300'}>
             {ordinal(status.currentPosition)}
           </div>
@@ -37,7 +37,7 @@ export function BoardPanel({ status }: { status: BoardStatus }) {
           </div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wide text-slate-500">Bônus pela meta</div>
+          <div className="text-xs uppercase tracking-wide text-text-muted">Bônus pela meta</div>
           <div className="text-slate-100">{formatMoney(status.bonusCents)}</div>
         </div>
       </div>
@@ -62,7 +62,7 @@ export function BoardPanel({ status }: { status: BoardStatus }) {
             title={`Limiar de demissão: ${status.firingConfidence}%`}
           />
         </div>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-text-muted">
           Fechar a temporada fora da meta com a confiança em {status.firingConfidence}% ou menos
           custa o cargo.
         </p>

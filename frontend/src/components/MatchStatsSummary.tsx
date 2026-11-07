@@ -26,7 +26,7 @@ export function MatchStatsSummary({ stats, homeName, awayName }: Props) {
 
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-      <h2 className="mb-3 text-xs uppercase tracking-wide text-slate-500">Estatísticas da partida</h2>
+      <h2 className="mb-3 text-xs uppercase tracking-wide text-text-muted">Estatísticas da partida</h2>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-4 text-sm">
         <div className="truncate text-right font-medium text-slate-300">{homeName}</div>
         <div />
@@ -54,7 +54,7 @@ function StatRow({ label, home, away }: { label: string; home: number; away: num
         </div>
         <span className="w-6 text-right font-mono tabular-nums text-slate-100">{home}</span>
       </div>
-      <div className="whitespace-nowrap text-center text-xs text-slate-500">{label}</div>
+      <div className="whitespace-nowrap text-center text-xs text-text-muted">{label}</div>
       <div className="flex items-center gap-2 py-1">
         <span className="w-6 font-mono tabular-nums text-slate-100">{away}</span>
         <div className="h-1.5 w-full max-w-24 overflow-hidden rounded-full bg-slate-800">

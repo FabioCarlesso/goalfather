@@ -32,7 +32,7 @@
 | Tipos gerados | **`openapi-typescript`** | Gera `.d.ts` do `openapi.yaml` |
 | WebSocket | **`native WebSocket` + mock server local** | Stream de `MatchEvent` ao vivo |
 | Testes | **Vitest** + **React Testing Library** + **Playwright** (E2E) | Vitest = Jest compatível, Playwright = fluxo de partida |
-| Lint / format | **ESLint** + **Prettier** | Padrão |
+| Lint / format | **ESLint** (+ `jsx-a11y`) + **Prettier** | Padrão; a11y estática no lint, axe no E2E |
 
 > **Decisões deliberadas:**
 > - **Sem Next.js / SSR.** GoalFather é SPA single-player; SSR só agrega complexidade.
@@ -338,6 +338,11 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 - `workers: 1` e sem `fullyParallel` no modo real: dois testes simultâneos resetariam a liga um do outro. A suíte leva ~1,2 min.
 - Sem retry no modo real, nem no CI (o mock mantém 2): um teste que só passasse na segunda tentativa esconderia justamente a dependência de ordem e estado que o reset eliminou.
 - Limitação conhecida: uma simulação de rodada que ainda esteja rodando quando o teste acaba pode gravar depois do reset. Sem cliente no WS ela termina em milissegundos, e nos runs de validação isso não apareceu.
+
+**Acessibilidade (issue #113, alvo WCAG 2.1 AA):** duas barreiras contra regressão.
+- **Lint:** `eslint-plugin-jsx-a11y` (`flatConfigs.recommended`) roda no `npm run lint`. Pega o que é visível no JSX: botão/link sem nome, `onClick` em `div` sem teclado, `img` sem `alt`, `label` sem controle. O plugin (6.10.x) ainda declara peer `eslint ≤ 9`, então o `package.json` tem um `overrides` que o deixa usar o ESLint 10 do projeto. As regras funcionam normalmente; remova o override quando sair uma versão com suporte oficial.
+- **E2E:** `e2e/a11y.spec.ts` roda o `@axe-core/playwright` (tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`) em Clube, Escalação, Rodada, Mercado, Tabela, Copa, Histórico e Login, mais a Rodada depois de jogada (feed cheio e sumário). Falha em violações `serious`/`critical` e lista regra e seletores na mensagem. Pega o que só existe renderizado: contraste, `lang`, nome acessível calculado. Roda só contra o MSW; o markup não muda no `e2e:real`.
+- **Convenções:** texto secundário usa `text-text-muted` (slate-400), nunca `text-slate-500`/`600` sobre o fundo escuro. Botão só com símbolo (`×`) leva `aria-label`. `<th>` leva `scope="col"`. Gols ao vivo são anunciados por uma região `sr-only` `aria-live="polite"` (`GoalAnnouncer`), não pelo feed inteiro, que narraria cada lance.
 
 **Decisão registrada:** WS handlers do MSW são no-op em `setupServer` (`msw/node`). Para validar o stream de partida ao vivo, usa-se Playwright (browser real) com MSW interceptando o `new WebSocket()`.
 

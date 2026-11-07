@@ -93,16 +93,16 @@ function DivisionTable({ table, myClubId }: { table: Standings; myClubId: number
       </div>
 
       <table className="w-full text-left text-sm">
-        <thead className="text-xs uppercase tracking-wide text-slate-500 border-b border-slate-800">
+        <thead className="text-xs uppercase tracking-wide text-text-muted border-b border-slate-800">
           <tr>
-            <th className="py-2 pr-2">#</th>
-            <th className="py-2 pr-2">Clube</th>
-            <th className="py-2 text-center">J</th>
-            <th className="py-2 text-center">V</th>
-            <th className="py-2 text-center">E</th>
-            <th className="py-2 text-center">D</th>
-            <th className="py-2 text-center">SG</th>
-            <th className="py-2 text-center font-semibold">Pts</th>
+            <th scope="col" className="py-2 pr-2"><abbr title="Posição" className="no-underline">#</abbr></th>
+            <th scope="col" className="py-2 pr-2">Clube</th>
+            <th scope="col" className="py-2 text-center"><abbr title="Jogos" className="no-underline">J</abbr></th>
+            <th scope="col" className="py-2 text-center"><abbr title="Vitórias" className="no-underline">V</abbr></th>
+            <th scope="col" className="py-2 text-center"><abbr title="Empates" className="no-underline">E</abbr></th>
+            <th scope="col" className="py-2 text-center"><abbr title="Derrotas" className="no-underline">D</abbr></th>
+            <th scope="col" className="py-2 text-center"><abbr title="Saldo de gols" className="no-underline">SG</abbr></th>
+            <th scope="col" className="py-2 text-center font-semibold"><abbr title="Pontos" className="no-underline">Pts</abbr></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800">
@@ -125,7 +125,7 @@ function DivisionTable({ table, myClubId }: { table: Standings; myClubId: number
                   zone === 'relegation' ? 'Zona de rebaixamento' : undefined
                 }
               >
-                <td className="py-2 pr-2 pl-2 text-slate-500">{r.position}</td>
+                <td className="py-2 pr-2 pl-2 text-text-muted">{r.position}</td>
                 <td className="py-2 pr-2 text-slate-100">
                   {/* Elenco do clube — de onde sai a proposta entre técnicos (issue #63). */}
                   <Link to={`/clubs/${r.clubId}`} className="hover:text-emerald-300 hover:underline">

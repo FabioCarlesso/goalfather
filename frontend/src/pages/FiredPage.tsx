@@ -53,12 +53,12 @@ function DismissalSummary({ dismissal }: { dismissal: Dismissal }) {
   return (
     <dl className="grid grid-cols-2 gap-4 rounded-lg border border-red-900/50 bg-red-950/20 p-5 text-left">
       <div>
-        <dt className="text-xs uppercase tracking-wide text-slate-500">Meta da diretoria</dt>
+        <dt className="text-xs uppercase tracking-wide text-text-muted">Meta da diretoria</dt>
         <dd className="text-slate-100">{BOARD_OBJECTIVE_LABEL[dismissal.objective]}</dd>
         <dd className="text-xs text-slate-400">até o {ordinal(dismissal.targetPosition)}</dd>
       </div>
       <div>
-        <dt className="text-xs uppercase tracking-wide text-slate-500">Posição final</dt>
+        <dt className="text-xs uppercase tracking-wide text-text-muted">Posição final</dt>
         <dd className="text-2xl font-bold text-red-300">{ordinal(dismissal.finalPosition)}</dd>
       </div>
     </dl>
@@ -84,22 +84,22 @@ function CareerStats({ career }: { career: ClubCareer }) {
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-5 text-left">
       <h2 className="text-lg font-semibold text-slate-100">Histórico do clube</h2>
-      <p className="text-xs text-slate-500">Todas as temporadas do clube, não só a sua passagem.</p>
+      <p className="text-xs text-text-muted">Todas as temporadas do clube, não só a sua passagem.</p>
       <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Temporadas</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Temporadas</dt>
           <dd className="text-2xl font-bold text-slate-100">{career.seasonsPlayed}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Títulos</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Títulos</dt>
           <dd className="text-2xl font-bold text-amber-300">{career.titles.length}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Copas</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Copas</dt>
           <dd className="text-2xl font-bold text-amber-300">{career.cupTitles.length}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500">Melhor campanha</dt>
+          <dt className="text-xs uppercase tracking-wide text-text-muted">Melhor campanha</dt>
           <dd className="text-slate-100">
             {best ? `${ordinal(best.standing.row.position)} em ${best.season}` : '—'}
           </dd>

@@ -18,9 +18,9 @@ const BASE =
   'focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary:   'bg-accent hover:bg-emerald-500 disabled:bg-slate-700 text-white',
+  primary:   'bg-accent hover:bg-emerald-800 disabled:bg-slate-700 text-white',
   secondary: 'border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-slate-100 disabled:opacity-50',
-  danger:    'bg-danger hover:bg-red-500 disabled:bg-slate-700 text-white',
+  danger:    'bg-danger hover:bg-red-700 disabled:bg-slate-700 text-white',
 }
 
 const SIZES: Record<ButtonSize, string> = {
