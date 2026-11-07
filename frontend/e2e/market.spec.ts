@@ -110,21 +110,26 @@ test.describe('Market flow', () => {
   })
 
   test('vender um jogador remove do elenco', async ({ page }) => {
-    // A venda passa por um confirm() — Playwright descarta diálogos por padrão,
-    // então é preciso aceitar explicitamente, senão a venda vira no-op.
-    page.on('dialog', (dialog) => dialog.accept())
-
-    await page.goto('/dashboard')
+    await page.goto('/dashboard/elenco')
     await expect(page).toHaveTitle(/Clube · GoalFather/)
     await expect(page.getByRole('heading', { name: 'Elenco' })).toBeVisible()
 
-    const sellButtons = page.getByRole('button', { name: 'Vender' })
+    const sellButtons = page.getByRole('button', { name: /^Vender / })
+    await expect(sellButtons.first()).toBeVisible()
     const before = await sellButtons.count()
     test.skip(before === 0, 'elenco vazio')
 
+    // A venda pede confirmação num modal (issue #107): cancelar não vende…
     await sellButtons.first().click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(dialog).toBeHidden()
+    await expect(sellButtons).toHaveCount(before)
 
-    // O jogador vendido sai do elenco (uma linha — e um botão "Vender" — a menos).
+    // …e confirmar tira o jogador do elenco (uma linha — e um "Vender" — a menos).
+    await sellButtons.first().click()
+    await dialog.getByRole('button', { name: 'Confirmar venda' }).click()
     await expect(sellButtons).toHaveCount(before - 1)
   })
 })

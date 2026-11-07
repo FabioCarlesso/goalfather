@@ -147,7 +147,7 @@ for (const width of [1024, 1366]) {
 }
 
 // Rotas autenticadas sem parâmetro + as de detalhe, abertas por deep-link.
-const ROUTES = ['/welcome', '/dashboard', '/lineup', '/round', '/market', '/standings', '/cup', '/history', '/clubs/2']
+const ROUTES = ['/welcome', '/dashboard', '/dashboard/elenco', '/dashboard/financas', '/dashboard/departamento', '/lineup', '/round', '/market', '/standings', '/cup', '/history', '/clubs/2']
 
 for (const width of [360, 768, 1280]) {
   test.describe(`Sem rolagem horizontal em ${width}px`, () => {
