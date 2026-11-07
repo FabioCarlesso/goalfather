@@ -25,7 +25,7 @@ describe('LineupPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/Escalação automática/)
     expect(screen.getByRole('button', { name: 'Salvar escalação' })).toBeEnabled()
     // Os titulares automáticos aparecem selecionados nos slots.
-    expect(screen.getByDisplayValue(/Marcos Figueiredo/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Goleiro 1: Marcos Figueiredo/ })).toBeInTheDocument()
   })
 
   it('escalação salva com lesionado abre com o reserva no lugar e avisa o ajuste', async () => {
@@ -48,7 +48,10 @@ describe('LineupPage', () => {
       expect(screen.getByText('11/11 titulares')).toBeInTheDocument()
     })
     expect(screen.getByRole('status')).toHaveTextContent(/Escalação ajustada/)
-    expect(screen.getByDisplayValue(/Reserva Apto/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /: Reserva Apto/ })).toBeInTheDocument()
+    // O lesionado vai para a reserva, desabilitado.
+    const reserves = within(screen.getByRole('region', { name: /Reservas/ }))
+    expect(reserves.getByRole('button', { name: /lesionado/ })).toBeDisabled()
     expect(screen.getByLabelText('Postura')).toHaveValue('DEFENSIVE')
   })
 
@@ -95,9 +98,12 @@ describe('LineupPage: alterações não salvas', () => {
     return { user, ...view }
   }
 
-  // Os dois primeiros combobox são formação e postura; o resto são os 11 slots.
+  // Ids dos 11 slots do campinho, na ordem do array (não na visual, que vai do
+  // ataque ao gol); '' = vazio.
   const slotValues = () =>
-    screen.getAllByRole<HTMLSelectElement>('combobox').slice(2).map((s) => s.value)
+    [...document.querySelectorAll<HTMLButtonElement>('button[data-slot]')]
+      .sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot))
+      .map((b) => b.dataset.playerId ?? '')
 
   const editPosture = (user: ReturnType<typeof userEvent.setup>) =>
     user.selectOptions(screen.getByLabelText('Postura'), 'OFFENSIVE')
@@ -117,6 +123,28 @@ describe('LineupPage: alterações não salvas', () => {
     expect(slotValues()).toEqual([...before.slice(0, 8), before[9], before[10], ''])
     expect(screen.getByText(UNSAVED)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Salvar escalação' })).toBeDisabled()
+  })
+
+  // Campinho (issue #110): o reserva entra pelo clique slot → reserva, e o
+  // rascunho continua sendo o mesmo de #109 (dirty, salvar habilitado).
+  it('slot vazio + reserva completa o time; dois titulares trocam de lugar', async () => {
+    const { user } = await open()
+    await user.selectOptions(screen.getByLabelText('Formação'), '4-3-3')
+    const reserves = within(screen.getByRole('region', { name: /Reservas/ }))
+    const benched = reserves.getByRole('button', { name: /Meio-campo/ })
+
+    await user.click(screen.getByRole('button', { name: 'Atacante 3: vazio' }))
+    await user.click(benched)
+
+    expect(screen.getByText('11/11 titulares')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Atacante 3: .*fora de posição$/ })).toBeInTheDocument()
+    expect(reserves.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Salvar escalação' })).toBeEnabled()
+
+    const before = slotValues()
+    await user.click(screen.getByRole('button', { name: /^Goleiro 1:/ }))
+    await user.click(screen.getByRole('button', { name: /^Zagueiro 1:/ }))
+    expect(slotValues()).toEqual([before[1], before[0], ...before.slice(2)])
   })
 
   it('abrir a tela não marca alteração nem bloqueia a saída', async () => {

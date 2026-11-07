@@ -92,7 +92,7 @@ goalfather/
 │       │   └── ClubPage.tsx          # elenco de um rival + formulário de proposta (issue #63)
 │       ├── components/               # apresentação pura, sem fetch
 │       │   ├── PlayerCard.tsx
-│       │   ├── FormationGrid.tsx
+│       │   ├── FormationGrid.tsx     # campinho da escalação + reservas; troca por clique/teclado (issue #110)
 │       │   ├── MatchEventFeed.tsx
 │       │   ├── PageTitle.tsx         # <title> por rota, içado ao <head> pelo React 19 (issue #114)
 │       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
