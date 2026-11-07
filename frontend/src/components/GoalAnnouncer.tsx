@@ -4,6 +4,14 @@ interface Props {
   events: MatchEvent[]
   homeName: string
   awayName: string
+  /**
+   * Placar que a tela mostra. Vem de fora, e não da contagem dos `Goal` de
+   * `events`, porque a `RoundPage` parte de um snapshot da rodada: quem entra
+   * no meio da partida recebe só os eventos seguintes, e contar apenas eles
+   * anunciaria um placar menor que o do cabeçalho.
+   */
+  homeGoals: number
+  awayGoals: number
 }
 
 /**
@@ -16,16 +24,14 @@ interface Props {
  * mudanças em regiões que já estavam montadas — então ela é sempre
  * renderizada, vazia até sair o primeiro gol.
  */
-export function GoalAnnouncer({ events, homeName, awayName }: Props) {
-  let home = 0
-  let away = 0
+export function GoalAnnouncer({ events, homeName, awayName, homeGoals, awayGoals }: Props) {
+  // `findLast` estreita o tipo pelo predicado; o último gol é o mais recente,
+  // então o placar atual é o placar logo depois dele.
+  const lastGoal = events.findLast((e) => e.type === 'Goal')
   let message = ''
-  for (const e of events) {
-    if (e.type !== 'Goal') continue
-    if (e.home) home++
-    else away++
-    const minutes = e.minute === 1 ? 'ao 1 minuto' : `aos ${e.minute} minutos`
-    message = `Gol do ${e.home ? homeName : awayName}, ${home} a ${away}, ${minutes}`
+  if (lastGoal?.type === 'Goal') {
+    const minutes = lastGoal.minute === 1 ? 'ao 1 minuto' : `aos ${lastGoal.minute} minutos`
+    message = `Gol do ${lastGoal.home ? homeName : awayName}, ${homeGoals} a ${awayGoals}, ${minutes}`
   }
 
   return (

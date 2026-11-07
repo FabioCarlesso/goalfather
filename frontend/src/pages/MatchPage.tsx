@@ -133,7 +133,13 @@ function MatchView({ matchId }: { matchId: string }) {
 
       <Scoreboard teams={teams} score={score} minute={lastMinute} status={status} />
       {/* Anúncio de gol para leitor de tela (issue #113) — só gols, não o feed todo. */}
-      <GoalAnnouncer events={events} homeName={teams?.home ?? ''} awayName={teams?.away ?? ''} />
+      <GoalAnnouncer
+        events={events}
+        homeName={teams?.home ?? ''}
+        awayName={teams?.away ?? ''}
+        homeGoals={score.home}
+        awayGoals={score.away}
+      />
 
       <MatchEventFeed
         events={events}

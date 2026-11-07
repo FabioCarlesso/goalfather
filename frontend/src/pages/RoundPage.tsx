@@ -340,6 +340,8 @@ export function RoundPage() {
             events={myMatchEvents}
             homeName={myMatch.homeClubName}
             awayName={myMatch.awayClubName}
+            homeGoals={matchStates.get(myMatch.matchId)?.homeGoals ?? myMatch.homeGoals}
+            awayGoals={matchStates.get(myMatch.matchId)?.awayGoals ?? myMatch.awayGoals}
           />
           <MatchEventFeed
             events={myMatchEvents}
