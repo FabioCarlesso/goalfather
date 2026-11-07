@@ -26,7 +26,9 @@ export function DashboardPage() {
         <h1 className="text-3xl font-bold text-slate-100">{club.name}</h1>
       </header>
 
-      <nav aria-label="Seções do clube" className="flex gap-1 overflow-x-auto border-b border-slate-800">
+      {/* `overflow-y-hidden` explícito: com só `overflow-x-auto`, o eixo Y vira
+          `auto` e qualquer pixel a mais de altura desenha uma barra vertical. */}
+      <nav aria-label="Seções do clube" className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-800">
         {DASHBOARD_TABS.map((tab) => (
           // `NavLink` marca a aba ativa com `aria-current="page"` sozinho.
           <NavLink
@@ -34,7 +36,7 @@ export function DashboardPage() {
             to={tab.path}
             className={({ isActive }) =>
               cx(
-                '-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                'whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
                 isActive
                   ? 'border-emerald-500 text-slate-100'
