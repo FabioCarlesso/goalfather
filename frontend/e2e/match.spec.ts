@@ -30,4 +30,19 @@ test.describe('Match drill-down', () => {
     await page.getByRole('link', { name: /Voltar para a rodada/i }).click()
     await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
   })
+
+  // Issue #115: no drill-down, pular = reconectar em INSTANT e reprocessar a
+  // partida desde o KickOff (o stream é determinístico pelo matchId).
+  test('pular para o fim mostra o apito final e o sumário', async ({ page }) => {
+    await page.goto('/round')
+    await page.getByLabel('Velocidade').selectOption('SLOW')
+    await page.locator('a[href^="/round/match/"]').first().click()
+
+    await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
+    await page.getByRole('button', { name: 'Pular para o fim' }).click()
+
+    await expect(page.getByText(/Estatísticas da partida/i)).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(/Fim de jogo/i)).toHaveCount(1)
+    await expect(page.getByText('FIM', { exact: true })).toBeVisible()
+  })
 })
