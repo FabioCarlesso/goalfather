@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { BoardReviewCard } from './RoundPage'
-import { useAuth } from '../auth/AuthContext'
-import { renderWithProviders } from '../test/render'
-import { server } from '../test/setup'
-import type { AuthUser, BoardReview } from '../domain/types'
+import { BoardReviewCard } from './BoardReviewCard'
+import { useAuth } from '../../auth/AuthContext'
+import { renderWithProviders } from '../../test/render'
+import { server } from '../../test/setup'
+import type { AuthUser, BoardReview } from '../../domain/types'
 
 const firedReview: BoardReview = {
   clubId: 1,

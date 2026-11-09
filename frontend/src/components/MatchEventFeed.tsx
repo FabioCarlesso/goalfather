@@ -29,8 +29,18 @@ export function MatchEventFeed({
   const nameOf = (id: number) => playerLookup?.get(id) ?? `#${id}`
 
   return (
+    // Região rolável precisa ser alcançável pelo teclado (axe
+    // `scrollable-region-focusable`, issue #113): sem foco, quem não usa mouse
+    // não rola o feed. Com a #112 o feed da rodada fica cheio depois do apito
+    // final, então o caso deixou de ser só da MatchPage. `region` + rótulo, e
+    // não `log`: o `aria-live` implícito do `log` repetiria os gols que o
+    // GoalAnnouncer já anuncia.
     <div
       ref={ref}
+      role="region"
+      aria-label="Lances da partida"
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
       className={`overflow-y-auto rounded-lg border border-slate-800 bg-slate-900/40 p-3 space-y-1 font-mono text-sm ${className}`}
     >
       {events.length === 0 ? (

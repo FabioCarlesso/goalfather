@@ -11,6 +11,8 @@ import { expect, test } from './helpers'
 
 test.describe('Round flow', () => {
   test('joga a rodada completa e atualiza a tabela', async ({ page }) => {
+    // Critério da issue #112: o resumo cabe sem rolagem em 1280×800.
+    await page.setViewportSize({ width: 1280, height: 800 })
     await page.goto('/round')
 
     await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
@@ -35,6 +37,20 @@ test.describe('Round flow', () => {
     // Extrato do treino da semana (issue #58) — o foco aplicado aparece
     // mesmo quando ninguem evoluiu.
     await expect(page.getByRole('heading', { name: /Treino da semana —/ })).toBeVisible()
+
+    // Resumo da rodada (issue #112): resultado, posicao e financas do clube
+    // do tecnico inteiros na tela, sem rolar. O botao fica no cabecalho do
+    // painel; o rodape (posicao + caixa) e o que tem mais chance de cair.
+    const summary = page.getByRole('region', { name: 'Resumo da rodada' })
+    await expect(summary.getByRole('heading', { name: 'Sua partida' })).toBeInViewport({ ratio: 1 })
+    await expect(summary.getByTestId('my-match-score')).toBeInViewport({ ratio: 1 })
+    await expect(summary.getByText(/Você está em \d+º/)).toBeInViewport({ ratio: 1 })
+    await expect(summary.getByText(/salários$/)).toBeInViewport({ ratio: 1 })
+    await expect(summary.getByRole('button', { name: 'Próxima rodada' })).toBeInViewport({ ratio: 1 })
+
+    // "Ver detalhes da partida" rola ate o feed da partida do usuario.
+    await summary.getByRole('button', { name: 'Ver detalhes da partida' }).click()
+    await expect(page.getByRole('heading', { name: /Detalhes da sua partida/ })).toBeInViewport()
 
     // Tabela por divisao (issue #47): as duas divisoes aparecem, com a zona
     // de promocao/rebaixamento indicada na legenda.
