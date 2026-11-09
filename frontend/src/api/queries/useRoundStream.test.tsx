@@ -68,6 +68,33 @@ async function startAndOpen(result: { current: ReturnType<typeof useRoundStream>
 }
 
 describe('deriveMatchStates', () => {
+  it('partida em andamento sem lance acompanha o relógio da rodada', () => {
+    const states = deriveMatchStates(round.matches, [
+      update(10, { type: 'KickOff', minute: 0 }),
+      update(11, { type: 'KickOff', minute: 0 }),
+      update(10, { type: 'Goal', minute: 32, home: true }),
+      update(11, { type: 'Card', minute: 46 }),
+    ])
+    expect(states.get(10)?.minute).toBe(46)
+    expect(states.get(11)?.minute).toBe(46)
+  })
+
+  it('partida encerrada não avança com o relógio das outras', () => {
+    const states = deriveMatchStates(round.matches, [
+      update(10, { type: 'KickOff', minute: 0 }),
+      update(11, { type: 'KickOff', minute: 0 }),
+      update(10, { type: 'FullTime', minute: 90, homeGoals: 0, awayGoals: 0 }),
+      update(11, { type: 'PenaltyShootout', minute: 120, homeScore: 5, awayScore: 4 }),
+    ])
+    expect(states.get(10)?.minute).toBe(90)
+    expect(states.get(11)?.minute).toBe(120)
+  })
+
+  it('partida que ainda não começou fica no minuto 0', () => {
+    const states = deriveMatchStates(round.matches, [update(10, { type: 'Goal', minute: 20, home: true })])
+    expect(states.get(11)).toMatchObject({ minute: 0, status: 'Scheduled' })
+  })
+
   it('aplica gols, pênaltis e o placar do FullTime sobre o estado inicial', () => {
     const states = deriveMatchStates(round.matches, [
       update(10, { type: 'KickOff', minute: 0 }),

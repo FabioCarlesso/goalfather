@@ -46,6 +46,7 @@ export function RoundSummary({
   const { played, season } = outcome
   const review = season?.boardReviews?.find((r) => r.clubId === myClubId)
   const fired = review?.verdict.type === 'Fired'
+  const table = myDivisionTable(outcome.standings, myClubId)
 
   return (
     <section
@@ -96,12 +97,9 @@ export function RoundSummary({
             Seu clube não jogou nesta data.
           </div>
         )}
-        <StandingsFinanceCard
-          table={myDivisionTable(outcome.standings, myClubId)}
-          myClubId={myClubId}
-          stage={played.stage}
-          finance={outcome.finance}
-        />
+        {table && (
+          <StandingsFinanceCard table={table} myClubId={myClubId} stage={played.stage} finance={outcome.finance} />
+        )}
         {outcome.training && <TrainingCard report={outcome.training} />}
       </div>
 
@@ -116,9 +114,13 @@ export function RoundSummary({
   )
 }
 
-/** Tabela da divisão do usuário (fallback: elite). */
-function myDivisionTable(tables: Standings[], myClubId: number): Standings {
-  return tables.find((t) => t.rows.some((r) => r.clubId === myClubId)) ?? tables[0]!
+/**
+ * Tabela da divisão do usuário (fallback: a primeira, a elite). Sem nenhuma
+ * tabela no `RoundFinished`, `undefined`: o resumo omite o card em vez de
+ * quebrar — `tables[0]!` só silenciava o compilador.
+ */
+function myDivisionTable(tables: Standings[], myClubId: number): Standings | undefined {
+  return tables.find((t) => t.rows.some((r) => r.clubId === myClubId)) ?? tables[0]
 }
 
 type Verdict = { label: string; tone: BadgeTone }

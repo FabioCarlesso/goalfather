@@ -82,6 +82,11 @@ export interface RoundStream {
 /**
  * Estado por partida: parte do que veio do REST e aplica os `MatchUpdate` em
  * ordem. Função pura, exportada para teste.
+ *
+ * Relógio: o backend emite os eventos de TODAS as partidas ordenados por
+ * minuto, então o minuto do último evento é o relógio da rodada. Partida em
+ * andamento acompanha esse relógio — antes, uma partida sem lance entre os
+ * minutos 32 e 46 ficava parada no 32' enquanto as outras andavam.
  */
 export function deriveMatchStates(
   matches: readonly RoundMatch[],
@@ -97,8 +102,10 @@ export function deriveMatchStates(
       ...(m.penalties ? { penalties: m.penalties } : {}),
     })
   }
+  let clock = 0
   for (const evt of events) {
     if (evt.type !== 'MatchUpdate') continue
+    clock = Math.max(clock, evt.event.minute)
     const cur = states.get(evt.matchId)
     if (!cur) continue
     const next: LiveMatchState = { ...cur, minute: evt.event.minute }
@@ -121,6 +128,9 @@ export function deriveMatchStates(
       // Card, Injury, Save e Miss não afetam placar/status
     }
     states.set(evt.matchId, next)
+  }
+  for (const [id, st] of states) {
+    if (st.status === 'InProgress' && st.minute < clock) states.set(id, { ...st, minute: clock })
   }
   return states
 }

@@ -126,6 +126,15 @@ describe('RoundSummary (issue #112)', () => {
     expect(screen.queryByTestId('board-review')).not.toBeInTheDocument()
   })
 
+  it('sem tabelas no RoundFinished, omite o card de posição em vez de quebrar', () => {
+    renderSummary({ outcome: { ...outcome, standings: [] } })
+
+    const summary = screen.getByRole('region', { name: 'Resumo da rodada' })
+    expect(within(summary).getByText('Vitória')).toBeInTheDocument()
+    expect(within(summary).queryByText(/Você está em/)).not.toBeInTheDocument()
+    expect(within(summary).getByText('Treino da semana — Ataque')).toBeInTheDocument()
+  })
+
   it('recebe o foco ao surgir, para quem estava rolando o feed', () => {
     renderSummary()
     expect(screen.getByRole('heading', { name: 'Resumo da rodada' })).toHaveFocus()
