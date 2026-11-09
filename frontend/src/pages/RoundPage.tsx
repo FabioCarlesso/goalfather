@@ -7,6 +7,9 @@ import { errorMessage } from '../api/errorMessages'
 import { useRoundReadiness, useMarkReady, roundReadinessKey } from '../api/queries/useRoundReadiness'
 import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
 import { wsUrl } from '../api/wsUrl'
+import { handOff } from '../api/streamHandoff'
+import { useStreamSpeed } from '../lib/useStreamSpeed'
+import { SpeedControl } from '../components/SpeedControl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { useAuth } from '../auth/AuthContext'
 import { standingsKey } from '../api/queries/useStandings'
@@ -33,6 +36,7 @@ import type {
   RoundStage,
   StandingRow,
   Standings,
+  StreamSpeed,
   TrainingReport,
 } from '../domain/types'
 import { Button } from '../components/ui/Button'
@@ -95,6 +99,10 @@ export function RoundPage() {
   const canStart = allReady || readiness?.timedOut === true
 
   const wsRef = useRef<WebSocket | null>(null)
+  // Velocidade escolhida (issue #115) e a da conexão em andamento: o seletor
+  // vale para a próxima transmissão; o "Pular para o fim" troca a atual.
+  const { speed, setSpeed } = useStreamSpeed()
+  const [liveSpeed, setLiveSpeed] = useState<StreamSpeed>(speed)
 
   // ─── Estado por partida derivado dos eventos ─────────────────────────
   const matchStates: Map<number, LiveMatchState> = useMemo(() => {
@@ -175,28 +183,37 @@ export function RoundPage() {
   }, [myMatchEvents])
 
   // ─── Ciclo de vida do WebSocket ──────────────────────────────────────
-  const startRound = useCallback(async () => {
+  // `skip` (issue #115): em vez de iniciar a rodada, troca a conexão em
+  // andamento por uma INSTANT que reprocessa o stream desde o início — por
+  // isso zera os eventos e NÃO chama o playRound de novo. Ver `handOff`.
+  const startRound = useCallback(async (skip = false) => {
     if (!round) return
-    wsRef.current?.close()
+    const previous = wsRef.current
+    if (!skip) previous?.close()
     setEvents([])
     setError(null)
     setFinalStandings(null)
     setFinalFinance(null)
     setTraining(null)
     setChampion(null)
-    setPlayedStage(round.stage)
-    setStatus('connecting')
+    const connectionSpeed: StreamSpeed = skip ? 'INSTANT' : speed
+    setLiveSpeed(connectionSpeed)
 
-    try {
-      await playRound.mutateAsync()
-    } catch (e) {
-      setError(`Falha ao iniciar rodada: ${errorMessage(e)}`)
-      setStatus('error')
-      return
+    if (!skip) {
+      setPlayedStage(round.stage)
+      setStatus('connecting')
+      try {
+        await playRound.mutateAsync()
+      } catch (e) {
+        setError(`Falha ao iniciar rodada: ${errorMessage(e)}`)
+        setStatus('error')
+        return
+      }
     }
 
-    const socket = new WebSocket(wsUrl(`/ws/round/${round.number}`))
+    const socket = new WebSocket(wsUrl(`/ws/round/${round.number}`, { speed: connectionSpeed }))
     wsRef.current = socket
+    if (skip) handOff(previous, socket)
 
     socket.onopen = () => setStatus('live')
     socket.onmessage = (e) => {
@@ -249,7 +266,7 @@ export function RoundPage() {
       setStatus((prev) => (prev === 'error' ? 'error' : 'finished'))
       if (e.code !== 1000 && e.code !== 1005 && e.reason) setError(e.reason)
     }
-  }, [round, playRound, qc, myClubId])
+  }, [round, playRound, qc, myClubId, speed])
 
   useEffect(() => {
     return () => wsRef.current?.close()
@@ -279,7 +296,7 @@ export function RoundPage() {
           </p>
         </div>
         <Button
-          onClick={startRound}
+          onClick={() => startRound()}
           disabled={busy || !canStart}
           title={!canStart ? 'Aguardando técnicos sinalizarem prontos (ou o timeout expirar)' : undefined}
         >
@@ -306,6 +323,14 @@ export function RoundPage() {
           {error}
         </div>
       )}
+
+      <SpeedControl
+        speed={speed}
+        onSpeedChange={setSpeed}
+        live={busy}
+        canSkip={status === 'live' && liveSpeed !== 'INSTANT'}
+        onSkip={() => startRound(true)}
+      />
 
       <RoundProgress
         minute={aggregateMinute}
