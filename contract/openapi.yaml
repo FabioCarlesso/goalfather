@@ -928,6 +928,19 @@ paths:
         Esta escolha de design (um WS por rodada em vez de N WS por
         partida) facilita a coordenação no backend Kotlin: um único
         `Flow<RoundEvent>` orquestra todas as simulações em paralelo.
+
+        **Velocidade e "pular para o fim" (issue #115).** O stream é gerado
+        POR CONEXÃO e é determinístico (cada partida usa o `matchId` como
+        seed), então a velocidade (`speed`) é escolha de cada cliente e não
+        afeta os outros técnicos. Não há mensagem cliente → servidor: para
+        "pular para o fim", o cliente abre uma NOVA conexão com
+        `speed=INSTANT`, reprocessa o stream desde o início (mesmos eventos)
+        e só então fecha a conexão antiga. A ordem importa: quem chega ao fim
+        primeiro encerra a rodada e recebe o `RoundFinished` completo
+        (`finances`, `training`, `SeasonFinished`); um stream que chega depois
+        recebe só o replay (`RoundFinished` com a tabela). Fechar a conexão
+        antiga antes faria o stream órfão (que segue sem pacing no servidor)
+        vencer essa corrida.
       parameters:
         - name: number
           in: path
@@ -942,6 +955,7 @@ paths:
             `Authorization` no handshake de WebSocket, então o token viaja aqui.
             Handshake sem token válido é rejeitado com 401.
           schema: { type: string }
+        - $ref: '#/components/parameters/StreamSpeedQuery'
       responses:
         '101':
           description: Switching Protocols — WebSocket estabelecido
@@ -988,6 +1002,7 @@ paths:
             `Authorization` no handshake de WebSocket, então o token viaja aqui.
             Handshake sem token válido é rejeitado com 401.
           schema: { type: string }
+        - $ref: '#/components/parameters/StreamSpeedQuery'
       responses:
         '101':
           description: Switching Protocols — conexão WebSocket estabelecida
@@ -1017,6 +1032,15 @@ components:
         exceto `/api/auth/register` e `/api/auth/login`.
 
   parameters:
+    StreamSpeedQuery:
+      name: speed
+      in: query
+      required: false
+      description: |
+        Ritmo da transmissão do WebSocket (issue #115) — ver `StreamSpeed`.
+        Ausente ou com valor desconhecido → `NORMAL` (o handshake nunca é
+        recusado por causa da velocidade).
+      schema: { $ref: '#/components/schemas/StreamSpeed' }
     ClubIdPath:
       name: id
       in: path
@@ -1161,6 +1185,25 @@ components:
         ataque, 5-3-2 à defesa e 4-4-2 é o eixo neutro. O peso é menor que o da
         `Posture` — a formação inclina, a postura decide.
       enum: ['4-4-2', '4-3-3', '3-5-2', '5-3-2']
+
+    StreamSpeed:
+      type: string
+      description: |
+        Velocidade da transmissão ao vivo nos WebSockets `/ws/round/{number}`
+        e `/ws/matches/{id}` (issue #115). Só muda o intervalo entre as
+        mensagens — os eventos e o resultado são idênticos em qualquer
+        velocidade, para o mesmo `matchId`.
+
+        | Valor     | Pausa por minuto simulado | Rodada (90')   |
+        |-----------|---------------------------|----------------|
+        | `SLOW`    | 160 ms                    | ~14 s          |
+        | `NORMAL`  | 80 ms                     | ~7 s           |
+        | `FAST`    | 20 ms                     | ~2 s           |
+        | `INSTANT` | 0 ms                      | < 1 s          |
+
+        O ritmo é responsabilidade do adapter WebSocket, nunca do domínio.
+      enum: [SLOW, NORMAL, FAST, INSTANT]
+      default: NORMAL
 
     Posture:
       type: string

@@ -23,9 +23,11 @@ import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import java.net.URI
+import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -48,10 +50,86 @@ class RoundWebSocketHandlerTest {
         emit(RoundEvent.RoundFinished(standings = emptyList()))
     }.onCompletion { if (it == null) completed.countDown() }
 
-    private fun session(open: AtomicBoolean): WebSocketSession = mockk(relaxed = true) {
+    private fun session(open: AtomicBoolean, query: String = ""): WebSocketSession = mockk(relaxed = true) {
         every { id } returns "s1"
-        every { uri } returns URI("ws://localhost/ws/round/1")
+        every { uri } returns URI("ws://localhost/ws/round/1$query")
         every { isOpen } answers { open.get() }
+    }
+
+    /** Resultado de uma conexão inteira: pausas pedidas e frames enviados. */
+    private data class Transmission(val pauses: List<Long>, val frames: List<String>)
+
+    /**
+     * Roda a rodada de [roundStream] numa sessão com [query] até o handler
+     * fechar a conexão. A pausa é só gravada (sem dormir): o teste verifica o
+     * ritmo pedido em vez de cronometrar — determinístico mesmo com a máquina
+     * carregada.
+     */
+    private fun transmit(query: String): Transmission {
+        val pauses = Collections.synchronizedList(mutableListOf<Long>())
+        val frames = Collections.synchronizedList(mutableListOf<String>())
+        val closed = CountDownLatch(1)
+        val session = session(AtomicBoolean(true), query)
+        every { session.sendMessage(any()) } answers { frames += (firstArg<TextMessage>()).payload }
+        every { session.close(any()) } answers { closed.countDown() }
+        val useCase = object : PlayRoundUseCase {
+            override fun stream(roundNumber: Int) = roundStream(CountDownLatch(1))
+        }
+
+        RoundWebSocketHandler(useCase, json, pause = { pauses += it }).afterConnectionEstablished(session)
+
+        assertTrue(closed.await(5, TimeUnit.SECONDS), "o handler deveria encerrar a conexão")
+        return Transmission(pauses.toList(), frames.toList())
+    }
+
+    // 9 saltos de 10 minutos entre os 10 MatchUpdate + o gap fixo do RoundFinished.
+    private fun expectedPauses(msPerMinute: Long) = List(9) { 10 * msPerMinute }.filter { it > 0 } + 50L
+
+    @Test
+    fun `speed ausente - ritmo NORMAL de 80ms por minuto`() {
+        assertEquals(expectedPauses(80), transmit("").pauses)
+    }
+
+    @Test
+    fun `speed valido - cada velocidade aplica o proprio intervalo`() {
+        assertEquals(expectedPauses(160), transmit("?speed=SLOW").pauses)
+        assertEquals(expectedPauses(20), transmit("?speed=FAST").pauses)
+        // INSTANT: só sobra o gap dos sinais de encerramento.
+        assertEquals(listOf(50L), transmit("?token=x&speed=INSTANT").pauses)
+    }
+
+    @Test
+    fun `speed invalido ou vazio - cai no NORMAL em vez de recusar o handshake`() {
+        assertEquals(expectedPauses(80), transmit("?speed=TURBO").pauses)
+        assertEquals(expectedPauses(80), transmit("?speed=").pauses)
+    }
+
+    @Test
+    fun `os frames sao identicos em qualquer velocidade`() {
+        val normal = transmit("?speed=NORMAL").frames
+        assertEquals(11, normal.size)
+        for (speed in StreamSpeed.entries) {
+            assertEquals(normal, transmit("?speed=$speed").frames, "frames divergentes em $speed")
+        }
+    }
+
+    @Test
+    fun `INSTANT com espera real - a rodada inteira chega em menos de 1s`() {
+        val closed = CountDownLatch(1)
+        val frames = AtomicInteger()
+        val session = session(AtomicBoolean(true), "?speed=INSTANT")
+        every { session.sendMessage(any()) } answers { frames.incrementAndGet() }
+        every { session.close(any()) } answers { closed.countDown() }
+        val useCase = object : PlayRoundUseCase {
+            override fun stream(roundNumber: Int) = roundStream(CountDownLatch(1))
+        }
+
+        val started = System.nanoTime()
+        RoundWebSocketHandler(useCase, json).afterConnectionEstablished(session)
+
+        assertTrue(closed.await(1, TimeUnit.SECONDS), "INSTANT deveria entregar a rodada em < 1s")
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) < 1000)
+        assertEquals(11, frames.get())
     }
 
     @Test
