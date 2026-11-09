@@ -42,10 +42,17 @@ describe('Fluxo de auth + seleção de clube', () => {
     const claimButtons = await screen.findAllByRole('button', { name: /treinar este clube/i })
     await user.click(claimButtons[0]!)
 
-    // Cai no dashboard do clube reivindicado. Confere a rota porque o card da
-    // seleção de clube também tem um heading com esse nome.
-    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'))
-    expect(await screen.findByRole('heading', { name: 'Goal Father FC' })).toBeInTheDocument()
+    // Cai no dashboard do clube reivindicado; com o clube carregado, `/dashboard`
+    // redireciona para a aba padrão (issue #107).
+    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard/visao-geral'))
+    // A rota muda antes do DOM: o React Router 7 navega dentro de
+    // `startTransition`, então a seleção de clube ainda pode estar na tela, com o
+    // card "Goal Father FC" (um h2). Procurar só pelo nome achava esse card, que
+    // saía do DOM logo depois, e o `toBeInTheDocument` falhava (intermitente no
+    // CI). Por isso esperamos a navegação das abas, que só existe na Dashboard
+    // montada, e conferimos o nome do clube no h1.
+    expect(await screen.findByRole('navigation', { name: 'Seções do clube' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Goal Father FC' })).toBeInTheDocument()
   })
 
   it('técnico demitido cai na tela de game over e recomeça pela seleção (issue #62)', async () => {

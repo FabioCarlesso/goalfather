@@ -9,6 +9,11 @@
  * então trocar literal por token não muda a aparência. `inline` faz o utilitário
  * referenciar direto `var(--color-slate-900)` etc., em vez de uma variável
  * intermediária — recomendado pelo Tailwind quando o token aponta para outro token.
+ *
+ * Contraste WCAG AA (issue #113): `text-muted` é slate-400 (~7:1 sobre o fundo;
+ * slate-500 dava ~4,1:1 e slate-600 ~2,6:1) e `accent` é emerald-700, porque o
+ * texto branco do botão primário sobre emerald-600 dava só ~3,8:1. Os `hover:`
+ * escurecem (emerald-800, red-700) em vez de clarear, pelo mesmo motivo.
  */
 @theme inline {
   --color-surface: var(--color-slate-950);
@@ -16,7 +21,7 @@
   --color-border: var(--color-slate-800);
   --color-text: var(--color-slate-100);
   --color-text-muted: var(--color-slate-400);
-  --color-accent: var(--color-emerald-600);
+  --color-accent: var(--color-emerald-700);
   --color-danger: var(--color-red-600);
   --color-warning: var(--color-amber-500);
 }

@@ -32,7 +32,7 @@
 | Tipos gerados | **`openapi-typescript`** | Gera `.d.ts` do `openapi.yaml` |
 | WebSocket | **`native WebSocket` + mock server local** | Stream de `MatchEvent` ao vivo |
 | Testes | **Vitest** + **React Testing Library** + **Playwright** (E2E) | Vitest = Jest compatível, Playwright = fluxo de partida |
-| Lint / format | **ESLint** + **Prettier** | Padrão |
+| Lint / format | **ESLint** (+ `jsx-a11y`) + **Prettier** | Padrão; a11y estática no lint, axe no E2E |
 
 > **Decisões deliberadas:**
 > - **Sem Next.js / SSR.** GoalFather é SPA single-player; SSR só agrega complexidade.
@@ -81,7 +81,9 @@ goalfather/
 │       │   ├── board.ts              # meta, confiança e veredito da diretoria (espelha BoardRules.kt, issue #62)
 │       │   └── offers.ts             # regras das propostas entre técnicos (espelha TransferOfferRules.kt, issue #63)
 │       ├── pages/
-│       │   ├── DashboardPage.tsx
+│       │   ├── DashboardPage.tsx     # cabeçalho + abas em sub-rotas /dashboard/<aba> com <Outlet> (issue #107)
+│       │   ├── dashboard/            # abas da Dashboard: OverviewTab (stats, diretoria, propostas), SquadTab (elenco + venda),
+│       │   │                         #   FinancesTab (ingresso, estádio), DepartmentTab (treino, médico); routes.tsx e tabs.ts
 │       │   ├── LineupPage.tsx
 │       │   ├── MatchPage.tsx         # consome WS
 │       │   ├── MarketPage.tsx
@@ -92,11 +94,14 @@ goalfather/
 │       │   └── ClubPage.tsx          # elenco de um rival + formulário de proposta (issue #63)
 │       ├── components/               # apresentação pura, sem fetch
 │       │   ├── PlayerCard.tsx
-│       │   ├── FormationGrid.tsx
+│       │   ├── FormationGrid.tsx     # campinho da escalação + reservas; troca por clique/teclado (issue #110)
 │       │   ├── MatchEventFeed.tsx
 │       │   ├── PageTitle.tsx         # <title> por rota, içado ao <head> pelo React 19 (issue #114)
 │       │   ├── BoardPanel.tsx        # painel da diretoria na Dashboard (issue #62)
 │       │   ├── OffersPanel.tsx       # propostas recebidas/enviadas na Dashboard (issue #63)
+│       │   ├── TrainingPanel.tsx, TicketPricePanel.tsx, StadiumExpandPanel.tsx, MedicalDepartmentPanel.tsx
+│       │   │                         # painéis das abas da Dashboard: dados e callbacks por props (issue #107)
+│       │   ├── SquadList.tsx         # elenco da Dashboard; SellPlayerModal.tsx confirma a venda, SaleFeedback.tsx (issue #107)
 │       │   ├── ui/                   # primitivas visuais: Button, Card, Badge, Stat, Modal (issue #104); ErrorState, LoadingState, EmptyState (issue #105)
 │       │   ├── layout/               # AppLayout + menus: barra em ≥ lg, botão de menu abaixo (issue #106)
 │       │   └── ...
@@ -338,6 +343,13 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 - `workers: 1` e sem `fullyParallel` no modo real: dois testes simultâneos resetariam a liga um do outro. A suíte leva ~1,2 min.
 - Sem retry no modo real, nem no CI (o mock mantém 2): um teste que só passasse na segunda tentativa esconderia justamente a dependência de ordem e estado que o reset eliminou.
 - Limitação conhecida: uma simulação de rodada que ainda esteja rodando quando o teste acaba pode gravar depois do reset. Sem cliente no WS ela termina em milissegundos, e nos runs de validação isso não apareceu.
+
+**Acessibilidade (issue #113, alvo WCAG 2.1 AA):** duas barreiras contra regressão.
+- **Lint:** `eslint-plugin-jsx-a11y` (`flatConfigs.recommended`) roda no `npm run lint`. Pega o que é visível no JSX: botão/link sem nome, `onClick` em `div` sem teclado, `img` sem `alt`, `label` sem controle. O plugin (6.10.x) ainda declara peer `eslint ≤ 9`, então o `package.json` tem um `overrides` que o deixa usar o ESLint 10 do projeto. As regras funcionam normalmente; remova o override quando sair uma versão com suporte oficial.
+- **E2E:** `e2e/a11y.spec.ts` roda o `@axe-core/playwright` (tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`) nas 4 abas do Clube, Escalação, Rodada, Mercado, Tabela, Copa, Histórico e Login, mais a Rodada depois de jogada (feed cheio e sumário). Falha em violações `serious`/`critical` e lista regra e seletores na mensagem. Pega o que só existe renderizado: contraste, `lang`, nome acessível calculado. Roda só contra o MSW; o markup não muda no `e2e:real`.
+- **Convenções:** texto secundário usa `text-text-muted` (slate-400), nunca `text-slate-500`/`600` sobre o fundo escuro. Botão só com símbolo (`×`) leva `aria-label`. `<th>` leva `scope="col"`. Gols ao vivo são anunciados por uma região `sr-only` `aria-live="polite"` (`GoalAnnouncer`), não pelo feed inteiro, que narraria cada lance.
+
+**Bug visual em teste manual? Confira num perfil limpo (issue #119).** Extensões do navegador podem mudar o estilo calculado da página. Na #119, o `::backdrop` do `Modal` aparecia oliva e opaco num Chrome 157 com extensões. Mas o mesmo Chrome com perfil limpo, e o Chromium do Playwright, calculavam `oklab(0 0 0 / 0.6)`, o valor certo. Para reproduzir com um perfil limpo, rode o spec com o Chrome do sistema: `launchOptions.executablePath: '/usr/bin/google-chrome'` numa config temporária do Playwright. O `e2e/modal.spec.ts` ficou como guarda de regressão do backdrop.
 
 **Decisão registrada:** WS handlers do MSW são no-op em `setupServer` (`msw/node`). Para validar o stream de partida ao vivo, usa-se Playwright (browser real) com MSW interceptando o `new WebSocket()`.
 

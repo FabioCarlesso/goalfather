@@ -38,7 +38,7 @@ export function AppLayout() {
             {/* Indicador de ambiente só em dev (issue #114): o build de produção
                 elimina o ramo, pois `import.meta.env.DEV` vira `false` literal. */}
             {import.meta.env.DEV && (
-              <span className="whitespace-nowrap font-mono text-xs text-slate-500">
+              <span className="whitespace-nowrap font-mono text-xs text-text-muted">
                 {import.meta.env.VITE_USE_MOCKS === 'false' ? 'API real' : 'MSW mock'}
               </span>
             )}

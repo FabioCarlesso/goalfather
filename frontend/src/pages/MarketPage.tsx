@@ -90,7 +90,7 @@ export function MarketPage() {
 
           {visible.length === 0 ? (
             <div className="flex flex-wrap items-center gap-3">
-              <p className="text-slate-500 italic">Nenhum jogador encontrado.</p>
+              <p className="text-text-muted italic">Nenhum jogador encontrado.</p>
               <Button
                 variant="secondary"
                 size="sm"
@@ -108,13 +108,13 @@ export function MarketPage() {
                 >
                   <div className="min-w-0 flex-1 basis-40">
                     <div className="text-slate-100 font-medium truncate">{entry.player.name}</div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-text-muted">
                       {POSITION_ABBR[entry.player.position]} · {entry.player.age}a · OVR {entry.player.overall}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-slate-100 font-mono">{formatMoney(entry.price)}</div>
-                    <div className="text-xs text-slate-500">salário {formatMoney(entry.player.salary)}</div>
+                    <div className="text-xs text-text-muted">salário {formatMoney(entry.player.salary)}</div>
                     {/* Comparação de exibição entre dois números do contrato, NÃO regra de
                         transferência: quem decide é o backend (`InsufficientFunds`), por isso
                         o botão continua habilitado. */}

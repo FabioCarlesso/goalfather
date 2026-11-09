@@ -16,6 +16,7 @@ import { RoundPage } from './RoundPage'
 import { SelectClubPage } from './SelectClubPage'
 import { StandingsPage } from './StandingsPage'
 import { renderWithProviders } from '../test/render'
+import { renderDashboard } from '../test/renderDashboard'
 import { server } from '../test/setup'
 import { seasonRecordOf, state } from '../mocks/seed'
 import { standingsKey } from '../api/queries/useStandings'
@@ -181,12 +182,12 @@ describe('estados de tela (issue #105)', () => {
 
   describe('erros de mutation inline usam errorMessage()', () => {
     it.each([
-      { button: 'Ampliar', url: '/api/clubs/1/stadium/expand' },
-      { button: 'Tratar elenco', url: '/api/clubs/1/medical' },
-    ])('DashboardPage: $button', async ({ button, url }) => {
+      { button: 'Ampliar', url: '/api/clubs/1/stadium/expand', tab: 'financas' },
+      { button: 'Tratar elenco', url: '/api/clubs/1/medical', tab: 'departamento' },
+    ])('DashboardPage: $button', async ({ button, url, tab }) => {
       const user = userEvent.setup()
       failOnce(url, 'post')
-      renderWithProviders(<DashboardPage />)
+      renderDashboard(`/dashboard/${tab}`)
 
       await user.click(await screen.findByRole('button', { name: button }))
 
