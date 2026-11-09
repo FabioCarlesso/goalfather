@@ -189,6 +189,48 @@ describe('useRoundStream (issue #112)', () => {
     expect(second).not.toBe(first)
   })
 
+  it('abre o stream na velocidade escolhida (issue #115)', async () => {
+    const { result } = renderStream()
+    const socket = await startAndOpen(result)
+    expect(socket.url).toContain('/ws/round/3')
+    expect(socket.url).toContain('speed=NORMAL')
+    expect(result.current.liveSpeed).toBe('NORMAL')
+  })
+
+  it('pular para o fim abre uma conexão INSTANT e só fecha a antiga quando ela termina (issue #115)', async () => {
+    const playCalls = vi.fn()
+    const countPlay = ({ request }: { request: Request }) => {
+      if (request.method === 'POST' && request.url.endsWith('/api/league/round/play')) playCalls()
+    }
+    server.events.on('request:start', countPlay)
+    const { result } = renderStream()
+    const first = await startAndOpen(result)
+    first.emit(update(10, { type: 'Goal', minute: 20, home: true }))
+    const callsBefore = playCalls.mock.calls.length
+
+    act(() => result.current.skip())
+    const second = FakeSocket.last()
+    expect(second).not.toBe(first)
+    expect(second.url).toContain('speed=INSTANT')
+    expect(result.current.liveSpeed).toBe('INSTANT')
+    // Não joga a rodada de novo: só reprocessa o stream.
+    expect(playCalls.mock.calls.length).toBe(callsBefore)
+    // A antiga fica aberta, mas muda: estado recomeça do zero.
+    expect(first.closed).toBe(false)
+    expect(first.onmessage).toBeNull()
+    expect(result.current.matchStates.get(10)?.homeGoals).toBe(0)
+
+    second.open()
+    second.emit(update(10, { type: 'Goal', minute: 20, home: true }))
+    second.emit({ type: 'RoundFinished', standings: [table], finances: [], training: [] } as unknown as RoundEvent)
+    second.serverClose()
+    expect(first.closed).toBe(true)
+    expect(result.current.status).toBe('finished')
+    expect(result.current.outcome?.played.number).toBe(3)
+    expect(playCalls).toHaveBeenCalledTimes(1) // só o do start
+    server.events.removeListener('request:start', countPlay)
+  })
+
   it('fecha o socket ao desmontar', async () => {
     const { result, unmount } = renderStream()
     const socket = await startAndOpen(result)

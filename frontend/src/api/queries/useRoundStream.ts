@@ -8,6 +8,7 @@ import { cupKey } from './useCup'
 import { boardKey } from './useBoard'
 import { errorMessage } from '../errorMessages'
 import { wsUrl } from '../wsUrl'
+import { handOff } from '../streamHandoff'
 import type {
   MatchEvent,
   MatchStats,
@@ -17,6 +18,7 @@ import type {
   RoundFinance,
   RoundMatch,
   Standings,
+  StreamSpeed,
   TrainingReport,
 } from '../../domain/types'
 
@@ -56,6 +58,13 @@ export interface RoundStream {
   error: string | null
   /** Chama `playRound` e abre o stream da data corrente. */
   start: () => Promise<void>
+  /**
+   * "Pular para o fim" (issue #115): troca a conexão em andamento por uma
+   * `INSTANT`, que reprocessa a rodada desde o início. Não chama `playRound`.
+   */
+  skip: () => void
+  /** Velocidade da conexão em andamento (o seletor só vale para a próxima). */
+  liveSpeed: StreamSpeed
   /** Data exibida: a jogada (do início da rodada em diante) ou a corrente. */
   shownRound: Round | undefined
   matchStates: Map<number, LiveMatchState>
@@ -130,7 +139,11 @@ function discard(socket: WebSocket | null) {
   socket.close()
 }
 
-export function useRoundStream(round: Round | undefined, myClubId: number): RoundStream {
+export function useRoundStream(
+  round: Round | undefined,
+  myClubId: number,
+  speed: StreamSpeed = 'NORMAL',
+): RoundStream {
   const qc = useQueryClient()
   const playRound = usePlayRound()
 
@@ -147,6 +160,7 @@ export function useRoundStream(round: Round | undefined, myClubId: number): Roun
   // em vez da rodada de liga que acabou de ser jogada — e a grade e o feed
   // mostrariam partidas que ainda nem começaram.
   const [playedRound, setPlayedRound] = useState<Round | null>(null)
+  const [liveSpeed, setLiveSpeed] = useState<StreamSpeed>(speed)
 
   const wsRef = useRef<WebSocket | null>(null)
 
@@ -205,15 +219,22 @@ export function useRoundStream(round: Round | undefined, myClubId: number): Roun
    * Abre o stream da data `roundNumber` do zero: solta o socket anterior,
    * descarta o estado acumulado e reprocessa tudo o que chegar. Ponto ÚNICO
    * onde a URL do WebSocket é montada.
+   *
+   * Com `keepPrevious` (o "Pular para o fim" da #115) o socket anterior não
+   * fecha já: fica mudo e só fecha quando o novo terminar — ver `handOff`,
+   * que explica a corrida pelo `RoundFinished` completo no backend.
    */
   const openStream = useCallback(
-    (roundNumber: number) => {
-      discard(wsRef.current)
+    (roundNumber: number, connectionSpeed: StreamSpeed, keepPrevious = false) => {
+      const previous = wsRef.current
+      if (!keepPrevious) discard(previous)
       resetStream()
       setStatus('connecting')
+      setLiveSpeed(connectionSpeed)
 
-      const socket = new WebSocket(wsUrl(`/ws/round/${roundNumber}`))
+      const socket = new WebSocket(wsUrl(`/ws/round/${roundNumber}`, { speed: connectionSpeed }))
       wsRef.current = socket
+      if (keepPrevious) handOff(previous, socket)
 
       socket.onopen = () => setStatus('live')
       socket.onmessage = (e) => {
@@ -251,8 +272,14 @@ export function useRoundStream(round: Round | undefined, myClubId: number): Roun
       return
     }
 
-    openStream(round.number)
-  }, [round, playRound, resetStream, openStream])
+    openStream(round.number, speed)
+  }, [round, playRound, resetStream, openStream, speed])
+
+  const skip = useCallback(() => {
+    // Só faz sentido com uma transmissão em andamento da data jogada.
+    if (!playedRound || !wsRef.current) return
+    openStream(playedRound.number, 'INSTANT', true)
+  }, [playedRound, openStream])
 
   useEffect(() => () => discard(wsRef.current), [])
 
@@ -310,6 +337,8 @@ export function useRoundStream(round: Round | undefined, myClubId: number): Roun
     status,
     error,
     start,
+    skip,
+    liveSpeed,
     shownRound,
     matchStates,
     aggregateMinute,

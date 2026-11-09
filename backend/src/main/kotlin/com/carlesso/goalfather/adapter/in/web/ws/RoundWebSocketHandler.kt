@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -23,10 +24,17 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
  * `RoundEvent` como JSON — sempre via `RoundEventDto` (issue #72): o domínio
  * não cruza a fronteira web, nem por REST nem por WebSocket.
  *
- * Pequenos delays entre frames (80ms por minuto) sao responsabilidade
- * DESTE adapter — o use case retorna o Flow inteiro de uma vez. Aqui
- * intercalamos delay proporcional ao minuto entre mensagens, mantendo
- * a sensacao de partida ao vivo.
+ * Pequenos delays entre frames (80ms por minuto por padrão) sao
+ * responsabilidade DESTE adapter — o use case retorna o Flow inteiro de uma
+ * vez. Aqui intercalamos delay proporcional ao minuto entre mensagens,
+ * mantendo a sensacao de partida ao vivo.
+ *
+ * Velocidade (issue #115): o cliente escolhe o ritmo no handshake
+ * (`?speed=SLOW|NORMAL|FAST|INSTANT`, ver [StreamSpeed]); ausente ou inválido
+ * → `NORMAL`. Como o stream é gerado POR CONEXÃO e é determinístico, a
+ * velocidade de um técnico não afeta os outros, e os eventos são idênticos em
+ * qualquer ritmo. "Pular para o fim" não tem mensagem própria: o cliente abre
+ * outra conexão com `INSTANT` e só depois fecha a antiga (ver o contrato).
  *
  * Ciclo de vida: a coroutine da sessão NÃO é cancelada quando o cliente sai.
  * O stream é o que encerra a rodada (claim `finishRound` + efeitos, depois do
@@ -38,12 +46,18 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 class RoundWebSocketHandler(
     private val playRound: PlayRoundUseCase,
     private val json: Json,
+    // Ponto de injeção da espera entre frames: os testes trocam por um
+    // gravador e verificam o ritmo sem dormir de verdade. Parâmetro com tipo
+    // função `suspend` e valor default — o Spring segue chamando o construtor
+    // de 2 argumentos, sem precisar de interface/bean só para isso.
+    private val pause: suspend (Long) -> Unit = { delay(it) },
 ) : TextWebSocketHandler() {
 
     private val log = LoggerFactory.getLogger(RoundWebSocketHandler::class.java)
 
     companion object {
-        const val MS_PER_MINUTE: Long = 80
+        /** Pausa antes dos sinais de encerramento, em qualquer velocidade. */
+        const val END_SIGNAL_GAP_MS: Long = 50
     }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
@@ -53,7 +67,8 @@ class RoundWebSocketHandler(
             return
         }
 
-        log.info("WS round connected: session={} round={}", session.id, number)
+        val speed = session.streamSpeed()
+        log.info("WS round connected: session={} round={} speed={}", session.id, number, speed)
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch {
@@ -62,25 +77,25 @@ class RoundWebSocketHandler(
                 playRound.stream(number).collect { event ->
                     val delayMs = when (event) {
                         is RoundEvent.MatchUpdate -> {
-                            val gap = (event.event.minute - lastMinute) * MS_PER_MINUTE
+                            val gap = speed.gapMs(lastMinute, event.event.minute)
                             lastMinute = event.event.minute
-                            gap.coerceAtLeast(0)
+                            gap
                         }
                         // Sinais de encerramento (rodada/temporada): pequeno gap
-                        // para o cliente processar os últimos FullTime antes deles.
-                        is RoundEvent.RoundFinished -> 50L
-                        is RoundEvent.SeasonFinished -> 50L
+                        // para o cliente processar os últimos FullTime antes
+                        // deles — mantido mesmo em INSTANT (custa 100ms, não 1s).
+                        is RoundEvent.RoundFinished, is RoundEvent.SeasonFinished -> END_SIGNAL_GAP_MS
                     }
                     // Pacing só para quem está assistindo: com a aba fechada, a
                     // rodada corre até o fim sem esperar (ver KDoc da classe).
-                    if (delayMs > 0 && session.isOpen) kotlinx.coroutines.delay(delayMs)
+                    if (delayMs > 0 && session.isOpen) pause(delayMs)
                     if (session.isOpen) {
                         val payload = json.encodeToString(RoundEventDto.serializer(), event.toDto())
                         session.sendMessage(TextMessage(payload))
                     }
                 }
                 if (session.isOpen) {
-                    kotlinx.coroutines.delay(50)
+                    delay(END_SIGNAL_GAP_MS)
                     session.close(CloseStatus.NORMAL.withReason("Rodada encerrada"))
                 }
             } catch (e: CancellationException) {

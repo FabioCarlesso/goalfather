@@ -65,4 +65,40 @@ test.describe('Round flow', () => {
       .filter({ hasText: /^[1-9]\d*$/ })
       .first()).toBeVisible()
   })
+
+  // Issue #115: "Pular para o fim" abre uma conexão INSTANT e a antiga só fecha
+  // depois. O extrato do treino só vem no RoundFinished de quem ENCERRA a
+  // rodada — vê-lo aqui prova que a conexão nova venceu a corrida (no backend
+  // real, a antiga também está viva) e que nada do resumo se perdeu.
+  test('pular para o fim leva ao resumo completo da rodada', async ({ page }) => {
+    await page.goto('/round')
+    await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
+    // Lenta: garante que a rodada ainda está no ar quando o clique chegar.
+    await page.getByLabel('Velocidade').selectOption('SLOW')
+
+    await page.getByRole('button', { name: 'Estou pronto' }).click()
+    await page.getByRole('button', { name: 'Jogar rodada' }).click()
+    await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
+
+    await page.getByRole('button', { name: 'Pular para o fim' }).click()
+
+    // Em INSTANT o fim chega em bem menos que os ~14s da velocidade lenta.
+    await expect(page.getByText(/Pontuações atualizadas após a rodada/i)).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByRole('heading', { name: /Treino da semana —/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Pular para o fim' })).toHaveCount(0)
+    // Finanças também só vêm no RoundFinished completo.
+    await expect(page.getByText(/bilheteria/)).toBeVisible()
+    // Placares aplicados à tabela: o líder pontuou.
+    await expect(page.getByRole('listitem').filter({ hasText: /pts/ }).first()).toHaveText(/[1-9]\d* pts/)
+  })
+
+  test('lembra a velocidade escolhida entre sessões', async ({ page }) => {
+    await page.goto('/round')
+    const select = page.getByLabel('Velocidade')
+    await expect(select).toHaveValue('NORMAL')
+    await select.selectOption('FAST')
+
+    await page.reload()
+    await expect(page.getByLabel('Velocidade')).toHaveValue('FAST')
+  })
 })

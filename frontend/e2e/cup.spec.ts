@@ -13,6 +13,9 @@ test.describe('Cup flow', () => {
 
     // Data 1: rodada de liga.
     await expect(page.getByRole('heading', { name: 'Rodada 1' })).toBeVisible()
+    // Instantânea (issue #115): o placar é o mesmo em qualquer velocidade, e a
+    // copa não precisa de 2 × ~7s de transmissão para ser testada.
+    await page.getByLabel('Velocidade').selectOption('INSTANT')
     await page.getByRole('button', { name: 'Estou pronto' }).click()
     await page.getByRole('button', { name: 'Jogar rodada' }).click()
     await expect(page.getByText(/Pontuações atualizadas após a rodada 1/i)).toBeVisible({ timeout: 30_000 })

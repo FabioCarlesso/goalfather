@@ -15,6 +15,8 @@ export class FakeWebSocket {
   onclose: ((e: { code: number; reason: string }) => void) | null = null
   closed = false
   readonly url: string
+  // Listeners de `close` via addEventListener (o `handOff` da #115 usa).
+  private closeListeners: (() => void)[] = []
 
   constructor(url: string) {
     this.url = url
@@ -32,6 +34,10 @@ export class FakeWebSocket {
     this.closed = true
   }
 
+  addEventListener(type: string, listener: () => void) {
+    if (type === 'close') this.closeListeners.push(listener)
+  }
+
   open() {
     act(() => this.onopen?.())
   }
@@ -42,6 +48,9 @@ export class FakeWebSocket {
   }
 
   serverClose(code = 1000, reason = '') {
-    act(() => this.onclose?.({ code, reason }))
+    act(() => {
+      this.onclose?.({ code, reason })
+      this.closeListeners.forEach((l) => l())
+    })
   }
 }

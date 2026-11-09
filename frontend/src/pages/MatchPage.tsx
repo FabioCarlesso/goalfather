@@ -8,8 +8,10 @@ import { useMyClubId } from '../auth/useMyClubId'
 import { GoalAnnouncer } from '../components/GoalAnnouncer'
 import { MatchEventFeed } from '../components/MatchEventFeed'
 import { MatchStatsSummary } from '../components/MatchStatsSummary'
+import { SpeedControl } from '../components/SpeedControl'
+import { useStreamSpeed } from '../lib/useStreamSpeed'
 import { POSTURE_LABEL } from '../domain/formations'
-import type { MatchEvent, MatchStats, Posture } from '../domain/types'
+import type { MatchEvent, MatchStats, Posture, StreamSpeed } from '../domain/types'
 
 type Status = 'connecting' | 'live' | 'finished' | 'error'
 
@@ -44,6 +46,10 @@ function MatchView({ matchId }: { matchId: string }) {
   const [events, setEvents] = useState<MatchEvent[]>([])
   const [status, setStatus] = useState<Status>('connecting')
   const [error, setError] = useState<string | null>(null)
+  // Velocidade (issue #115): a preferência vale para a próxima conexão; a da
+  // conexão atual só muda no "Pular para o fim", que reconecta em INSTANT.
+  const { speed, setSpeed } = useStreamSpeed()
+  const [connectionSpeed, setConnectionSpeed] = useState<StreamSpeed>(speed)
 
   // Os ids dos dois clubes vêm da rodada corrente (o KickOff só traz nomes).
   // Partida fora da rodada (ex.: drill-down standalone) → resolve ao menos o
@@ -52,9 +58,10 @@ function MatchView({ matchId }: { matchId: string }) {
   const playerLookup = useMatchPlayerLookup(match?.homeClubId ?? myClubId, match?.awayClubId)
 
   // Conecta ao montar. Como o componente é remontado via `key` quando o
-  // `matchId` muda, não há reset de estado manual aqui.
+  // `matchId` muda, não há reset de estado manual aqui. Reconecta quando a
+  // velocidade da conexão muda (só no "Pular para o fim").
   useEffect(() => {
-    const socket = new WebSocket(wsUrl(`/ws/matches/${matchId}`))
+    const socket = new WebSocket(wsUrl(`/ws/matches/${matchId}`, { speed: connectionSpeed }))
 
     socket.onopen = () => setStatus('live')
     socket.onmessage = (e) => {
@@ -73,8 +80,25 @@ function MatchView({ matchId }: { matchId: string }) {
       if (e.code !== 1000 && e.code !== 1005 && e.reason) setError(e.reason)
     }
 
-    return () => socket.close()
-  }, [matchId])
+    return () => {
+      // Handlers fora antes do close: o `onclose` assíncrono da conexão velha
+      // marcaria 'finished' por cima da nova. O drill-down não grava nada, então
+      // aqui (ao contrário da rodada) fechar já não tem corrida no servidor.
+      socket.onopen = null
+      socket.onmessage = null
+      socket.onerror = null
+      socket.onclose = null
+      socket.close()
+    }
+  }, [matchId, connectionSpeed])
+
+  // O stream é determinístico (seed = matchId): a conexão INSTANT reenvia a
+  // partida inteira desde o KickOff, então o acumulado é descartado.
+  const skipToEnd = () => {
+    setEvents([])
+    setStatus('connecting')
+    setConnectionSpeed('INSTANT')
+  }
 
   const teams = useMemo<Teams | null>(() => {
     const kickOff = events.find((e) => e.type === 'KickOff')
@@ -130,6 +154,14 @@ function MatchView({ matchId }: { matchId: string }) {
           {error}
         </div>
       )}
+
+      <SpeedControl
+        speed={speed}
+        onSpeedChange={setSpeed}
+        live={status === 'live'}
+        canSkip={status === 'live' && connectionSpeed !== 'INSTANT'}
+        onSkip={skipToEnd}
+      />
 
       <Scoreboard teams={teams} score={score} minute={lastMinute} status={status} />
       {/* Anúncio de gol para leitor de tela (issue #113) — só gols, não o feed todo. */}

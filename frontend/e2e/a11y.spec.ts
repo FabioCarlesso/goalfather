@@ -56,6 +56,8 @@ test.describe('Acessibilidade (axe)', () => {
   // confere a região `aria-live` dos gols contra o próprio feed.
   test('Rodada jogada sem violações e com gols anunciados', async ({ page }) => {
     await page.goto('/round')
+    // Instantânea (issue #115): a auditoria é do markup final, não do ritmo.
+    await page.getByLabel('Velocidade').selectOption('INSTANT')
     await page.getByRole('button', { name: 'Estou pronto' }).click()
     await page.getByRole('button', { name: 'Jogar rodada' }).click()
     await expect(page.getByText(/Pontuações atualizadas após a rodada/i)).toBeVisible({

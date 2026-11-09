@@ -4,6 +4,8 @@ import { useCurrentRound } from '../api/queries/useCurrentRound'
 import { useRoundReadiness, useMarkReady } from '../api/queries/useRoundReadiness'
 import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
 import { useRoundStream } from '../api/queries/useRoundStream'
+import { useStreamSpeed } from '../lib/useStreamSpeed'
+import { SpeedControl } from '../components/SpeedControl'
 import { useMyClubId } from '../auth/useMyClubId'
 import { useAuth } from '../auth/AuthContext'
 import { GoalAnnouncer } from '../components/GoalAnnouncer'
@@ -26,7 +28,10 @@ export function RoundPage() {
   // WebSocket da rodada + estado derivado dele (issue #112). `shownRound` é a
   // data JOGADA desde o início da rodada — o RoundFinished faz `round` virar a
   // próxima, que é a que o botão "Próxima rodada" vai jogar.
-  const stream = useRoundStream(round, myClubId)
+  // Velocidade escolhida (issue #115): vale para a próxima transmissão; o
+  // "Pular para o fim" troca a atual por uma INSTANT (`stream.skip`).
+  const { speed, setSpeed } = useStreamSpeed()
+  const stream = useRoundStream(round, myClubId, speed)
   const { status, error, shownRound, matchStates, myMatch, myMatchEvents, myMatchStats, outcome } = stream
 
   // Prontidão da liga compartilhada (issue #20). Durante a partida ao vivo o
@@ -127,6 +132,14 @@ export function RoundPage() {
           {error}
         </div>
       )}
+
+      <SpeedControl
+        speed={speed}
+        onSpeedChange={setSpeed}
+        live={busy}
+        canSkip={status === 'live' && stream.liveSpeed !== 'INSTANT'}
+        onSkip={stream.skip}
+      />
 
       <RoundProgress
         minute={stream.aggregateMinute}

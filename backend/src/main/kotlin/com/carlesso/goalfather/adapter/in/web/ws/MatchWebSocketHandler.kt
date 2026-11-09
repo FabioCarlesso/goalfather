@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -22,20 +23,21 @@ import java.util.concurrent.ConcurrentHashMap
  * Espelha o `RoundWebSocketHandler`, mas emite `MatchEvent` cru (sem o
  * envelope `RoundEvent`), igual ao handler MSW `matchStream` do frontend.
  *
- * O delay de 80ms/minuto (sensação de "ao vivo") é responsabilidade DESTE
- * adapter; o use case devolve o Flow sem timing.
+ * O delay por minuto (sensação de "ao vivo") é responsabilidade DESTE
+ * adapter; o use case devolve o Flow sem timing. O ritmo vem do handshake
+ * (`?speed=`, issue #115 — ver [StreamSpeed]); ausente ou inválido → `NORMAL`
+ * (80ms/minuto). Aqui "pular para o fim" é só reconectar com `INSTANT`: o
+ * drill-down não grava nada, e fechar a conexão cancela o job desta sessão.
  */
 class MatchWebSocketHandler(
     private val streamMatch: StreamMatchUseCase,
     private val json: Json,
+    // Espera entre frames injetável, como no RoundWebSocketHandler.
+    private val pause: suspend (Long) -> Unit = { delay(it) },
 ) : TextWebSocketHandler() {
 
     private val log = LoggerFactory.getLogger(MatchWebSocketHandler::class.java)
     private val jobs = ConcurrentHashMap<String, Job>()
-
-    companion object {
-        const val MS_PER_MINUTE: Long = 80
-    }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
         val matchId = extractMatchId(session)
@@ -44,23 +46,24 @@ class MatchWebSocketHandler(
             return
         }
 
-        log.info("WS match connected: session={} match={}", session.id, matchId)
+        val speed = session.streamSpeed()
+        log.info("WS match connected: session={} match={} speed={}", session.id, matchId, speed)
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val job = scope.launch {
             try {
                 var lastMinute = 0
                 streamMatch.stream(matchId).collect { event ->
-                    val gap = (event.minute - lastMinute) * MS_PER_MINUTE
+                    val gap = speed.gapMs(lastMinute, event.minute)
                     lastMinute = event.minute
-                    if (gap > 0) kotlinx.coroutines.delay(gap)
+                    if (gap > 0) pause(gap)
                     if (session.isOpen) {
                         val payload = json.encodeToString(MatchEvent.serializer(), event)
                         session.sendMessage(TextMessage(payload))
                     }
                 }
                 if (session.isOpen) {
-                    kotlinx.coroutines.delay(50)
+                    delay(50)
                     session.close(CloseStatus.NORMAL.withReason("Partida encerrada"))
                 }
             } catch (e: CancellationException) {
