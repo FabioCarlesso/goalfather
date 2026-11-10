@@ -6,6 +6,7 @@ import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
 import { cx } from '../components/ui/cx'
 import { DASHBOARD_TABS } from './dashboard/tabs'
+import { CountryFlag } from '../components/CountryFlag'
 
 /**
  * Dashboard do próprio clube (issue #107): cabeçalho + abas em sub-rotas. Cada
@@ -24,6 +25,7 @@ export function DashboardPage() {
       <PageTitle>Clube</PageTitle>
       <header>
         <h1 className="text-3xl font-bold text-slate-100">{club.name}</h1>
+        <p className="text-sm text-slate-300"><CountryFlag country={club.country} withName /></p>
       </header>
 
       {/* `overflow-y-hidden` explícito: com só `overflow-x-auto`, o eixo Y vira

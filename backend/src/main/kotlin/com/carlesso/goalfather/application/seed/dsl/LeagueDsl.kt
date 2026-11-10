@@ -2,6 +2,8 @@ package com.carlesso.goalfather.application.seed.dsl
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
+import com.carlesso.goalfather.domain.model.Country
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.MarketEntry
@@ -122,6 +124,10 @@ class PlayerBuilder(private val id: Long, private val name: String) {
     var passing: Int? = null
     var defending: Int? = null
 
+    // Nacionalidade (issue #123). Default = país do seed; só o estrangeiro declara.
+    var nationality: Country = Countries.DEFAULT
+    var secondNationality: Country? = null
+
     fun build(): Player = Player(
         id = PlayerId(id),
         name = name,
@@ -134,6 +140,8 @@ class PlayerBuilder(private val id: Long, private val name: String) {
         stamina = stamina,
         salary = salary,
         age = age,
+        nationality = nationality,
+        secondNationality = secondNationality,
     )
 }
 
@@ -145,6 +153,7 @@ class ClubBuilder(
 ) {
     var cash: Long = 0
     var stadium: Int = 0
+    var country: Country = Countries.DEFAULT
 
     private val players = mutableListOf<Player>()
 
@@ -159,6 +168,7 @@ class ClubBuilder(
         stadiumCapacity = stadium,
         squad = players.toList(),
         division = division,
+        country = country,
     )
 }
 

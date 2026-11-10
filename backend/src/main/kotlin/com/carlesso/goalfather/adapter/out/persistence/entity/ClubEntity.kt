@@ -85,4 +85,8 @@ class ClubEntity(
     @Version
     @Column(name = "version", nullable = false)
     var version: Long = 0,
+
+    /** Trigrama FIFA do país do clube (issue #123); o mapper resolve o `Country`. */
+    @Column(name = "country", nullable = false, length = 3)
+    var country: String = "BRA",
 )

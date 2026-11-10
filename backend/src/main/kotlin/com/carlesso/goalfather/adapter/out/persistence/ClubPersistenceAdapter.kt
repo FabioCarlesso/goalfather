@@ -136,6 +136,7 @@ class ClubSaveTransaction(
         entity.trainingFocus = club.trainingFocus.name
         entity.ticketPriceCents = club.ticketPriceCents
         entity.applyBoard(club.board)
+        entity.country = club.country.code.value
         // `saveAndFlush`: o UPDATE (e a checagem do `@Version`) acontece AGORA,
         // então `saved.version` já é a versão que fica no banco após o commit.
         val saved = clubRepo.saveAndFlush(entity)

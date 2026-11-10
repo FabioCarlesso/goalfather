@@ -335,3 +335,13 @@ describe('MarketPage (issue #111)', () => {
     expect(screen.queryByText(/ApiError|boom/)).not.toBeInTheDocument()
   })
 })
+
+describe('MarketPage — nacionalidade (issue #123)', () => {
+  it('mostra a bandeira com o nome do país de cada jogador', async () => {
+    renderMarket()
+    await screen.findByRole('button', { name: `Comprar ${APARICIO}` })
+
+    expect(within(rowOf(APARICIO)).getByRole('img', { name: 'Argentina' })).toHaveTextContent('🇦🇷')
+    expect(within(rowOf(VIDIGAL)).getByRole('img', { name: 'Brasil' })).toBeInTheDocument()
+  })
+})

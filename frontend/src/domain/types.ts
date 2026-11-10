@@ -7,6 +7,9 @@ import type { components } from '../api/generated'
 export type Player        = components['schemas']['Player']
 export type Availability  = components['schemas']['Availability']
 export type Club          = components['schemas']['Club']
+// País e nacionalidade (issue #123)
+export type Country       = components['schemas']['Country']
+export type Confederation = components['schemas']['Confederation']
 export type Lineup        = components['schemas']['Lineup']
 export type Formation     = components['schemas']['Formation']
 export type Posture       = components['schemas']['Posture']
