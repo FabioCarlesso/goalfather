@@ -12,8 +12,14 @@ import com.carlesso.goalfather.domain.model.Country
  * pelo texto cru em vez de montar um `CountryCode` primeiro, porque o `init` do
  * value class rejeitaria um valor malformado com exception.
  */
-internal fun String.toCountry(): Country =
-    Countries.all.firstOrNull { it.code.value == this } ?: Countries.DEFAULT
+internal fun String.toCountry(): Country = findInCatalog() ?: Countries.DEFAULT
 
-/** Versão para a coluna opcional (segunda nacionalidade): `null` continua `null`. */
-internal fun String?.toCountryOrNull(): Country? = this?.toCountry()
+/**
+ * Versão para a coluna opcional (segunda nacionalidade): `null` continua `null`
+ * e um código fora do catálogo também vira `null`, NUNCA o default. Cair no
+ * Brasil aqui daria a um estrangeiro uma segunda nacionalidade brasileira
+ * inventada, e `isForeignIn` passaria a tratá-lo como nacional (revisão da PR #149).
+ */
+internal fun String?.toCountryOrNull(): Country? = this?.findInCatalog()
+
+private fun String.findInCatalog(): Country? = Countries.all.firstOrNull { it.code.value == this }
