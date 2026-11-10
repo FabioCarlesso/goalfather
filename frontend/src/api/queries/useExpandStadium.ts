@@ -14,7 +14,7 @@ type ExpandStadiumRequest = components['schemas']['ExpandStadiumRequest']
  * mensagem de erro leem daqui. A palavra final é do backend, que responde 400
  * `INVALID_STADIUM_EXPANSION`.
  */
-export const COST_PER_SEAT_CENTS = 100_00
+export const COST_PER_SEAT_CENTS = 20_00
 export const MIN_STADIUM_EXPANSION_SEATS = 1_000
 
 export function useExpandStadium(clubId: number) {
