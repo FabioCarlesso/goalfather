@@ -1051,6 +1051,23 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   lock teria de atravessar o use case inteiro (ports `suspend` por agregado) —
   e mexer no fluxo da rodada (#46), fora do escopo.
 
+### Fase 8 — Mundo do jogo (épico #148)
+
+- [x] **País, confederação e nacionalidade** — issue #123
+  `Country(code, name, confederation, isoAlpha2)` com `CountryCode` como
+  `value class`: o código é o **trigrama FIFA** (`BRA`, `ENG`, `GER`), não o ISO
+  alfa-3, porque Inglaterra, Escócia e Gales são seleções distintas sem código
+  ISO próprio. `Club.country` e `Player.nationality` nunca são nulos;
+  `Player.secondNationality` é opcional e só conta para a regra de estrangeiro
+  (`Player.isForeignIn`/`isForeignAt`, extension functions puras em
+  `domain/rules/NationalityRules.kt`). **Catálogo interino:** a lista de países
+  é dado e vai para o pack do mundo (#126); até lá vive em `Countries` no
+  domínio, com CONMEBOL e as cinco grandes ligas da UEFA. O default dos campos
+  é o Brasil, só para o seed e os testes anteriores à issue. No banco vai só o
+  código (V16, backfill `BRA`); o mapper resolve no catálogo e um código
+  desconhecido cai no default, como o `trainingFocus`. A bandeira (emoji) é
+  montada no adapter web (`CountryDto.flag`), então a UI só exibe.
+
 ---
 
 ## 9. Stack consolidada

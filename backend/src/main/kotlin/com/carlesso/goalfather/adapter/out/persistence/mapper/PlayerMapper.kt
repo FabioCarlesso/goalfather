@@ -24,6 +24,11 @@ fun PlayerEntity.toDomain(): Player = Player(
     redCards = redCards,
     availability = if (injuredForRounds >= 1) Availability.Injured(injuredForRounds)
     else Availability.Available,
+    nationality = nationality.toCountry(),
+    // `takeIf` descarta a segunda nacionalidade se ela coincidir com a primeira
+    // depois de resolvidas (ex.: dois códigos desconhecidos caindo no default),
+    // em vez de deixar o `require` do `Player` derrubar a leitura.
+    secondNationality = secondNationality.toCountryOrNull()?.takeIf { it != nationality.toCountry() },
 )
 
 fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
@@ -47,6 +52,8 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
         is Availability.Available -> 0
         is Availability.Injured -> a.roundsOut
     },
+    nationality = nationality.code.value,
+    secondNationality = secondNationality?.code?.value,
 )
 
 private fun PositionEnum.toDomain(): Position = when (this) {

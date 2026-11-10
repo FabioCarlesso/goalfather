@@ -34,6 +34,7 @@ fun ClubEntity.toDomain(squadEntities: List<PlayerEntity>, json: Json): Club = C
     // A versão LIDA sobe para o domínio (issue #89) e volta no `save`, que a
     // compara com a do banco — sem isso o lock otimista não protege nada.
     version = version,
+    country = country.toCountry(),
 )
 
 /**

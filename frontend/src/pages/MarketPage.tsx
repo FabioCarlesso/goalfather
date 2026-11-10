@@ -19,6 +19,7 @@ import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
+import { CountryFlag } from '../components/CountryFlag'
 
 export function MarketPage() {
   const myClubId = useMyClubId()
@@ -107,7 +108,10 @@ export function MarketPage() {
                   className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3"
                 >
                   <div className="min-w-0 flex-1 basis-40">
-                    <div className="text-slate-100 font-medium truncate">{entry.player.name}</div>
+                    <div className="text-slate-100 font-medium truncate">
+                      <span className="mr-1.5"><CountryFlag country={entry.player.nationality} /></span>
+                      {entry.player.name}
+                    </div>
                     <div className="text-xs text-text-muted">
                       {POSITION_ABBR[entry.player.position]} · {entry.player.age}a · OVR {entry.player.overall}
                     </div>

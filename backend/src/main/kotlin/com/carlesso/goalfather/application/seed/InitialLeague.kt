@@ -4,6 +4,7 @@ import com.carlesso.goalfather.application.seed.dsl.DivisionBuilder
 import com.carlesso.goalfather.application.seed.dsl.League
 import com.carlesso.goalfather.application.seed.dsl.league
 import com.carlesso.goalfather.application.seed.dsl.syntheticSquad
+import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.Position
 import kotlin.random.Random
 
@@ -56,9 +57,15 @@ fun initialLeague(): League {
 
         market {
             player(101, "Lucas Vidigal", price = 450_000_00) { position = Position.FW; overall = 81; salary = 32_000_00; age = 25 }
-            player(102, "André Pacheco", price = 220_000_00) { position = Position.MF; overall = 77; salary = 23_000_00; age = 24 }
-            player(103, "Bruno Aparício", price = 300_000_00) { position = Position.CB; overall = 79; salary = 25_000_00; age = 27 }
-            player(104, "Eduardo Ramires", price = 180_000_00) { position = Position.GK; overall = 76; salary = 21_000_00; age = 28 }
+            // Estrangeiros (issue #123): um português, um argentino com passaporte
+            // italiano (dupla nacionalidade) e um uruguaio — exercitam `isForeignAt`
+            // assim que forem contratados por um clube brasileiro.
+            player(102, "André Pacheco", price = 220_000_00) { position = Position.MF; overall = 77; salary = 23_000_00; age = 24; nationality = Countries.PORTUGAL }
+            player(103, "Bruno Aparício", price = 300_000_00) {
+                position = Position.CB; overall = 79; salary = 25_000_00; age = 27
+                nationality = Countries.ARGENTINA; secondNationality = Countries.ITALY
+            }
+            player(104, "Eduardo Ramires", price = 180_000_00) { position = Position.GK; overall = 76; salary = 21_000_00; age = 28; nationality = Countries.URUGUAY }
         }
 
         // Rodada 1 — Berger com 6 times por divisão:

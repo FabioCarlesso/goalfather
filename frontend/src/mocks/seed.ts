@@ -7,6 +7,7 @@ import type {
   CareerCampaign,
   Club,
   ClubCareer,
+  Country,
   Cup,
   CupClub,
   Dismissal,
@@ -43,6 +44,16 @@ import {
 } from './board'
 import { expireOffersOf } from './offers'
 
+// Países do seed (issue #123) — mesmos códigos, nomes e bandeiras que o
+// catálogo `Countries` do backend devolve. Dado de mock, não regra.
+export const COUNTRIES = {
+  BRA: { code: 'BRA', name: 'Brasil', confederation: 'CONMEBOL', flag: '🇧🇷' },
+  ARG: { code: 'ARG', name: 'Argentina', confederation: 'CONMEBOL', flag: '🇦🇷' },
+  URU: { code: 'URU', name: 'Uruguai', confederation: 'CONMEBOL', flag: '🇺🇾' },
+  POR: { code: 'POR', name: 'Portugal', confederation: 'UEFA', flag: '🇵🇹' },
+  ITA: { code: 'ITA', name: 'Itália', confederation: 'UEFA', flag: '🇮🇹' },
+} as const satisfies Record<string, Country>
+
 const player = (
   id: number,
   name: string,
@@ -50,6 +61,8 @@ const player = (
   ovr: number,
   salary: number,
   age: number,
+  nationality: Country = COUNTRIES.BRA,
+  secondNationality?: Country,
 ): Player => ({
   id, name, position: pos, age,
   overall: ovr,
@@ -64,6 +77,8 @@ const player = (
   redCards: 0,
   availability: { type: 'Available' },
   star: ovr >= 82,
+  nationality,
+  ...(secondNationality ? { secondNationality } : {}),
 })
 
 const initialSquad: Player[] = [
@@ -99,13 +114,16 @@ export const myClub: StoredClub = {
   trainingFocus: 'DESCANSO',
   // Preço do ingresso (issue #59): o default do backend, R$ 50.
   ticketPriceCents: DEFAULT_TICKET_PRICE_CENTS,
+  // País do clube (issue #123).
+  country: COUNTRIES.BRA,
 }
 
 export const marketEntries: MarketEntry[] = [
   { player: player(101, 'Lucas Vidigal',  'FW', 81, 32_000_00, 25), price:  450_000_00 },
-  { player: player(102, 'André Pacheco',  'MF', 77, 23_000_00, 24), price:  220_000_00 },
-  { player: player(103, 'Bruno Aparício', 'CB', 79, 25_000_00, 27), price:  300_000_00 },
-  { player: player(104, 'Eduardo Ramires','GK', 76, 21_000_00, 28), price:  180_000_00 },
+  // Estrangeiros (issue #123), espelhando o seed do backend.
+  { player: player(102, 'André Pacheco',  'MF', 77, 23_000_00, 24, COUNTRIES.POR), price:  220_000_00 },
+  { player: player(103, 'Bruno Aparício', 'CB', 79, 25_000_00, 27, COUNTRIES.ARG, COUNTRIES.ITA), price:  300_000_00 },
+  { player: player(104, 'Eduardo Ramires','GK', 76, 21_000_00, 28, COUNTRIES.URU), price:  180_000_00 },
 ]
 
 // ─── Registro de clubes da liga ──────────────────────────────────────────
@@ -645,6 +663,7 @@ export function materializeClub(id: number): void {
     ownerId: clubOwners[id] ?? null,
     trainingFocus: 'DESCANSO',
     ticketPriceCents: DEFAULT_TICKET_PRICE_CENTS,
+    country: COUNTRIES.BRA,
     squad: positions.map((pos, i) =>
       player(id * 1000 + i + 1, `${meta.name} ${i + 1}`, pos, meta.strength, 10_000_00, 25),
     ),

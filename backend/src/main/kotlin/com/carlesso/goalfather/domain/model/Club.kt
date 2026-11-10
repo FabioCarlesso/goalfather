@@ -56,6 +56,12 @@ data class Club(
     val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
     val board: BoardExpectation? = null,
     val version: Long = 0,
+    /**
+     * País da federação do clube (issue #123): decide a liga nacional, a
+     * continental e quem é estrangeiro no elenco. Nunca nulo — todo clube é de
+     * algum país. O default é o mesmo de `Player.nationality`.
+     */
+    val country: Country = Countries.DEFAULT,
 ) {
     init {
         require(cash >= 0) { "cash não pode ser negativo: $cash" }

@@ -46,6 +46,18 @@ data class Player(
     val yellowCards: Int = 0,
     val redCards: Int = 0,
     val availability: Availability = Availability.Available,
+    /**
+     * Nacionalidade esportiva (issue #123): a seleção que o jogador pode
+     * defender. Default = [Countries.DEFAULT] só para o seed e os testes
+     * anteriores à issue; o pack do mundo (issue #126) sempre informa.
+     */
+    val nationality: Country = Countries.DEFAULT,
+    /**
+     * Segunda nacionalidade, se houver. Não muda a seleção — só conta para a
+     * regra de estrangeiro (`isForeignIn`): um argentino com passaporte
+     * brasileiro não ocupa vaga de estrangeiro no Brasil.
+     */
+    val secondNationality: Country? = null,
 ) {
     val star: Boolean get() = overall >= 82
 
@@ -59,6 +71,7 @@ data class Player(
         require(overall in OVERALL_RANGE) { "overall fora de $OVERALL_RANGE: $overall" }
         require(stamina in 0..100) { "stamina fora de 0..100: $stamina" }
         require(age in AGE_RANGE) { "age fora de $AGE_RANGE: $age" }
+        require(secondNationality != nationality) { "segunda nacionalidade repete a primeira: ${nationality.code}" }
     }
 
     /**

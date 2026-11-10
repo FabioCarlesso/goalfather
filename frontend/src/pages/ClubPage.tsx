@@ -10,6 +10,7 @@ import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
+import { CountryFlag } from '../components/CountryFlag'
 
 /**
  * Elenco de um clube rival (issue #63) — a vitrine de onde sai a proposta.
@@ -38,6 +39,7 @@ export function ClubPage() {
       <header>
         <Link to="/standings" className="text-xs text-text-muted hover:text-slate-300">← Tabela</Link>
         <h1 className="text-3xl font-bold text-slate-100">{club.name}</h1>
+        <p className="text-sm text-slate-300"><CountryFlag country={club.country} withName /></p>
         <p className="text-sm text-slate-400">
           {human ? 'Técnico humano — aceita propostas' : 'Controlado pela IA — não negocia propostas'}
         </p>
@@ -125,6 +127,7 @@ function SquadList({ squad, action }: { squad: Player[]; action?: (player: Playe
         {squad.map((p) => (
           <li key={p.id} className="flex items-center justify-between px-4 py-2">
             <div className="min-w-0">
+              <span className="mr-1.5"><CountryFlag country={p.nationality} /></span>
               <span className="font-medium text-slate-100">{p.name}</span>
               <span className="ml-2 text-xs text-text-muted">{p.position} · {p.age}a</span>
             </div>

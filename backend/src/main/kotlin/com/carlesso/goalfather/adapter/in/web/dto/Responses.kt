@@ -64,6 +64,10 @@ data class PlayerDto(
     val availability: Availability,
     /** Derivado no domínio (`overall >= 82`); materializado aqui para viajar no JSON. */
     val star: Boolean,
+    /** Nacionalidade esportiva (issue #123). */
+    val nationality: CountryDto,
+    /** Segunda nacionalidade — ausente (não `null`) quando não há, por `explicitNulls = false`. */
+    val secondNationality: CountryDto? = null,
 )
 
 /**
@@ -107,6 +111,8 @@ data class ClubDto(
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
     /** Preço do ingresso em vigor, em centavos (issue #59). */
     val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
+    /** País do clube (issue #123). */
+    val country: CountryDto,
 )
 
 @Serializable
@@ -166,6 +172,8 @@ fun Player.toDto(): PlayerDto = PlayerDto(
     redCards = redCards,
     availability = availability,
     star = star,
+    nationality = nationality.toDto(),
+    secondNationality = secondNationality?.toDto(),
 )
 
 fun Lineup.toDto(): LineupDto = LineupDto(
@@ -198,6 +206,7 @@ fun Club.toDto(): ClubDto = run {
         ownerId = ownerId,
         trainingFocus = trainingFocus,
         ticketPriceCents = ticketPriceCents,
+        country = country.toDto(),
     )
 }
 

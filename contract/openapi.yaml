@@ -1167,6 +1167,30 @@ components:
           description: 'Divisão em que o clube disputa a temporada (1 = elite)'
 
     # ─── Enums ─────────────────────────────────────────────────────────────
+    Confederation:
+      type: string
+      description: Confederação da FIFA a que o país é filiado (issue #123)
+      enum: [CONMEBOL, UEFA, CONCACAF, CAF, AFC, OFC]
+
+    Country:
+      type: object
+      description: |
+        País como o futebol o enxerga (issue #123): uma federação filiada a uma
+        confederação. `code` é o trigrama FIFA (`BRA`, `ARG`, `ENG`, `GER`),
+        não o ISO — Inglaterra, Escócia e Gales são seleções distintas.
+      required: [code, name, confederation, flag]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          example: BRA
+        name:         { type: string, example: Brasil }
+        confederation: { $ref: '#/components/schemas/Confederation' }
+        flag:
+          type: string
+          description: Emoji da bandeira, montado pelo backend — a UI só exibe.
+          example: 🇧🇷
+
     Position:
       type: string
       description: Posição do jogador no campo
@@ -1274,6 +1298,7 @@ components:
         - yellowCards
         - redCards
         - availability
+        - nationality
       properties:
         id:         { type: integer, format: int64 }
         name:       { type: string }
@@ -1308,6 +1333,17 @@ components:
         star:
           type: boolean
           description: Derivado de `overall >= 82` (computado pelo backend)
+        nationality:
+          $ref: '#/components/schemas/Country'
+          description: |
+            Nacionalidade esportiva (issue #123): a seleção que o jogador pode
+            defender. Sempre presente.
+        secondNationality:
+          $ref: '#/components/schemas/Country'
+          description: |
+            Segunda nacionalidade, se houver — ausente quando não há. Só conta
+            para a regra de estrangeiro (calculada pelo backend), nunca para a
+            seleção.
 
     Availability:
       description: |
@@ -1380,6 +1416,7 @@ components:
         - effectiveLineup
         - lineupIsDefault
         - lineupAdjusted
+        - country
       properties:
         id:               { type: integer, format: int64 }
         name:             { type: string }
@@ -1431,6 +1468,9 @@ components:
           description: |
             Preço do ingresso em vigor, em centavos (issue #59). Vale até o
             técnico trocar; quem nunca mexeu cobra `5000` (R$ 50).
+        country:
+          $ref: '#/components/schemas/Country'
+          description: País da federação do clube (issue #123). Sempre presente.
 
     # ─── Requests ─────────────────────────────────────────────────────────
     LineupRequest:

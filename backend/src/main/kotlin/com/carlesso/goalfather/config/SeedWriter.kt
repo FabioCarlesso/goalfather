@@ -46,6 +46,7 @@ class SeedWriter(
                     cash = club.cash,
                     stadiumCapacity = club.stadiumCapacity,
                     division = club.division.value,
+                    country = club.country.code.value,
                 ).apply { applyBoard(boards[club.id]) },
             )
             for (player in club.squad) {
