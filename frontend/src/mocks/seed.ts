@@ -14,6 +14,7 @@ import type {
   Player,
   MarketEntry,
   Position,
+  ReadinessStatus,
   SeasonRecord,
   SeasonTopScorer,
   Standings,
@@ -536,8 +537,14 @@ export function managers(): MockUser[] {
   return auth.users.filter((u) => u.clubId != null)
 }
 
-/** Status de prontidão de uma rodada (espelha ReadinessStatus do backend). */
-export function readinessStatus(roundNumber: number) {
+/**
+ * Status de prontidão de uma rodada (espelha ReadinessStatus do backend).
+ *
+ * ÚNICO lugar do frontend com a regra do gate (issue #98): o mock precisa
+ * simular o backend, então calcula `allReady`/`canStart` aqui — o `playRound`
+ * de `handlers.ts` lê `canStart` daqui, e a app só lê os campos da resposta.
+ */
+export function readinessStatus(roundNumber: number): ReadinessStatus {
   const ready = roundReadiness[roundNumber] ?? new Set<number>()
   const mgrs = managers()
   const pending = mgrs.filter((u) => !ready.has(u.id))
@@ -553,13 +560,21 @@ export function readinessStatus(roundNumber: number) {
     ? Math.max(0, Math.ceil((firstAt + READINESS_TIMEOUT_MS - Date.now()) / 1000))
     : null
 
+  const readyCount = mgrs.length - pending.length
+  const totalCount = mgrs.length
+  const timedOut = secondsRemaining === 0
+  // Parity com `ReadinessStatus.allReady`/`canStart` do domínio Kotlin.
+  const allReady = totalCount > 0 && readyCount >= totalCount
+
   return {
     roundNumber,
-    readyCount: mgrs.length - pending.length,
-    totalCount: mgrs.length,
+    readyCount,
+    totalCount,
     pendingUsernames: pending.map((u) => u.username),
     secondsRemaining,
-    timedOut: secondsRemaining === 0,
+    timedOut,
+    allReady,
+    canStart: allReady || timedOut,
   }
 }
 

@@ -374,6 +374,8 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 >
 > A issue #97 fechou o último controller: o `LeagueController` devolvia `Standings`, `SeasonRecord`, `ClubCareer`, `Round` e `ReadinessStatus` direto. Hoje todo corpo de sucesso dele passa por um DTO de `LeagueDtos.kt` (onde também passaram a morar `StandingsDto`/`StandingRowDto`, compartilhados com o WS) e sai pelo kotlinx (`okJson`), com `LeagueDtosTest` comparando o JSON literal com o schema. Efeito colateral visível: `GET /round/readiness` e `POST /round/ready` saíam pelo Jackson, que serializa getters, e por isso emitiam `allReady`/`canStart` fora do contrato. Esses campos sumiram do payload (o frontend já não os lia).
 >
+> A issue #98 trouxe os dois de volta, agora **pelo contrato**: `ReadinessStatus` declara `allReady`/`canStart` como obrigatórios e o `ReadinessStatusDto` os materializa a partir das computed properties do domínio (mesmo padrão do `star` em `PlayerDto`). O frontend deixou de recalcular o gate: `RoundPage` usa `readiness.canStart` e o `ReadinessCard` recebe `allReady` por prop. No MSW a regra vive só em `readinessStatus` (`src/mocks/seed.ts`), que o `playRound` mockado também consulta.
+>
 > **Lição para o resto do projeto:** um contrato só é fonte de verdade se algo o comparar com as DUAS implementações. Mock que implementa o spec testa o spec, não o backend.
 
 ### Persistência

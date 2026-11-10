@@ -25,7 +25,9 @@ import org.springframework.web.bind.annotation.RestController
  * handler mapeia para o DTO de `LeagueDtos.kt`/`CupDtos.kt` e serializa pelo
  * kotlinx (`okJson`). Assim o JSON que sai é o que os testes de DTO verificam —
  * pelo Jackson, que o Spring usa quando o tipo declarado é `Any`, sairiam
- * também os getters computados do domínio (ex.: `ReadinessStatus.allReady`).
+ * também os getters computados do domínio, sem passar pelo contrato. Quando um
+ * deles interessa ao cliente, o DTO o materializa e o `openapi.yaml` o declara
+ * (ex.: `ReadinessStatus.allReady`/`canStart`, issue #98).
  */
 @RestController
 @RequestMapping("/api/league")

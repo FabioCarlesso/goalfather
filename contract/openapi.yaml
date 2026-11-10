@@ -2677,18 +2677,17 @@ components:
 
     ReadinessStatus:
       description: |
-        Prontidão da rodada em liga compartilhada (issue #20). A simulação
-        destrava quando `readyCount == totalCount` (todos os técnicos humanos
-        sinalizaram) OU quando o timeout do escape hatch expira (issue #45). O
-        cliente sabe se é a sua vez verificando se o próprio username está em
-        `pendingUsernames`.
+        Prontidão da rodada em liga compartilhada (issue #20). Se a simulação
+        pode destravar vem pronto em `canStart` (issue #98) — o cliente não
+        recalcula o gate. O cliente sabe se é a sua vez verificando se o
+        próprio username está em `pendingUsernames`.
 
         **Escape hatch (issue #45):** um único técnico offline não trava mais a
         liga. Assim que o primeiro técnico sinaliza pronto, começa a correr um
         timeout; ao chegar a zero (`timedOut`), a rodada pode iniciar mesmo com
         pendentes — os ausentes entram com a última escalação salva.
       type: object
-      required: [roundNumber, readyCount, totalCount, pendingUsernames, timedOut]
+      required: [roundNumber, readyCount, totalCount, pendingUsernames, timedOut, allReady, canStart]
       properties:
         roundNumber:      { type: integer, minimum: 0, description: Rodada à qual a prontidão se refere }
         readyCount:       { type: integer, minimum: 0, description: Técnicos que já sinalizaram pronto }
@@ -2710,6 +2709,18 @@ components:
           description: |
             O timeout expirou: a rodada pode iniciar apesar dos pendentes
             (ausentes entram com a última escalação salva).
+        allReady:
+          type: boolean
+          description: |
+            Todos os técnicos humanos sinalizaram pronto (`totalCount > 0` e
+            `readyCount >= totalCount`; liga sem técnico nunca está pronta).
+            Calculado pelo backend (issue #98).
+        canStart:
+          type: boolean
+          description: |
+            Gate efetivo do `POST /round/play`: `allReady` OU `timedOut`. Com
+            `false`, o play responde 409 `ROUND_NOT_READY`. Calculado pelo
+            backend (issue #98) — é o mesmo valor que o servidor usa no gate.
 
     # ─── Error ────────────────────────────────────────────────────────────
     ErrorResponse:

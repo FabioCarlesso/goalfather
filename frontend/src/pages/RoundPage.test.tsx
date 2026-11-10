@@ -61,7 +61,7 @@ describe('RoundPage — resumo da rodada (issue #112)', () => {
       http.get('/api/league/round/readiness', () =>
         HttpResponse.json({
           roundNumber: current.number, readyCount: 1, totalCount: 1, pendingUsernames: [],
-          secondsRemaining: null, timedOut: false,
+          secondsRemaining: null, timedOut: false, allReady: true, canStart: true,
         }),
       ),
     )

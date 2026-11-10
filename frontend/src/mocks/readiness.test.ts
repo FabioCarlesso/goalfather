@@ -67,3 +67,45 @@ describe('readinessStatus — escape hatch por timeout (issue #45)', () => {
     expect(fresh.timedOut).toBe(false)
   })
 })
+
+// Regra do gate no mock (issue #98): `readinessStatus` é o ÚNICO lugar que a
+// calcula — o `playRound` mockado e a app só leem `allReady`/`canStart`.
+describe('readinessStatus — allReady/canStart (issue #98)', () => {
+  beforeEach(() => {
+    auth.users.push(ana, bruno)
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-09T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    resetRoundReadiness(1)
+    auth.users.length = 0
+  })
+
+  it('ninguém pronto: nem allReady nem canStart', () => {
+    expect(readinessStatus(1)).toMatchObject({ allReady: false, canStart: false })
+  })
+
+  it('parte pronta, timeout correndo: não pode começar', () => {
+    markRoundReady(1, ana.id)
+    expect(readinessStatus(1)).toMatchObject({ allReady: false, canStart: false })
+  })
+
+  it('todos prontos: allReady e canStart', () => {
+    markRoundReady(1, ana.id)
+    markRoundReady(1, bruno.id)
+    expect(readinessStatus(1)).toMatchObject({ allReady: true, canStart: true })
+  })
+
+  it('timeout expirado com pendente: canStart sem allReady', () => {
+    markRoundReady(1, ana.id)
+    vi.advanceTimersByTime(READINESS_TIMEOUT_MS + 1_000)
+    expect(readinessStatus(1)).toMatchObject({ allReady: false, canStart: true, timedOut: true })
+  })
+
+  it('liga sem técnicos nunca está pronta', () => {
+    auth.users.length = 0
+    expect(readinessStatus(1)).toMatchObject({ totalCount: 0, allReady: false, canStart: false })
+  })
+})

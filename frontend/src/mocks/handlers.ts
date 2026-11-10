@@ -783,11 +783,11 @@ export const handlers = [
       }
       return HttpResponse.json(err, { status: 409 })
     }
-    // Gate de liga compartilhada (issue #20): destrava com todos prontos OU
-    // quando o timeout do escape hatch expira (issue #45).
+    // Gate de liga compartilhada (issues #20/#45): o mesmo `canStart` que o
+    // mock devolve em `GET /round/readiness` — a regra mora em `readinessStatus`
+    // (issue #98), não é repetida aqui.
     const status = readinessStatus(state.currentRound.number)
-    const allReady = status.totalCount > 0 && status.readyCount >= status.totalCount
-    if (!allReady && !status.timedOut) {
+    if (!status.canStart) {
       const err: ErrorResponse = {
         code: 'ROUND_NOT_READY',
         message: `Aguardando técnicos: ${status.pendingUsernames.join(', ')}`,
