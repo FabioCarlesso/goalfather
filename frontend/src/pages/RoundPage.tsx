@@ -49,11 +49,10 @@ export function RoundPage() {
     readiness != null &&
     user?.username != null &&
     !readiness.pendingUsernames.includes(user.username)
-  const allReady =
-    readiness != null && readiness.totalCount > 0 && readiness.readyCount >= readiness.totalCount
-  // Escape hatch (issue #45): pode jogar com todos prontos OU quando o timeout
-  // expira (ausentes entram com a última escalação salva).
-  const canStart = allReady || readiness?.timedOut === true
+  // Gate do "Jogar rodada" vem pronto do backend (issue #98): todos prontos OU
+  // timeout do escape hatch expirado (issue #45). Sem prontidão carregada,
+  // fica travado — o mesmo de antes.
+  const canStart = readiness?.canStart === true
 
   // Lookup id → nome dos dois elencos da partida do usuário, para o feed
   // mostrar nomes em vez de "#N" (issues #7 e #84). Antes de a rodada
@@ -118,6 +117,7 @@ export function RoundPage() {
         <ReadinessCard
           readyCount={readiness.readyCount}
           totalCount={readiness.totalCount}
+          allReady={readiness.allReady}
           pendingUsernames={readiness.pendingUsernames}
           amIReady={amIReady}
           secondsRemaining={readiness.secondsRemaining}

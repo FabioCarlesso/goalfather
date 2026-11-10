@@ -9,6 +9,7 @@ describe('ReadinessCard', () => {
       <ReadinessCard
         readyCount={1}
         totalCount={2}
+        allReady={false}
         pendingUsernames={['bruno']}
         amIReady={false}
         onReady={() => {}}
@@ -25,6 +26,7 @@ describe('ReadinessCard', () => {
       <ReadinessCard
         readyCount={0}
         totalCount={2}
+        allReady={false}
         pendingUsernames={['ana', 'bruno']}
         amIReady={false}
         onReady={onReady}
@@ -39,6 +41,7 @@ describe('ReadinessCard', () => {
       <ReadinessCard
         readyCount={1}
         totalCount={2}
+        allReady={false}
         pendingUsernames={['bruno']}
         amIReady
         onReady={() => {}}
@@ -53,6 +56,7 @@ describe('ReadinessCard', () => {
       <ReadinessCard
         readyCount={2}
         totalCount={2}
+        allReady={true}
         pendingUsernames={[]}
         amIReady
         onReady={() => {}}
@@ -67,6 +71,7 @@ describe('ReadinessCard', () => {
       <ReadinessCard
         readyCount={1}
         totalCount={2}
+        allReady={false}
         pendingUsernames={['bruno']}
         amIReady
         secondsRemaining={65}
@@ -81,11 +86,29 @@ describe('ReadinessCard', () => {
     expect(screen.queryByText(/auto-início|automátic/i)).not.toBeInTheDocument()
   })
 
+  it('usa o allReady recebido por prop, sem recalcular pela contagem (issue #98)', () => {
+    // Contagem "cheia" mas o backend diz que não está pronto: o card obedece à
+    // prop — prova de que a regra do gate não mora mais no componente.
+    render(
+      <ReadinessCard
+        readyCount={2}
+        totalCount={2}
+        allReady={false}
+        pendingUsernames={['bruno']}
+        amIReady
+        onReady={() => {}}
+      />,
+    )
+    expect(screen.queryByText(/Todos prontos/)).not.toBeInTheDocument()
+    expect(screen.getByText('Aguardando outros…')).toBeInTheDocument()
+  })
+
   it('ao expirar o timeout, avisa que "Jogar rodada" está liberado (issues #45/#86)', () => {
     render(
       <ReadinessCard
         readyCount={1}
         totalCount={2}
+        allReady={false}
         pendingUsernames={['bruno']}
         amIReady
         secondsRemaining={0}

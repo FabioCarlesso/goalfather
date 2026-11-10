@@ -31,9 +31,10 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  * Reusados do domínio, pelo critério de `Responses.kt` (enum cuja forma JSON já
  * é EXATAMENTE a do contrato): `RoundStatus` e `KnockoutPhase`.
  *
- * `ReadinessStatus.allReady`/`canStart` ficam de fora DE PROPÓSITO: o contrato
- * não os declara. Materializá-los muda o contrato e o frontend — fica para uma
- * issue própria.
+ * `ReadinessStatus.allReady`/`canStart` são computed properties do domínio
+ * (getter sem backing field, que o kotlinx não serializa). O DTO os MATERIALIZA
+ * (issue #98), no padrão do `star` de `PlayerDto`: o gate do `POST /round/play`
+ * chega pronto ao cliente, que deixa de reimplementar a regra.
  */
 @Serializable
 data class StandingRowDto(
@@ -163,6 +164,10 @@ data class ReadinessStatusDto(
     /** Ausente quando o cronômetro do escape hatch não está armado. */
     val secondsRemaining: Int? = null,
     val timedOut: Boolean,
+    /** Materializado de `ReadinessStatus.allReady` (issue #98). */
+    val allReady: Boolean,
+    /** Materializado de `ReadinessStatus.canStart` — o mesmo gate do play (issue #98). */
+    val canStart: Boolean,
 )
 
 // ─── Mapeamento domínio → DTO ─────────────────────────────────────────────
@@ -256,4 +261,7 @@ fun ReadinessStatus.toDto(): ReadinessStatusDto = ReadinessStatusDto(
     pendingUsernames = pendingUsernames,
     secondsRemaining = secondsRemaining,
     timedOut = timedOut,
+    // Lê o getter do domínio — a regra continua num lugar só (`RoundReadiness.kt`).
+    allReady = allReady,
+    canStart = canStart,
 )

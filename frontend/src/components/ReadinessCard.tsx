@@ -6,6 +6,8 @@ import { Button } from './ui/Button'
 interface ReadinessCardProps {
   readyCount: number
   totalCount: number
+  /** Todos os técnicos prontos — vem do backend (issue #98), o card não recalcula. */
+  allReady: boolean
   pendingUsernames: string[]
   /** Se o usuário atual já sinalizou pronto. */
   amIReady: boolean
@@ -33,6 +35,7 @@ function formatCountdown(totalSeconds: number): string {
 export function ReadinessCard({
   readyCount,
   totalCount,
+  allReady,
   pendingUsernames,
   amIReady,
   secondsRemaining = null,
@@ -40,8 +43,6 @@ export function ReadinessCard({
   onReady,
   marking = false,
 }: ReadinessCardProps) {
-  const allReady = totalCount > 0 && readyCount >= totalCount
-
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 flex items-center justify-between gap-3">
       <div className="space-y-0.5">

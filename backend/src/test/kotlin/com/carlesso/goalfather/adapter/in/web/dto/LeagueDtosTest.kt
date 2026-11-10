@@ -214,7 +214,7 @@ class LeagueDtosTest {
     // ─── ReadinessStatus ──────────────────────────────────────────────────
 
     @Test
-    fun `prontidao nao vaza as computed properties allReady e canStart`() {
+    fun `prontidao emite exatamente as chaves do contrato, com allReady e canStart materializados`() {
         val status = ReadinessStatus(
             roundNumber = 5, readyCount = 1, totalCount = 2,
             pendingUsernames = listOf("beltrano"), secondsRemaining = 30,
@@ -222,11 +222,45 @@ class LeagueDtosTest {
         val encoded = encode(ReadinessStatusDto.serializer(), status.toDto())
 
         assertEquals(
-            setOf("roundNumber", "readyCount", "totalCount", "pendingUsernames", "secondsRemaining", "timedOut"),
+            setOf(
+                "roundNumber", "readyCount", "totalCount", "pendingUsernames",
+                "secondsRemaining", "timedOut", "allReady", "canStart",
+            ),
             encoded.keys,
         )
         assertEquals("30", encoded.string("secondsRemaining"))
         assertEquals("false", encoded.string("timedOut"))
+    }
+
+    /**
+     * Os quatro cenários do botão "Jogar rodada" (issue #98). Tabela como lista
+     * de `Triple` + desestruturação no `forEach`: sem `@ParameterizedTest` (o
+     * projeto não usa `junit-jupiter-params`), e o `assertEquals` com mensagem
+     * diz qual linha falhou.
+     */
+    @Test
+    fun `prontidao materializa allReady e canStart nos quatro cenarios do gate`() {
+        val cenarios = listOf(
+            // nome            → status de domínio                                              → (allReady, canStart)
+            Triple("ninguém pronto", ReadinessStatus(5, 0, 2, listOf("a", "b")), false to false),
+            Triple("parte pronta", ReadinessStatus(5, 1, 2, listOf("b"), secondsRemaining = 30), false to false),
+            Triple("todos prontos", ReadinessStatus(5, 2, 2, emptyList()), true to true),
+            Triple("timeout expirado", ReadinessStatus(5, 1, 2, listOf("b"), 0, timedOut = true), false to true),
+        )
+
+        cenarios.forEach { (nome, status, esperado) ->
+            val encoded = encode(ReadinessStatusDto.serializer(), status.toDto())
+            assertEquals(esperado.first.toString(), encoded.string("allReady"), "allReady em '$nome'")
+            assertEquals(esperado.second.toString(), encoded.string("canStart"), "canStart em '$nome'")
+        }
+    }
+
+    @Test
+    fun `liga sem tecnicos nunca esta pronta`() {
+        val encoded = encode(ReadinessStatusDto.serializer(), ReadinessStatus(5, 0, 0, emptyList()).toDto())
+
+        assertEquals("false", encoded.string("allReady"))
+        assertEquals("false", encoded.string("canStart"))
     }
 
     @Test

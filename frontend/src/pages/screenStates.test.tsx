@@ -207,6 +207,8 @@ describe('estados de tela (issue #105)', () => {
             pendingUsernames: [],
             secondsRemaining: 0,
             timedOut: false,
+            allReady: true,
+            canStart: true,
           }),
         ),
       )
