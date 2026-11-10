@@ -241,11 +241,15 @@ class LeagueDtosTest {
     @Test
     fun `prontidao materializa allReady e canStart nos quatro cenarios do gate`() {
         val cenarios = listOf(
-            // nome            → status de domínio                                              → (allReady, canStart)
-            Triple("ninguém pronto", ReadinessStatus(5, 0, 2, listOf("a", "b")), false to false),
-            Triple("parte pronta", ReadinessStatus(5, 1, 2, listOf("b"), secondsRemaining = 30), false to false),
-            Triple("todos prontos", ReadinessStatus(5, 2, 2, emptyList()), true to true),
-            Triple("timeout expirado", ReadinessStatus(5, 1, 2, listOf("b"), 0, timedOut = true), false to true),
+            // nome → status de domínio → (allReady, canStart)
+            Triple("ninguém pronto", readiness(ready = 0, pending = listOf("a", "b")), false to false),
+            Triple("parte pronta", readiness(ready = 1, pending = listOf("b"), secondsRemaining = 30), false to false),
+            Triple("todos prontos", readiness(ready = 2, pending = emptyList()), true to true),
+            Triple(
+                "timeout expirado",
+                readiness(ready = 1, pending = listOf("b"), secondsRemaining = 0, timedOut = true),
+                false to true,
+            ),
         )
 
         cenarios.forEach { (nome, status, esperado) ->
@@ -255,9 +259,25 @@ class LeagueDtosTest {
         }
     }
 
+    /** Liga de 2 técnicos na rodada 5; só varia o que cada cenário precisa. */
+    private fun readiness(
+        ready: Int,
+        pending: List<String>,
+        secondsRemaining: Int? = null,
+        timedOut: Boolean = false,
+    ) = ReadinessStatus(
+        roundNumber = 5,
+        readyCount = ready,
+        totalCount = 2,
+        pendingUsernames = pending,
+        secondsRemaining = secondsRemaining,
+        timedOut = timedOut,
+    )
+
     @Test
     fun `liga sem tecnicos nunca esta pronta`() {
-        val encoded = encode(ReadinessStatusDto.serializer(), ReadinessStatus(5, 0, 0, emptyList()).toDto())
+        val semTecnicos = ReadinessStatus(roundNumber = 5, readyCount = 0, totalCount = 0, pendingUsernames = emptyList())
+        val encoded = encode(ReadinessStatusDto.serializer(), semTecnicos.toDto())
 
         assertEquals("false", encoded.string("allReady"))
         assertEquals("false", encoded.string("canStart"))
