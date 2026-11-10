@@ -1051,6 +1051,43 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   lock teria de atravessar o use case inteiro (ports `suspend` por agregado) —
   e mexer no fluxo da rodada (#46), fora do escopo.
 
+### Fase 8 — Mundo do jogo (épico #148)
+
+- [x] **Formatos de competição como `sealed`** — issue #124
+
+  `domain/model/Competition.kt` descreve uma competição por **dados**:
+  `Competition(id, name, format, tiebreakers)`, com `CompetitionFormat`
+  `sealed` em quatro variantes — `RoundRobin(legs)`, `Knockout(stages)` (cada
+  `KnockoutStage` diz quantos clubes joga, se é jogo único ou ida e volta e
+  quantos **entram** nela, como a Série A na 5ª fase da Copa do Brasil),
+  `GroupsThenKnockout` e `SwissLeague`. Os `init` recusam formatos impossíveis
+  (a conta de vencedores + entrantes tem que fechar fase a fase até a final).
+
+  **Geradores puros** em `domain/rules/CompetitionScheduling.kt`: Berger com
+  turno e returno espelhado e folga para nº ímpar; sorteio de mata-mata e de
+  grupos por potes com `Random` injetado; fase suíça por **grafo circulante**
+  (cada clube enfrenta os vizinhos a distâncias `d` cujo ciclo tem comprimento
+  par, o que dá por construção 8 adversários distintos, 4 em casa, e rodadas
+  em que todos jogam uma vez). `TwoLeggedTieResult` torna irrepresentável o
+  confronto sem classificado: agregado empatado exige pênaltis (cobrados na
+  volta), e não existe gol fora de casa.
+
+  **Desempate configurável** em `domain/rules/TiebreakRules.kt` (`rankTable`):
+  critérios absolutos consecutivos viram um `Comparator` composto
+  (`thenComparing`); confronto direto e sorteio dependem de quem está empatado
+  e são aplicados por refinamento recursivo — o confronto direto entre três
+  clubes é um mini-campeonato só entre eles.
+
+  **Corte deliberado (fica para a #125):** o `PlayRoundService` e a
+  persistência ainda falam `Round`/`Cup`. O modelo novo já roda **por baixo**:
+  `generateRound` pareia com `roundRobinMatchday`, `applyRoundToStandings`
+  ordena com `rankTable` (critérios `LEAGUE_COMPETITION_TIEBREAKERS`, os mesmos
+  de antes) e `cupFormat(n)` descreve como `Knockout` a chave que `drawCup`
+  sorteia (folgas = entrantes da 2ª fase). O seed gera exatamente os mesmos
+  jogos e a mesma tabela. O mando dentro de um turno segue a regra antiga do
+  Berger; alternar o mando é trabalho do agendador da #125. Potes e "sem dois
+  clubes do mesmo país" na fase suíça e nos grupos ficam para a #132/#145.
+
 ---
 
 ## 9. Stack consolidada
