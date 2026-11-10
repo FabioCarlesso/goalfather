@@ -70,7 +70,8 @@ goalfather/
 │       │       ├── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
 │       │       ├── useCup.ts          # chave da copa mata-mata; 404 vira `null` (issue #61)
 │       │       ├── useBoard.ts        # painel da diretoria: meta + confiança (issue #62)
-│       │       └── useOffers.ts       # propostas entre técnicos: lista com polling + comandos (issue #63)
+│       │       ├── useOffers.ts       # propostas entre técnicos: lista com polling + comandos (issue #63)
+│       │       └── useRoundStream.ts  # WebSocket da rodada: ciclo de vida, placares derivados e desfecho (issue #112)
 │       ├── mocks/
 │       │   ├── browser.ts            # setupWorker do MSW
 │       │   ├── handlers.ts           # handlers HTTP
@@ -86,6 +87,7 @@ goalfather/
 │       │   │                         #   FinancesTab (ingresso, estádio), DepartmentTab (treino, médico); routes.tsx e tabs.ts
 │       │   ├── LineupPage.tsx
 │       │   ├── MatchPage.tsx         # consome WS
+│       │   ├── RoundPage.tsx         # rodada ao vivo: prontidão, grade e feed; stream em useRoundStream (issue #112)
 │       │   ├── MarketPage.tsx
 │       │   ├── StandingsPage.tsx
 │       │   ├── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
@@ -104,6 +106,8 @@ goalfather/
 │       │   ├── SquadList.tsx         # elenco da Dashboard; SellPlayerModal.tsx confirma a venda, SaleFeedback.tsx (issue #107)
 │       │   ├── ui/                   # primitivas visuais: Button, Card, Badge, Stat, Modal (issue #104); ErrorState, LoadingState, EmptyState (issue #105)
 │       │   ├── layout/               # AppLayout + menus: barra em ≥ lg, botão de menu abaixo (issue #106)
+│       │   ├── round/                # peças da RoundPage: RoundSummary (resumo pós-rodada no topo), MatchGrid, RoundProgress
+│       │   │                         #   e os cards do resumo — treino, tabela+caixa, campeão, diretoria, aposentadorias (issue #112)
 │       │   └── ...
 │       ├── domain/                   # tipos e helpers cross-tela
 │       │   ├── types.ts              # re-exporta tipos do OpenAPI
@@ -261,6 +265,14 @@ useEffect(() => {
 ```
 
 Quando o backend Kotlin tiver `/ws/matches/{id}` (Spring WebSocket + `Flow` → `WebSocketSession`), basta trocar `WS_BASE`. Formato JSON é o mesmo porque ambos vêm do contrato.
+
+### Velocidade e "Pular para o fim" (issue #115)
+
+- `wsUrl(path, { speed })` anexa `?speed=` (tipo `StreamSpeed`, gerado do contrato). Omitido → o servidor usa `NORMAL`. O mock (`MS_PER_MINUTE` em `src/mocks/handlers.ts`) segue a mesma tabela: 160/80/20/0 ms por minuto simulado.
+- `useStreamSpeed()` (`src/lib/useStreamSpeed.ts`) guarda a preferência em `localStorage` (`gf:streamSpeed`, com try/catch). É estado de UI, não de servidor — por isso não passa por TanStack Query. Rodada e partida compartilham a chave.
+- `SpeedControl` (`src/components/SpeedControl.tsx`) é apresentação pura: seletor + botão "Pular para o fim". Trocar a velocidade no meio da transmissão vale para a próxima conexão (a atual já tem o ritmo fixado no handshake).
+- **Pular para o fim** não usa mensagem cliente → servidor: abre uma conexão `INSTANT` (o stream é determinístico e reprocessa desde o início), zera os eventos acumulados e aposenta a antiga com `handOff` (`src/api/streamHandoff.ts`), que silencia os handlers dela e só a fecha quando a nova termina — no backend real, quem chega ao fim primeiro é quem recebe o `RoundFinished` completo. Na `MatchPage` (drill-down, que não grava nada) basta fechar e reconectar.
+- Os E2E de copa e de a11y jogam em `INSTANT`; `round.spec` mantém o fluxo canônico em `NORMAL` e cobre o pulo e a persistência da escolha.
 
 ---
 

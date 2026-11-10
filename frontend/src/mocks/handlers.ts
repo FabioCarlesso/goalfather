@@ -71,7 +71,9 @@ import type {
   AvailableClub,
   TransferOffer,
   TransferOfferResult,
+  StreamSpeed,
 } from '../domain/types'
+import { isStreamSpeed } from '../domain/streamSpeed'
 import type { components } from '../api/generated'
 
 type BuyPlayerRequest      = components['schemas']['BuyPlayerRequest']
@@ -91,7 +93,15 @@ const wsHost = typeof window !== 'undefined' ? window.location.host : 'localhost
 const matchStream = ws.link(`${wsProtocol}//${wsHost}/ws/matches/:id`)
 const roundStream = ws.link(`${wsProtocol}//${wsHost}/ws/round/:number`)
 
-const MS_PER_MINUTE = 80   // 90 minutos simulados em ~7s reais
+// Ritmo da transmissão (issue #115), espelhando o `StreamSpeed` do backend:
+// ms de pausa por minuto simulado. `NORMAL` = 90 minutos em ~7s reais.
+// Pacing é do adapter (aqui, o handler), não regra de jogo — por isso não
+// mora em engine.ts. Ausente ou inválido → NORMAL, como no servidor.
+const MS_PER_MINUTE: Record<StreamSpeed, number> = { SLOW: 160, NORMAL: 80, FAST: 20, INSTANT: 0 }
+const msPerMinuteOf = (url: URL): number => {
+  const speed = url.searchParams.get('speed')?.toUpperCase()
+  return isStreamSpeed(speed) ? MS_PER_MINUTE[speed] : MS_PER_MINUTE.NORMAL
+}
 
 // ─── Parâmetros financeiros do mock ───────────────────────────────────────
 // A CURVA (ocupação, preço justo, receita) mora em engine.ts, espelhando
@@ -679,6 +689,7 @@ export const handlers = [
   // schema MatchEvent via Flow → WebSocketSession (Fase 3 do backend).
   matchStream.addEventListener('connection', ({ client, params }) => {
     const matchId = Number(params.id)
+    const msPerMinute = msPerMinuteOf(client.url)
     const myClub = state.clubs[1]
     if (!myClub) {
       client.close(1011, 'Clube do usuário não encontrado')
@@ -704,7 +715,7 @@ export const handlers = [
       let lastMinute = 0
       for (const event of simulateMatch(setup)) {
         if (cancelled) return
-        const wait = Math.max(0, (event.minute - lastMinute) * MS_PER_MINUTE)
+        const wait = Math.max(0, (event.minute - lastMinute) * msPerMinute)
         if (wait > 0) await delay(wait)
         if (cancelled) return
         client.send(JSON.stringify(event satisfies MatchEvent))
@@ -798,6 +809,7 @@ export const handlers = [
   // `Flow<RoundEvent>` coordenando N partidas simultâneas.
   roundStream.addEventListener('connection', ({ client, params }) => {
     const roundNumber = Number(params.number)
+    const msPerMinute = msPerMinuteOf(client.url)
     const round = state.currentRound
     if (round.number !== roundNumber) {
       client.close(1011, `Rodada ${roundNumber} não está corrente`)
@@ -850,7 +862,7 @@ export const handlers = [
       let lastMinute = 0
       for (const { matchId, event } of allEvents) {
         if (cancelled) return
-        const wait = Math.max(0, (event.minute - lastMinute) * MS_PER_MINUTE)
+        const wait = Math.max(0, (event.minute - lastMinute) * msPerMinute)
         if (wait > 0) await delay(wait)
         if (cancelled) return
         const update: RoundEvent = { type: 'MatchUpdate', matchId, event }

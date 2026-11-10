@@ -338,7 +338,7 @@ class PlayMatchService(
 | `GET` | `/api/clubs/{id}` | Estado do clube |
 | `POST` | `/api/clubs/{id}/lineup` | Salvar escalação e formação |
 | ~~`POST`~~ | ~~`/api/clubs/{id}/matches?round=N`~~ | Removido do contrato (issue #82): partidas são jogadas por rodada (`POST /api/league/round/play`) |
-| `GET` | `/ws/matches/{id}` | **WebSocket**: stream de eventos ao vivo |
+| `GET` | `/ws/matches/{id}?speed=` | **WebSocket**: stream de eventos ao vivo (ritmo `SLOW`/`NORMAL`/`FAST`/`INSTANT` — issue #115) |
 | `GET` | `/api/market` | Jogadores disponíveis |
 | `POST` | `/api/market/buy` | Contratar jogador |
 | `POST` | `/api/market/sell` | Vender jogador |
@@ -357,6 +357,10 @@ class PlayMatchService(
 | `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
 | `POST` | `/api/league/round/ready` | Técnico sinaliza "estou pronto" — issue #20 |
 | `POST` | `/api/league/round/play` | Inicia a rodada (409 `ROUND_NOT_READY` se faltar técnico) |
+
+> **Velocidade da transmissão (issue #115).** `/ws/round/{n}` e `/ws/matches/{id}` aceitam `?speed=SLOW|NORMAL|FAST|INSTANT` (160/80/20/0 ms por minuto simulado). Ausente ou inválido → `NORMAL`, sem recusar o handshake. O ritmo é do adapter (`StreamSpeed` + extension `WebSocketSession.streamSpeed()` em `adapter/in/web/ws`), nunca do domínio; a espera é injetável no construtor dos handlers (`pause: suspend (Long) -> Unit`), então os testes conferem o ritmo pedido sem cronometrar. Como o stream é gerado **por conexão** e é determinístico (seed = `matchId`), a velocidade é por cliente e os eventos são idênticos em qualquer ritmo. "Pular para o fim" não tem mensagem cliente → servidor: o frontend abre outra conexão `INSTANT` e só fecha a antiga quando a nova termina — fechar antes deixaria o stream órfão (que segue sem pacing) vencer o claim `finishRound`, e a conexão nova receberia só o replay (`RoundFinished` sem finanças/treino, sem `SeasonFinished`).
+>
+> Limitação conhecida (anterior à #115, ficou mais visível com ela): numa liga com vários técnicos assistindo, só o stream que encerra a rodada leva o `RoundFinished` completo; os outros recebem o replay. Com velocidades diferentes, quem usa `INSTANT`/pula tende a ser esse stream.
 
 DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar o modelo interno na API e desacopla versionamento do contrato REST.
 
