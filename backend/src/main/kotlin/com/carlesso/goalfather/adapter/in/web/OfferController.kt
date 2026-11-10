@@ -9,6 +9,7 @@ import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.TransferOfferUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.OfferResult
@@ -62,7 +63,7 @@ class OfferController(
             buyerClubId = ClubId(req.buyerClubId),
             sellerClubId = ClubId(req.sellerClubId),
             playerId = PlayerId(req.playerId),
-            amount = req.amount,
+            amount = Money(req.amount),
             requesterId = userId,
         ),
     )

@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { formatMoney, formatSeats } from './formatters'
 
 describe('formatMoney', () => {
-  it('converte centavos em BRL', () => {
-    expect(formatMoney(10_000)).toBe('R$ 100')
-    expect(formatMoney(800_000_00)).toBe('R$ 800.000')
+  it('converte centavos de USD', () => {
+    expect(formatMoney(10_000)).toBe('US$ 100')
+    expect(formatMoney(800_000_00)).toBe('US$ 800.000')
   })
 
   it('trata zero', () => {
-    expect(formatMoney(0)).toBe('R$ 0')
+    expect(formatMoney(0)).toBe('US$ 0')
   })
 })
 

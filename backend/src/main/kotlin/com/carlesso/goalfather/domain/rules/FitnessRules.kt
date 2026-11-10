@@ -2,8 +2,10 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.cents
 import kotlin.random.Random
 
 /**
@@ -14,7 +16,7 @@ import kotlin.random.Random
  *
  * Números herdados do protótipo (`prototype/goalfather-web.jsx`, a
  * especificação executável do CLAUDE.md): titular perde 10–25 de stamina por
- * partida com piso em 40, e o "departamento médico" custa R$ 30.000 e devolve
+ * partida com piso em 40, e o "departamento médico" custa US$ 6.000 e devolve
  * +30 de stamina.
  */
 
@@ -39,8 +41,8 @@ val INJURY_DURATION: IntRange = 1..4
  */
 const val STAMINA_FULL_PERFORMANCE: Int = 70
 
-/** Custo fixo de uma sessão do departamento médico, em centavos (R$ 30.000). */
-const val MEDICAL_DEPARTMENT_COST_CENTS: Long = 30_000_00
+/** Custo fixo de uma sessão do departamento médico (US$ 6.000; `val` porque [Money] não é `const`). */
+val MEDICAL_DEPARTMENT_COST_CENTS: Money = 6_000_00.cents
 
 /** Stamina devolvida a cada jogador por uma sessão do departamento médico. */
 const val MEDICAL_STAMINA_RECOVERY: Int = 30

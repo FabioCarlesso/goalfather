@@ -40,7 +40,7 @@ data class Player(
     val passing: Int,
     val defending: Int,
     val stamina: Int = 100,
-    val salary: Int,
+    val salary: Money,
     val age: Int,
     val goals: Int = 0,
     val yellowCards: Int = 0,

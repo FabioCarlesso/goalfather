@@ -9,6 +9,7 @@ import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Posture
 import com.carlesso.goalfather.domain.model.Tactics
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.INJURY_DURATION
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -36,7 +37,7 @@ class MatchSimulatorTest {
         shooting = overall,
         passing = overall,
         defending = overall,
-        salary = 10_000,
+        salary = 10_000.cents,
         age = 25,
     )
 

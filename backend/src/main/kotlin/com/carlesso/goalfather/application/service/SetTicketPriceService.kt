@@ -3,6 +3,7 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.result.TicketPriceResult
 import com.carlesso.goalfather.domain.rules.MAX_TICKET_PRICE_CENTS
 import com.carlesso.goalfather.domain.rules.MIN_TICKET_PRICE_CENTS
@@ -37,7 +38,7 @@ class SetTicketPriceService(
     override suspend fun execute(
         clubId: ClubId,
         requesterId: Long,
-        ticketPriceCents: Long,
+        ticketPriceCents: Money,
     ): TicketPriceResult {
         val club = clubRepo.findById(clubId)
             ?: return TicketPriceResult.ClubNotFound(clubId)

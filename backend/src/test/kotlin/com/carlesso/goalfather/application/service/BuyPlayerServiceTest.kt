@@ -7,6 +7,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
@@ -31,7 +32,7 @@ class BuyPlayerServiceTest {
     fun `compra bem-sucedida debita caixa, adiciona ao elenco e remove do mercado`() = runTest {
         val club = makeClub(cash = 1_000_000_00, squadSize = 11)
         val target = makePlayer(99, Position.FW, overall = 88)
-        val entry = MarketEntry(player = target, price = 400_000_00)
+        val entry = MarketEntry(player = target, price = 400_000_00.cents)
 
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns entry
@@ -42,7 +43,7 @@ class BuyPlayerServiceTest {
         val result = service.execute(ClubId(1), PlayerId(99))
 
         assertIs<TransferResult.Success>(result)
-        assertEquals(600_000_00, result.club.cash)
+        assertEquals(600_000_00.cents, result.club.cash)
         assertEquals(12, result.club.squad.size)
         assertEquals(target, result.player)
 
@@ -57,7 +58,7 @@ class BuyPlayerServiceTest {
         val club = makeClub(cash = 1_000_000_00, squadSize = 11)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns
-            MarketEntry(player = makePlayer(99), price = 400_000_00)
+            MarketEntry(player = makePlayer(99), price = 400_000_00.cents)
         coEvery { marketRepo.claim(PlayerId(99)) } returns false
 
         val result = service.execute(ClubId(1), PlayerId(99))
@@ -72,13 +73,13 @@ class BuyPlayerServiceTest {
         val club = makeClub(cash = 100_000_00)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns
-            MarketEntry(player = makePlayer(99), price = 500_000_00)
+            MarketEntry(player = makePlayer(99), price = 500_000_00.cents)
 
         val result = service.execute(ClubId(1), PlayerId(99))
 
         assertIs<TransferResult.InsufficientFunds>(result)
-        assertEquals(100_000_00, result.available)
-        assertEquals(500_000_00, result.required)
+        assertEquals(100_000_00.cents, result.available)
+        assertEquals(500_000_00.cents, result.required)
 
         coVerify(exactly = 0) { clubRepo.save(any()) }
         coVerify(exactly = 0) { marketRepo.claim(any()) }
@@ -89,7 +90,7 @@ class BuyPlayerServiceTest {
         val club = makeClub(cash = 10_000_000_00, squadSize = 25)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns
-            MarketEntry(player = makePlayer(99), price = 100_00)
+            MarketEntry(player = makePlayer(99), price = 100_00.cents)
 
         val result = service.execute(ClubId(1), PlayerId(99))
 
@@ -125,7 +126,7 @@ class BuyPlayerServiceTest {
         // otimista, sem compensação o jogador sumiria (fora do mercado e de
         // qualquer elenco).
         val target = makePlayer(99, Position.FW, overall = 88)
-        val entry = MarketEntry(player = target, price = 400_000_00)
+        val entry = MarketEntry(player = target, price = 400_000_00.cents)
         coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(cash = 1_000_000_00)
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns entry
         coEvery { marketRepo.claim(PlayerId(99)) } returns true

@@ -53,7 +53,7 @@ fun BoardStatus.toDto(): BoardStatusDto = BoardStatusDto(
     matchday = matchday,
     confidence = expectation.confidence,
     mood = expectation.mood,
-    bonusCents = expectation.objective.bonusCents,
+    bonusCents = expectation.objective.bonusCents.cents,
     firingConfidence = FIRING_CONFIDENCE,
 )
 

@@ -15,6 +15,7 @@ import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Posture
 import com.carlesso.goalfather.domain.model.Tactics
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import kotlinx.serialization.json.Json
@@ -215,7 +216,7 @@ class ResponsesTest {
 
     @Test
     fun `market entry expoe player e price`() {
-        val entry = MarketEntry(player = club.squad.first().copy(overall = 88), price = 12_345_00)
+        val entry = MarketEntry(player = club.squad.first().copy(overall = 88), price = 12_345_00.cents)
 
         val dto = entry.toDto()
         val encoded = json
@@ -252,7 +253,7 @@ class ResponsesTest {
         // porque um swap no mapeamento passaria por compilador e por um teste
         // que usasse o mesmo número nos dois campos.
         val result: TransferResult =
-            TransferResult.InsufficientFunds(available = 1_000_00, required = 9_999_00)
+            TransferResult.InsufficientFunds(available = 1_000_00.cents, required = 9_999_00.cents)
 
         val encoded = encode(result.toDto())
 
@@ -326,7 +327,7 @@ class ResponsesTest {
             encoded.getValue("phases").jsonArray.map { it.jsonObject.getValue("phase").jsonPrimitive.content },
         )
         assertEquals(
-            KnockoutPhase.FINAL.prizeCents,
+            KnockoutPhase.FINAL.prizeCents.cents,
             encoded.getValue("phases").jsonArray[1].jsonObject.getValue("prizeCents").jsonPrimitive.content.toLong(),
         )
         // Fase das semis completa (pênaltis + folga) e final ainda não sorteada:

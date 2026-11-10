@@ -20,10 +20,10 @@ vi.mock('react-hot-toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }))
 
-const VIDIGAL = 'Lucas Vidigal'   // AT, OVR 81, 25a, R$ 450 mil, salário 32 mil
-const PACHECO = 'André Pacheco'   // MC, OVR 77, 24a, R$ 220 mil, salário 23 mil
-const APARICIO = 'Bruno Aparício' // ZG, OVR 79, 27a, R$ 300 mil, salário 25 mil
-const RAMIRES = 'Eduardo Ramires' // GL, OVR 76, 28a, R$ 180 mil, salário 21 mil
+const VIDIGAL = 'Lucas Vidigal'   // AT, OVR 81, 25a, US$ 90 mil, salário 6,4 mil
+const PACHECO = 'André Pacheco'   // MC, OVR 77, 24a, US$ 44 mil, salário 4,6 mil
+const APARICIO = 'Bruno Aparício' // ZG, OVR 79, 27a, US$ 60 mil, salário 5 mil
+const RAMIRES = 'Eduardo Ramires' // GL, OVR 76, 28a, US$ 36 mil, salário 4,2 mil
 
 function LocationProbe() {
   const { search } = useLocation()
@@ -233,20 +233,20 @@ describe('MarketPage (issue #111)', () => {
       renderMarket()
       await screen.findByText(RAMIRES)
 
-      const cash = await screen.findByText(money(800_000_00))
+      const cash = await screen.findByText(money(160_000_00))
       expect(cash.closest('p')).toHaveTextContent(/^Caixa:/)
 
       await user.click(buyButton(RAMIRES))
 
-      expect(await screen.findByText(money(620_000_00))).toBeInTheDocument()
+      expect(await screen.findByText(money(124_000_00))).toBeInTheDocument()
       await waitFor(() => expect(screen.queryByText(RAMIRES)).not.toBeInTheDocument())
     })
 
     it('marca quem está acima do caixa e mantém a compra possível; o erro vem do backend', async () => {
       const user = userEvent.setup()
-      state.clubs[1] = { ...originalClub, cash: 200_000_00 }
+      state.clubs[1] = { ...originalClub, cash: 40_000_00 }
       renderMarket()
-      await screen.findByText(money(200_000_00))
+      await screen.findByText(money(40_000_00))
 
       expect(within(rowOf(RAMIRES)).queryByText('acima do seu caixa')).not.toBeInTheDocument()
       expect(within(rowOf(VIDIGAL)).getByText('acima do seu caixa')).toBeInTheDocument()
@@ -256,7 +256,7 @@ describe('MarketPage (issue #111)', () => {
 
       await waitFor(() =>
         expect(toast.error).toHaveBeenCalledWith(
-          `Caixa insuficiente: necessário ${formatMoney(450_000_00)}, disponível ${formatMoney(200_000_00)}.`,
+          `Caixa insuficiente: necessário ${formatMoney(90_000_00)}, disponível ${formatMoney(40_000_00)}.`,
           { id: 'buy-result' },
         ),
       )

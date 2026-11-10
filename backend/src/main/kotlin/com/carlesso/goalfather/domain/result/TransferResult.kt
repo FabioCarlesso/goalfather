@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.result
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import kotlinx.serialization.SerialName
@@ -23,7 +24,7 @@ sealed interface TransferResult {
 
     @Serializable
     @SerialName("InsufficientFunds")
-    data class InsufficientFunds(val available: Long, val required: Long) : TransferResult
+    data class InsufficientFunds(val available: Money, val required: Money) : TransferResult
 
     @Serializable
     @SerialName("SquadFull")

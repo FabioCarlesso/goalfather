@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 
 /**
@@ -23,8 +24,8 @@ const val SALE_PAYOUT_SALARY_MULTIPLIER: Long = 8
 /** Por quanto o jogador vendido é anunciado no mercado: 12 salários. */
 const val MARKET_LISTING_SALARY_MULTIPLIER: Long = 12
 
-/** Valor pago ao clube que vende [player], em centavos. */
-fun salePayout(player: Player): Long = player.salary.toLong() * SALE_PAYOUT_SALARY_MULTIPLIER
+/** Valor pago ao clube que vende [player]. */
+fun salePayout(player: Player): Money = player.salary * SALE_PAYOUT_SALARY_MULTIPLIER
 
-/** Preço de anúncio de [player] no mercado, em centavos. */
-fun marketListingPrice(player: Player): Long = player.salary.toLong() * MARKET_LISTING_SALARY_MULTIPLIER
+/** Preço de anúncio de [player] no mercado. */
+fun marketListingPrice(player: Player): Money = player.salary * MARKET_LISTING_SALARY_MULTIPLIER

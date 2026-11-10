@@ -3,6 +3,8 @@ package com.carlesso.goalfather.domain.rules
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
+import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.test.makePlayer
 import kotlin.random.Random
 import kotlin.test.Test
@@ -202,8 +204,8 @@ class AgingRulesTest {
 
         assertEquals(listOf(1L, 3L), remaining.map { it.id.value })
         assertEquals(
-            38_000,
-            remaining.sumOf { it.salary },
+            38_000.cents,
+            remaining.sumOfMoney { it.salary },
             "a folha deveria perder o salário do aposentado",
         )
         assertEquals(1, outcomes.count { it is AgingOutcome.Retired })

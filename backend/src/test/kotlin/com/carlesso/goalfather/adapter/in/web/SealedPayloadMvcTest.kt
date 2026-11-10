@@ -83,7 +83,7 @@ class SealedPayloadMvcTest {
         val updated = mockMvc.put("/api/clubs/$clubId/ticket-price") {
             header("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
-            content = """{"ticketPriceCents":6000}"""
+            content = """{"ticketPriceCents":1200}"""
         }.andReturn().await()
         assertSquadDiscriminated(parse(updated))
     }

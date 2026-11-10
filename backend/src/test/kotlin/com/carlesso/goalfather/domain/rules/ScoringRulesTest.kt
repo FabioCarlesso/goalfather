@@ -3,6 +3,7 @@ package com.carlesso.goalfather.domain.rules
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,7 +25,7 @@ class ScoringRulesTest {
         shooting = 75,
         passing = 75,
         defending = 75,
-        salary = 10_000,
+        salary = 10_000.cents,
         age = 25,
     )
 

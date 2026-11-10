@@ -11,6 +11,7 @@ import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -90,8 +91,8 @@ class ClubPersistenceAdapter(
         }
     }
 
-    override suspend fun updateTicketPrice(id: ClubId, ticketPriceCents: Long): Club? =
-        withContext(Dispatchers.IO) { saveTx.updateTicketPrice(id.value, ticketPriceCents) }
+    override suspend fun updateTicketPrice(id: ClubId, ticketPriceCents: Money): Club? =
+        withContext(Dispatchers.IO) { saveTx.updateTicketPrice(id.value, ticketPriceCents.cents) }
 
     override suspend fun updateTrainingFocus(id: ClubId, focus: TrainingFocus): Club? =
         withContext(Dispatchers.IO) { saveTx.updateTrainingFocus(id.value, focus.name) }
@@ -128,13 +129,13 @@ class ClubSaveTransaction(
         }
 
         entity.name = club.name
-        entity.cash = club.cash
+        entity.cash = club.cash.cents
         entity.stadiumCapacity = club.stadiumCapacity
         entity.lineupJson = club.lineup?.let { json.encodeToString(Lineup.serializer(), it) }
         entity.ownerId = club.ownerId
         entity.division = club.division.value
         entity.trainingFocus = club.trainingFocus.name
-        entity.ticketPriceCents = club.ticketPriceCents
+        entity.ticketPriceCents = club.ticketPriceCents.cents
         entity.applyBoard(club.board)
         // `saveAndFlush`: o UPDATE (e a checagem do `@Version`) acontece AGORA,
         // então `saved.version` já é a versão que fica no banco após o commit.

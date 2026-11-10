@@ -1,14 +1,16 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
+import com.carlesso.goalfather.domain.model.Money
+import com.carlesso.goalfather.domain.model.cents
 
 /**
  * Regras de ampliação do estádio (issue #79). Funções PURAS: a conta do custo
  * saiu do controller e mora aqui, onde dá para testar sem Spring.
  */
 
-/** Custo de cada assento novo: R$ 100. */
-const val STADIUM_SEAT_COST_CENTS: Long = 100_00
+/** Custo de cada assento novo: US$ 20 (`val`: [Money] não cabe em `const`). */
+val STADIUM_SEAT_COST_CENTS: Money = 20_00.cents
 
 /**
  * Menor obra aceita: 1.000 lugares. Também é o que barra zero e negativos —
@@ -22,12 +24,12 @@ fun isStadiumExpansionAllowed(additionalSeats: Int): Boolean =
     additionalSeats >= MIN_STADIUM_EXPANSION_SEATS
 
 /**
- * Custo total da obra, em centavos. O `toLong()` vem ANTES da multiplicação:
- * `Int * Long` já promoveria para `Long`, mas deixar explícito documenta que
- * `Int.MAX_VALUE` assentos × R$ 100 não cabe em `Int`.
+ * Custo total da obra. O `toLong()` vem ANTES da multiplicação: o `times(Long)`
+ * de [Money] multiplica em `Long`, e deixar explícito documenta que
+ * `Int.MAX_VALUE` assentos × US$ 20 não cabe em `Int`.
  */
-fun stadiumExpansionCost(additionalSeats: Int): Long =
-    additionalSeats.toLong() * STADIUM_SEAT_COST_CENTS
+fun stadiumExpansionCost(additionalSeats: Int): Money =
+    STADIUM_SEAT_COST_CENTS * additionalSeats.toLong()
 
 /**
  * Clube depois da obra: caixa debitado e capacidade somada. Extension function

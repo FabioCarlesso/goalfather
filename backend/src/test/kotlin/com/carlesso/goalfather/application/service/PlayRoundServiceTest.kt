@@ -31,6 +31,8 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.model.TransferOffer
+import com.carlesso.goalfather.domain.model.cents
+import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
@@ -381,10 +383,10 @@ class PlayRoundServiceTest {
 
         // Rodada 1 é ímpar → sem folha salarial; mandante (id 1) tem bilheteria > 0.
         val homeFinance = finished.finances.first { it.clubId == ClubId(1) }
-        assertTrue(homeFinance.ticketRevenue > 0, "Mandante deveria ter bilheteria")
-        assertEquals(0L, homeFinance.salariesPaid, "Rodada ímpar não cobra salários")
+        assertTrue(homeFinance.ticketRevenue > 0.cents, "Mandante deveria ter bilheteria")
+        assertEquals(0.cents, homeFinance.salariesPaid, "Rodada ímpar não cobra salários")
         val awayFinance = finished.finances.first { it.clubId == ClubId(2) }
-        assertEquals(0L, awayFinance.ticketRevenue, "Visitante não tem bilheteria")
+        assertEquals(0.cents, awayFinance.ticketRevenue, "Visitante não tem bilheteria")
 
         // O caixa do mandante salvo reflete o caixa inicial + bilheteria.
         // É a PRIMEIRA gravação do clube: esta liga de 2 clubes vira a temporada
@@ -402,7 +404,7 @@ class PlayRoundServiceTest {
         // da rodada perde o lock, relê o clube e credita a bilheteria SOBRE o
         // caixa já debitado — nenhuma das duas alterações some.
         val expanded = homeClub.copy(
-            cash = homeClub.cash - 100_000_00,
+            cash = homeClub.cash - 100_000_00.cents,
             stadiumCapacity = homeClub.stadiumCapacity + 1_000,
             version = homeClub.version + 1,
         )
@@ -455,7 +457,7 @@ class PlayRoundServiceTest {
     @Test
     fun `bilheteria da rodada usa o preco configurado pelo tecnico (issue 59)`() = runTest {
         suspend fun financesAt(priceCents: Long): List<RoundFinance> {
-            val home = homeClub.copy(ticketPriceCents = priceCents)
+            val home = homeClub.copy(ticketPriceCents = priceCents.cents)
             coEvery { leagueRepo.findRound(1) } returns round
             coEvery { leagueRepo.currentStandings() } returns listOf(standings)
             coEvery { clubRepo.findById(ClubId(1)) } returns home
@@ -476,10 +478,10 @@ class PlayRoundServiceTest {
 
         // O extrato reporta a conta inteira, não só o total (issue #59).
         val caroHome = caro.first { it.clubId == ClubId(1) }
-        assertEquals(20_00, barato.ticketPrice)
-        assertEquals(150_00, caroHome.ticketPrice)
-        assertEquals(barato.attendance * 20_00L, barato.ticketRevenue)
-        assertEquals(caroHome.attendance * 150_00L, caroHome.ticketRevenue)
+        assertEquals(20_00.cents, barato.ticketPrice)
+        assertEquals(150_00.cents, caroHome.ticketPrice)
+        assertEquals(20_00.cents * barato.attendance, barato.ticketRevenue)
+        assertEquals(150_00.cents * caroHome.attendance, caroHome.ticketRevenue)
 
         // Ingresso caro esvazia o estádio — é o trade-off da curva de demanda.
         assertTrue(
@@ -491,7 +493,7 @@ class PlayRoundServiceTest {
         // em casa continua reportado.
         val visitante = caro.first { it.clubId == ClubId(2) }
         assertEquals(0, visitante.attendance)
-        assertEquals(0L, visitante.ticketRevenue)
+        assertEquals(0.cents, visitante.ticketRevenue)
         assertEquals(awayClub.ticketPriceCents, visitante.ticketPrice)
     }
 
@@ -726,7 +728,7 @@ class PlayRoundServiceTest {
         // menor que a do veterano que saiu.
         assertEquals(aging.squad.size, preSeason.squad.size, "a base deveria repor o aposentado")
         assertTrue(
-            preSeason.squad.sumOf { it.salary.toLong() } < aging.squad.sumOf { it.salary.toLong() },
+            preSeason.squad.sumOfMoney { it.salary } < aging.squad.sumOfMoney { it.salary },
             "a folha deveria cair ao trocar veterano por cria da base",
         )
         assertTrue(
@@ -785,8 +787,8 @@ class PlayRoundServiceTest {
     @Test
     fun `virada de temporada envelhece o mercado e tira o aposentado da lista (issue 55)`() = runTest {
         // Um anunciado jovem (continua na lista) e um veterano em fim de linha.
-        val prospect = MarketEntry(makePlayer(201, overall = 70, age = 22), price = 100_000_00)
-        val fading = MarketEntry(makePlayer(202, overall = 55, age = 39), price = 50_000_00)
+        val prospect = MarketEntry(makePlayer(201, overall = 70, age = 22), price = 100_000_00.cents)
+        val fading = MarketEntry(makePlayer(202, overall = 55, age = 39), price = 50_000_00.cents)
         val lastRound = Round(
             number = 1,
             season = 2026,
@@ -845,7 +847,7 @@ class PlayRoundServiceTest {
         assertIs<RoundEvent.RoundFinished>(finished)
 
         val awayFinance = finished.finances.first { it.clubId == ClubId(2) }
-        assertTrue(awayFinance.salariesPaid > 0, "Rodada par deve cobrar salários")
+        assertTrue(awayFinance.salariesPaid > 0.cents, "Rodada par deve cobrar salários")
         assertEquals(
             awayFinance.salariesPaid,
             awayFinance.deficit,
@@ -854,7 +856,7 @@ class PlayRoundServiceTest {
 
         // O mandante cobre a folha com caixa+bilheteria → sem deficit.
         val homeFinance = finished.finances.first { it.clubId == ClubId(1) }
-        assertEquals(0L, homeFinance.deficit, "Mandante com caixa folgado não fica no vermelho")
+        assertEquals(0.cents, homeFinance.deficit, "Mandante com caixa folgado não fica no vermelho")
     }
 
     @Test
@@ -916,7 +918,7 @@ class PlayRoundServiceTest {
             sellerClubName = "Away FC",
             playerId = PlayerId(5),
             playerName = "Alvo",
-            amount = 100_000_00,
+            amount = 100_000_00.cents,
             roundsLeft = 2,
         )
         val lastRound = offer.copy(id = OfferId(2), roundsLeft = 1)

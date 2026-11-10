@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.result
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -34,5 +35,5 @@ sealed interface TicketPriceResult {
 
     @Serializable
     @SerialName("PriceOutOfRange")
-    data class PriceOutOfRange(val price: Long, val min: Long, val max: Long) : TicketPriceResult
+    data class PriceOutOfRange(val price: Money, val min: Money, val max: Money) : TicketPriceResult
 }

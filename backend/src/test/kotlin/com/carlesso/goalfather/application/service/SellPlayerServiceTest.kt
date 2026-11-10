@@ -6,6 +6,7 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.Runs
@@ -25,8 +26,8 @@ class SellPlayerServiceTest {
     private val marketRepo: MarketRepository = mockk()
     private val service = SellPlayerService(
         clubRepo, marketRepo,
-        salePriceCalc = { 200_000_00 }, // fixo para determinismo
-        listingPriceCalc = { 300_000_00 },
+        salePriceCalc = { 200_000_00.cents }, // fixo para determinismo
+        listingPriceCalc = { 300_000_00.cents },
     )
 
     @Test
@@ -40,7 +41,7 @@ class SellPlayerServiceTest {
         val result = service.execute(ClubId(1), targetId)
 
         assertIs<TransferResult.Success>(result)
-        assertEquals(700_000_00, result.club.cash)
+        assertEquals(700_000_00.cents, result.club.cash)
         assertEquals(10, result.club.squad.size)
         assertEquals(targetId, result.player.id)
 
@@ -95,7 +96,7 @@ class SellPlayerServiceTest {
         val result = service.execute(ClubId(1), club.squad.first().id)
 
         assertIs<TransferResult.Success>(result)
-        assertEquals(700_000_00, result.club.cash)
-        assertEquals(300_000_00, listed.captured.price)
+        assertEquals(700_000_00.cents, result.club.cash)
+        assertEquals(300_000_00.cents, listed.captured.price)
     }
 }

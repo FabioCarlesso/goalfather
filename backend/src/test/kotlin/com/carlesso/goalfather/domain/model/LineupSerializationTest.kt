@@ -3,6 +3,7 @@ package com.carlesso.goalfather.domain.model
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import com.carlesso.goalfather.domain.model.cents
 
 /**
  * A escalação é persistida como JSON na coluna `clubs.lineup_json`, então a
@@ -32,7 +33,7 @@ class LineupSerializationTest {
         shooting = 70,
         passing = 70,
         defending = 70,
-        salary = 10_000,
+        salary = 10_000.cents,
         age = 25,
     )
 

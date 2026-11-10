@@ -11,6 +11,7 @@ import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.OfferResult
 import com.carlesso.goalfather.test.makePlayer
 import io.mockk.coEvery
@@ -60,7 +61,7 @@ class TransferOfferConcurrencyIntegrationTest {
             Club(
                 id = ClubId(id),
                 name = "Proposta FC $id",
-                cash = cash,
+                cash = cash.cents,
                 stadiumCapacity = 10_000,
                 squad = squad,
                 ownerId = id,
@@ -72,7 +73,7 @@ class TransferOfferConcurrencyIntegrationTest {
     private fun Club.lineMember(n: Long): Player = squad.first { it.id.value == id.value * 100 + n }
 
     private fun offer(buyer: Club, seller: Club, player: Player, amount: Long) = runBlocking {
-        val result = service.create(buyer.id, seller.id, player.id, amount, requesterId = buyer.ownerId!!)
+        val result = service.create(buyer.id, seller.id, player.id, amount.cents, requesterId = buyer.ownerId!!)
         assertIs<OfferResult.Success>(result).offer
     }
 
@@ -109,8 +110,8 @@ class TransferOfferConcurrencyIntegrationTest {
         val sellerAfter = club(seller.id)
         assertTrue(buyerAfter.squad.any { it.id == target.id }, "jogador entra no comprador")
         assertTrue(sellerAfter.squad.none { it.id == target.id }, "jogador sai do vendedor")
-        assertEquals(buyer.cash - 750_000_00, buyerAfter.cash)
-        assertEquals(seller.cash + 750_000_00, sellerAfter.cash)
+        assertEquals(buyer.cash - 750_000_00.cents, buyerAfter.cash)
+        assertEquals(seller.cash + 750_000_00.cents, sellerAfter.cash)
         assertEquals(OfferStatus.Accepted, offerRepo.findById(pending.id)!!.status)
     }
 
@@ -143,8 +144,8 @@ class TransferOfferConcurrencyIntegrationTest {
         assertTrue(loserClub.squad.none { it.id == target.id }, "jogador não duplica no perdedor")
         assertTrue(club(seller.id).squad.none { it.id == target.id }, "jogador saiu do vendedor")
         assertEquals(winnerOffer.amount, club(seller.id).cash, "vendedor recebe UMA proposta")
-        assertEquals(10_000_000_00 - winnerOffer.amount, winner.cash)
-        assertEquals(10_000_000_00, loserClub.cash, "perdedor não paga nada")
+        assertEquals(10_000_000_00.cents - winnerOffer.amount, winner.cash)
+        assertEquals(10_000_000_00.cents, loserClub.cash, "perdedor não paga nada")
         runBlocking {
             assertEquals(OfferStatus.Accepted, offerRepo.findById(winnerOffer.id)!!.status)
             assertEquals(
@@ -177,8 +178,8 @@ class TransferOfferConcurrencyIntegrationTest {
         val bAfter = club(b.id)
         assertTrue(aAfter.squad.any { it.id == fromB.id } && aAfter.squad.none { it.id == fromA.id })
         assertTrue(bAfter.squad.any { it.id == fromA.id } && bAfter.squad.none { it.id == fromB.id })
-        assertEquals(a.cash + 200_000_00 - 250_000_00, aAfter.cash)
-        assertEquals(b.cash + 250_000_00 - 200_000_00, bAfter.cash)
+        assertEquals(a.cash + 200_000_00.cents - 250_000_00.cents, aAfter.cash)
+        assertEquals(b.cash + 250_000_00.cents - 200_000_00.cents, bAfter.cash)
     }
 
     @Test

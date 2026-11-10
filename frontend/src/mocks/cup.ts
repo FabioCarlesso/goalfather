@@ -29,11 +29,11 @@ export const PHASE_TEAMS: Record<KnockoutPhase, number> = {
 
 /** Prêmio por confronto vencido em cada fase — mesmos valores de `KnockoutPhase.prizeCents`. */
 export const CUP_PRIZE_CENTS: Record<KnockoutPhase, number> = {
-  ROUND_OF_32: 75_000_00,
-  ROUND_OF_16: 100_000_00,
-  QUARTER_FINALS: 150_000_00,
-  SEMI_FINALS: 250_000_00,
-  FINAL: 500_000_00,
+  ROUND_OF_32: 15_000_00,
+  ROUND_OF_16: 20_000_00,
+  QUARTER_FINALS: 30_000_00,
+  SEMI_FINALS: 50_000_00,
+  FINAL: 100_000_00,
 }
 
 export const MIN_CUP_CLUBS = 4

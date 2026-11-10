@@ -14,15 +14,15 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  * constante, então "quanto vale cumprir o título" mora junto do próprio
  * título, sem um `when` espalhado pelo service. Meta mais difícil paga mais.
  */
-enum class BoardObjective(val bonusCents: Long) {
+enum class BoardObjective(val bonusCents: Money) {
     /** Elenco entre os mais fortes da divisão: só o título serve. */
-    TITLE(300_000_00),
+    TITLE(60_000_00.cents),
 
     /** Elenco da metade de cima: terminar na metade de cima da tabela. */
-    TOP_HALF(200_000_00),
+    TOP_HALF(40_000_00.cents),
 
     /** Elenco modesto: terminar no meio da tabela, longe do fundo. */
-    MID_TABLE(100_000_00),
+    MID_TABLE(20_000_00.cents),
 }
 
 /**
@@ -79,7 +79,7 @@ sealed interface BoardVerdict {
     /** Meta cumprida: o clube recebe [bonusCents] em caixa. */
     @Serializable
     @SerialName("TargetMet")
-    data class TargetMet(val bonusCents: Long) : BoardVerdict
+    data class TargetMet(val bonusCents: Money) : BoardVerdict
 
     /** Meta perdida, mas a diretoria ainda confia: o técnico fica, sem bônus. */
     @Serializable

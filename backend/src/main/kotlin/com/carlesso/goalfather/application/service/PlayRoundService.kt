@@ -28,6 +28,7 @@ import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -39,6 +40,7 @@ import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.AgingOutcome
 import com.carlesso.goalfather.domain.rules.ageOneSeason
@@ -438,7 +440,7 @@ class PlayRoundService(
             // meta): um veredito novo no domínio quebra a compilação aqui.
             val bonus = when (val verdict = verdicts[club.id]) {
                 is BoardVerdict.TargetMet -> verdict.bonusCents
-                BoardVerdict.TargetMissed, BoardVerdict.Fired, null -> 0L
+                BoardVerdict.TargetMissed, BoardVerdict.Fired, null -> Money.ZERO
             }
             saveReapplying(club) { current ->
                 current.copy(cash = current.cash + bonus, board = nextBoards[current.id])
@@ -690,7 +692,7 @@ class PlayRoundService(
     private fun computeFinances(
         round: Round,
         clubs: Collection<Club>,
-        cupPrizes: Map<ClubId, Long>,
+        cupPrizes: Map<ClubId, Money>,
     ): List<RoundFinance> {
         val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
         // Folha segue as rodadas de LIGA; data de copa não cobra (issue #61).
@@ -707,12 +709,12 @@ class PlayRoundService(
                     null
                 }
             val crowd = homeGate?.attendance ?: 0
-            val revenue = homeGate?.revenue ?: 0L
-            val salaries = if (salaryRound) club.squad.sumOf { it.salary.toLong() } else 0L
-            val prize = cupPrizes[club.id] ?: 0L
+            val revenue = homeGate?.revenue ?: Money.ZERO
+            val salaries = if (salaryRound) club.squad.sumOfMoney { it.salary } else Money.ZERO
+            val prize = cupPrizes[club.id] ?: Money.ZERO
             // Rombo = quanto da folha o caixa+bilheteria+prêmio não cobriram.
             // Espelha o truncamento em zero de [persistRoundEffects] (issue #23).
-            val deficit = (salaries - revenue - prize - club.cash).coerceAtLeast(0)
+            val deficit = (salaries - revenue - prize - club.cash).coerceAtLeast(Money.ZERO)
             RoundFinance(
                 clubId = club.id,
                 ticketRevenue = revenue,
@@ -848,7 +850,7 @@ class PlayRoundService(
                 // compra) ou vice-versa (issue #89).
                 val finance = financeByClub[current.id.value]
                 val newCash = if (finance == null) current.cash
-                    else (current.cash + finance.cashDelta()).coerceAtLeast(0)
+                    else (current.cash + finance.cashDelta()).coerceAtLeast(Money.ZERO)
 
                 current.copy(squad = trained.squad, cash = newCash, board = boardAfterRound(current))
             }

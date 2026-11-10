@@ -10,6 +10,7 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 
 /**
  * Construtores compactos de domínio para testes — evita boilerplate
@@ -34,7 +35,7 @@ internal fun makePlayer(
     passing = overall,
     defending = overall,
     stamina = stamina,
-    salary = salary,
+    salary = salary.cents,
     age = age,
     availability = availability,
 )
@@ -52,7 +53,7 @@ internal fun makeClub(
 ): Club = Club(
     id = ClubId(id),
     name = name,
-    cash = cash,
+    cash = cash.cents,
     stadiumCapacity = 15_000,
     squad = (1L..squadSize.toLong()).map { makePlayer(it, overall = overall, stamina = stamina) },
     lineup = lineup,

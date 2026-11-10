@@ -1,9 +1,11 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.OfferResult
 import kotlinx.serialization.Serializable
 
@@ -15,8 +17,8 @@ import kotlinx.serialization.Serializable
 /** Rodadas que o vendedor tem para responder antes de a proposta expirar. */
 const val OFFER_DEADLINE_ROUNDS: Int = 3
 
-/** Menor proposta aceita, em centavos (R$ 1.000) — proposta simbólica não é negociação. */
-const val MIN_OFFER_CENTS: Long = 1_000_00
+/** Menor proposta aceita (US$ 200) — proposta simbólica não é negociação. `val`: [Money] não é `const`. */
+val MIN_OFFER_CENTS: Money = 200_00.cents
 
 /** Menor elenco com que um clube pode ficar depois de vender: um time em campo. */
 const val MIN_SQUAD_SIZE: Int = 11
@@ -72,7 +74,7 @@ fun offerBlocker(
     buyer: Club,
     seller: Club,
     playerId: PlayerId,
-    amount: Long,
+    amount: Money,
     maxSquadSize: Int = MAX_SQUAD_SIZE,
 ): OfferResult.Rejection? {
     val inSellerSquad = seller.squad.any { it.id == playerId }

@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.out.persistence.mapper
 import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntity
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.ExpiryReason
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -21,7 +22,7 @@ fun TransferOfferEntity.toDomain(): TransferOffer = TransferOffer(
     sellerClubName = sellerClubName,
     playerId = PlayerId(playerId),
     playerName = playerName,
-    amount = amount,
+    amount = Money(amount),
     roundsLeft = roundsLeft,
     status = offerStatusOf(status, expiryReason),
 )
@@ -35,7 +36,7 @@ fun TransferOffer.toEntity(): TransferOfferEntity = TransferOfferEntity(
     sellerClubName = sellerClubName,
     playerId = playerId.value,
     playerName = playerName,
-    amount = amount,
+    amount = amount.cents,
     roundsLeft = roundsLeft,
     status = status.column(),
     expiryReason = status.expiryReasonColumn(),

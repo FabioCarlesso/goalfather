@@ -4,6 +4,7 @@ import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import com.carlesso.goalfather.domain.model.cents
 
 /** Máquina de estados da proposta (issue #63) — sem Spring. */
 class TransferOfferTest {
@@ -16,7 +17,7 @@ class TransferOfferTest {
         sellerClubName = "Vendedor",
         playerId = PlayerId(10),
         playerName = "Craque",
-        amount = 500_000_00,
+        amount = 500_000_00.cents,
         roundsLeft = roundsLeft,
         status = status,
     )
@@ -95,7 +96,7 @@ class TransferOfferTest {
 
     @Test
     fun `invariantes - valor positivo e clubes distintos`() {
-        assertThrows<IllegalArgumentException> { offer().copy(amount = 0) }
+        assertThrows<IllegalArgumentException> { offer().copy(amount = 0.cents) }
         assertThrows<IllegalArgumentException> { offer().copy(sellerClubId = ClubId(1)) }
     }
 }

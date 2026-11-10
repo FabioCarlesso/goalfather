@@ -1,7 +1,9 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.domain.model.cents
 
 /**
  * Regras financeiras de rodada (issues #4 e #59). Funções PURAS — sem estado,
@@ -10,21 +12,27 @@ import com.carlesso.goalfather.domain.model.RoundStage
  * soma dos salários do elenco, cobrada a cada `SALARY_EVERY_N_ROUNDS` rodadas.
  */
 
-/** Preço de quem nunca mexeu no ingresso — e de todo clube da IA (R$ 50). */
-const val DEFAULT_TICKET_PRICE_CENTS: Long = 50_00
+/**
+ * Preço de quem nunca mexeu no ingresso — e de todo clube da IA (US$ 10).
+ *
+ * `val` e não `const val`: `const` só aceita primitivos e `String`, e [Money] é
+ * uma value class — mesmo sem custo em runtime, para o compilador é outro tipo.
+ */
+val DEFAULT_TICKET_PRICE_CENTS: Money = 10_00.cents
 
-/** Piso da faixa que o técnico pode praticar (R$ 10). */
-const val MIN_TICKET_PRICE_CENTS: Long = 10_00
+/** Piso da faixa que o técnico pode praticar (US$ 2). */
+val MIN_TICKET_PRICE_CENTS: Money = 2_00.cents
 
-/** Teto da faixa que o técnico pode praticar (R$ 200). */
-const val MAX_TICKET_PRICE_CENTS: Long = 200_00
+/** Teto da faixa que o técnico pode praticar (US$ 40). */
+val MAX_TICKET_PRICE_CENTS: Money = 40_00.cents
 
 /**
- * Faixa de preço aceita pelo comando de ingresso. `LongRange` em vez de dois
- * `Long` soltos: o `in` do Kotlin já expressa a checagem, e a faixa viaja
- * inteira para a mensagem de erro.
+ * Faixa de preço aceita pelo comando de ingresso. Uma faixa em vez de dois
+ * valores soltos: o `in` do Kotlin já expressa a checagem, e a faixa viaja
+ * inteira para a mensagem de erro. `..` funciona com [Money] porque ele é
+ * `Comparable` — a stdlib dá `rangeTo` a qualquer `Comparable`.
  */
-val TICKET_PRICE_RANGE: LongRange = MIN_TICKET_PRICE_CENTS..MAX_TICKET_PRICE_CENTS
+val TICKET_PRICE_RANGE: ClosedRange<Money> = MIN_TICKET_PRICE_CENTS..MAX_TICKET_PRICE_CENTS
 
 /** Cadência da folha salarial: a cada 2 rodadas (~"um mês" de temporada curta). */
 const val SALARY_EVERY_N_ROUNDS: Int = 2
@@ -37,9 +45,9 @@ private const val STRENGTH_FLOOR = 60.0
 /** Força de mandante em que a ocupação (e o preço justo) saturam: time forte. */
 private const val STRENGTH_CEILING = 100.0
 
-/** Preço justo do time mais fraco (R$ 40) e do mais forte (R$ 60). */
-private const val FAIR_PRICE_AT_FLOOR: Long = 40_00
-private const val FAIR_PRICE_AT_CEILING: Long = 60_00
+/** Preço justo do time mais fraco (US$ 8) e do mais forte (US$ 12), em centavos. */
+private const val FAIR_PRICE_AT_FLOOR: Long = 8_00
+private const val FAIR_PRICE_AT_CEILING: Long = 12_00
 
 /**
  * Sensibilidade da torcida ao preço acima do justo. É o `k` de
@@ -69,17 +77,18 @@ private fun strengthRatio(homeStrength: Double): Double =
 fun baseAttendanceRate(homeStrength: Double): Double = 0.5 + 0.5 * strengthRatio(homeStrength)
 
 /**
- * Preço que a torcida deste time considera JUSTO, em centavos: R$ 40 para o
- * mais fraco, R$ 60 para o mais forte.
+ * Preço que a torcida deste time considera JUSTO: US$ 8 para o mais fraco,
+ * US$ 12 para o mais forte.
  *
  * O preço justo sobe com a força de propósito: sem isso o ingresso ótimo
  * seria o mesmo para todo mundo e a decisão viraria um número decorado. Com
  * ele, ganhar jogos e evoluir o elenco AUMENTA o que a torcida aceita pagar —
  * que é o loop econômico que a issue #59 quer abrir.
  */
-fun fairTicketPriceCents(homeStrength: Double): Long =
+fun fairTicketPriceCents(homeStrength: Double): Money = Money(
     FAIR_PRICE_AT_FLOOR +
-        ((FAIR_PRICE_AT_CEILING - FAIR_PRICE_AT_FLOOR) * strengthRatio(homeStrength)).toLong()
+        ((FAIR_PRICE_AT_CEILING - FAIR_PRICE_AT_FLOOR) * strengthRatio(homeStrength)).toLong(),
+)
 
 /**
  * Multiplicador de demanda do preço `r = preço / preço justo`. Vale 1.0 no
@@ -93,14 +102,14 @@ fun fairTicketPriceCents(homeStrength: Double): Long =
  *
  * A cauda hiperbólica não é enfeite: com um decaimento linear a demanda
  * chegaria a zero dentro da faixa de preço, e do ponto de zeragem em diante
- * uma faixa inteira renderia exatamente R$ 0 — receita plana onde deveria
+ * uma faixa inteira renderia exatamente US$ 0 — receita plana onde deveria
  * haver escolha. Aqui sempre sobra a torcida fiel, e a receita cai suave.
  *
  * Contínua em `r = 1` (os dois ramos valem 1.0) e monotônica não-crescente em
  * toda a faixa — a primeira garantia que `FinanceRulesTest` cobre.
  */
-fun ticketPriceDemandFactor(ticketPriceCents: Long, homeStrength: Double): Double {
-    val ratio = ticketPriceCents.toDouble() / fairTicketPriceCents(homeStrength)
+fun ticketPriceDemandFactor(ticketPriceCents: Money, homeStrength: Double): Double {
+    val ratio = ticketPriceCents.cents.toDouble() / fairTicketPriceCents(homeStrength).cents
     return if (ratio <= 1.0) {
         1.0 + CHEAP_TICKET_BOOST * (1.0 - ratio)
     } else {
@@ -113,12 +122,12 @@ fun ticketPriceDemandFactor(ticketPriceCents: Long, homeStrength: Double): Doubl
  * Taxa de ocupação do estádio: a ocupação-base da força do mandante corrigida
  * pelo preço, com teto em 100% — o estádio não estica.
  */
-fun attendanceRate(homeStrength: Double, ticketPriceCents: Long): Double =
+fun attendanceRate(homeStrength: Double, ticketPriceCents: Money): Double =
     (baseAttendanceRate(homeStrength) * ticketPriceDemandFactor(ticketPriceCents, homeStrength))
         .coerceAtMost(1.0)
 
 /** Público pagante = capacidade × taxa de ocupação. */
-fun attendance(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Long): Int =
+fun attendance(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Money): Int =
     (stadiumCapacity * attendanceRate(homeStrength, ticketPriceCents)).toInt()
 
 /**
@@ -128,7 +137,7 @@ fun attendance(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Lon
  * como a regra de receita perde o único chamador de produção e passa a poder
  * mudar sem que nada quebre.
  */
-data class Gate(val attendance: Int, val revenue: Long)
+data class Gate(val attendance: Int, val revenue: Money)
 
 /**
  * Bilheteria do mandante: quanta gente pagou e quanto isso rendeu.
@@ -137,20 +146,20 @@ data class Gate(val attendance: Int, val revenue: Long)
  * mas rende pouco por torcedor; ingresso caro esvazia. Como a ocupação satura
  * em 100%, a receita cresce com o preço enquanto há gente sobrando e passa a
  * cair quando o esvaziamento supera o ganho por ingresso — o máximo fica em
- * `r = √(1 + 1/PRICE_SENSITIVITY) ≈ 1.73` vezes o preço justo, ou seja ~R$ 69
- * para o time mais fraco e ~R$ 104 para o mais forte.
+ * `r = √(1 + 1/PRICE_SENSITIVITY) ≈ 1.73` vezes o preço justo, ou seja ~US$ 13,80
+ * para o time mais fraco e ~US$ 20,80 para o mais forte.
  */
-fun gate(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Long): Gate {
+fun gate(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Money): Gate {
     val crowd = attendance(stadiumCapacity, homeStrength, ticketPriceCents)
-    return Gate(attendance = crowd, revenue = crowd * ticketPriceCents)
+    return Gate(attendance = crowd, revenue = ticketPriceCents * crowd)
 }
 
-/** Só a receita de [gate], em centavos — atalho para quem não precisa do público. */
-fun ticketRevenue(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Long): Long =
+/** Só a receita de [gate] — atalho para quem não precisa do público. */
+fun ticketRevenue(stadiumCapacity: Int, homeStrength: Double, ticketPriceCents: Money): Money =
     gate(stadiumCapacity, homeStrength, ticketPriceCents).revenue
 
 /** O preço está na faixa que o técnico pode praticar? */
-fun isTicketPriceAllowed(ticketPriceCents: Long): Boolean = ticketPriceCents in TICKET_PRICE_RANGE
+fun isTicketPriceAllowed(ticketPriceCents: Money): Boolean = ticketPriceCents in TICKET_PRICE_RANGE
 
 /** Há cobrança de folha salarial nesta rodada? */
 fun isSalaryRound(roundNumber: Int): Boolean =
@@ -172,4 +181,4 @@ fun isSalaryDate(stage: RoundStage): Boolean = when (stage) {
  * Uma regra só para a conta, para o serviço que grava o caixa e o cálculo do
  * rombo não divergirem sobre o que entra (issue #61 somou o prêmio).
  */
-fun RoundFinance.cashDelta(): Long = ticketRevenue + cupPrize - salariesPaid
+fun RoundFinance.cashDelta(): Money = ticketRevenue + cupPrize - salariesPaid

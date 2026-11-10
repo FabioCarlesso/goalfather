@@ -5,7 +5,7 @@
 import type { Player, TransferOffer, TransferOfferResult } from '../domain/types'
 
 export const OFFER_DEADLINE_ROUNDS = 3
-export const MIN_OFFER_CENTS = 1_000_00
+export const MIN_OFFER_CENTS = 200_00
 export const MIN_SQUAD_SIZE = 11
 export const MAX_SQUAD_SIZE = 25
 

@@ -67,17 +67,17 @@ const player = (
 })
 
 const initialSquad: Player[] = [
-  player(1,  'Marcos Figueiredo', 'GK', 78, 25_000_00, 32),
-  player(2,  'Rodrigo Alves',     'CB', 75, 18_000_00, 27),
-  player(3,  'Túlio Mendes',      'CB', 72, 15_000_00, 24),
-  player(4,  'Caio Bernardes',    'CB', 70, 13_000_00, 22),
-  player(5,  'Pedro Henrique',    'CB', 73, 16_000_00, 26),
-  player(6,  'Felipe Costa',      'MF', 80, 28_000_00, 28),
-  player(7,  'Diego Lobato',      'MF', 76, 22_000_00, 25),
-  player(8,  'Igor Vasques',      'MF', 74, 19_000_00, 23),
-  player(9,  'Carlos Almeida',    'MF', 71, 14_000_00, 21),
-  player(10, 'Renato Silva',      'FW', 88, 55_000_00, 29),
-  player(11, 'João Faria',        'FW', 79, 26_000_00, 26),
+  player(1,  'Marcos Figueiredo', 'GK', 78, 5_000_00, 32),
+  player(2,  'Rodrigo Alves',     'CB', 75, 3_600_00, 27),
+  player(3,  'Túlio Mendes',      'CB', 72, 3_000_00, 24),
+  player(4,  'Caio Bernardes',    'CB', 70, 2_600_00, 22),
+  player(5,  'Pedro Henrique',    'CB', 73, 3_200_00, 26),
+  player(6,  'Felipe Costa',      'MF', 80, 5_600_00, 28),
+  player(7,  'Diego Lobato',      'MF', 76, 4_400_00, 25),
+  player(8,  'Igor Vasques',      'MF', 74, 3_800_00, 23),
+  player(9,  'Carlos Almeida',    'MF', 71, 2_800_00, 21),
+  player(10, 'Renato Silva',      'FW', 88, 11_000_00, 29),
+  player(11, 'João Faria',        'FW', 79, 5_200_00, 26),
 ]
 
 /**
@@ -90,22 +90,22 @@ export type StoredClub = Omit<Club, keyof EffectiveLineupFields>
 export const myClub: StoredClub = {
   id: 1,
   name: 'Goal Father FC',
-  cash: 800_000_00,
+  cash: 160_000_00,
   stadiumCapacity: 15_000,
   squad: initialSquad,
   ownerId: null,
   // Foco de treino da semana (issue #58): quem nunca escolheu começa poupando
   // o elenco, igual ao default do backend.
   trainingFocus: 'DESCANSO',
-  // Preço do ingresso (issue #59): o default do backend, R$ 50.
+  // Preço do ingresso (issue #59): o default do backend, US$ 10.
   ticketPriceCents: DEFAULT_TICKET_PRICE_CENTS,
 }
 
 export const marketEntries: MarketEntry[] = [
-  { player: player(101, 'Lucas Vidigal',  'FW', 81, 32_000_00, 25), price:  450_000_00 },
-  { player: player(102, 'André Pacheco',  'MF', 77, 23_000_00, 24), price:  220_000_00 },
-  { player: player(103, 'Bruno Aparício', 'CB', 79, 25_000_00, 27), price:  300_000_00 },
-  { player: player(104, 'Eduardo Ramires','GK', 76, 21_000_00, 28), price:  180_000_00 },
+  { player: player(101, 'Lucas Vidigal',  'FW', 81, 6_400_00, 25), price:  90_000_00 },
+  { player: player(102, 'André Pacheco',  'MF', 77, 4_600_00, 24), price:  44_000_00 },
+  { player: player(103, 'Bruno Aparício', 'CB', 79, 5_000_00, 27), price:  60_000_00 },
+  { player: player(104, 'Eduardo Ramires','GK', 76, 4_200_00, 28), price:  36_000_00 },
 ]
 
 // ─── Registro de clubes da liga ──────────────────────────────────────────
@@ -617,7 +617,7 @@ export function availableClubInfo(id: number) {
   return {
     id,
     name: meta.name,
-    cash: 500_000_00,
+    cash: 100_000_00,
     stadiumCapacity: 12_000,
     averageOverall: meta.strength,
     division,
@@ -640,7 +640,7 @@ export function materializeClub(id: number): void {
   state.clubs[id] = {
     id,
     name: meta.name,
-    cash: 500_000_00,
+    cash: 100_000_00,
     stadiumCapacity: 12_000,
     ownerId: clubOwners[id] ?? null,
     trainingFocus: 'DESCANSO',

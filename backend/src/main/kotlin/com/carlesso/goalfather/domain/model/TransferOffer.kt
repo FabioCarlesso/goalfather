@@ -95,12 +95,12 @@ data class TransferOffer(
     val sellerClubName: String,
     val playerId: PlayerId,
     val playerName: String,
-    val amount: Long,
+    val amount: Money,
     val roundsLeft: Int,
     val status: OfferStatus = OfferStatus.Pending,
 ) {
     init {
-        require(amount > 0) { "amount deve ser positivo: $amount" }
+        require(amount.isPositive) { "amount deve ser positivo: $amount" }
         require(roundsLeft >= 0) { "roundsLeft não pode ser negativo: $roundsLeft" }
         require(buyerClubId != sellerClubId) { "Clube não faz proposta a si mesmo: ${buyerClubId.value}" }
     }

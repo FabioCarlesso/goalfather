@@ -4,6 +4,7 @@ import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.ExpandStadiumResult
 import com.carlesso.goalfather.domain.rules.MIN_STADIUM_EXPANSION_SEATS
 import com.carlesso.goalfather.test.makeClub
@@ -25,8 +26,8 @@ class ExpandStadiumServiceTest {
     private val owner = 7L
 
     @Test
-    fun `mil assentos custam R$ 100 mil e somam a capacidade`() = runTest {
-        val club = makeClub(ownerId = owner, cash = 1_075_000_00)
+    fun `mil assentos custam US$ 20 mil e somam a capacidade`() = runTest {
+        val club = makeClub(ownerId = owner, cash = 995_000_00)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
         coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
@@ -34,7 +35,7 @@ class ExpandStadiumServiceTest {
         val result = service.execute(ClubId(1), owner, 1_000)
 
         assertIs<ExpandStadiumResult.Success>(result)
-        assertEquals(975_000_00, saved.captured.cash)
+        assertEquals(975_000_00.cents, saved.captured.cash)
         assertEquals(club.stadiumCapacity + 1_000, saved.captured.stadiumCapacity)
         assertEquals(saved.captured, result.club)
     }
@@ -54,13 +55,13 @@ class ExpandStadiumServiceTest {
 
     @Test
     fun `caixa insuficiente volta com necessario e disponivel`() = runTest {
-        coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(ownerId = owner, cash = 99_999_99)
+        coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(ownerId = owner, cash = 19_999_99)
 
         val result = service.execute(ClubId(1), owner, 1_000)
 
         assertIs<ExpandStadiumResult.InsufficientFunds>(result)
-        assertEquals(100_000_00, result.required)
-        assertEquals(99_999_99, result.available)
+        assertEquals(20_000_00.cents, result.required)
+        assertEquals(19_999_99.cents, result.available)
         coVerify(exactly = 0) { clubRepo.save(any()) }
     }
 
