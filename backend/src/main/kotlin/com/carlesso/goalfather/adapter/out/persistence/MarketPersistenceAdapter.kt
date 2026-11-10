@@ -7,6 +7,7 @@ import com.carlesso.goalfather.adapter.out.persistence.repository.MarketEntryJpa
 import com.carlesso.goalfather.adapter.out.persistence.repository.PlayerJpaRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.MarketEntry
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,7 @@ class MarketPersistenceAdapter(
                 val p = playerRepo.findById(entry.playerId).orElse(null) ?: return@mapNotNull null
                 if (position != null && p.position != position.toEntity()) return@mapNotNull null
                 if (maxPrice != null && entry.price > maxPrice) return@mapNotNull null
-                MarketEntry(player = p.toDomain(), price = entry.price)
+                MarketEntry(player = p.toDomain(), price = Money(entry.price))
             }
             withPlayer
         }
@@ -38,7 +39,7 @@ class MarketPersistenceAdapter(
     override suspend fun findEntry(playerId: PlayerId): MarketEntry? = withContext(Dispatchers.IO) {
         val entry = marketRepo.findById(playerId.value).orElse(null) ?: return@withContext null
         val player = playerRepo.findById(playerId.value).orElse(null) ?: return@withContext null
-        MarketEntry(player = player.toDomain(), price = entry.price)
+        MarketEntry(player = player.toDomain(), price = Money(entry.price))
     }
 
     @Transactional
@@ -51,7 +52,7 @@ class MarketPersistenceAdapter(
                 player.clubId = null
                 playerRepo.save(player)
             }
-            marketRepo.save(MarketEntryEntity(playerId = entry.player.id.value, price = entry.price))
+            marketRepo.save(MarketEntryEntity(playerId = entry.player.id.value, price = entry.price.cents))
         }
     }
 

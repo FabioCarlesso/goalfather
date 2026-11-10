@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.rules.TICKET_PRICE_RANGE
 import kotlinx.serialization.json.Json
@@ -15,7 +16,7 @@ import kotlinx.serialization.json.Json
 fun ClubEntity.toDomain(squadEntities: List<PlayerEntity>, json: Json): Club = Club(
     id = ClubId(id),
     name = name,
-    cash = cash,
+    cash = Money(cash),
     stadiumCapacity = stadiumCapacity,
     squad = squadEntities.map { it.toDomain() },
     lineup = lineupJson?.let { json.decodeFromString(Lineup.serializer(), it) },
@@ -29,7 +30,7 @@ fun ClubEntity.toDomain(squadEntities: List<PlayerEntity>, json: Json): Club = C
     // nosso. Um preço fora da faixa (linha antiga, faixa reapertada depois)
     // entra pela borda mais próxima em vez de derrubar a leitura do clube —
     // e a próxima gravação já normaliza a linha.
-    ticketPriceCents = ticketPriceCents.coerceIn(TICKET_PRICE_RANGE),
+    ticketPriceCents = Money(ticketPriceCents).coerceIn(TICKET_PRICE_RANGE),
     board = boardExpectation(),
     // A versão LIDA sobe para o domínio (issue #89) e volta no `save`, que a
     // compara com a do banco — sem isso o lock otimista não protege nada.

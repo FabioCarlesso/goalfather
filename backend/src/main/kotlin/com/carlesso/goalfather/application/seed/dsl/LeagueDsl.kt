@@ -15,6 +15,7 @@ import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.canHoldCup
 import com.carlesso.goalfather.domain.rules.cupDrawSeed
 import com.carlesso.goalfather.domain.rules.drawCup
@@ -34,9 +35,9 @@ import kotlin.random.Random
  * val league = league(season = 2026) {
  *     division(1) {
  *         club(1, "Goal Father FC") {
- *             cash = 800_000_00
+ *             cash = 160_000_00
  *             stadium = 15_000
- *             player(1, "Marcos Figueiredo") { position = Position.GK; overall = 78; salary = 25_000_00; age = 32 }
+ *             player(1, "Marcos Figueiredo") { position = Position.GK; overall = 78; salary = 5_000_00; age = 32 }
  *         }
  *     }
  *     division(2) { club(7, "Ferroviária da Serra") { /* ... */ } }
@@ -113,6 +114,12 @@ data class League(
 class PlayerBuilder(private val id: Long, private val name: String) {
     var position: Position = Position.MF
     var overall: Int = 70
+    /**
+     * Dinheiro na DSL é o literal em centavos de USD (issue #122): a DSL é a
+     * borda de ENTRADA do seed, e `salary = 5_000_00` lê melhor que
+     * `5_000_00.cents`. O `build()` converte para `Money` — dali para dentro
+     * o domínio só vê o tipo.
+     */
     var salary: Int = 0
     var age: Int = 25
     var stamina: Int = 100
@@ -138,7 +145,7 @@ class PlayerBuilder(private val id: Long, private val name: String) {
         passing = passing ?: overall,
         defending = defending ?: overall,
         stamina = stamina,
-        salary = salary,
+        salary = salary.cents,
         age = age,
         nationality = nationality,
         secondNationality = secondNationality,
@@ -164,7 +171,7 @@ class ClubBuilder(
     fun build(): Club = Club(
         id = ClubId(id),
         name = name,
-        cash = cash,
+        cash = cash.cents,
         stadiumCapacity = stadium,
         squad = players.toList(),
         division = division,
@@ -193,7 +200,7 @@ class MarketBuilder {
     private val entries = mutableListOf<MarketEntry>()
 
     fun player(id: Long, name: String, price: Long, block: PlayerBuilder.() -> Unit) {
-        entries += MarketEntry(player = PlayerBuilder(id, name).apply(block).build(), price = price)
+        entries += MarketEntry(player = PlayerBuilder(id, name).apply(block).build(), price = price.cents)
     }
 
     fun build(): List<MarketEntry> = entries.toList()

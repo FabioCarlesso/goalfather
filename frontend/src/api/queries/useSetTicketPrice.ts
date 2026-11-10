@@ -10,8 +10,8 @@ import type { Club } from '../../domain/types'
  * palavra final continua sendo do backend, que responde 400
  * `TICKET_PRICE_OUT_OF_RANGE`.
  */
-export const MIN_TICKET_PRICE_CENTS = 10_00
-export const MAX_TICKET_PRICE_CENTS = 200_00
+export const MIN_TICKET_PRICE_CENTS = 2_00
+export const MAX_TICKET_PRICE_CENTS = 40_00
 
 /**
  * Preço do ingresso do estádio (issue #59). Só registra a decisão — o efeito

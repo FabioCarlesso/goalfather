@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.test.makePlayer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,8 +13,8 @@ class TransferRulesTest {
     fun `venda paga 8 salarios e o anuncio cobra 12, como no prototipo`() {
         val player = makePlayer(1, salary = 23_000_00)
 
-        assertEquals(184_000_00, salePayout(player))
-        assertEquals(276_000_00, marketListingPrice(player))
+        assertEquals(184_000_00.cents, salePayout(player))
+        assertEquals(276_000_00.cents, marketListingPrice(player))
     }
 
     @Test

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { errorMessage } from '../api/errorMessages'
 import { MIN_TICKET_PRICE_CENTS, MAX_TICKET_PRICE_CENTS } from '../api/queries/useSetTicketPrice'
-import { formatMoney } from '../domain/formatters'
+import { CURRENCY_SYMBOL, formatMoney } from '../domain/formatters'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 
@@ -22,13 +22,13 @@ interface Props {
  */
 export function TicketPricePanel({ currentCents, onSubmit, pending, error, succeeded }: Props) {
   // Rascunho do input: estado local de UI, iniciado com o preço em vigor.
-  const [reais, setReais] = useState(currentCents / 100)
+  const [dollars, setDollars] = useState(currentCents / 100)
 
-  // Preço em reais inteiros: é o que o `step={1}` do input permite digitar e
+  // Preço em dólares inteiros: é o que o `step={1}` do input permite digitar e
   // percorrer no spinner. Validador e input precisam concordar — com step={5}
-  // o browser marcava R$ 12 como inválido enquanto o botão seguia habilitado.
-  const cents = reais * 100
-  const valid = Number.isInteger(reais) &&
+  // o browser marcava US$ 12 como inválido enquanto o botão seguia habilitado.
+  const cents = dollars * 100
+  const valid = Number.isInteger(dollars) &&
     cents >= MIN_TICKET_PRICE_CENTS &&
     cents <= MAX_TICKET_PRICE_CENTS
   const changed = cents !== currentCents
@@ -46,14 +46,14 @@ export function TicketPricePanel({ currentCents, onSubmit, pending, error, succe
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-400">
-          Preço (R$)
+          Preço ({CURRENCY_SYMBOL})
           <input
             type="number"
             min={MIN_TICKET_PRICE_CENTS / 100}
             max={MAX_TICKET_PRICE_CENTS / 100}
             step={1}
-            value={reais}
-            onChange={(e) => setReais(Number(e.target.value))}
+            value={dollars}
+            onChange={(e) => setDollars(Number(e.target.value))}
             className="mt-1 block w-32 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
           />
         </label>

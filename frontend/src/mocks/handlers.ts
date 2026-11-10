@@ -107,7 +107,7 @@ const msPerMinuteOf = (url: URL): number => {
 // A CURVA (ocupação, preço justo, receita) mora em engine.ts, espelhando
 // domain/rules/FinanceRules.kt. Aqui ficam só os números do cenário mockado.
 const AI_DEFAULT_CAPACITY = 12_000   // seed dos clubes da IA
-const AI_SALARY_PER_PLAYER = 10_000_00
+const AI_SALARY_PER_PLAYER = 2_000_00
 
 /**
  * Tática com que um clube entra em campo (issue #56) — espelha
@@ -920,7 +920,7 @@ export const handlers = [
             : 0
           // Preço do ingresso do clube (issue #59). Diferente de capacidade e
           // caixa, o preço é lido de QUALQUER clube materializado: quem
-          // reivindicou o clube 3 e definiu R$ 120 precisa ver esses R$ 120 no
+          // reivindicou o clube 3 e definiu US$ 24 precisa ver esses US$ 24 no
           // extrato, senão o loop de feedback que a issue abre não existe para
           // ninguém além do clube 1. Quem não foi materializado (IA) cobra o
           // default.

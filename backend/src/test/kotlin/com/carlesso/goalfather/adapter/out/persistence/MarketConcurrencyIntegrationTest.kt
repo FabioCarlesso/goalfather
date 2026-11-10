@@ -12,6 +12,7 @@ import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.TransferResult
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
@@ -47,7 +48,7 @@ class MarketConcurrencyIntegrationTest {
             Club(
                 id = ClubId(id),
                 name = "Buyer $id",
-                cash = 10_000_000_00,
+                cash = 10_000_000_00.cents,
                 stadiumCapacity = 10_000,
                 squad = emptyList(),
             ),

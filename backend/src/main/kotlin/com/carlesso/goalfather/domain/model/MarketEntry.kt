@@ -5,9 +5,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MarketEntry(
     val player: Player,
-    val price: Long,
+    val price: Money,
 ) {
     init {
-        require(price >= 0) { "price não pode ser negativo: $price" }
+        require(!price.isNegative) { "price não pode ser negativo: $price" }
     }
 }

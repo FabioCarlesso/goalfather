@@ -11,11 +11,11 @@ test.describe('Ticket price', () => {
     await page.goto('/dashboard/financas')
     await expect(page.getByRole('heading', { name: 'Preço do ingresso' })).toBeVisible()
 
-    const input = page.getByLabel('Preço (R$)')
-    await input.fill('120')
+    const input = page.getByLabel('Preço (US$)')
+    await input.fill('24')
     await page.getByRole('button', { name: 'Definir preço' }).click()
 
-    await expect(page.getByText(/em vigor: R\$\s?120/)).toBeVisible()
+    await expect(page.getByText(/em vigor: US\$\s?24/)).toBeVisible()
 
     // Sai da tela e volta: o preco vem do clube (estado de servidor), nao de
     // estado local do componente.
@@ -24,13 +24,13 @@ test.describe('Ticket price', () => {
     await page.getByRole('link', { name: 'Clube', exact: true }).click()
     await page.getByRole('navigation', { name: 'Seções do clube' }).getByRole('link', { name: 'Finanças' }).click()
 
-    await expect(page.getByText(/em vigor: R\$\s?120/)).toBeVisible()
+    await expect(page.getByText(/em vigor: US\$\s?24/)).toBeVisible()
   })
 
   test('preco fora da faixa nao pode ser enviado', async ({ page }) => {
     await page.goto('/dashboard/financas')
 
-    await page.getByLabel('Preço (R$)').fill('500')
+    await page.getByLabel('Preço (US$)').fill('100')
 
     await expect(page.getByText(/informe um valor entre/i)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Definir preço' })).toBeDisabled()

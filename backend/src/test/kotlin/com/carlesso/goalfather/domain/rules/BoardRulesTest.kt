@@ -10,6 +10,7 @@ import com.carlesso.goalfather.domain.model.Dismissal
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
 import kotlin.test.Test
@@ -212,7 +213,7 @@ class BoardRulesTest {
             review.toDismissal(),
         )
         assertNull(review.copy(verdict = BoardVerdict.TargetMissed).toDismissal())
-        assertNull(review.copy(verdict = BoardVerdict.TargetMet(1)).toDismissal())
+        assertNull(review.copy(verdict = BoardVerdict.TargetMet(1.cents)).toDismissal())
     }
 
     @Test

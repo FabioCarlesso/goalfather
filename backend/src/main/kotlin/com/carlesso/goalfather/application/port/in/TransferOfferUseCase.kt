@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.port.`in`
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.TransferOffer
@@ -24,7 +25,7 @@ interface TransferOfferUseCase {
         buyerClubId: ClubId,
         sellerClubId: ClubId,
         playerId: PlayerId,
-        amount: Long,
+        amount: Money,
         requesterId: Long,
     ): OfferResult
 

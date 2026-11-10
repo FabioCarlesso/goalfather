@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
  * Resumo financeiro de um clube em uma rodada — receita de bilheteria
  * (apenas para o mandante) e folha salarial paga (em rodadas de "mês").
  *
- * Valores em centavos (Long), mesma convenção de `Club.cash`. Emitido no
+ * Valores em [Money] (centavos de USD), mesma convenção de `Club.cash`. Emitido no
  * `RoundEvent.RoundFinished` para que o frontend mostre o balanço da rodada.
  *
  * `deficit` é a parte da folha que o caixa não cobriu: como `Club.cash` não
@@ -29,10 +29,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RoundFinance(
     val clubId: ClubId,
-    val ticketRevenue: Long,
-    val salariesPaid: Long,
-    val deficit: Long = 0,
-    val ticketPrice: Long = 0,
+    val ticketRevenue: Money,
+    val salariesPaid: Money,
+    val deficit: Money = Money.ZERO,
+    val ticketPrice: Money = Money.ZERO,
     val attendance: Int = 0,
-    val cupPrize: Long = 0,
+    val cupPrize: Money = Money.ZERO,
 )

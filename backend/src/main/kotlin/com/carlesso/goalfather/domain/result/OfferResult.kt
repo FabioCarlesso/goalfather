@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.result
 
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.ExpiryReason
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -41,10 +42,10 @@ sealed interface OfferResult {
     sealed interface Rejection : OfferResult
 
     /** Valor da proposta abaixo do mínimo. */
-    data class InvalidAmount(val minimum: Long) : Rejection
+    data class InvalidAmount(val minimum: Money) : Rejection
 
     /** O comprador não tem caixa para a proposta. */
-    data class InsufficientFunds(val available: Long, val required: Long) : Rejection
+    data class InsufficientFunds(val available: Money, val required: Money) : Rejection
 
     /** O elenco do comprador já está no limite. */
     data class SquadFull(val maxSize: Int) : Rejection

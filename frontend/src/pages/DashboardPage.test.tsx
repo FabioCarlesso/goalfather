@@ -170,16 +170,16 @@ describe('DashboardPage', () => {
     renderDashboard('/dashboard/financas')
     await clubHeading()
 
-    // Clube do seed começa no default do backend (R$ 50).
-    expect(screen.getByText(/em vigor: R\$\s?50/)).toBeInTheDocument()
+    // Clube do seed começa no default do backend (US$ 10).
+    expect(screen.getByText(/em vigor: US\$\s?10/)).toBeInTheDocument()
 
-    const input = screen.getByLabelText(/preço \(r\$\)/i)
+    const input = screen.getByLabelText(/preço \(us\$\)/i)
     await user.clear(input)
-    await user.type(input, '90')
+    await user.type(input, '18')
     await user.click(screen.getByRole('button', { name: 'Definir preço' }))
 
     await waitFor(() => {
-      expect(screen.getByText(/em vigor: R\$\s?90/)).toBeInTheDocument()
+      expect(screen.getByText(/em vigor: US\$\s?18/)).toBeInTheDocument()
     })
     expect(screen.getByText('Preço atualizado ✓')).toBeInTheDocument()
   })
@@ -189,9 +189,9 @@ describe('DashboardPage', () => {
     renderDashboard('/dashboard/financas')
     await clubHeading()
 
-    const input = screen.getByLabelText(/preço \(r\$\)/i)
+    const input = screen.getByLabelText(/preço \(us\$\)/i)
     await user.clear(input)
-    await user.type(input, '500')
+    await user.type(input, '100')
 
     expect(screen.getByText(/informe um valor entre/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Definir preço' })).toBeDisabled()

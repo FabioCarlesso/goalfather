@@ -101,7 +101,7 @@ class CompetitionTest {
     fun `cupFormat descreve a mesma chave que o drawCup sorteia`() {
         for (count in 4..32) {
             val clubs = (1..count).map {
-                Club(ClubId(it.toLong()), "C$it", cash = 0, stadiumCapacity = 0, squad = emptyList())
+                Club(ClubId(it.toLong()), "C$it", cash = Money.ZERO, stadiumCapacity = 0, squad = emptyList())
             }
             val drawn = drawCup(2026, clubs, Random(cupDrawSeed(2026))).stages.single()
             val format = cupFormat(count)

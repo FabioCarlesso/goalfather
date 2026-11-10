@@ -4,6 +4,7 @@ import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.cents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -14,8 +15,13 @@ class FinanceRulesTest {
     /** Forças de mandante que cobrem a faixa inteira, incluindo as bordas. */
     private val strengths = listOf(50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0)
 
-    /** Varredura da faixa de preço de R$ 1 em R$ 1. */
-    private val prices = (MIN_TICKET_PRICE_CENTS..MAX_TICKET_PRICE_CENTS step 100).toList()
+    /**
+     * Varredura da faixa de preço de US$ 0,20 em US$ 0,20 (os mesmos 191 pontos
+     * da varredura de R$ 1 de antes da issue #122). `step` só existe para
+     * progressões de primitivos, então a varredura anda em `Long` e volta a
+     * [Money] no `map`.
+     */
+    private val prices = (MIN_TICKET_PRICE_CENTS.cents..MAX_TICKET_PRICE_CENTS.cents step 20).map { it.cents }
 
     @Test
     fun `taxa de ocupacao fica entre 50% e 100% no preco justo`() {
@@ -45,15 +51,15 @@ class FinanceRulesTest {
         // máximo interior, continuidade, proporcionalidade) — propriedades que
         // sobrevivem intactas a um erro de escala: dividir a economia por dez
         // passaria por todos eles. Aqui a conta é conferida no detalhe:
-        // força 60 ⇒ ocupação-base 0.5 e preço justo R$ 40; a R$ 50 o
+        // força 60 ⇒ ocupação-base 0.5 e preço justo US$ 8; a US$ 10 o
         // multiplicador é 1/(1 + 0.5·0.25²) ≈ 0.9697, logo 48.48% de 10.000 =
-        // 4.848 pagantes × R$ 50 = R$ 242.400.
+        // 4.848 pagantes × US$ 10 = US$ 48.480.
         assertEquals(0.4848, attendanceRate(60.0, DEFAULT_TICKET_PRICE_CENTS), absoluteTolerance = 1e-4)
         assertEquals(4_848, attendance(10_000, 60.0, DEFAULT_TICKET_PRICE_CENTS))
-        assertEquals(242_400_00L, ticketRevenue(10_000, 60.0, DEFAULT_TICKET_PRICE_CENTS))
+        assertEquals(48_480_00.cents, ticketRevenue(10_000, 60.0, DEFAULT_TICKET_PRICE_CENTS))
         // E no preço justo, onde o multiplicador vale exatamente 1: metade do
-        // estádio a R$ 40.
-        assertEquals(200_000_00L, ticketRevenue(10_000, 60.0, fairTicketPriceCents(60.0)))
+        // estádio a US$ 8.
+        assertEquals(40_000_00.cents, ticketRevenue(10_000, 60.0, fairTicketPriceCents(60.0)))
     }
 
     @Test
@@ -66,7 +72,7 @@ class FinanceRulesTest {
                 val g = gate(20_000, strength, price)
                 assertEquals(attendance(20_000, strength, price), g.attendance)
                 assertEquals(ticketRevenue(20_000, strength, price), g.revenue)
-                assertEquals(g.attendance * price, g.revenue)
+                assertEquals(price * g.attendance, g.revenue)
             }
         }
     }
@@ -146,8 +152,8 @@ class FinanceRulesTest {
             assertEquals(1.0, ticketPriceDemandFactor(fair, strength), absoluteTolerance = 1e-9)
             // Um centavo para cada lado do preço justo: os dois ramos da curva
             // se encontram sem degrau.
-            assertTrue(ticketPriceDemandFactor(fair - 1, strength) > 1.0)
-            assertTrue(ticketPriceDemandFactor(fair + 1, strength) < 1.0)
+            assertTrue(ticketPriceDemandFactor(fair - 1.cents, strength) > 1.0)
+            assertTrue(ticketPriceDemandFactor(fair + 1.cents, strength) < 1.0)
         }
     }
 
@@ -169,10 +175,10 @@ class FinanceRulesTest {
         assertTrue(isTicketPriceAllowed(MIN_TICKET_PRICE_CENTS))
         assertTrue(isTicketPriceAllowed(MAX_TICKET_PRICE_CENTS))
         assertTrue(isTicketPriceAllowed(DEFAULT_TICKET_PRICE_CENTS))
-        assertFalse(isTicketPriceAllowed(MIN_TICKET_PRICE_CENTS - 1))
-        assertFalse(isTicketPriceAllowed(MAX_TICKET_PRICE_CENTS + 1))
-        assertFalse(isTicketPriceAllowed(0))
-        assertFalse(isTicketPriceAllowed(-1))
+        assertFalse(isTicketPriceAllowed(MIN_TICKET_PRICE_CENTS - 1.cents))
+        assertFalse(isTicketPriceAllowed(MAX_TICKET_PRICE_CENTS + 1.cents))
+        assertFalse(isTicketPriceAllowed(0.cents))
+        assertFalse(isTicketPriceAllowed(-1.cents))
     }
 
     @Test
@@ -200,11 +206,11 @@ class FinanceRulesTest {
     fun `caixa da rodada soma bilheteria e premio da copa e desconta a folha`() {
         val finance = RoundFinance(
             clubId = ClubId(1),
-            ticketRevenue = 1_000,
-            salariesPaid = 300,
-            cupPrize = 500,
+            ticketRevenue = 1_000.cents,
+            salariesPaid = 300.cents,
+            cupPrize = 500.cents,
         )
-        assertEquals(1_200, finance.cashDelta())
+        assertEquals(1_200.cents, finance.cashDelta())
     }
 
     @Test

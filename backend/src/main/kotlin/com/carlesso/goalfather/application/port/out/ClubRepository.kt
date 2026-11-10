@@ -2,6 +2,7 @@ package com.carlesso.goalfather.application.port.out
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.TrainingFocus
 
 /**
@@ -37,7 +38,7 @@ interface ClubRepository {
      * `save` concorrente baseado numa leitura anterior ainda receba `Conflict`.
      * Devolve o clube relido, ou `null` se ele não existe.
      */
-    suspend fun updateTicketPrice(id: ClubId, ticketPriceCents: Long): Club?
+    suspend fun updateTicketPrice(id: ClubId, ticketPriceCents: Money): Club?
 
     /** Mesmo contrato de [updateTicketPrice], para o foco de treino da semana. */
     suspend fun updateTrainingFocus(id: ClubId, focus: TrainingFocus): Club?

@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.CupStage
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
@@ -83,7 +84,7 @@ fun drawCup(season: Int, clubs: Collection<Club>, rng: Random): Cup {
  */
 data class CupRoundOutcome(
     val cup: Cup,
-    val prizes: Map<ClubId, Long>,
+    val prizes: Map<ClubId, Money>,
 )
 
 /**
@@ -109,7 +110,7 @@ fun Cup.recordRound(round: Round): CupRoundOutcome {
         .filter { it.status == RoundStatus.Finished }
         .associateBy { it.homeClubId to it.awayClubId }
 
-    val prizes = mutableMapOf<ClubId, Long>()
+    val prizes = mutableMapOf<ClubId, Money>()
     val ties = stage.ties.map { tie ->
         when (tie) {
             is CupTie.Bye -> tie

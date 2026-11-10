@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.result
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -37,7 +38,7 @@ sealed interface ExpandStadiumResult {
 
     @Serializable
     @SerialName("InsufficientFunds")
-    data class InsufficientFunds(val available: Long, val required: Long) : ExpandStadiumResult
+    data class InsufficientFunds(val available: Money, val required: Money) : ExpandStadiumResult
 
     /**
      * Outra escrita alterou o clube entre a leitura e a gravação (lock otimista,

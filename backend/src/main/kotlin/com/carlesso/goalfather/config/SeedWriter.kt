@@ -43,7 +43,7 @@ class SeedWriter(
                 ClubEntity(
                     id = club.id.value,
                     name = club.name,
-                    cash = club.cash,
+                    cash = club.cash.cents,
                     stadiumCapacity = club.stadiumCapacity,
                     division = club.division.value,
                     country = club.country.code.value,
@@ -56,7 +56,7 @@ class SeedWriter(
 
         for (entry in league.market) {
             playerRepo.save(entry.player.toEntity(clubId = null))
-            marketRepo.save(MarketEntryEntity(playerId = entry.player.id.value, price = entry.price))
+            marketRepo.save(MarketEntryEntity(playerId = entry.player.id.value, price = entry.price.cents))
         }
 
         for (round in league.rounds) {

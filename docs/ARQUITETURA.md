@@ -103,6 +103,13 @@ enum class Formation(val slots: List<Position>) {
 @JvmInline
 value class PlayerId(val value: Long)          // value class: zero overhead
 
+// Dinheiro (issue #122): centavos de DÓLAR, com operadores (`a + b`, `a * 3`)
+// e `Comparable` (`..`, `coerceAtLeast`). Pode ser negativo (saldo, déficit);
+// "caixa ≥ 0" é invariante do Club. No JSON sai como inteiro cru.
+@JvmInline
+value class Money(val cents: Long) : Comparable<Money>
+val Int.cents: Money get() = Money(toLong())   // literal → Money: `500_000_00.cents`
+
 // ---- Entities ----
 // Disponibilidade como soma de tipos: a duração da lesão só existe DENTRO
 // de Injured, então "lesionado sem duração" é irrepresentável (issue #54).
@@ -345,7 +352,7 @@ class PlayMatchService(
 | `POST` | `/api/clubs/{id}/stadium/expand` | Ampliar estádio |
 | `POST` | `/api/clubs/{id}/medical` | Departamento médico: recupera stamina e encurta lesões — issue #54 |
 | `POST` | `/api/clubs/{id}/training` | Foco de treino da semana (`ATAQUE`/`DEFESA`/`FISICO`/`DESCANSO`) — issue #58 |
-| `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (R$ 10–200, em centavos) — issue #59 |
+| `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (US$ 2–40, em centavos de USD) — issues #59 e #122 |
 | `GET` | `/api/clubs/{id}/board` | Painel da diretoria: meta da temporada, posição e confiança no técnico — issue #62 |
 | `GET` | `/api/clubs/{id}/offers` | Propostas recebidas e enviadas pelo clube (só o dono) — issue #63 |
 | `POST` | `/api/offers` | Proposta em dinheiro por jogador de outro técnico humano — issue #63 |
@@ -1052,6 +1059,26 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   e mexer no fluxo da rodada (#46), fora do escopo.
 
 ### Fase 8 — Mundo do jogo (épico #148)
+
+- [x] **8.1** Economia em dólar com `Money` no domínio — issue #122
+  Todo dinheiro do domínio virou `@JvmInline value class Money(val cents: Long)`
+  (`domain/model/Money.kt`), em **centavos de USD**: caixa, salário, preço de
+  mercado, proposta, ingresso, bilheteria, prêmios e bônus. O compilador agora
+  recusa somar caixa com id ou capacidade, e o custo em runtime é zero (a JVM
+  vê o `long`). `operator fun plus/minus/times` e `Comparable` dão a sintaxe
+  natural (`cash - price`, `MIN..MAX`, `coerceAtLeast(Money.ZERO)`); a extension
+  property `Int.cents`/`Long.cents` lê literais (`500_000_00.cents`). Constantes
+  monetárias deixaram de ser `const val` (só primitivos podem) e viraram `val`.
+  **Fronteiras:** JSON sai inteiro cru via `MoneySerializer` (contrato sem
+  mudança de forma); DTOs, entidades JPA e a DSL de seed continuam em `Long`
+  de centavos e convertem na borda. **Rebalanceamento:** todos os valores
+  foram divididos pela taxa fixa de referência R$ 5 = US$ 1 (ingresso padrão
+  US$ 10, faixa US$ 2–40, assento US$ 20, departamento médico US$ 6.000), o que
+  preserva todas as proporções; a migration `V15__money_usd.sql` aplica a mesma
+  divisão a saves existentes (o histórico em JSON das rodadas fica como estava).
+  No frontend, `formatMoney` (`src/domain/formatters.ts`) é o único ponto que
+  formata dinheiro (`Intl` com `currency: 'USD'`), e a engine de mock foi
+  reescalada junto.
 
 - [x] **Formatos de competição como `sealed`** — issue #124
 

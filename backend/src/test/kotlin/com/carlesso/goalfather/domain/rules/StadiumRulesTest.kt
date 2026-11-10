@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.test.makeClub
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,14 +20,14 @@ class StadiumRulesTest {
     }
 
     @Test
-    fun `custo e R$ 100 por assento`() {
-        assertEquals(100_000_00, stadiumExpansionCost(1_000))
-        assertEquals(1_000 * STADIUM_SEAT_COST_CENTS, stadiumExpansionCost(1_000))
+    fun `custo e US$ 20 por assento`() {
+        assertEquals(20_000_00.cents, stadiumExpansionCost(1_000))
+        assertEquals(STADIUM_SEAT_COST_CENTS * 1_000, stadiumExpansionCost(1_000))
     }
 
     @Test
     fun `custo nao estoura Int para pedidos enormes`() {
-        assertEquals(Int.MAX_VALUE.toLong() * 100_00, stadiumExpansionCost(Int.MAX_VALUE))
+        assertEquals((Int.MAX_VALUE.toLong() * 20_00).cents, stadiumExpansionCost(Int.MAX_VALUE))
     }
 
     @Test
@@ -35,7 +36,7 @@ class StadiumRulesTest {
 
         val expanded = club.withExpandedStadium(1_000)
 
-        assertEquals(400_000_00, expanded.cash)
+        assertEquals(480_000_00.cents, expanded.cash)
         assertEquals(club.stadiumCapacity + 1_000, expanded.stadiumCapacity)
     }
 }

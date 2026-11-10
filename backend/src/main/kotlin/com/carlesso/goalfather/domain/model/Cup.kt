@@ -14,17 +14,17 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  * a `when` espalhado.
  *
  * A escada de prêmios é crescente de propósito: chegar longe paga mais, e o
- * campeão (vencedor da final) leva o maior cheque. O caixa da IA é R$ 500 mil
- * e uma bilheteria cheia rende ~R$ 750 mil; a copa inteira (R$ 1,05 mi para
+ * campeão (vencedor da final) leva o maior cheque. O caixa da IA é US$ 100 mil
+ * e uma bilheteria cheia rende ~US$ 150 mil; a copa inteira (US$ 210 mil para
  * quem joga as 4 fases e vence) pesa como receita sem virar a única que importa.
  */
 @Serializable
-enum class KnockoutPhase(val teams: Int, val prizeCents: Long) {
-    ROUND_OF_32(32, 75_000_00),
-    ROUND_OF_16(16, 100_000_00),
-    QUARTER_FINALS(8, 150_000_00),
-    SEMI_FINALS(4, 250_000_00),
-    FINAL(2, 500_000_00),
+enum class KnockoutPhase(val teams: Int, val prizeCents: Money) {
+    ROUND_OF_32(32, 15_000_00.cents),
+    ROUND_OF_16(16, 20_000_00.cents),
+    QUARTER_FINALS(8, 30_000_00.cents),
+    SEMI_FINALS(4, 50_000_00.cents),
+    FINAL(2, 100_000_00.cents),
     ;
 
     /** Fase seguinte do chaveamento; `null` depois da final. */

@@ -46,14 +46,14 @@ value class ClubId(val value: Long)
 data class Club(
     val id: ClubId,
     val name: String,
-    val cash: Long,
+    val cash: Money,
     val stadiumCapacity: Int,
     val squad: List<Player>,
     val lineup: Lineup? = null,
     val ownerId: Long? = null,
     val division: Division = Division.FIRST,
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
-    val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
+    val ticketPriceCents: Money = DEFAULT_TICKET_PRICE_CENTS,
     val board: BoardExpectation? = null,
     val version: Long = 0,
     /**
@@ -64,7 +64,7 @@ data class Club(
     val country: Country = Countries.DEFAULT,
 ) {
     init {
-        require(cash >= 0) { "cash não pode ser negativo: $cash" }
+        require(!cash.isNegative) { "cash não pode ser negativo: $cash" }
         require(stadiumCapacity >= 0) { "stadiumCapacity não pode ser negativo: $stadiumCapacity" }
         // A FAIXA de preço (`TICKET_PRICE_RANGE`) NÃO é checada aqui de
         // propósito: ela é regra de balanceamento, não invariante estrutural do

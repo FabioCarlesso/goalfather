@@ -26,9 +26,9 @@ const TITLE_CONTENDERS_PER_20 = 3
 
 /** Bônus por cumprir a meta — `BoardObjective.bonusCents` no backend. */
 export const BOARD_BONUS_CENTS: Record<BoardObjective, number> = {
-  TITLE: 300_000_00,
-  TOP_HALF: 200_000_00,
-  MID_TABLE: 100_000_00,
+  TITLE: 60_000_00,
+  TOP_HALF: 40_000_00,
+  MID_TABLE: 20_000_00,
 }
 
 /** Meta de uma temporada — `BoardExpectation` do domínio. */

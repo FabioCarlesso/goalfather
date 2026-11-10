@@ -7,6 +7,7 @@ import com.carlesso.goalfather.application.service.ExpandStadiumService
 import com.carlesso.goalfather.application.service.SetTicketPriceService
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.ExpandStadiumResult
 import com.carlesso.goalfather.domain.result.TicketPriceResult
 import com.carlesso.goalfather.domain.rules.stadiumExpansionCost
@@ -47,7 +48,7 @@ class ClubOptimisticLockIntegrationTest {
             Club(
                 id = ClubId(id),
                 name = "Lock FC $id",
-                cash = 1_000_000_00,
+                cash = 1_000_000_00.cents,
                 stadiumCapacity = 10_000,
                 squad = listOf(makePlayer(id * 10 + 1), makePlayer(id * 10 + 2)),
                 ownerId = owner,
@@ -64,15 +65,15 @@ class ClubOptimisticLockIntegrationTest {
         newClub(960_001)
         val readByBoth = clubRepo.findById(ClubId(960_001))!!
 
-        val round = clubRepo.save(readByBoth.copy(cash = readByBoth.cash + 50_000_00))
+        val round = clubRepo.save(readByBoth.copy(cash = readByBoth.cash + 50_000_00.cents))
         val expansion = clubRepo.save(
-            readByBoth.copy(cash = readByBoth.cash - 100_000_00, stadiumCapacity = readByBoth.stadiumCapacity + 1_000),
+            readByBoth.copy(cash = readByBoth.cash - 100_000_00.cents, stadiumCapacity = readByBoth.stadiumCapacity + 1_000),
         )
 
         assertIs<ClubSaveResult.Saved>(round)
         assertIs<ClubSaveResult.Conflict>(expansion)
         val fresh = clubRepo.findById(ClubId(960_001))!!
-        assertEquals(readByBoth.cash + 50_000_00, fresh.cash, "o crédito da rodada sobrevive")
+        assertEquals(readByBoth.cash + 50_000_00.cents, fresh.cash, "o crédito da rodada sobrevive")
         assertEquals(readByBoth.stadiumCapacity, fresh.stadiumCapacity, "a gravação perdedora não aplicou nada")
     }
 
@@ -99,13 +100,13 @@ class ClubOptimisticLockIntegrationTest {
         // pelo `save`, nem a partir de uma releitura.
         val created = newClub(960_003)
 
-        val first = assertIs<ClubSaveResult.Saved>(clubRepo.save(created.copy(cash = created.cash + 1))).club
-        val second = assertIs<ClubSaveResult.Saved>(clubRepo.save(first.copy(cash = first.cash + 1))).club
+        val first = assertIs<ClubSaveResult.Saved>(clubRepo.save(created.copy(cash = created.cash + 1.cents))).club
+        val second = assertIs<ClubSaveResult.Saved>(clubRepo.save(first.copy(cash = first.cash + 1.cents))).club
         val reread = clubRepo.findById(ClubId(960_003))!!
         assertEquals(second.version, reread.version, "a versão devolvida pelo save é a que ficou no banco")
-        assertIs<ClubSaveResult.Saved>(clubRepo.save(reread.copy(cash = reread.cash + 1)))
+        assertIs<ClubSaveResult.Saved>(clubRepo.save(reread.copy(cash = reread.cash + 1.cents)))
 
-        assertEquals(created.cash + 3, clubRepo.findById(ClubId(960_003))!!.cash)
+        assertEquals(created.cash + 3.cents, clubRepo.findById(ClubId(960_003))!!.cash)
         assertEquals(clubJpa.findById(960_003).orElseThrow().version, clubRepo.findById(ClubId(960_003))!!.version)
     }
 
@@ -156,13 +157,13 @@ class ClubOptimisticLockIntegrationTest {
         val pool = Executors.newFixedThreadPool(2)
         try {
             val expansion = pool.submit(Callable { runBlocking { expand.execute(initial.id, owner, 1_000) } })
-            val price = pool.submit(Callable { runBlocking { ticket.execute(initial.id, owner, 80_00) } })
+            val price = pool.submit(Callable { runBlocking { ticket.execute(initial.id, owner, 16_00.cents) } })
             val expansionResult = expansion.get(10, TimeUnit.SECONDS)
             val priceResult = price.get(10, TimeUnit.SECONDS)
 
             assertIs<TicketPriceResult.Success>(priceResult, "o preço sempre entra (retry)")
             val fresh = runBlocking { clubRepo.findById(initial.id)!! }
-            assertEquals(80_00, fresh.ticketPriceCents)
+            assertEquals(16_00.cents, fresh.ticketPriceCents)
             when (expansionResult) {
                 is ExpandStadiumResult.Success -> {
                     assertEquals(initial.stadiumCapacity + 1_000, fresh.stadiumCapacity)
@@ -188,13 +189,13 @@ class ClubOptimisticLockIntegrationTest {
         val initial = newClub(960_007)
         val stale = runBlocking { clubRepo.findById(initial.id)!! }
 
-        val prices = runConcurrently(8) { clubRepo.updateTicketPrice(initial.id, 70_00L) }
+        val prices = runConcurrently(8) { clubRepo.updateTicketPrice(initial.id, 14_00.cents) }
 
-        assertTrue(prices.all { it?.ticketPriceCents == 70_00L }, "toda gravação de preço entra")
+        assertTrue(prices.all { it?.ticketPriceCents == 14_00.cents }, "toda gravação de preço entra")
         val fresh = runBlocking { clubRepo.findById(initial.id)!! }
         assertEquals(stale.version + 8, fresh.version, "cada UPDATE de coluna sobe a versão")
         assertEquals(initial.cash, fresh.cash, "o preço não toca o caixa")
-        assertIs<ClubSaveResult.Conflict>(runBlocking { clubRepo.save(stale.copy(cash = 1)) })
+        assertIs<ClubSaveResult.Conflict>(runBlocking { clubRepo.save(stale.copy(cash = 1.cents)) })
     }
 
     /** Roda [block] em [threads] threads reais e devolve os desfechos. */

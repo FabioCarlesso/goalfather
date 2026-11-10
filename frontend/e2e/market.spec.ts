@@ -19,7 +19,7 @@ test.describe('Market flow', () => {
     test.skip(before === 0, 'mercado vazio (estado já consumido em e2e:real)')
 
     const cash = page.getByText(/^Caixa:/)
-    await expect(cash).toContainText('R$')
+    await expect(cash).toContainText('US$')
     const cashBefore = await cash.textContent()
 
     await buyButtons.first().click()
@@ -36,7 +36,7 @@ test.describe('Market flow', () => {
     const buyButtons = page.getByRole('button', { name: 'Comprar' })
     await expect(buyButtons.first().or(page.getByText('Nenhum jogador disponível'))).toBeVisible()
     const cash = page.getByText(/^Caixa:/)
-    await expect(cash).toContainText('R$')
+    await expect(cash).toContainText('US$')
 
     // Gasta o caixa nos mais baratos (ordem padrão) até alguém ficar caro demais.
     // Espera lista e caixa atualizarem antes de reavaliar, senão compraria a mais.

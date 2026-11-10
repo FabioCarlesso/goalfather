@@ -7,6 +7,7 @@ import com.carlesso.goalfather.application.port.out.TransferCompletion
 import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.ExpiryReason
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -34,7 +35,7 @@ class TransferOfferService(
         buyerClubId: ClubId,
         sellerClubId: ClubId,
         playerId: PlayerId,
-        amount: Long,
+        amount: Money,
         requesterId: Long,
     ): OfferResult {
         val buyer = clubRepo.findById(buyerClubId) ?: return OfferResult.ClubNotFound(buyerClubId)

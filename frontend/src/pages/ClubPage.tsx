@@ -4,7 +4,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
 import { useCreateOffer, MIN_OFFER_CENTS } from '../api/queries/useOffers'
 import { useMyClubId } from '../auth/useMyClubId'
-import { formatMoney } from '../domain/formatters'
+import { CURRENCY_SYMBOL, formatMoney } from '../domain/formatters'
 import type { Club, Player } from '../domain/types'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -77,7 +77,7 @@ function OfferForm({ seller, myClubId }: { seller: Club; myClubId: number }) {
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-sm text-slate-400">
-              Valor da proposta (R$)
+              Valor da proposta ({CURRENCY_SYMBOL})
               <input
                 type="number"
                 min={MIN_OFFER_CENTS / 100}

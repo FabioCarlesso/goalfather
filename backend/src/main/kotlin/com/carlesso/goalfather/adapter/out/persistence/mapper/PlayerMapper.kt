@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.out.persistence.mapper
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.domain.model.Availability
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
@@ -17,7 +18,7 @@ fun PlayerEntity.toDomain(): Player = Player(
     passing = passing,
     defending = defending,
     stamina = stamina,
-    salary = salary,
+    salary = Money(salary.toLong()),
     age = age,
     goals = goals,
     yellowCards = yellowCards,
@@ -42,7 +43,7 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     passing = passing,
     defending = defending,
     stamina = stamina,
-    salary = salary,
+    salary = Math.toIntExact(salary.cents),
     age = age,
     goals = goals,
     yellowCards = yellowCards,

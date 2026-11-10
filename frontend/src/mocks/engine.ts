@@ -157,11 +157,11 @@ export const STARTER_STAMINA_LOSS_MAX = 25
 export const STAMINA_MATCH_FLOOR = 40
 export const BENCH_STAMINA_RECOVERY = 12
 export const STAMINA_FULL_PERFORMANCE = 70
-export const MEDICAL_DEPARTMENT_COST_CENTS = 30_000_00
+export const MEDICAL_DEPARTMENT_COST_CENTS = 6_000_00
 export const MEDICAL_STAMINA_RECOVERY = 30
 
 // ─── Ampliação do estádio (issue #79) — espelham domain/rules/StadiumRules.kt ───
-export const STADIUM_SEAT_COST_CENTS = 100_00
+export const STADIUM_SEAT_COST_CENTS = 20_00
 export const MIN_STADIUM_EXPANSION_SEATS = 1_000
 
 // ─── Mercado — espelham domain/rules/TransferRules.kt ───
@@ -583,7 +583,7 @@ export const YOUTH_AGE_MAX = 19
 export const YOUTH_OVERALL_GAP_MIN = 8
 export const YOUTH_OVERALL_GAP_MAX = 18
 export const YOUTH_MIN_OVERALL = 40
-export const YOUTH_SALARY_CENTS = 3_000_00
+export const YOUTH_SALARY_CENTS = 600_00
 
 const shift = (value: number, delta: number): number => Math.min(99, Math.max(0, value + delta))
 
@@ -796,13 +796,13 @@ const grow = (value: number): number => Math.min(99, value + TRAINING_ATTRIBUTE_
 // #59 elas passaram a ser regra de simulação de verdade — e regra de mock vive
 // em engine.ts (CLAUDE.md), onde dá para testá-la sem subir um handler.
 
-export const DEFAULT_TICKET_PRICE_CENTS = 50_00
+export const DEFAULT_TICKET_PRICE_CENTS = 10_00
 export const SALARY_EVERY_N_ROUNDS = 2
 
 const STRENGTH_FLOOR = 60
 const STRENGTH_CEILING = 100
-const FAIR_PRICE_AT_FLOOR = 40_00
-const FAIR_PRICE_AT_CEILING = 60_00
+const FAIR_PRICE_AT_FLOOR = 8_00
+const FAIR_PRICE_AT_CEILING = 12_00
 const PRICE_SENSITIVITY = 0.5
 const CHEAP_TICKET_BOOST = 0.5
 

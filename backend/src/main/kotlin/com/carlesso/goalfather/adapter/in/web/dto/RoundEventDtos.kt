@@ -127,12 +127,12 @@ sealed interface RoundEventDto {
 
 fun RoundFinance.toDto(): RoundFinanceDto = RoundFinanceDto(
     clubId = clubId.value,
-    ticketRevenue = ticketRevenue,
-    salariesPaid = salariesPaid,
-    deficit = deficit,
-    ticketPrice = ticketPrice,
+    ticketRevenue = ticketRevenue.cents,
+    salariesPaid = salariesPaid.cents,
+    deficit = deficit.cents,
+    ticketPrice = ticketPrice.cents,
     attendance = attendance,
-    cupPrize = cupPrize,
+    cupPrize = cupPrize.cents,
 )
 
 fun Retirement.toDto(): RetirementDto =
