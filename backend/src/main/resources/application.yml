@@ -64,6 +64,12 @@ app:
   # dev/E2E (ex.: 30s) para não esperar; premissa: instância única.
   round-readiness:
     timeout: ${ROUND_READINESS_TIMEOUT:2m}
+  # ─── Pack de dados do mundo (issue #126) ──────────────────────────────────
+  # Diretório do pack lido pelo FileWorldDataProvider (ver docs/WORLD_DATA.md).
+  # Relativo ao diretório de trabalho: `backend/` no bootRun. Lido só quando
+  # alguém pede o mundo — pack ausente não impede o boot.
+  world-data:
+    path: ${WORLD_DATA_PATH:../data/world/v1}
 
 logging:
   level:

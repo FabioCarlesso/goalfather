@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "exemplo mínimo montado à mão a partir de fatos públicos; elenco parcial, substituído pela importação do Wikidata (issue #127)",
+  "data": {
+    "players": [
+      {
+        "id": "agustin-rossi",
+        "name": "Agustín Rossi",
+        "birthDate": "1995-08-21",
+        "nationality": "ARG",
+        "position": "GK"
+      },
+      {
+        "id": "giorgian-de-arrascaeta",
+        "name": "Giorgian de Arrascaeta",
+        "birthDate": "1994-06-01",
+        "nationality": "URU",
+        "position": "MF"
+      }
+    ]
+  }
+}

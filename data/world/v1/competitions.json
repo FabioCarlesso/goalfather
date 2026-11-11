@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "exemplo mínimo montado à mão a partir de fatos públicos; substituído pela importação do Wikidata (issue #127)",
+  "data": [
+    {
+      "id": "bra-serie-a",
+      "name": "Campeonato Brasileiro Série A",
+      "country": "BRA",
+      "tier": 1,
+      "strength": 70,
+      "format": { "type": "roundRobin", "legs": 2 },
+      "tiebreakers": [
+        "POINTS",
+        "WINS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "FEWER_RED_CARDS",
+        "FEWER_YELLOW_CARDS",
+        "DRAWING_OF_LOTS"
+      ]
+    }
+  ]
+}
