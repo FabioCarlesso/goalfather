@@ -56,7 +56,7 @@ data class PlayerDto(
     val passing: Int,
     val defending: Int,
     val stamina: Int,
-    val salary: Int,
+    val salary: Long,
     val age: Int,
     val goals: Int,
     val yellowCards: Int,
@@ -64,6 +64,10 @@ data class PlayerDto(
     val availability: Availability,
     /** Derivado no domínio (`overall >= 82`); materializado aqui para viajar no JSON. */
     val star: Boolean,
+    /** Nacionalidade esportiva (issue #123). */
+    val nationality: CountryDto,
+    /** Segunda nacionalidade — ausente (não `null`) quando não há, por `explicitNulls = false`. */
+    val secondNationality: CountryDto? = null,
 )
 
 /**
@@ -106,7 +110,9 @@ data class ClubDto(
     /** Foco de treino em vigor (issue #58) — o card da Dashboard o pré-seleciona. */
     val trainingFocus: TrainingFocus = TrainingFocus.DEFAULT,
     /** Preço do ingresso em vigor, em centavos (issue #59). */
-    val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS,
+    val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS.cents,
+    /** País do clube (issue #123). */
+    val country: CountryDto,
 )
 
 @Serializable
@@ -159,13 +165,15 @@ fun Player.toDto(): PlayerDto = PlayerDto(
     passing = passing,
     defending = defending,
     stamina = stamina,
-    salary = salary,
+    salary = salary.cents,
     age = age,
     goals = goals,
     yellowCards = yellowCards,
     redCards = redCards,
     availability = availability,
     star = star,
+    nationality = nationality.toDto(),
+    secondNationality = secondNationality?.toDto(),
 )
 
 fun Lineup.toDto(): LineupDto = LineupDto(
@@ -185,7 +193,7 @@ fun Club.toDto(): ClubDto = run {
     ClubDto(
         id = id.value,
         name = name,
-        cash = cash,
+        cash = cash.cents,
         stadiumCapacity = stadiumCapacity,
         squad = squad.map { it.toDto() },
         lineup = saved,
@@ -197,11 +205,12 @@ fun Club.toDto(): ClubDto = run {
         lineupAdjusted = saved != null && saved != effective,
         ownerId = ownerId,
         trainingFocus = trainingFocus,
-        ticketPriceCents = ticketPriceCents,
+        ticketPriceCents = ticketPriceCents.cents,
+        country = country.toDto(),
     )
 }
 
-fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto(), price = price)
+fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto(), price = price.cents)
 
 /**
  * `when` exaustivo sobre o sealed de domínio — variante nova em
@@ -212,7 +221,7 @@ fun TransferResult.toDto(): TransferResultDto = when (this) {
         TransferResultDto.Success(club = club.toDto(), player = player.toDto())
 
     is TransferResult.InsufficientFunds ->
-        TransferResultDto.InsufficientFunds(available = available, required = required)
+        TransferResultDto.InsufficientFunds(available = available.cents, required = required.cents)
 
     is TransferResult.SquadFull ->
         TransferResultDto.SquadFull(maxSize = maxSize)

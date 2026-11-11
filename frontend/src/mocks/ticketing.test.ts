@@ -97,11 +97,11 @@ describe('curva de demanda da bilheteria (issue #59)', () => {
   it('magnitude da bilheteria bate com a do backend', () => {
     // Âncora absoluta, espelhando `FinanceRulesTest`: os demais testes são de
     // forma e sobreviveriam a um erro de escala. Força 60 ⇒ ocupação-base 0.5
-    // e preço justo R$ 40; a R$ 50 o multiplicador é ≈ 0.9697 ⇒ 4.848
-    // pagantes de 10.000 lugares × R$ 50 = R$ 242.400.
+    // e preço justo US$ 8; a US$ 10 o multiplicador é ≈ 0.9697 ⇒ 4.848
+    // pagantes de 10.000 lugares × US$ 10 = US$ 48.480.
     expect(attendanceRate(60, DEFAULT_TICKET_PRICE_CENTS)).toBeCloseTo(0.4848, 4)
     expect(attendanceOf(10_000, 60, DEFAULT_TICKET_PRICE_CENTS)).toBe(4_848)
-    expect(ticketRevenueOf(10_000, 60, DEFAULT_TICKET_PRICE_CENTS)).toBe(242_400_00)
+    expect(ticketRevenueOf(10_000, 60, DEFAULT_TICKET_PRICE_CENTS)).toBe(48_480_00)
   })
 
   it('faixa aceita as bordas e recusa o que passa delas', () => {

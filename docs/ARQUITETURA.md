@@ -103,6 +103,13 @@ enum class Formation(val slots: List<Position>) {
 @JvmInline
 value class PlayerId(val value: Long)          // value class: zero overhead
 
+// Dinheiro (issue #122): centavos de DÓLAR, com operadores (`a + b`, `a * 3`)
+// e `Comparable` (`..`, `coerceAtLeast`). Pode ser negativo (saldo, déficit);
+// "caixa ≥ 0" é invariante do Club. No JSON sai como inteiro cru.
+@JvmInline
+value class Money(val cents: Long) : Comparable<Money>
+val Int.cents: Money get() = Money(toLong())   // literal → Money: `500_000_00.cents`
+
 // ---- Entities ----
 // Disponibilidade como soma de tipos: a duração da lesão só existe DENTRO
 // de Injured, então "lesionado sem duração" é irrepresentável (issue #54).
@@ -345,7 +352,7 @@ class PlayMatchService(
 | `POST` | `/api/clubs/{id}/stadium/expand` | Ampliar estádio |
 | `POST` | `/api/clubs/{id}/medical` | Departamento médico: recupera stamina e encurta lesões — issue #54 |
 | `POST` | `/api/clubs/{id}/training` | Foco de treino da semana (`ATAQUE`/`DEFESA`/`FISICO`/`DESCANSO`) — issue #58 |
-| `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (R$ 10–200, em centavos) — issue #59 |
+| `PUT` | `/api/clubs/{id}/ticket-price` | Preço do ingresso (US$ 2–40, em centavos de USD) — issues #59 e #122 |
 | `GET` | `/api/clubs/{id}/board` | Painel da diretoria: meta da temporada, posição e confiança no técnico — issue #62 |
 | `GET` | `/api/clubs/{id}/offers` | Propostas recebidas e enviadas pelo clube (só o dono) — issue #63 |
 | `POST` | `/api/offers` | Proposta em dinheiro por jogador de outro técnico humano — issue #63 |
@@ -1050,6 +1057,78 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   leitura do use case acontece numa transação anterior à do `save`, então o
   lock teria de atravessar o use case inteiro (ports `suspend` por agregado) —
   e mexer no fluxo da rodada (#46), fora do escopo.
+
+### Fase 8 — Mundo do jogo (épico #148)
+
+- [x] **8.1** Economia em dólar com `Money` no domínio — issue #122
+  Todo dinheiro do domínio virou `@JvmInline value class Money(val cents: Long)`
+  (`domain/model/Money.kt`), em **centavos de USD**: caixa, salário, preço de
+  mercado, proposta, ingresso, bilheteria, prêmios e bônus. O compilador agora
+  recusa somar caixa com id ou capacidade, e o custo em runtime é zero (a JVM
+  vê o `long`). `operator fun plus/minus/times` e `Comparable` dão a sintaxe
+  natural (`cash - price`, `MIN..MAX`, `coerceAtLeast(Money.ZERO)`); a extension
+  property `Int.cents`/`Long.cents` lê literais (`500_000_00.cents`). Constantes
+  monetárias deixaram de ser `const val` (só primitivos podem) e viraram `val`.
+  **Fronteiras:** JSON sai inteiro cru via `MoneySerializer` (contrato sem
+  mudança de forma); DTOs, entidades JPA e a DSL de seed continuam em `Long`
+  de centavos e convertem na borda. **Rebalanceamento:** todos os valores
+  foram divididos pela taxa fixa de referência R$ 5 = US$ 1 (ingresso padrão
+  US$ 10, faixa US$ 2–40, assento US$ 20, departamento médico US$ 6.000), o que
+  preserva todas as proporções; a migration `V15__money_usd.sql` aplica a mesma
+  divisão a saves existentes (o histórico em JSON das rodadas fica como estava).
+  No frontend, `formatMoney` (`src/domain/formatters.ts`) é o único ponto que
+  formata dinheiro (`Intl` com `currency: 'USD'`), e a engine de mock foi
+  reescalada junto.
+
+- [x] **Formatos de competição como `sealed`** — issue #124
+
+  `domain/model/Competition.kt` descreve uma competição por **dados**:
+  `Competition(id, name, format, tiebreakers)`, com `CompetitionFormat`
+  `sealed` em quatro variantes — `RoundRobin(legs)`, `Knockout(stages)` (cada
+  `KnockoutStage` diz quantos clubes joga, se é jogo único ou ida e volta e
+  quantos **entram** nela, como a Série A na 5ª fase da Copa do Brasil),
+  `GroupsThenKnockout` e `SwissLeague`. Os `init` recusam formatos impossíveis
+  (a conta de vencedores + entrantes tem que fechar fase a fase até a final).
+
+  **Geradores puros** em `domain/rules/CompetitionScheduling.kt`: Berger com
+  turno e returno espelhado e folga para nº ímpar; sorteio de mata-mata e de
+  grupos por potes com `Random` injetado; fase suíça por **grafo circulante**
+  (cada clube enfrenta os vizinhos a distâncias `d` cujo ciclo tem comprimento
+  par, o que dá por construção 8 adversários distintos, 4 em casa, e rodadas
+  em que todos jogam uma vez). `TwoLeggedTieResult` torna irrepresentável o
+  confronto sem classificado: agregado empatado exige pênaltis (cobrados na
+  volta), e não existe gol fora de casa.
+
+  **Desempate configurável** em `domain/rules/TiebreakRules.kt` (`rankTable`):
+  critérios absolutos consecutivos viram um `Comparator` composto
+  (`thenComparing`); confronto direto e sorteio dependem de quem está empatado
+  e são aplicados por refinamento recursivo — o confronto direto entre três
+  clubes é um mini-campeonato só entre eles.
+
+  **Corte deliberado (fica para a #125):** o `PlayRoundService` e a
+  persistência ainda falam `Round`/`Cup`. O modelo novo já roda **por baixo**:
+  `generateRound` pareia com `roundRobinMatchday`, `applyRoundToStandings`
+  ordena com `rankTable` (critérios `LEAGUE_COMPETITION_TIEBREAKERS`, os mesmos
+  de antes) e `cupFormat(n)` descreve como `Knockout` a chave que `drawCup`
+  sorteia (folgas = entrantes da 2ª fase). O seed gera exatamente os mesmos
+  jogos e a mesma tabela. O mando dentro de um turno segue a regra antiga do
+  Berger; alternar o mando é trabalho do agendador da #125. Potes e "sem dois
+  clubes do mesmo país" na fase suíça e nos grupos ficam para a #132/#145.
+
+- [x] **País, confederação e nacionalidade** — issue #123
+  `Country(code, name, confederation, isoAlpha2)` com `CountryCode` como
+  `value class`: o código é o **trigrama FIFA** (`BRA`, `ENG`, `GER`), não o ISO
+  alfa-3, porque Inglaterra, Escócia e Gales são seleções distintas sem código
+  ISO próprio. `Club.country` e `Player.nationality` nunca são nulos;
+  `Player.secondNationality` é opcional e só conta para a regra de estrangeiro
+  (`Player.isForeignIn`/`isForeignAt`, extension functions puras em
+  `domain/rules/NationalityRules.kt`). **Catálogo interino:** a lista de países
+  é dado e vai para o pack do mundo (#126); até lá vive em `Countries` no
+  domínio, com CONMEBOL e as cinco grandes ligas da UEFA. O default dos campos
+  é o Brasil, só para o seed e os testes anteriores à issue. No banco vai só o
+  código (V16, backfill `BRA`); o mapper resolve no catálogo e um código
+  desconhecido cai no default, como o `trainingFocus`. A bandeira (emoji) é
+  montada no adapter web (`CountryDto.flag`), então a UI só exibe.
 
 ---
 

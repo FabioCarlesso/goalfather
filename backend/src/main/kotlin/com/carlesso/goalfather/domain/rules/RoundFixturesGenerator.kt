@@ -54,7 +54,7 @@ fun generateRound(roundNumber: Int, season: Int, clubs: List<Club>, matchday: In
             "Fórmula de matchId suporta no máximo 9 divisões: ${division.value}"
         }
         // Turno encerrado para esta divisão → ela folga nesta rodada.
-        if (matchday > divisionClubs.size - 1) emptyList()
+        if (matchday > turnRounds(divisionClubs.size)) emptyList()
         else divisionMatches(roundNumber, matchday, division, divisionClubs)
     }
     require(matches.isNotEmpty()) {
@@ -76,21 +76,14 @@ private fun divisionMatches(
     division: Division,
     clubs: List<Club>,
 ): List<RoundMatch> {
-    // Ordena por id para determinismo independente da ordem de entrada e
-    // para garantir o "clube fixo" do Berger (o de menor id).
-    val ordered = clubs.sortedBy { it.id.value }
-    val n = ordered.size
-    val fixed = ordered.first()
-    val rotating = ordered.drop(1)
+    // O pareamento é o Berger genérico dos formatos de competição (issue #124),
+    // que ordena por id e mantém o "clube fixo" de menor id — mesmos jogos de antes.
+    val byId = clubs.associateBy { it.id }
+    val pairings = roundRobinMatchday(clubs.map { it.id }, matchday)
 
-    // Rotação dependente da rodada — ciclo de N-1 posições (turno único).
-    val offset = (matchday - 1) % (n - 1)
-    val rotated = rotating.drop(offset) + rotating.take(offset)
-    val order = listOf(fixed) + rotated
-
-    return (0 until n / 2).map { i ->
-        val home = order[i]
-        val away = order[n - 1 - i]
+    return pairings.mapIndexed { i, pairing ->
+        val home = byId.getValue(pairing.home)
+        val away = byId.getValue(pairing.away)
         RoundMatch(
             // rodada × 1000 + divisão × 100 + índice: único entre divisões da
             // mesma rodada (e é a seed do RNG da simulação). Mesma fórmula do
@@ -111,7 +104,7 @@ private fun divisionMatches(
  */
 fun seasonRounds(clubs: List<Club>): Int {
     require(clubs.isNotEmpty()) { "Liga sem clubes não tem temporada" }
-    return clubs.groupBy { it.division }.values.maxOf { it.size } - 1
+    return clubs.groupBy { it.division }.values.maxOf { turnRounds(it.size) }
 }
 
 /**

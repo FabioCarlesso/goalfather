@@ -14,7 +14,8 @@ import com.carlesso.goalfather.domain.model.Standings
  *
  * Regras:
  * - Vitória vale 3 pts, empate 1, derrota 0.
- * - Tiebreak: pontos → saldo de gols → gols pró → nome alfabético.
+ * - Tiebreak: [LEAGUE_COMPETITION_TIEBREAKERS] (pontos → saldo → gols pró),
+ *   aplicados por [rankTable] (issue #124); esgotados os critérios, nome alfabético.
  * - Partidas com `status != Finished` são ignoradas (rodada parcial).
  * - Partidas de clubes que não estão em `current.rows` são ignoradas —
  *   com múltiplas divisões (issue #47), a MESMA rodada pode ser aplicada
@@ -47,17 +48,12 @@ fun applyRoundToStandings(round: Round, current: Standings): Standings {
         )
     }
 
-    val sorted = byId.values.sortedWith(
-        compareByDescending<StandingRow> { it.points }
-            .thenByDescending { it.goalDifference }
-            .thenByDescending { it.goalsFor }
-            .thenBy { it.clubName },
-    )
-
     // `copy` preserva divisão e vagas de promoção/rebaixamento da tabela.
+    // A ordenação é a genérica dos formatos de competição (issue #124), com os
+    // critérios que a liga do jogo sempre usou — mesmo resultado de antes.
     return current.copy(
         round = matchday,
-        rows = sorted.mapIndexed { i, row -> row.copy(position = i + 1) },
+        rows = rankTable(byId.values.toList(), LEAGUE_COMPETITION_TIEBREAKERS),
     )
 }
 

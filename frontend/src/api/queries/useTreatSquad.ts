@@ -4,7 +4,7 @@ import { clubKey } from './useClub'
 import type { Club } from '../../domain/types'
 
 /** Custo de uma sessão do departamento médico, em centavos (espelha o backend). */
-export const MEDICAL_COST_CENTS = 30_000_00
+export const MEDICAL_COST_CENTS = 6_000_00
 
 /** Departamento médico (issue #54): recupera stamina e encurta lesões. */
 export function useTreatSquad(clubId: number) {

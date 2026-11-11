@@ -5,6 +5,7 @@ import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.MedicalResult
 import com.carlesso.goalfather.domain.rules.MEDICAL_DEPARTMENT_COST_CENTS
 import com.carlesso.goalfather.domain.rules.MEDICAL_STAMINA_RECOVERY
@@ -36,7 +37,7 @@ class TreatSquadServiceTest {
         val result = service.execute(ClubId(1), owner)
 
         assertIs<MedicalResult.Success>(result)
-        assertEquals(100_000_00 - MEDICAL_DEPARTMENT_COST_CENTS, saved.captured.cash)
+        assertEquals(100_000_00.cents - MEDICAL_DEPARTMENT_COST_CENTS, saved.captured.cash)
         assertEquals(
             50 + MEDICAL_STAMINA_RECOVERY,
             saved.captured.squad.first().stamina,
@@ -62,20 +63,20 @@ class TreatSquadServiceTest {
     @Test
     fun `caixa insuficiente retorna erro como valor e nao persiste`() = runTest {
         // Erro de negócio é VALOR, não exception (CLAUDE.md).
-        val club = makeClub(cash = MEDICAL_DEPARTMENT_COST_CENTS - 1, ownerId = owner)
+        val club = makeClub(cash = MEDICAL_DEPARTMENT_COST_CENTS.cents - 1, ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
 
         val result = service.execute(ClubId(1), owner)
 
         assertIs<MedicalResult.InsufficientFunds>(result)
-        assertEquals(MEDICAL_DEPARTMENT_COST_CENTS - 1, result.available)
+        assertEquals(MEDICAL_DEPARTMENT_COST_CENTS - 1.cents, result.available)
         assertEquals(MEDICAL_DEPARTMENT_COST_CENTS, result.required)
         coVerify(exactly = 0) { clubRepo.save(any()) }
     }
 
     @Test
     fun `caixa exatamente igual a taxa e suficiente`() = runTest {
-        val club = makeClub(cash = MEDICAL_DEPARTMENT_COST_CENTS, ownerId = owner)
+        val club = makeClub(cash = MEDICAL_DEPARTMENT_COST_CENTS.cents, ownerId = owner)
         coEvery { clubRepo.findById(ClubId(1)) } returns club
         val saved = slot<Club>()
         coEvery { clubRepo.save(capture(saved)) } answers { ClubSaveResult.Saved(saved.captured) }
@@ -83,7 +84,7 @@ class TreatSquadServiceTest {
         val result = service.execute(ClubId(1), owner)
 
         assertIs<MedicalResult.Success>(result)
-        assertEquals(0, saved.captured.cash)
+        assertEquals(0.cents, saved.captured.cash)
     }
 
     @Test

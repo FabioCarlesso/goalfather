@@ -22,6 +22,7 @@ import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TransferOffer
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.INITIAL_BOARD_CONFIDENCE
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
@@ -196,7 +197,7 @@ class BoardRoundFlowTest {
         stubRound(listOf(champion, flop), table(1, 2))
         fun offer(id: Long, buyer: Long, seller: Long) = TransferOffer(
             id = OfferId(id), buyerClubId = ClubId(buyer), buyerClubName = "B", sellerClubId = ClubId(seller),
-            sellerClubName = "S", playerId = PlayerId(5), playerName = "P", amount = 100_000_00, roundsLeft = 3,
+            sellerClubName = "S", playerId = PlayerId(5), playerName = "P", amount = 100_000_00.cents, roundsLeft = 3,
         )
         // O demitido (clube 2) como comprador e como vendedor; e uma entre terceiros.
         val asBuyer = offer(1, buyer = 2, seller = 1)

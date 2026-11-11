@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.carlesso.goalfather.domain.model.cents
 
 class PlayerTest {
 
@@ -17,7 +18,7 @@ class PlayerTest {
         shooting = overall,
         passing = overall,
         defending = overall,
-        salary = 10_000,
+        salary = 10_000.cents,
         age = 25,
     )
 

@@ -62,6 +62,13 @@ class PlayerEntity(
     // do domínio é reconstruído no PlayerMapper.
     @Column(name = "injured_for_rounds", nullable = false)
     var injuredForRounds: Int = 0,
+
+    /** Trigrama FIFA da nacionalidade (issue #123); o mapper resolve o `Country`. */
+    @Column(name = "nationality", nullable = false, length = 3)
+    var nationality: String = "BRA",
+
+    @Column(name = "second_nationality", length = 3)
+    var secondNationality: String? = null,
 )
 
 /**

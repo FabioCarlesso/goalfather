@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.out.persistence.mapper
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.domain.model.Availability
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
@@ -17,13 +18,18 @@ fun PlayerEntity.toDomain(): Player = Player(
     passing = passing,
     defending = defending,
     stamina = stamina,
-    salary = salary,
+    salary = Money(salary.toLong()),
     age = age,
     goals = goals,
     yellowCards = yellowCards,
     redCards = redCards,
     availability = if (injuredForRounds >= 1) Availability.Injured(injuredForRounds)
     else Availability.Available,
+    nationality = nationality.toCountry(),
+    // `takeIf` descarta a segunda nacionalidade se ela coincidir com a primeira
+    // depois de resolvidas (ex.: dois códigos desconhecidos caindo no default),
+    // em vez de deixar o `require` do `Player` derrubar a leitura.
+    secondNationality = secondNationality.toCountryOrNull()?.takeIf { it != nationality.toCountry() },
 )
 
 fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
@@ -37,7 +43,7 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     passing = passing,
     defending = defending,
     stamina = stamina,
-    salary = salary,
+    salary = Math.toIntExact(salary.cents),
     age = age,
     goals = goals,
     yellowCards = yellowCards,
@@ -47,6 +53,8 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
         is Availability.Available -> 0
         is Availability.Injured -> a.roundsOut
     },
+    nationality = nationality.code.value,
+    secondNationality = secondNationality?.code?.value,
 )
 
 private fun PositionEnum.toDomain(): Position = when (this) {

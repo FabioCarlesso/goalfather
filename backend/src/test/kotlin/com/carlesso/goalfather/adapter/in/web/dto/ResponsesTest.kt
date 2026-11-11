@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.CupStage
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
@@ -15,6 +16,7 @@ import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Posture
 import com.carlesso.goalfather.domain.model.Tactics
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.test.makeClub
 import kotlinx.serialization.json.Json
@@ -102,7 +104,7 @@ class ResponsesTest {
         val required = listOf(
             "id", "name", "position", "overall", "pace", "shooting", "passing",
             "defending", "stamina", "salary", "age", "goals", "yellowCards",
-            "redCards", "availability",
+            "redCards", "availability", "nationality",
         )
         for (field in required) {
             assertTrue(field in player, "campo obrigatório do contrato ausente: $field")
@@ -141,9 +143,41 @@ class ResponsesTest {
                 "ticketPriceCents",
                 // Escalação efetiva (issue #87) — idem.
                 "effectiveLineup", "lineupIsDefault", "lineupAdjusted",
+                // País do clube (issue #123) — idem.
+                "country",
             ),
             encoded.keys,
         )
+    }
+
+    // ─── País e nacionalidade (issue #123) ────────────────────────────────
+
+    @Test
+    fun `club e player carregam pais no formato do contrato`() {
+        val argentine = club.squad.first().copy(
+            nationality = Countries.ARGENTINA,
+            secondNationality = Countries.ITALY,
+        )
+        val encoded = encode(club.copy(squad = listOf(argentine) + club.squad.drop(1)).toDto())
+
+        val country = encoded.getValue("country").jsonObject
+        assertEquals(setOf("code", "name", "confederation", "flag"), country.keys)
+        assertEquals("BRA", country.getValue("code").jsonPrimitive.content)
+        assertEquals("CONMEBOL", country.getValue("confederation").jsonPrimitive.content)
+        assertEquals("🇧🇷", country.getValue("flag").jsonPrimitive.content)
+
+        val players = encoded.getValue("squad").jsonArray.map { it.jsonObject }
+        assertEquals("ARG", players[0].getValue("nationality").jsonObject.getValue("code").jsonPrimitive.content)
+        assertEquals("ITA", players[0].getValue("secondNationality").jsonObject.getValue("code").jsonPrimitive.content)
+        // Sem segunda nacionalidade, o campo some (explicitNulls = false), em vez de vir `null`.
+        assertNull(players[1]["secondNationality"])
+    }
+
+    @Test
+    fun `bandeira das nacoes do Reino Unido usa a sequencia de subdivisao`() {
+        // 🏴 + tags "gbeng" + terminador — a bandeira da Inglaterra, não a do Reino Unido.
+        assertEquals("🏴󠁧󠁢󠁥󠁮󠁧󠁿", flagEmoji("GB-ENG"))
+        assertEquals("🇦🇷", flagEmoji("AR"))
     }
 
     // ─── Escalação efetiva (issue #87) ────────────────────────────────────
@@ -215,7 +249,7 @@ class ResponsesTest {
 
     @Test
     fun `market entry expoe player e price`() {
-        val entry = MarketEntry(player = club.squad.first().copy(overall = 88), price = 12_345_00)
+        val entry = MarketEntry(player = club.squad.first().copy(overall = 88), price = 12_345_00.cents)
 
         val dto = entry.toDto()
         val encoded = json
@@ -252,7 +286,7 @@ class ResponsesTest {
         // porque um swap no mapeamento passaria por compilador e por um teste
         // que usasse o mesmo número nos dois campos.
         val result: TransferResult =
-            TransferResult.InsufficientFunds(available = 1_000_00, required = 9_999_00)
+            TransferResult.InsufficientFunds(available = 1_000_00.cents, required = 9_999_00.cents)
 
         val encoded = encode(result.toDto())
 
@@ -326,7 +360,7 @@ class ResponsesTest {
             encoded.getValue("phases").jsonArray.map { it.jsonObject.getValue("phase").jsonPrimitive.content },
         )
         assertEquals(
-            KnockoutPhase.FINAL.prizeCents,
+            KnockoutPhase.FINAL.prizeCents.cents,
             encoded.getValue("phases").jsonArray[1].jsonObject.getValue("prizeCents").jsonPrimitive.content.toLong(),
         )
         // Fase das semis completa (pênaltis + folga) e final ainda não sorteada:

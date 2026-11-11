@@ -6,6 +6,7 @@ import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.test.makePlayer
 import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.runBlocking
@@ -67,7 +68,7 @@ class OfferMvcTest {
             val squad = (1L..squadSize.toLong()).map { n ->
                 makePlayer(clubId * 100 + n, position = if (n == 1L) Position.GK else Position.MF)
             }
-            val club = Club(ClubId(clubId), "Mvc FC $clubId", 10_000_000_00, 10_000, squad, ownerId = auth.user.id)
+            val club = Club(ClubId(clubId), "Mvc FC $clubId", 10_000_000_00.cents, 10_000, squad, ownerId = auth.user.id)
             assertIs<ClubSaveResult.Saved>(clubRepo.save(club))
         }
         return Manager(auth.token, clubId)

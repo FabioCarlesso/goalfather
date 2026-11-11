@@ -1,9 +1,11 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Retirement
+import com.carlesso.goalfather.domain.model.cents
 import kotlin.random.Random
 
 /**
@@ -209,8 +211,8 @@ val YOUTH_AGE: IntRange = 17..19
  */
 val YOUTH_OVERALL_GAP: IntRange = 8..18
 
-/** Salário de quem sobe da base, em centavos (R$ 3.000) — cabe em qualquer folha. */
-const val YOUTH_SALARY_CENTS: Int = 3_000_00
+/** Salário de quem sobe da base (US$ 600) — cabe em qualquer folha. `val`: [Money] não é `const`. */
+val YOUTH_SALARY_CENTS: Money = 600_00.cents
 
 /**
  * Garoto da base que assume a vaga do aposentado: mesma posição, idade de

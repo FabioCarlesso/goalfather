@@ -50,13 +50,13 @@ class ClubEntity(
     var trainingFocus: String = "DESCANSO",
 
     /**
-     * Preço do ingresso em centavos (issue #59). Default = R$ 50, o preço fixo
-     * de antes da issue: clube seedado sem passar pela coluna cobra o de
+     * Preço do ingresso em centavos de USD (issues #59 e #122). Default = US$ 10, o preço
+     * padrão do domínio: clube seedado sem passar pela coluna cobra o de
      * sempre. A FAIXA permitida é regra de domínio e não desce até aqui — o
      * mapper acomoda um valor fora dela na leitura (ver `ClubMapper`).
      */
     @Column(name = "ticket_price_cents", nullable = false)
-    var ticketPriceCents: Long = 50_00,
+    var ticketPriceCents: Long = 10_00,
 
     /**
      * Meta da diretoria da temporada (issue #62) — quatro colunas que só fazem
@@ -85,4 +85,8 @@ class ClubEntity(
     @Version
     @Column(name = "version", nullable = false)
     var version: Long = 0,
+
+    /** Trigrama FIFA do país do clube (issue #123); o mapper resolve o `Country`. */
+    @Column(name = "country", nullable = false, length = 3)
+    var country: String = "BRA",
 )

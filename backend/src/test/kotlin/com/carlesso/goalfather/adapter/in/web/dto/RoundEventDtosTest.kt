@@ -16,6 +16,7 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainedAttribute
 import com.carlesso.goalfather.domain.model.TrainingFocus
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.test.makePlayer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -78,7 +79,7 @@ class RoundEventDtosTest {
             BoardReview(
                 clubId = ClubId(1), clubName = "Alfa", season = 2026, objective = BoardObjective.TITLE,
                 targetPosition = 1, finalPosition = 1, confidence = 80,
-                verdict = BoardVerdict.TargetMet(bonusCents = 300_000_00),
+                verdict = BoardVerdict.TargetMet(bonusCents = 300_000_00.cents),
             ),
         ),
     )
@@ -155,8 +156,8 @@ class RoundEventDtosTest {
         standings = listOf(standings),
         finances = listOf(
             RoundFinance(
-                clubId = ClubId(1), ticketRevenue = 50_000_00, salariesPaid = 20_000_00,
-                deficit = 0, ticketPrice = 30_00, attendance = 12_000, cupPrize = 0,
+                clubId = ClubId(1), ticketRevenue = 50_000_00.cents, salariesPaid = 20_000_00.cents,
+                deficit = 0.cents, ticketPrice = 30_00.cents, attendance = 12_000, cupPrize = 0.cents,
             ),
         ),
         training = listOf(

@@ -1,6 +1,8 @@
 package com.carlesso.goalfather.application.seed
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
+import com.carlesso.goalfather.domain.rules.isForeignAt
 import com.carlesso.goalfather.domain.rules.salePayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,6 +13,13 @@ class InitialLeagueTest {
 
     private val league = initialLeague()
     private val aiClubs = AI_CLUBS_DIV1 + AI_CLUBS_DIV2
+
+    @Test
+    fun `todo clube do seed e brasileiro e o mercado tem estrangeiros (issue 123)`() {
+        assertTrue(league.clubs.all { it.country == Countries.BRAZIL })
+        val foreigners = league.market.map { it.player }.filter { it.isForeignAt(league.clubs.first()) }
+        assertEquals(3, foreigners.size, "estrangeiros do mercado: ${foreigners.map { it.name }}")
+    }
 
     @Test
     fun `nenhum jogador tem nome no formato Clube Player N`() {

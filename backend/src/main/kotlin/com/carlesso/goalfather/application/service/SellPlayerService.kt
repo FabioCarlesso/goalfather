@@ -6,6 +6,7 @@ import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.MarketEntry
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
@@ -22,8 +23,8 @@ import com.carlesso.goalfather.domain.rules.salePayout
 class SellPlayerService(
     private val clubRepo: ClubRepository,
     private val marketRepo: MarketRepository,
-    private val salePriceCalc: (Player) -> Long = ::salePayout,
-    private val listingPriceCalc: (Player) -> Long = ::marketListingPrice,
+    private val salePriceCalc: (Player) -> Money = ::salePayout,
+    private val listingPriceCalc: (Player) -> Money = ::marketListingPrice,
 ) : SellPlayerUseCase {
 
     override suspend fun execute(clubId: ClubId, playerId: PlayerId): TransferResult {

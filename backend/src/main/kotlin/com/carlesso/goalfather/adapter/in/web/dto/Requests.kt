@@ -43,7 +43,7 @@ data class TrainingFocusRequest(val focus: TrainingFocus)
 
 /**
  * Preço do ingresso (issue #59). Sem default pelo mesmo motivo do treino: o
- * técnico está mandando um número, e corpo vazio virando "R$ 50" esconderia um
+ * técnico está mandando um número, e corpo vazio virando "US$ 10" esconderia um
  * cliente quebrado. A faixa é validada no use case e volta como valor.
  */
 @Serializable

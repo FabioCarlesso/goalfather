@@ -17,6 +17,7 @@ import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.ClaimResult
@@ -182,7 +183,7 @@ class ClubController(
                 ErrorResponse(
                     code = "INSUFFICIENT_FUNDS",
                     message = "Caixa insuficiente para o departamento médico " +
-                        "(necessário ${result.required}, disponível ${result.available})",
+                        "(necessário ${result.required.cents}, disponível ${result.available.cents})",
                 ),
             )
             is MedicalResult.Conflict -> clubWriteConflict(result.clubId)
@@ -221,7 +222,7 @@ class ClubController(
         @RequestBody req: TicketPriceRequest,
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
-        when (val result = setTicketPrice.execute(ClubId(id), userId, req.ticketPriceCents)) {
+        when (val result = setTicketPrice.execute(ClubId(id), userId, Money(req.ticketPriceCents))) {
             is TicketPriceResult.Success -> json.okJson(result.club.toDto())
             is TicketPriceResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
@@ -232,8 +233,8 @@ class ClubController(
             is TicketPriceResult.PriceOutOfRange -> ResponseEntity.badRequest().body(
                 ErrorResponse(
                     code = "TICKET_PRICE_OUT_OF_RANGE",
-                    message = "Preço ${result.price} fora da faixa permitida " +
-                        "(${result.min}..${result.max} centavos)",
+                    message = "Preço ${result.price.cents} fora da faixa permitida " +
+                        "(${result.min.cents}..${result.max.cents} centavos de USD)",
                 ),
             )
         }
@@ -267,7 +268,7 @@ class ClubController(
                 ErrorResponse(
                     code = "INSUFFICIENT_FUNDS",
                     message = "Caixa insuficiente para ampliar " +
-                        "(necessário ${result.required}, disponível ${result.available})",
+                        "(necessário ${result.required.cents}, disponível ${result.available.cents})",
                 ),
             )
             is ExpandStadiumResult.Conflict -> clubWriteConflict(result.clubId)

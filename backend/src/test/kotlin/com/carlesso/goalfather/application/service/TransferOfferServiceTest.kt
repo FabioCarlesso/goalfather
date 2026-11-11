@@ -13,6 +13,7 @@ import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.TransferOffer
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.OfferResult
 import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_ROUNDS
 import com.carlesso.goalfather.test.makeClub
@@ -51,7 +52,7 @@ class TransferOfferServiceTest {
         sellerClubName = seller.name,
         playerId = target.id,
         playerName = target.name,
-        amount = 400_000_00,
+        amount = 400_000_00.cents,
         roundsLeft = OFFER_DEADLINE_ROUNDS,
     )
 
@@ -72,7 +73,7 @@ class TransferOfferServiceTest {
         val created = slot<TransferOffer>()
         coEvery { offerRepo.create(capture(created)) } answers { created.captured.copy(id = OfferId(99)) }
 
-        val result = service.create(buyer.id, seller.id, target.id, 400_000_00, requesterId = buyerOwner)
+        val result = service.create(buyer.id, seller.id, target.id, 400_000_00.cents, requesterId = buyerOwner)
 
         assertIs<OfferResult.Success>(result)
         assertEquals(OfferId(99), result.offer.id)
@@ -89,7 +90,7 @@ class TransferOfferServiceTest {
         val rival = pending.copy(id = OfferId(8), buyerClubId = ClubId(3))
         coEvery { offerRepo.findPendingForPlayer(target.id) } returns listOf(rival, pending)
 
-        val result = service.create(buyer.id, seller.id, target.id, 500_000_00, requesterId = buyerOwner)
+        val result = service.create(buyer.id, seller.id, target.id, 500_000_00.cents, requesterId = buyerOwner)
 
         assertEquals(OfferResult.OfferAlreadyPending(pending.id), result)
         coVerify(exactly = 0) { offerRepo.create(any()) }
@@ -99,7 +100,7 @@ class TransferOfferServiceTest {
     fun `so o dono do comprador propoe`() = runTest {
         stubClubs(buyer, seller)
 
-        assertEquals(OfferResult.NotOwner, service.create(buyer.id, seller.id, target.id, 400_000_00, requesterId = 999))
+        assertEquals(OfferResult.NotOwner, service.create(buyer.id, seller.id, target.id, 400_000_00.cents, requesterId = 999))
         coVerify(exactly = 0) { offerRepo.create(any()) }
     }
 
@@ -107,7 +108,7 @@ class TransferOfferServiceTest {
     fun `regra de negocio bloqueia a criacao sem gravar nada`() = runTest {
         stubClubs(buyer, seller)
 
-        val result = service.create(buyer.id, seller.id, target.id, 5_000_000_00, requesterId = buyerOwner)
+        val result = service.create(buyer.id, seller.id, target.id, 5_000_000_00.cents, requesterId = buyerOwner)
 
         assertIs<OfferResult.InsufficientFunds>(result)
         coVerify(exactly = 0) { offerRepo.create(any()) }
@@ -119,7 +120,7 @@ class TransferOfferServiceTest {
 
         assertEquals(
             OfferResult.ClubNotFound(ClubId(404)),
-            service.create(ClubId(404), seller.id, target.id, 400_000_00, requesterId = buyerOwner),
+            service.create(ClubId(404), seller.id, target.id, 400_000_00.cents, requesterId = buyerOwner),
         )
     }
 
@@ -143,9 +144,9 @@ class TransferOfferServiceTest {
 
         assertIs<OfferResult.Success>(result)
         assertEquals(OfferStatus.Accepted, result.offer.status)
-        assertEquals(50_000_00 + 400_000_00, sellerSlot.captured.cash)
+        assertEquals((50_000_00 + 400_000_00).cents, sellerSlot.captured.cash)
         assertEquals(11, sellerSlot.captured.squad.size)
-        assertEquals(1_000_000_00 - 400_000_00, buyerSlot.captured.cash)
+        assertEquals((1_000_000_00 - 400_000_00).cents, buyerSlot.captured.cash)
         assertEquals(target.id, buyerSlot.captured.squad.last().id)
         // A própria proposta não é rival de si mesma.
         assertEquals(listOf(OfferId(8)), rivalsSlot.captured.map { it.id })
@@ -172,7 +173,7 @@ class TransferOfferServiceTest {
 
     @Test
     fun `aceite revalida as regras - caixa do comprador mudou desde a proposta`() = runTest {
-        stubClubs(buyer.copy(cash = 100_000_00), seller)
+        stubClubs(buyer.copy(cash = 100_000_00.cents), seller)
         stubRound(RoundStatus.Scheduled)
         coEvery { offerRepo.findById(pending.id) } returns pending
 

@@ -3,6 +3,7 @@ package com.carlesso.goalfather.domain.rules
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.OfferResult
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
@@ -53,47 +54,47 @@ class TransferOfferRulesTest {
 
     @Test
     fun `proposta valida nao tem bloqueio`() {
-        assertNull(offerBlocker(buyer, seller, target, amount = 500_000_00))
+        assertNull(offerBlocker(buyer, seller, target, amount = 500_000_00.cents))
     }
 
     @Test
     fun `valor abaixo do minimo`() {
-        val blocker = offerBlocker(buyer, seller, target, amount = MIN_OFFER_CENTS - 1)
+        val blocker = offerBlocker(buyer, seller, target, amount = MIN_OFFER_CENTS - 1.cents)
         assertEquals(OfferResult.InvalidAmount(MIN_OFFER_CENTS), blocker)
     }
 
     @Test
     fun `jogador fora do elenco do vendedor ou proposta ao proprio clube`() {
-        assertIs<OfferResult.PlayerNotAvailable>(offerBlocker(buyer, seller, PlayerId(999), 500_000_00))
-        assertIs<OfferResult.PlayerNotAvailable>(offerBlocker(seller, seller, target, 500_000_00))
+        assertIs<OfferResult.PlayerNotAvailable>(offerBlocker(buyer, seller, PlayerId(999), 500_000_00.cents))
+        assertIs<OfferResult.PlayerNotAvailable>(offerBlocker(seller, seller, target, 500_000_00.cents))
     }
 
     @Test
     fun `clube da IA nao negocia`() {
         val ai = seller.copy(ownerId = null)
-        assertEquals(OfferResult.SellerNotHuman(ClubId(2)), offerBlocker(buyer, ai, target, 500_000_00))
+        assertEquals(OfferResult.SellerNotHuman(ClubId(2)), offerBlocker(buyer, ai, target, 500_000_00.cents))
     }
 
     @Test
     fun `comprador sem tecnico humano nao compra (revisao PR 94)`() {
         // Técnico comprador demitido: o clube voltou à IA, que não paga a proposta dele.
         val aiBuyer = buyer.copy(ownerId = null)
-        assertEquals(OfferResult.BuyerNotHuman(ClubId(1)), offerBlocker(aiBuyer, seller, target, 500_000_00))
+        assertEquals(OfferResult.BuyerNotHuman(ClubId(1)), offerBlocker(aiBuyer, seller, target, 500_000_00.cents))
     }
 
     @Test
     fun `comprador sem caixa`() {
-        val poor = buyer.copy(cash = 100_000_00)
+        val poor = buyer.copy(cash = 100_000_00.cents)
         assertEquals(
-            OfferResult.InsufficientFunds(available = 100_000_00, required = 500_000_00),
-            offerBlocker(poor, seller, target, 500_000_00),
+            OfferResult.InsufficientFunds(available = 100_000_00.cents, required = 500_000_00.cents),
+            offerBlocker(poor, seller, target, 500_000_00.cents),
         )
     }
 
     @Test
     fun `comprador com elenco cheio`() {
         val full = buyer.copy(squad = (1L..MAX_SQUAD_SIZE.toLong()).map { makePlayer(it) })
-        assertEquals(OfferResult.SquadFull(MAX_SQUAD_SIZE), offerBlocker(full, seller, target, 500_000_00))
+        assertEquals(OfferResult.SquadFull(MAX_SQUAD_SIZE), offerBlocker(full, seller, target, 500_000_00.cents))
     }
 
     @Test
@@ -101,7 +102,7 @@ class TransferOfferRulesTest {
         val thin = seller.copy(squad = seller.squad.take(11))
         assertEquals(
             OfferResult.SellerSquadInvalid(SquadViolation.TOO_FEW_PLAYERS, MIN_SQUAD_SIZE),
-            offerBlocker(buyer, thin, target, 500_000_00),
+            offerBlocker(buyer, thin, target, 500_000_00.cents),
         )
     }
 }

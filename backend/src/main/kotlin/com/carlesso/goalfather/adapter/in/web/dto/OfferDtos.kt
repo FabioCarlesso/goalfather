@@ -113,7 +113,7 @@ fun TransferOffer.toDto(): TransferOfferDto = TransferOfferDto(
     sellerClubName = sellerClubName,
     playerId = playerId.value,
     playerName = playerName,
-    amount = amount,
+    amount = amount.cents,
     roundsLeft = roundsLeft,
     status = status,
 )
@@ -124,8 +124,8 @@ fun TransferOffer.toDto(): TransferOfferDto = TransferOfferDto(
  * a sua forma no contrato.
  */
 fun OfferResult.Rejection.toDto(): TransferOfferResultDto = when (this) {
-    is OfferResult.InvalidAmount -> TransferOfferResultDto.InvalidAmount(minimum)
-    is OfferResult.InsufficientFunds -> TransferOfferResultDto.InsufficientFunds(available, required)
+    is OfferResult.InvalidAmount -> TransferOfferResultDto.InvalidAmount(minimum.cents)
+    is OfferResult.InsufficientFunds -> TransferOfferResultDto.InsufficientFunds(available.cents, required.cents)
     is OfferResult.SquadFull -> TransferOfferResultDto.SquadFull(maxSize)
     is OfferResult.PlayerNotAvailable -> TransferOfferResultDto.PlayerNotAvailable(playerId.value)
     is OfferResult.SellerNotHuman -> TransferOfferResultDto.SellerNotHuman(clubId.value)

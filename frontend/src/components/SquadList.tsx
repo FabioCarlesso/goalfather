@@ -1,6 +1,7 @@
 import { POSITION_ABBR, POSITION_LABEL } from '../domain/formations'
 import { injuryRoundsOut, staminaLevel } from '../domain/players'
 import type { Availability, Player } from '../domain/types'
+import { CountryFlag } from './CountryFlag'
 
 interface Props {
   squad: Player[]
@@ -21,6 +22,7 @@ export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Prop
         {squad.map((p) => (
           <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
             <div className="min-w-0">
+              <span className="mr-1.5"><CountryFlag country={p.nationality} /></span>
               <span className="font-medium text-slate-100">{p.name}</span>
               <span className="ml-2 text-xs text-slate-400">
                 <abbr title={POSITION_LABEL[p.position]} className="no-underline">

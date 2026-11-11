@@ -93,7 +93,7 @@ test.describe('Offers flow', () => {
 
     const outfield = page.getByRole('listitem').filter({ hasNotText: 'GK ·' })
     await outfield.first().getByRole('button', { name: 'Propor' }).click()
-    await page.getByLabel('Valor da proposta (R$)').fill('50000')
+    await page.getByLabel('Valor da proposta (US$)').fill('10000')
     await page.getByRole('button', { name: 'Enviar proposta' }).click()
     await expect(page.getByText(/Proposta enviada por/)).toBeVisible({ timeout: 10_000 })
 

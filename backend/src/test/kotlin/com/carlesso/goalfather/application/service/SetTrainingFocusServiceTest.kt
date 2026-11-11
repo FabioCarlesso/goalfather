@@ -3,6 +3,7 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.TrainingFocus
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.TrainingFocusResult
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.coEvery
@@ -76,14 +77,14 @@ class SetTrainingFocusServiceTest {
         // O débito concorrente (900k) chega no clube RELIDO pelo UPDATE de
         // coluna — nada de `save` do agregado para desfazê-lo.
         val stale = makeClub(ownerId = owner, cash = 1_000_000_00)
-        val fresh = stale.copy(cash = 900_000_00, trainingFocus = TrainingFocus.ATAQUE, version = stale.version + 2)
+        val fresh = stale.copy(cash = 900_000_00.cents, trainingFocus = TrainingFocus.ATAQUE, version = stale.version + 2)
         coEvery { clubRepo.findById(ClubId(1)) } returns stale
         coEvery { clubRepo.updateTrainingFocus(ClubId(1), TrainingFocus.ATAQUE) } returns fresh
 
         val result = service.execute(ClubId(1), owner, TrainingFocus.ATAQUE)
 
         assertIs<TrainingFocusResult.Success>(result)
-        assertEquals(900_000_00, result.club.cash, "não desfaz o débito concorrente")
+        assertEquals(900_000_00.cents, result.club.cash, "não desfaz o débito concorrente")
         coVerify(exactly = 0) { clubRepo.save(any()) }
     }
 }

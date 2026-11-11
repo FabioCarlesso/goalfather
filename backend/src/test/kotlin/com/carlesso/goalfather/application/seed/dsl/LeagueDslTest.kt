@@ -7,6 +7,7 @@ import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.PROMOTION_RELEGATION_SPOTS
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -63,7 +64,7 @@ class LeagueDslTest {
         }.build()
 
         assertEquals(ClubId(1), club.id)
-        assertEquals(800_000_00, club.cash)
+        assertEquals(800_000_00.cents, club.cash)
         assertEquals(15_000, club.stadiumCapacity)
         assertEquals(listOf(PlayerId(1), PlayerId(2)), club.squad.map { it.id })
     }
@@ -76,7 +77,7 @@ class LeagueDslTest {
 
         assertEquals(1, market.size)
         assertEquals(PlayerId(101), market.first().player.id)
-        assertEquals(450_000_00, market.first().price)
+        assertEquals(450_000_00.cents, market.first().price)
     }
 
     @Test

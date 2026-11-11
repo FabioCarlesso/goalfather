@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.port.`in`
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.result.TicketPriceResult
 
 /**
@@ -9,5 +10,5 @@ import com.carlesso.goalfather.domain.result.TicketPriceResult
  * apenas registra o preço.
  */
 interface SetTicketPriceUseCase {
-    suspend fun execute(clubId: ClubId, requesterId: Long, ticketPriceCents: Long): TicketPriceResult
+    suspend fun execute(clubId: ClubId, requesterId: Long, ticketPriceCents: Money): TicketPriceResult
 }

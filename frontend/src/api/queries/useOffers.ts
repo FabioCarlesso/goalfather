@@ -9,7 +9,7 @@ import type { CreateOfferRequest, TransferOffer, TransferOfferResult } from '../
  * Menor proposta, em centavos (espelha `MIN_OFFER_CENTS` do backend). Só
  * orienta o input — quem decide é o backend, que devolve `InvalidAmount`.
  */
-export const MIN_OFFER_CENTS = 1_000_00
+export const MIN_OFFER_CENTS = 200_00
 
 /** Intervalo do polling das propostas — a "notificação" da v1 (sem WebSocket). */
 export const OFFERS_POLL_MS = 15_000

@@ -11,6 +11,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
@@ -18,6 +19,7 @@ import com.carlesso.goalfather.domain.model.SeasonRecord
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TieResult
+import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.cupDrawSeed
 import com.carlesso.goalfather.domain.rules.cupRound
 import com.carlesso.goalfather.domain.rules.drawCup
@@ -139,9 +141,9 @@ class CupRoundFlowTest {
         val roundFinished = events.filterIsInstance<RoundEvent.RoundFinished>().single()
         val winners = semis.mapNotNull { it.winner?.id }.toSet()
         for (finance in roundFinished.finances) {
-            val expectedPrize = if (finance.clubId in winners) KnockoutPhase.SEMI_FINALS.prizeCents else 0L
+            val expectedPrize = if (finance.clubId in winners) KnockoutPhase.SEMI_FINALS.prizeCents else Money.ZERO
             assertEquals(expectedPrize, finance.cupPrize, "prêmio de ${finance.clubId}")
-            assertEquals(0L, finance.salariesPaid, "data de copa não cobra folha")
+            assertEquals(0.cents, finance.salariesPaid, "data de copa não cobra folha")
         }
         val cashOf = savedClubs.associate { it.id to it.cash }
         for (club in clubs) {

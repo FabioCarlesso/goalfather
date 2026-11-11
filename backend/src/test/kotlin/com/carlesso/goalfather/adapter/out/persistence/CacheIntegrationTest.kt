@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.cents
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -60,9 +61,9 @@ class CacheIntegrationTest {
                 player = Player(
                     id = PlayerId(9001), name = "Cache Tester", position = Position.MF,
                     overall = 70, pace = 70, shooting = 70, passing = 70, defending = 70,
-                    salary = 10_000_00, age = 25,
+                    salary = 10_000_00.cents, age = 25,
                 ),
-                price = 100_000_00,
+                price = 100_000_00.cents,
             ),
         )
         assertNull(cachedEntry("market"), "add deve invalidar o cache")

@@ -86,7 +86,7 @@ data class CupDto(
 
 fun Cup.toDto(): CupDto = CupDto(
     season = season,
-    phases = phases.map { CupPhaseDto(it, it.prizeCents) },
+    phases = phases.map { CupPhaseDto(it, it.prizeCents.cents) },
     stages = stages.map { it.toDto() },
     currentPhase = currentStage?.phase,
     champion = champion?.toDto(),
