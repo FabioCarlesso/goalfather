@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.serialization
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.PlayerId
 import kotlinx.serialization.KSerializer
@@ -53,4 +54,20 @@ object DivisionSerializer : KSerializer<Division> {
 
     override fun deserialize(decoder: Decoder): Division =
         Division(decoder.decodeInt())
+}
+
+/**
+ * `CompetitionId` (issue #124) vira a `String` de dentro no JSON. Serializer
+ * manual em vez de `@Serializable` no value class: assim a partida do encaixe
+ * (issue #125) persiste o id sem mexer em `Competition.kt`, que é o formato.
+ */
+object CompetitionIdSerializer : KSerializer<CompetitionId> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("CompetitionId", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: CompetitionId) =
+        encoder.encodeString(value.value)
+
+    override fun deserialize(decoder: Decoder): CompetitionId =
+        CompetitionId(decoder.decodeString())
 }

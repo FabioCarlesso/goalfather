@@ -59,9 +59,8 @@ class SeedWriter(
             marketRepo.save(MarketEntryEntity(playerId = entry.player.id.value, price = entry.price.cents))
         }
 
-        for (round in league.rounds) {
-            roundRepo.save(round.toEntity(json))
-        }
+        // Primeiro encaixe do calendário semanal (issue #125), derivado dos clubes.
+        league.firstRound()?.let { roundRepo.save(it.toEntity(json)) }
 
         for (standings in league.initialStandings()) {
             standingsRepo.save(standings.toEntity(json))

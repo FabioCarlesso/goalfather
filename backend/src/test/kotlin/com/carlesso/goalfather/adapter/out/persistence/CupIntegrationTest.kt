@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
+import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
 import com.carlesso.goalfather.adapter.out.persistence.repository.CupJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
@@ -9,12 +10,17 @@ import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.PenaltyScore
+import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.rules.cupRound
+import com.carlesso.goalfather.domain.model.SeasonCompetitions
+import com.carlesso.goalfather.domain.rules.cupMatches
 import com.carlesso.goalfather.domain.rules.drawCup
 import com.carlesso.goalfather.domain.rules.recordRound
+import com.carlesso.goalfather.test.farMatchday
 import com.carlesso.goalfather.test.makeClub
+import com.carlesso.goalfather.test.md
+import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -54,7 +60,7 @@ class CupIntegrationTest {
         val season = 9401
         try {
             val cup = drawCup(season, clubs, Random(1))
-            val round = cupRound(2, season, KnockoutPhase.ROUND_OF_16, cup, clubs)
+            val round = Round(md(2), season, matches = cupMatches(md(2), cup, clubs))
             val played = cup.recordRound(
                 round.copy(
                     matches = round.matches.map {
@@ -80,23 +86,17 @@ class CupIntegrationTest {
     }
 
     @Test
-    fun `stage da rodada persiste e linha antiga sem stage vira rodada de liga`() = runBlocking {
-        val cupDate = 9402
-        val legacy = 9403
+    fun `stage de cada partida persiste dentro do encaixe`() = runBlocking {
+        val cupDate = farMatchday(9402)
         try {
             val cup = drawCup(2026, clubs, Random(2))
-            leagueRepo.saveRound(cupRound(cupDate, 2026, KnockoutPhase.ROUND_OF_16, cup, clubs))
+            leagueRepo.saveRound(Round(cupDate, 2026, matches = cupMatches(cupDate, cup, clubs)))
             val reloaded = assertNotNull(leagueRepo.findRound(cupDate))
-            assertEquals(RoundStage.Cup(KnockoutPhase.ROUND_OF_16), reloaded.stage)
-
-            // Linha gravada antes da V12: `stage_json` nulo.
-            roundJpa.saveAndFlush(RoundEntity(number = legacy, season = 2026))
-            val old = assertNotNull(leagueRepo.findRound(legacy))
-            val stage = assertIs<RoundStage.League>(old.stage)
-            assertEquals(legacy, stage.matchday)
+            assertTrue(reloaded.matches.isNotEmpty())
+            assertTrue(reloaded.matches.all { it.stage == RoundStage.Cup(KnockoutPhase.ROUND_OF_16) })
+            assertTrue(reloaded.matches.all { it.competition == SeasonCompetitions.CUP_ID })
         } finally {
-            roundJpa.deleteById(cupDate)
-            roundJpa.deleteById(legacy)
+            roundJpa.deleteById(cupDate.toKey())
         }
     }
 }

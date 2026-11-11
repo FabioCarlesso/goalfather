@@ -8,11 +8,13 @@ import com.carlesso.goalfather.domain.model.CupStage
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.TieResult
 import kotlin.random.Random
 
@@ -106,8 +108,10 @@ data class CupRoundOutcome(
  */
 fun Cup.recordRound(round: Round): CupRoundOutcome {
     val stage = currentStage ?: return CupRoundOutcome(this, emptyMap())
+    // Só os jogos de COPA do encaixe (issue #125): um jogo de liga entre os
+    // mesmos dois clubes no mesmo encaixe não pode decidir confronto nenhum.
     val played = round.matches
-        .filter { it.status == RoundStatus.Finished }
+        .filter { it.status == RoundStatus.Finished && it.stage is RoundStage.Cup }
         .associateBy { it.homeClubId to it.awayClubId }
 
     val prizes = mutableMapOf<ClubId, Money>()
@@ -157,41 +161,33 @@ private fun nextStage(phase: KnockoutPhase, previous: CupStage): CupStage {
 }
 
 /**
- * Monta a rodada de copa da data [roundNumber]: os confrontos ainda em aberto
- * da fase corrente, em jogo único. O `matchId` segue a fórmula das rodadas de
- * liga sem o dígito da divisão — `rodada × 1000 + índice` —, que nenhuma
- * partida de liga usa (a delas começa em `× 1000 + 101`). É também a seed da
- * simulação, então "mesma seed = mesma disputa" vale para os pênaltis.
+ * Os jogos de copa do encaixe [matchday]: os confrontos ainda em aberto da
+ * fase corrente, em jogo único. O `matchId` segue a fórmula da liga sem o
+ * dígito da divisão — `encaixe × 1000 + índice` —, que nenhuma partida de
+ * liga usa (a delas começa em `× 1000 + 101`): liga e copa podem até dividir
+ * um encaixe sem colidir. É também a seed da simulação, então "mesma seed =
+ * mesma disputa" vale para os pênaltis.
  *
  * A `division` de cada partida é a do mandante — a copa mistura divisões, e é
  * esse o dado que deixa a UI mostrar o "clube pequeno" recebendo o grande.
  */
-fun cupRound(
-    roundNumber: Int,
-    season: Int,
-    phase: KnockoutPhase,
-    cup: Cup,
-    clubs: Collection<Club>,
-): Round {
+fun cupMatches(matchday: Matchday, cup: Cup, clubs: Collection<Club>): List<RoundMatch> {
+    val stage = cup.currentStage ?: return emptyList()
     val divisionOf = clubs.associate { it.id to it.division }
-    val pending = cup.currentStage?.ties.orEmpty()
+    return stage.ties
         .filterIsInstance<CupTie.Fixture>()
         .filter { it.result == null }
-
-    return Round(
-        number = roundNumber,
-        season = season,
-        status = RoundStatus.Scheduled,
-        stage = RoundStage.Cup(cup.currentStage?.phase ?: phase),
-        matches = pending.map { tie ->
+        .map { tie ->
             RoundMatch(
-                matchId = roundNumber * 1000L + tie.index + 1,
+                matchId = matchday.serial * 1000L + tie.index + 1,
                 homeClubId = tie.home.id,
                 awayClubId = tie.away.id,
                 homeClubName = tie.home.name,
                 awayClubName = tie.away.name,
                 division = divisionOf[tie.home.id] ?: Division.FIRST,
+                stage = RoundStage.Cup(stage.phase),
+                competition = SeasonCompetitions.CUP_ID,
+                competitionName = SeasonCompetitions.CUP_NAME,
             )
-        },
-    )
+        }
 }

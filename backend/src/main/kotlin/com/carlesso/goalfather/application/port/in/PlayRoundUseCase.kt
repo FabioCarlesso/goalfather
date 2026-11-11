@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.port.`in`
 
 import com.carlesso.goalfather.domain.event.RoundEvent
+import com.carlesso.goalfather.domain.model.Matchday
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -13,5 +14,6 @@ import kotlinx.coroutines.flow.Flow
  * não no controller.
  */
 interface PlayRoundUseCase {
-    fun stream(roundNumber: Int): Flow<RoundEvent>
+    /** Joga o encaixe [matchday] (issue #125): todos os jogos dele, de todas as competições. */
+    fun stream(matchday: Matchday): Flow<RoundEvent>
 }

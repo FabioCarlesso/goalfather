@@ -4,6 +4,7 @@ import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.ReadinessStatus
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.UserId
@@ -44,26 +45,26 @@ class RoundReadinessService(
 ) : RoundReadinessUseCase {
 
     override suspend fun status(): ReadinessStatus =
-        buildStatus(leagueRepo.findLatest()?.number ?: 0)
+        buildStatus(leagueRepo.findLatest()?.matchday)
 
     override suspend fun markReady(userId: UserId): ReadinessStatus {
-        val round = leagueRepo.findLatest() ?: return buildStatus(0)
+        val round = leagueRepo.findLatest() ?: return buildStatus(null)
         // Só técnicos (donos de clube) sinalizam prontidão. Sem o guard, um
         // usuário autenticado sem clube criaria linha órfã em `round_readiness`
         // (ignorada na contagem, mas lixo persistido) — issue #20, ponto #6.
         if (userRepo.findManagers().any { it.id == userId }) {
-            readinessRepo.markReady(round.number, userId)
+            readinessRepo.markReady(round.matchday, userId)
         }
-        return buildStatus(round.number)
+        return buildStatus(round.matchday)
     }
 
     override suspend fun start(): StartRoundResult {
         val round = leagueRepo.findLatest() ?: return StartRoundResult.NoRound
         if (round.status == RoundStatus.Finished) {
-            return StartRoundResult.AlreadyFinished(round.number)
+            return StartRoundResult.AlreadyFinished(round.matchday)
         }
 
-        val status = buildStatus(round.number)
+        val status = buildStatus(round.matchday)
         // Gate agora é "todos prontos OU timeout estourado" (issue #45): um
         // ausente não segura mais a liga indefinidamente.
         if (!status.canStart) return StartRoundResult.NotReady(status)
@@ -72,17 +73,17 @@ class RoundReadinessService(
         // `startRound` devolve false. Isso engloba dois casos — já `InProgress`
         // (sucesso: o cliente conecta no WS) ou já `Finished` (a rodada foi
         // simulada entre o `findLatest` e aqui). Só o segundo muda a resposta,
-        // então relemos ESTA rodada por número para não anunciar `Started` de
+        // então relemos ESTE encaixe pela chave para não anunciar `Started` de
         // uma rodada encerrada. Reler por `findLatest()` não serviria: quando o
-        // vencedor conclui a finalização ele já gerou a rodada `N+1` (Scheduled),
+        // vencedor conclui a finalização ele já gerou o encaixe seguinte (Scheduled),
         // que passaria a ser a "última" e mascararia o encerramento da nossa.
-        if (round.status == RoundStatus.Scheduled && !leagueRepo.startRound(round.number)) {
-            val fresh = leagueRepo.findRound(round.number)
+        if (round.status == RoundStatus.Scheduled && !leagueRepo.startRound(round.matchday)) {
+            val fresh = leagueRepo.findRound(round.matchday)
             if (fresh != null && fresh.status == RoundStatus.Finished) {
-                return StartRoundResult.AlreadyFinished(fresh.number)
+                return StartRoundResult.AlreadyFinished(fresh.matchday)
             }
         }
-        return StartRoundResult.Started(round.number)
+        return StartRoundResult.Started(round.matchday)
     }
 
     /**
@@ -95,22 +96,23 @@ class RoundReadinessService(
      * nunca destrava uma liga sem nenhum pronto (o primeiro "pronto" arma o
      * relógio). `secondsRemaining` fica `null` fora dessa janela.
      */
-    private suspend fun buildStatus(roundNumber: Int): ReadinessStatus {
+    private suspend fun buildStatus(matchday: Matchday?): ReadinessStatus {
         val managers = userRepo.findManagers()
-        val ready = readinessRepo.readyUserIds(roundNumber)
+        // Sem encaixe no calendário ninguém está pronto para nada.
+        val ready = matchday?.let { readinessRepo.readyUserIds(it) }.orEmpty()
         val pending = managers.filter { it.id !in ready }
         val hasPending = managers.isNotEmpty() && pending.isNotEmpty()
 
         // Só faz sentido cronometrar quando ainda há pendentes e alguém já se
         // marcou pronto (o primeiro "pronto" ancora o timeout).
-        val firstReady = if (hasPending && ready.isNotEmpty()) readinessRepo.firstReadyAt(roundNumber) else null
+        val firstReady = if (hasPending && ready.isNotEmpty()) matchday?.let { readinessRepo.firstReadyAt(it) } else null
         val secondsRemaining = firstReady?.let {
             val remaining = Duration.between(clock.instant(), it.plus(timeout))
             remaining.seconds.coerceAtLeast(0).toInt()
         }
 
         return ReadinessStatus(
-            roundNumber = roundNumber,
+            matchday = matchday,
             readyCount = managers.size - pending.size,
             totalCount = managers.size,
             pendingUsernames = pending.map { it.username },

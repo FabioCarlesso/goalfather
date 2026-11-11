@@ -14,7 +14,7 @@ import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.result.OfferResult
-import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_ROUNDS
+import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_SLOTS
 import com.carlesso.goalfather.domain.rules.offerBlocker
 
 /**
@@ -65,7 +65,7 @@ class TransferOfferService(
                 playerId = player.id,
                 playerName = player.name,
                 amount = amount,
-                roundsLeft = OFFER_DEADLINE_ROUNDS,
+                slotsLeft = OFFER_DEADLINE_SLOTS,
             ),
         )
         return OfferResult.Success(offer)
@@ -97,7 +97,7 @@ class TransferOfferService(
         // aceitando com a rodada já rolando na tela dele.
         leagueRepo.findLatest()
             ?.takeIf { it.status == RoundStatus.InProgress }
-            ?.let { return OfferResult.RoundInProgress(it.number) }
+            ?.let { return OfferResult.RoundInProgress(it.matchday) }
 
         val buyer = clubRepo.findById(offer.buyerClubId) ?: return OfferResult.ClubNotFound(offer.buyerClubId)
         when (val blocker = offerBlocker(buyer, seller, offer.playerId, offer.amount)) {

@@ -4,20 +4,26 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
-import jakarta.persistence.Id
+import jakarta.persistence.Embeddable
+import jakarta.persistence.EmbeddedId
 import jakarta.persistence.Table
 import jakarta.persistence.Version
+import java.io.Serializable
 
 /**
- * Entidade JPA da rodada. Separada do `Round` de domínio — regra de ouro do
- * CLAUDE.md: nada em `domain` conhece JPA.
+ * Entidade JPA dos jogos de um encaixe. Separada do `Round` de domínio —
+ * regra de ouro do CLAUDE.md: nada em `domain` conhece JPA.
+ *
+ * PK = o encaixe (ano ISO + semana + slot, issue #125). A PK antiga era só o
+ * número da rodada, que se repetia a cada temporada — por isso a virada
+ * reescrevia a linha 1 e o claim precisava comparar `season` para não
+ * aplicar efeitos da temporada errada. O encaixe não se repete nunca.
  */
 @Entity
 @Table(name = "rounds")
 class RoundEntity(
-    @Id
-    @Column(name = "number")
-    var number: Int = 0,
+    @EmbeddedId
+    var id: MatchdayKey = MatchdayKey(),
 
     @Column(name = "season", nullable = false)
     var season: Int = 0,
@@ -30,15 +36,8 @@ class RoundEntity(
     var matchesJson: String = "[]",
 
     /**
-     * `RoundStage` serializado (issue #61): rodada de liga ou fase de copa.
-     * Nulo nas linhas anteriores à copa — o mapper as lê como liga.
-     */
-    @Column(name = "stage_json", columnDefinition = "TEXT")
-    var stageJson: String? = null,
-
-    /**
      * Lock otimista (issue #46): o Hibernate emite
-     * `UPDATE ... WHERE number = ? AND version = ?` e rejeita o commit se
+     * `UPDATE ... WHERE <encaixe> = ? AND version = ?` e rejeita o commit se
      * outra instância já avançou a versão. É o que torna a transição de status
      * atômica ENTRE JVMs — o `Mutex` in-JVM anterior só protegia um processo.
      * Mesma mecânica do clube (#19) e do mercado (#21).
@@ -49,3 +48,24 @@ class RoundEntity(
 )
 
 enum class RoundStatusEnum { Scheduled, InProgress, Finished }
+
+/**
+ * Chave do encaixe nas tabelas `rounds` e `round_readiness` (issue #125).
+ * `slot` gravado como texto (`MIDWEEK`/`WEEKEND`): a ordem ALFABÉTICA coincide
+ * com a do tempo dentro da semana, então `ORDER BY iso_year, iso_week, slot`
+ * é a ordem cronológica sem coluna extra.
+ *
+ * `data class` + `Serializable` (java.io): o JPA exige `equals`/`hashCode` por
+ * valor numa chave composta, e a `data class` os gera.
+ */
+@Embeddable
+data class MatchdayKey(
+    @Column(name = "iso_year", nullable = false)
+    var isoYear: Int = 0,
+
+    @Column(name = "iso_week", nullable = false)
+    var isoWeek: Int = 0,
+
+    @Column(name = "slot", nullable = false, length = 10)
+    var slot: String = "",
+) : Serializable

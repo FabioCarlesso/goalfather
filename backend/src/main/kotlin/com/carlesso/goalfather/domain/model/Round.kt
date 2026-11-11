@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.serialization.CompetitionIdSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -7,6 +8,19 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 @Serializable
 enum class RoundStatus { Scheduled, InProgress, Finished }
 
+/**
+ * Uma partida do encaixe. Desde o calendário semanal (issue #125) um encaixe
+ * junta jogos de VÁRIAS competições — liga e copa podem cair na mesma quarta —,
+ * então o que se disputa ([stage]) e de qual competição ([competition]) é dado
+ * de CADA partida, não da rodada.
+ *
+ * O nome da competição é uma FOTO, como os nomes dos clubes: a partida
+ * continua legível na história mesmo que a competição mude de nome.
+ *
+ * Os defaults de [stage]/[competition] descrevem a liga da divisão — o que
+ * toda partida era antes da copa (issue #61). Produção sempre os preenche
+ * pelos geradores; o default só poupa os testes de liga de repeti-los.
+ */
 @Serializable
 data class RoundMatch(
     val matchId: Long,
@@ -18,18 +32,33 @@ data class RoundMatch(
     val homeGoals: Int = 0,
     val awayGoals: Int = 0,
     val minute: Int = 0,
-    // Divisão da partida (issue #47). Default = elite: rodadas persistidas
-    // antes das divisões desserializam sem migração de dados no matches_json.
+    // Divisão da partida (issue #47). Default = elite.
     val division: Division = Division.FIRST,
     // Disputa de pênaltis (issue #61) — só existe em jogo de copa que
-    // terminou empatado. Nulo no resto, inclusive em rodadas antigas.
+    // terminou empatado. Nulo no resto.
     val penalties: PenaltyScore? = null,
-)
+    val stage: RoundStage = RoundStage.League(1),
+    // Um default pode ler os parâmetros ANTERIORES do mesmo construtor: a
+    // competição padrão é a liga da [division] declarada acima.
+    @Serializable(with = CompetitionIdSerializer::class)
+    val competition: CompetitionId = SeasonCompetitions.leagueId(division),
+    val competitionName: String = SeasonCompetitions.leagueName(division),
+) {
+    /** Jogo de mata-mata? Empate nele não existe: decide nos pênaltis. */
+    val isKnockout: Boolean
+        get() = when (stage) {
+            is RoundStage.League -> false
+            is RoundStage.Cup -> true
+        }
+
+    /** [clubId] está em campo neste jogo? */
+    fun involves(clubId: ClubId): Boolean = homeClubId == clubId || awayClubId == clubId
+}
 
 /**
- * O que uma data do calendário disputa (issue #61): rodada de LIGA ou fase de
- * COPA. As duas passam pelo MESMO fluxo de prontidão, claim e stream de
- * rodada (issues #20/#46) — o que muda é só o que se faz com o resultado.
+ * O que uma partida disputa (issue #61): rodada de LIGA ou fase de COPA. As
+ * duas passam pelo MESMO fluxo de prontidão, claim e stream do encaixe
+ * (issues #20/#46/#125) — o que muda é só o que se faz com o resultado.
  *
  * `sealed` porque cada variante carrega um dado diferente e os pontos de
  * consumo PRECISAM tratar as duas: aplicar à tabela, cobrar folha, decidir
@@ -44,8 +73,8 @@ sealed interface RoundStage {
 
     /**
      * Rodada de pontos corridos. `matchday` é a rodada DA LIGA (1..N-1 do
-     * Berger) — com a copa no calendário ela deixa de coincidir com o
-     * `Round.number`, que passa a ser a data global da temporada.
+     * Berger) — o encaixe do calendário em que ela cai é outra coisa
+     * ([Round.matchday]).
      */
     @Serializable
     @SerialName("League")
@@ -62,31 +91,29 @@ sealed interface RoundStage {
 }
 
 /**
- * Uma data do calendário. `number` é a posição GLOBAL na temporada (PK da
- * tabela `rounds`, rota do WS e chave da prontidão) e `stage` diz o que se
- * joga nela. Sem copa, toda data é rodada de liga e `matchday == number` —
- * por isso o default, que também é o que uma linha gravada antes da issue #61
- * (sem `stage_json`) assume.
+ * Os jogos de UM encaixe do calendário (issue #125): todas as partidas de
+ * todas as competições marcadas para [matchday]. É o que o técnico joga de uma
+ * vez — prontidão, claim `finishRound` e WebSocket são por encaixe.
+ *
+ * O nome `Round` ficou da época da rodada global: era o que o resto do código
+ * (repositório, stream, eventos) já chamava assim, e "a rodada do encaixe" é
+ * como o jogo a apresenta. A identidade, porém, é o [matchday] — semana +
+ * encaixe —, que nunca se repete entre temporadas (a rodada "1" se repetia).
+ *
+ * [season] é o ano da temporada do mundo que o encaixe disputa (o ano civil
+ * no Brasil).
  */
 @Serializable
 data class Round(
-    val number: Int,
+    val matchday: Matchday,
     val season: Int,
     val status: RoundStatus = RoundStatus.Scheduled,
     val matches: List<RoundMatch>,
-    val stage: RoundStage = RoundStage.League(number),
 ) {
-    init {
-        require(number >= 1) { "Rodada deve ser >= 1: $number" }
-    }
-
     val isFinished: Boolean
         get() = matches.all { it.status == RoundStatus.Finished }
 
-    /** Jogo de mata-mata? Empate nele não existe: decide nos pênaltis. */
-    val isKnockout: Boolean
-        get() = when (stage) {
-            is RoundStage.League -> false
-            is RoundStage.Cup -> true
-        }
+    /** Clubes em campo neste encaixe — quem "joga" para lesões, folha e diretoria. */
+    val clubsInAction: Set<ClubId>
+        get() = matches.flatMapTo(HashSet()) { listOf(it.homeClubId, it.awayClubId) }
 }

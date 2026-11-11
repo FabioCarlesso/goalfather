@@ -23,7 +23,7 @@ fun TransferOfferEntity.toDomain(): TransferOffer = TransferOffer(
     playerId = PlayerId(playerId),
     playerName = playerName,
     amount = Money(amount),
-    roundsLeft = roundsLeft,
+    slotsLeft = slotsLeft,
     status = offerStatusOf(status, expiryReason),
 )
 
@@ -37,7 +37,7 @@ fun TransferOffer.toEntity(): TransferOfferEntity = TransferOfferEntity(
     playerId = playerId.value,
     playerName = playerName,
     amount = amount.cents,
-    roundsLeft = roundsLeft,
+    slotsLeft = slotsLeft,
     status = status.column(),
     expiryReason = status.expiryReasonColumn(),
 )

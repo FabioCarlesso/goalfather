@@ -11,6 +11,7 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.test.makeClub
+import com.carlesso.goalfather.test.md
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
@@ -28,7 +29,7 @@ class PlayMatchServiceTest {
     private val service = PlayMatchService(clubRepo, leagueRepo)
 
     private val round = Round(
-        number = 1,
+        matchday = md(1),
         season = 2026,
         matches = listOf(
             RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC"),
@@ -69,7 +70,7 @@ class PlayMatchServiceTest {
     fun `drill-down de jogo de copa simula em modo mata-mata (issue 61)`() = runTest {
         // Mesmo matchId, mesma seed — o drill-down só bate com a rodada se
         // também souber que é mata-mata, senão um empate perderia os pênaltis.
-        val cupDate = round.copy(number = 2, stage = RoundStage.Cup(KnockoutPhase.FINAL))
+        val cupDate = round.copy(matchday = md(2), matches = round.matches.map { it.copy(stage = RoundStage.Cup(KnockoutPhase.FINAL)) })
         val home = makeClub(id = 1, overall = 75)
         val away = makeClub(id = 2, overall = 75)
         coEvery { leagueRepo.findLatest() } returns cupDate

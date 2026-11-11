@@ -14,8 +14,8 @@ import kotlinx.serialization.Serializable
  * testáveis sem Spring — o use case só busca os clubes e grava o desfecho.
  */
 
-/** Rodadas que o vendedor tem para responder antes de a proposta expirar. */
-const val OFFER_DEADLINE_ROUNDS: Int = 3
+/** Encaixes jogados que o vendedor tem para responder antes de a proposta expirar (issue #125). */
+const val OFFER_DEADLINE_SLOTS: Int = 3
 
 /** Menor proposta aceita (US$ 200) — proposta simbólica não é negociação. `val`: [Money] não é `const`. */
 val MIN_OFFER_CENTS: Money = 200_00.cents

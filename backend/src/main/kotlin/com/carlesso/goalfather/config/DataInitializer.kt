@@ -2,12 +2,20 @@ package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.seed.initialLeague
 import com.carlesso.goalfather.domain.rules.boardExpectations
+import com.carlesso.goalfather.domain.rules.canHoldCup
+import com.carlesso.goalfather.domain.rules.canScheduleSeason
+import com.carlesso.goalfather.domain.rules.cupDrawSeed
+import com.carlesso.goalfather.domain.rules.drawCup
+import com.carlesso.goalfather.domain.rules.seasonPlan
+import com.carlesso.goalfather.domain.rules.seasonStandings
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Configuration
+import kotlin.random.Random
 
 /**
  * Seed inicial — espelha `frontend/src/mocks/seed.ts`.
@@ -35,14 +43,39 @@ class DataInitializer(
     private val seed: SeedWriter,
     private val clubs: ClubRepository,
     private val league: LeagueRepository,
+    private val cups: CupRepository,
 ) : CommandLineRunner {
 
     override fun run(vararg args: String?) {
         if (clubRepo.count() > 0L) {
             backfillBoards()
+            restartSeasonWithoutMatchday()
             return
         }
         seed.write(initialLeague())
+    }
+
+    /**
+     * Save anterior ao calendário semanal (issue #125): a migration V17 recria
+     * `rounds` (um número de rodada não diz em que semana ela cai), então o
+     * banco sobe com clubes e tabela, mas sem encaixe corrente — e a liga
+     * ficaria parada para sempre.
+     *
+     * A saída pragmática é REINICIAR a temporada corrente no calendário novo:
+     * tabelas zeradas, copa sorteada de novo (mesma seed por temporada) e o
+     * primeiro encaixe do plano. Caixa, elencos e história ficam como estão.
+     * Reaproveitar a tabela pela metade jogaria de novo rodadas já contadas.
+     * Só roda uma vez: depois dela sempre há encaixe.
+     */
+    private fun restartSeasonWithoutMatchday() = runBlocking {
+        if (league.findLatest() != null) return@runBlocking
+        val season = league.currentStandings().firstOrNull()?.season ?: return@runBlocking
+        val all = clubs.findAll()
+        if (!canScheduleSeason(all)) return@runBlocking
+        val cup = if (canHoldCup(all)) drawCup(season, all, Random(cupDrawSeed(season))).also { cups.save(it) } else null
+        seasonStandings(season, all).forEach { league.saveStandings(it) }
+        val plan = seasonPlan(season, all, cup)
+        plan.first?.let { league.saveRound(plan.roundAt(it, all, cup)) }
     }
 
     /**

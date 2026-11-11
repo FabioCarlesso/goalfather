@@ -9,8 +9,11 @@ import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.TieResult
+import com.carlesso.goalfather.test.cupRound
 import com.carlesso.goalfather.test.makeClub
+import com.carlesso.goalfather.test.md
 import org.junit.jupiter.api.assertThrows
 import kotlin.random.Random
 import kotlin.test.Test
@@ -114,11 +117,11 @@ class CupRulesTest {
         val cup = draw(twelve)
         val round = cupRound(2, 2026, KnockoutPhase.ROUND_OF_16, cup, twelve)
 
-        assertEquals(RoundStage.Cup(KnockoutPhase.ROUND_OF_16), round.stage)
-        assertTrue(round.isKnockout)
-        // 4 jogos (as folgas não entram em campo), matchId = data × 1000 + índice + 1.
+        assertTrue(round.matches.all { it.stage == RoundStage.Cup(KnockoutPhase.ROUND_OF_16) })
+        assertTrue(round.matches.all { it.isKnockout && it.competition == SeasonCompetitions.CUP_ID })
+        // 4 jogos (as folgas não entram em campo), matchId = encaixe × 1000 + índice + 1.
         val fixtures = cup.stages.single().ties.filterIsInstance<CupTie.Fixture>()
-        assertEquals(fixtures.map { 2000L + it.index + 1 }, round.matches.map { it.matchId })
+        assertEquals(fixtures.map { md(2).serial * 1000L + it.index + 1 }, round.matches.map { it.matchId })
     }
 
     @Test
@@ -202,6 +205,19 @@ class CupRulesTest {
         assertEquals(4, cup.stages.size)
         val champion = assertNotNull(cup.champion)
         assertEquals(cup.stages.last().ties.single().winner, champion)
+    }
+
+    @Test
+    fun `jogo de liga no mesmo encaixe nao decide confronto de copa (issue 125)`() {
+        val cup = draw(eight)
+        val cupGames = cupRound(2, 2026, KnockoutPhase.QUARTER_FINALS, cup, eight)
+        // Mesmos pares, mas como jogo de LIGA e com o mandante vencendo: não pode contar.
+        val leagueGames = cupGames.matches.map {
+            it.copy(stage = RoundStage.League(1), status = RoundStatus.Finished, homeGoals = 2, awayGoals = 0)
+        }
+        val outcome = cup.recordRound(cupGames.copy(matches = leagueGames))
+        assertEquals(cup, outcome.cup)
+        assertTrue(outcome.prizes.isEmpty())
     }
 
     @Test

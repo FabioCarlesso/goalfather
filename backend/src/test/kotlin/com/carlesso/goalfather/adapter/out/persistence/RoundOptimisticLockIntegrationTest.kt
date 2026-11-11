@@ -2,10 +2,12 @@ package com.carlesso.goalfather.adapter.out.persistence
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundStatusEnum
+import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.test.farMatchday
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -22,7 +24,7 @@ import kotlin.test.assertTrue
 /**
  * Cobre o lock otimista da rodada (issue #46) contra o H2 real — valida o
  * `@Version` da [RoundEntity], a migração V6 e o contrato dos transitions do
- * [LeagueRepository]. Cada teste usa um `number` próprio, então não colide com
+ * [LeagueRepository]. Cada teste usa um encaixe próprio, então não colide com
  * o seed nem com os outros testes que compartilham o contexto Spring.
  */
 @SpringBootTest
@@ -32,7 +34,7 @@ class RoundOptimisticLockIntegrationTest {
 
     @Autowired private lateinit var roundRepo: RoundJpaRepository
 
-    private fun round(number: Int) = Round(number = number, season = 2026, matches = emptyList())
+    private fun round(number: Int) = Round(matchday = farMatchday(number), season = 2026, matches = emptyList())
 
     @Test
     fun `a segunda gravacao a partir da MESMA leitura e rejeitada`() {
@@ -41,17 +43,17 @@ class RoundOptimisticLockIntegrationTest {
         // que leu e o Hibernate rejeita (`WHERE number = ? AND version = ?`
         // afeta 0 linhas). É exatamente o que o `Mutex` in-JVM não cobria.
         val number = 9101
-        roundRepo.saveAndFlush(RoundEntity(number = number, season = 2026))
+        roundRepo.saveAndFlush(RoundEntity(id = farMatchday(number).toKey(), season = 2026))
 
-        val versionLidaPorAmbos = roundRepo.findById(number).orElseThrow().version
+        val versionLidaPorAmbos = roundRepo.findById(farMatchday(number).toKey()).orElseThrow().version
 
         // Nó A transiciona e comita.
-        val nodeA = roundRepo.findById(number).orElseThrow().apply { status = RoundStatusEnum.InProgress }
+        val nodeA = roundRepo.findById(farMatchday(number).toKey()).orElseThrow().apply { status = RoundStatusEnum.InProgress }
         roundRepo.saveAndFlush(nodeA)
 
         // Nó B ainda segura a leitura antiga.
         val nodeB = RoundEntity(
-            number = number,
+            id = farMatchday(number).toKey(),
             season = 2026,
             status = RoundStatusEnum.Finished,
             version = versionLidaPorAmbos,
@@ -59,7 +61,7 @@ class RoundOptimisticLockIntegrationTest {
         assertFailsWith<OptimisticLockingFailureException> { roundRepo.saveAndFlush(nodeB) }
 
         // O estado do vencedor sobrevive intacto.
-        assertEquals(RoundStatusEnum.InProgress, roundRepo.findById(number).orElseThrow().status)
+        assertEquals(RoundStatusEnum.InProgress, roundRepo.findById(farMatchday(number).toKey()).orElseThrow().status)
     }
 
     @Test
@@ -71,7 +73,7 @@ class RoundOptimisticLockIntegrationTest {
         assertTrue(leagueRepo.finishRound(finished), "o primeiro chamador vence a corrida")
         assertFalse(leagueRepo.finishRound(finished), "o segundo desiste sem aplicar efeitos")
 
-        assertEquals(RoundStatus.Finished, leagueRepo.findRound(number)?.status)
+        assertEquals(RoundStatus.Finished, leagueRepo.findRound(farMatchday(number))?.status)
     }
 
     @Test
@@ -79,15 +81,15 @@ class RoundOptimisticLockIntegrationTest {
         val number = 9103
         leagueRepo.saveRound(round(number))
 
-        assertTrue(leagueRepo.startRound(number), "destrava a rodada agendada")
-        assertFalse(leagueRepo.startRound(number), "já estava InProgress: idempotente")
+        assertTrue(leagueRepo.startRound(farMatchday(number)), "destrava a rodada agendada")
+        assertFalse(leagueRepo.startRound(farMatchday(number)), "já estava InProgress: idempotente")
 
-        assertEquals(RoundStatus.InProgress, leagueRepo.findRound(number)?.status)
+        assertEquals(RoundStatus.InProgress, leagueRepo.findRound(farMatchday(number))?.status)
     }
 
     @Test
     fun `transicao em rodada inexistente devolve false`(): Unit = runBlocking {
-        assertFalse(leagueRepo.startRound(9199))
+        assertFalse(leagueRepo.startRound(farMatchday(9199)))
         assertFalse(leagueRepo.finishRound(round(9199).copy(status = RoundStatus.Finished)))
     }
 
@@ -98,38 +100,37 @@ class RoundOptimisticLockIntegrationTest {
         // armadilha que o clube pegou na issue #19.
         val number = 9104
         leagueRepo.saveRound(round(number))
-        leagueRepo.startRound(number) // version → 1
+        leagueRepo.startRound(farMatchday(number)) // version → 1
 
         leagueRepo.saveRound(round(number).copy(status = RoundStatus.Scheduled))
 
-        assertEquals(RoundStatus.Scheduled, leagueRepo.findRound(number)?.status)
+        assertEquals(RoundStatus.Scheduled, leagueRepo.findRound(farMatchday(number))?.status)
         // Exatamente 2 (insert=0, startRound=1, saveRound=2). `>=` esconderia um
         // incremento duplo — o defeito que este teste existe para pegar.
-        assertEquals(2L, roundRepo.findById(number).orElseThrow().version)
+        assertEquals(2L, roundRepo.findById(farMatchday(number).toKey()).orElseThrow().version)
     }
 
     @Test
-    fun `finishRound rejeita rodada de outra temporada na mesma PK`(): Unit = runBlocking {
-        // A PK de `rounds` é só `number`; a virada de temporada reescreve a
-        // rodada 1 com `season+1`. Um perdedor atrasado que chega com a rodada
-        // da temporada ANTERIOR passaria pelo guard de status (Scheduled !=
-        // Finished) e sobrescreveria a temporada nova, aplicando efeitos em
-        // dobro. O guard de `season` barra esse claim.
+    fun `temporada nova nao reescreve o encaixe da anterior e claim atrasado nao vence`(): Unit = runBlocking {
+        // Antes da issue #125 a PK era só o número da rodada e a virada
+        // reescrevia a linha 1 com `season+1` — o claim precisava comparar a
+        // temporada para não aplicar efeitos em dobro. Com a PK = encaixe, a
+        // temporada seguinte grava OUTRA linha; o perdedor atrasado bate no
+        // guard de status da linha dele, que já está Finished.
         val number = 9105
-        leagueRepo.saveRound(round(number)) // 9105/2026 Scheduled
+        leagueRepo.saveRound(round(number))
         assertTrue(leagueRepo.finishRound(round(number).copy(status = RoundStatus.Finished)))
 
-        // Virada de temporada: MESMA PK regravada como 9105/2027 Scheduled.
-        leagueRepo.saveRound(Round(number = number, season = 2027, matches = emptyList()))
+        val nextSeason = Round(matchday = farMatchday(9155), season = 2027, matches = emptyList())
+        leagueRepo.saveRound(nextSeason)
 
-        // Perdedor chega com a rodada de 2026 — deve ser rejeitado, sem tocar na linha.
         assertFalse(
             leagueRepo.finishRound(round(number).copy(status = RoundStatus.Finished)),
-            "claim de temporada obsoleta não pode vencer",
+            "claim atrasado não pode vencer",
         )
-        val fresh = leagueRepo.findRound(number)
-        assertEquals(2027, fresh?.season)
-        assertEquals(RoundStatus.Scheduled, fresh?.status)
+        assertEquals(RoundStatus.Finished, leagueRepo.findRound(farMatchday(number))?.status)
+        assertEquals(RoundStatus.Scheduled, leagueRepo.findRound(nextSeason.matchday)?.status)
+        roundRepo.deleteById(nextSeason.matchday.toKey())
     }
 
     @Test
@@ -155,7 +156,7 @@ class RoundOptimisticLockIntegrationTest {
             val winners = listOf(a.get(), b.get()).count { it }
 
             assertEquals(1, winners, "exatamente uma thread pode encerrar a rodada")
-            assertEquals(RoundStatus.Finished, runBlocking { leagueRepo.findRound(number) }?.status)
+            assertEquals(RoundStatus.Finished, runBlocking { leagueRepo.findRound(farMatchday(number)) }?.status)
         } finally {
             pool.shutdownNow()
         }

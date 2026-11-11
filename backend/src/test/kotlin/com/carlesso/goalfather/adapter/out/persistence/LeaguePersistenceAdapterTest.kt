@@ -5,6 +5,7 @@ import com.carlesso.goalfather.adapter.out.persistence.repository.StandingsJpaRe
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.test.md
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
@@ -32,7 +33,7 @@ class LeaguePersistenceAdapterTest {
 
     @Test
     fun `finishRound traduz OptimisticLockException em false e conta o conflito`() = runBlocking {
-        val round = Round(number = 1, season = 2026, matches = emptyList(), status = RoundStatus.Finished)
+        val round = Round(matchday = md(1), season = 2026, matches = emptyList(), status = RoundStatus.Finished)
         every { transition.finish(round) } throws OptimisticLockingFailureException("perdeu a corrida")
 
         assertFalse(adapter.finishRound(round), "perdedor do lock otimista recebe false")
@@ -44,9 +45,9 @@ class LeaguePersistenceAdapterTest {
 
     @Test
     fun `startRound traduz OptimisticLockException em false e conta o conflito`() = runBlocking {
-        every { transition.start(1) } throws OptimisticLockingFailureException("perdeu a corrida")
+        every { transition.start(md(1)) } throws OptimisticLockingFailureException("perdeu a corrida")
 
-        assertFalse(adapter.startRound(1), "perdedor do lock otimista recebe false")
+        assertFalse(adapter.startRound(md(1)), "perdedor do lock otimista recebe false")
         assertEquals(
             1.0,
             registry.counter(GoalfatherMetrics.ROUND_CLAIM_CONFLICTS, "phase", "start").count(),
@@ -55,7 +56,7 @@ class LeaguePersistenceAdapterTest {
 
     @Test
     fun `sem conflito o resultado da transicao passa direto e nada e contado`() = runBlocking {
-        val round = Round(number = 1, season = 2026, matches = emptyList(), status = RoundStatus.Finished)
+        val round = Round(matchday = md(1), season = 2026, matches = emptyList(), status = RoundStatus.Finished)
         every { transition.finish(round) } returns true
 
         assertEquals(true, adapter.finishRound(round))
