@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "fixture de teste (dados fictícios)",
+  "data": [
+    {
+      "id": "tst-alfa",
+      "name": "Alfa FC",
+      "country": "BRA",
+      "reputation": 80,
+      "stadium": { "name": "Estádio Alfa", "capacity": 40000 }
+    },
+    {
+      "id": "tst-beta",
+      "name": "Beta EC",
+      "country": "BRA",
+      "reputation": 40,
+      "stadium": { "name": "Arena Beta", "capacity": 15000 },
+      "crestUrl": "https://exemplo.invalid/escudo.png"
+    }
+  ]
+}

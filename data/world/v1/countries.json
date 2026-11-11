@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "exemplo mínimo montado à mão a partir de fatos públicos; substituído pela importação do Wikidata (issue #127)",
+  "data": [
+    { "code": "BRA", "name": "Brasil", "confederation": "CONMEBOL", "isoAlpha2": "BR" },
+    { "code": "ARG", "name": "Argentina", "confederation": "CONMEBOL", "isoAlpha2": "AR" },
+    { "code": "URU", "name": "Uruguai", "confederation": "CONMEBOL", "isoAlpha2": "UY" }
+  ]
+}

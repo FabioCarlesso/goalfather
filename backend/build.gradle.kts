@@ -106,6 +106,9 @@ tasks.test {
     // como input faz o Gradle re-rodar os testes quando só o YAML muda — sem
     // isso, `test` ficaria UP-TO-DATE e o drift passaria despercebido.
     inputs.file("../contract/openapi.yaml").withPathSensitivity(PathSensitivity.RELATIVE)
+    // Idem para o pack do mundo (issue #126): FileWorldDataProviderTest carrega
+    // `../data/world/v1` e precisa re-rodar quando só o pack muda.
+    inputs.dir("../data/world").withPathSensitivity(PathSensitivity.RELATIVE)
     testLogging {
         events("passed", "failed", "skipped")
         exceptionFormat = TestExceptionFormat.FULL

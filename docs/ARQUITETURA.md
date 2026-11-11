@@ -394,6 +394,10 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 
 > Padrão recomendado: **não** anote as `data class` de domínio com `@Entity`. Mantê-las puras custa um mapper a mais, mas preserva a regra de dependência e deixa o domínio testável sem JPA no classpath.
 
+### Dados do mundo (anticorruption layer, issue #126)
+
+O mundo do jogo vem de um pack versionado em `data/world/v1/`, lido **como se fosse uma API externa** (um arquivo por "endpoint", com o envelope `{schemaVersion, generatedAt, source, data}`). É o exemplo didático de **anticorruption layer**: o formato externo (DTOs em `adapter/out/worlddata/dto`) nunca entra no domínio. O `PackMapper` traduz para `WorldPack`/`ClubProfile`/`PlayerProfile` (`domain/model/world`), converte o vocabulário da fonte (`DF` → `CB`) e transforma o `require` violado por dado externo em erro como valor (`PackLoadResult.Invalid` com `PackLoadError` sealed). O port `WorldDataProvider` (`suspend`) é a fronteira. Trocar o arquivo por HTTP é outro adapter do mesmo port, que pode reaproveitar o `WorldPackLoader`, porque ele recebe a leitura como função (`suspend (String) -> String?`). O pack só traz fatos reais. Atributos são simulados pelo `AttributeGenerator` (puro, `Random` injetado). Salário, valor e caixa ficam com as regras do jogo. O `ArchitectureBoundaryTest` checa, pelos imports, que `domain/` e `application/` não enxergam adapters. Schema, política de direitos e como trocar o adapter: [`docs/WORLD_DATA.md`](WORLD_DATA.md).
+
 ---
 
 ## 8. Roadmap em fases
@@ -1129,6 +1133,16 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   código (V16, backfill `BRA`); o mapper resolve no catálogo e um código
   desconhecido cai no default, como o `trainingFocus`. A bandeira (emoji) é
   montada no adapter web (`CountryDto.flag`), então a UI só exibe.
+
+- [x] **Provedor de dados do mundo** — issue #126
+  Port `WorldDataProvider` com o adapter `FileWorldDataProvider`, que lê o pack
+  `data/world/v1/` (property `app.world-data.path`) e o traduz por uma camada
+  anticorrupção. A validação devolve `PackLoadResult` como valor: versão de
+  schema desconhecida, referência a clube inexistente, elenco sem goleiro,
+  país desconhecido, entre outros. O `AttributeGenerator` gera os atributos
+  simulados a partir da força da liga, da reputação, da posição e da idade.
+  O bean existe, mas o seed ainda é o `InitialLeague` (a troca é da #131).
+  Detalhes em [`docs/WORLD_DATA.md`](WORLD_DATA.md) e na seção 7.
 
 ---
 
