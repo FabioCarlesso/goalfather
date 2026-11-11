@@ -22,7 +22,7 @@ import type {
   TrainingReport,
 } from '../../domain/types'
 
-// Ciclo de vida do WebSocket da rodada (`/ws/round/{n}`) e o estado derivado
+// Ciclo de vida do WebSocket do encaixe (`/ws/slot/{key}`, issue #125) e o estado derivado
 // dele (issue #112). Saiu da `RoundPage` para ser testável isoladamente: a
 // página só desenha o que este hook devolve.
 
@@ -192,6 +192,8 @@ export function useRoundStream(
         // Rodada de liga mexe na confiança da diretoria (issue #62); na
         // virada, a meta também é outra.
         qc.invalidateQueries({ queryKey: boardKey(myClubId) })
+        // O relógio andou um encaixe (issue #125): data corrente e próximo jogo.
+        qc.invalidateQueries({ queryKey: ['calendar'] })
         // Treino da semana (issue #58): o evento traz o extrato de todos os
         // clubes; só o do técnico interessa aqui. Fica DEPOIS das
         // invalidações e com acesso opcional de propósito: um payload sem
@@ -226,7 +228,7 @@ export function useRoundStream(
   }, [])
 
   /**
-   * Abre o stream da data `roundNumber` do zero: solta o socket anterior,
+   * Abre o stream do encaixe `key` (issue #125) do zero: solta o socket anterior,
    * descarta o estado acumulado e reprocessa tudo o que chegar. Ponto ÚNICO
    * onde a URL do WebSocket é montada.
    *
@@ -235,14 +237,14 @@ export function useRoundStream(
    * que explica a corrida pelo `RoundFinished` completo no backend.
    */
   const openStream = useCallback(
-    (roundNumber: number, connectionSpeed: StreamSpeed, keepPrevious = false) => {
+    (key: string, connectionSpeed: StreamSpeed, keepPrevious = false) => {
       const previous = wsRef.current
       if (!keepPrevious) discard(previous)
       resetStream()
       setStatus('connecting')
       setLiveSpeed(connectionSpeed)
 
-      const socket = new WebSocket(wsUrl(`/ws/round/${roundNumber}`, { speed: connectionSpeed }))
+      const socket = new WebSocket(wsUrl(`/ws/slot/${key}`, { speed: connectionSpeed }))
       wsRef.current = socket
       if (keepPrevious) handOff(previous, socket)
 
@@ -282,13 +284,13 @@ export function useRoundStream(
       return
     }
 
-    openStream(round.number, speed)
+    openStream(round.matchday.key, speed)
   }, [round, playRound, resetStream, openStream, speed])
 
   const skip = useCallback(() => {
     // Só faz sentido com uma transmissão em andamento da data jogada.
     if (!playedRound || !wsRef.current) return
-    openStream(playedRound.number, 'INSTANT', true)
+    openStream(playedRound.matchday.key, 'INSTANT', true)
   }, [playedRound, openStream])
 
   useEffect(() => () => discard(wsRef.current), [])

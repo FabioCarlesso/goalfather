@@ -17,7 +17,7 @@ const pendingOffer: TransferOffer = {
   playerId: 10,
   playerName: 'Renato Silva',
   amount: 900_000_00,
-  roundsLeft: 2,
+  slotsLeft: 2,
   status: { type: 'Pending' },
 }
 

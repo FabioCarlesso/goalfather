@@ -14,6 +14,7 @@ import {
   tieWinner,
 } from './cup'
 import { MulberryRng, penaltyShootout, simulateMatch, type SquadMember } from './engine'
+import { matchdayOf, matchdaySerial } from './calendar'
 import { applyRoundToStandings, calendar, initialStandings, roundTrainingReports, state } from './seed'
 import type { Cup, CupClub, Round } from '../domain/types'
 
@@ -52,17 +53,20 @@ describe('copa do mock (issue #61)', () => {
     expect(draw().currentPhase).toBe('ROUND_OF_16')
   })
 
-  it('rodada de copa tem só os jogos em aberto, com matchId da data', () => {
+  it('rodada de copa tem só os jogos em aberto, com matchId do encaixe', () => {
     const cup = draw()
-    const round = cupRound(2, 2026, cup, () => 1)
-    expect(round.stage).toEqual({ type: 'Cup', phase: 'ROUND_OF_16' })
+    const matchday = matchdayOf(2026, 2, 'MIDWEEK')
+    const round = cupRound(matchday, 2026, cup, () => 1)
+    expect(round.matches.every((m) => m.stage.type === 'Cup' && m.stage.phase === 'ROUND_OF_16')).toBe(true)
+    expect(round.matches.every((m) => m.competitionId === 'copa')).toBe(true)
     expect(round.matches).toHaveLength(4)
-    expect(round.matches.every((m) => m.matchId > 2000 && m.matchId < 2100)).toBe(true)
+    const base = matchdaySerial(matchday) * 1000
+    expect(round.matches.every((m) => m.matchId > base && m.matchId < base + 100)).toBe(true)
   })
 
   it('vencedores avançam (2k × 2k+1) e só quem venceu em campo leva o prêmio', () => {
     const cup = draw()
-    const { cup: next, prizes } = recordCupRound(cup, finish(cupRound(2, 2026, cup, () => 1)))
+    const { cup: next, prizes } = recordCupRound(cup, finish(cupRound(matchdayOf(2026, 2, 'MIDWEEK'), 2026, cup, () => 1)))
 
     const r16 = next.stages[0]!
     const quarters = next.stages[1]!
@@ -81,7 +85,7 @@ describe('copa do mock (issue #61)', () => {
 
   it('empate com pênaltis classifica quem venceu a disputa e registra o winnerId', () => {
     const cup = draw()
-    const { cup: next } = recordCupRound(cup, finish(cupRound(2, 2026, cup, () => 1), true))
+    const { cup: next } = recordCupRound(cup, finish(cupRound(matchdayOf(2026, 2, 'MIDWEEK'), 2026, cup, () => 1), true))
     for (const tie of next.stages[0]!.ties) {
       if (tie.type !== 'Fixture') continue
       expect(tie.result?.penalties).toEqual({ home: 3, away: 5 })
@@ -92,7 +96,7 @@ describe('copa do mock (issue #61)', () => {
   it('copa jogada até o fim tem campeão e nenhuma fase em disputa', () => {
     let cup = draw()
     for (let date = 2; currentStage(cup) != null; date++) {
-      cup = recordCupRound(cup, finish(cupRound(date, 2026, cup, () => 1))).cup
+      cup = recordCupRound(cup, finish(cupRound(matchdayOf(2026, date, 'MIDWEEK'), 2026, cup, () => 1))).cup
     }
     expect(cup.stages.map((s) => s.phase)).toEqual(['ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'])
     expect(cup.champion).toBeDefined()
@@ -112,11 +116,14 @@ describe('copa do mock (issue #61)', () => {
       .toEqual([3, 6, 9, 12])
   })
 
-  it('o seed nasce com a copa sorteada e a data 2 é a primeira fase', () => {
+  it('o seed nasce com a copa sorteada e o 2º encaixe é a primeira fase, numa quarta', () => {
     expect(state.cup?.phases).toHaveLength(4)
     expect(calendar()).toHaveLength(9)
-    expect(state.currentRound.stage).toEqual({ type: 'League', matchday: 1 })
-    expect(state.nextRound().stage).toEqual({ type: 'Cup', phase: 'ROUND_OF_16' })
+    expect(state.currentRound.matchday.key).toBe('2026-W01-WEEKEND')
+    expect(state.currentRound.matches.every((m) => m.stage.type === 'League' && m.stage.matchday === 1)).toBe(true)
+    const next = state.nextRound()
+    expect(next.matchday.slot).toBe('MIDWEEK')
+    expect(next.matches.every((m) => m.stage.type === 'Cup' && m.stage.phase === 'ROUND_OF_16')).toBe(true)
   })
 
   it('extrato de treino cobre a liga inteira, mesmo quem não jogou a data de copa', () => {
@@ -130,7 +137,7 @@ describe('copa do mock (issue #61)', () => {
 
   it('rodada de copa não mexe na tabela', () => {
     const table = initialStandings[0]!
-    const cupDate = finish(cupRound(2, 2026, draw(), () => 1))
+    const cupDate = finish(cupRound(matchdayOf(2026, 2, 'MIDWEEK'), 2026, draw(), () => 1))
     expect(applyRoundToStandings(cupDate, table)).toBe(table)
   })
 })

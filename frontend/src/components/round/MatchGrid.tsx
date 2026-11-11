@@ -1,45 +1,48 @@
 import { Link } from 'react-router-dom'
 import { KNOCKOUT_PHASE_LABEL } from '../../domain/cup'
-import type { RoundMatch, RoundStage } from '../../domain/types'
+import type { RoundMatch } from '../../domain/types'
 import type { LiveMatchState } from '../../api/queries/useRoundStream'
 
 /**
- * Pares [rótulo, partidas]: na liga, uma divisão por grupo, da elite para
- * baixo; na copa, que mistura divisões, um grupo só com a fase.
+ * Rótulo do grupo: a liga da divisão pelo nome (a rodada já está no título da
+ * página) e a copa com a fase. `switch` exaustivo sobre o `stage` do contrato.
  */
-function matchGroupsOf(stage: RoundStage, matches: RoundMatch[]): Array<[string, RoundMatch[]]> {
-  switch (stage.type) {
+function groupLabel(match: RoundMatch): string {
+  switch (match.stage.type) {
+    case 'League':
+      return match.competitionName
     case 'Cup':
-      return [[`Copa · ${KNOCKOUT_PHASE_LABEL[stage.phase]}`, matches]]
-    case 'League': {
-      const grouped = new Map<number, RoundMatch[]>()
-      for (const m of matches) {
-        const list = grouped.get(m.division) ?? []
-        list.push(m)
-        grouped.set(m.division, list)
-      }
-      return [...grouped.entries()]
-        .sort(([a], [b]) => a - b)
-        .map(([division, list]) => [`Divisão ${division}`, list])
-    }
+      return `${match.competitionName} · ${KNOCKOUT_PHASE_LABEL[match.stage.phase]}`
   }
 }
 
-/** Partidas da data agrupadas por divisão (issue #47) — ou num grupo só, na copa (issue #61). */
+/**
+ * Pares [rótulo, partidas], um grupo por competição do encaixe (issue #125):
+ * cada liga de divisão e a copa. A ordem é a de chegada — o backend lista as
+ * ligas da elite para baixo e a copa depois.
+ */
+function matchGroupsOf(matches: RoundMatch[]): Array<[string, RoundMatch[]]> {
+  const grouped = new Map<string, RoundMatch[]>()
+  for (const m of matches) {
+    const label = groupLabel(m)
+    grouped.set(label, [...(grouped.get(label) ?? []), m])
+  }
+  return [...grouped.entries()]
+}
+
+/** Partidas do encaixe agrupadas por competição (issues #47, #61 e #125). */
 export function MatchGrid({
-  stage,
   matches,
   states,
   myClubId,
 }: {
-  stage: RoundStage
   matches: RoundMatch[]
   states: Map<number, LiveMatchState>
   myClubId: number
 }) {
   return (
     <>
-      {matchGroupsOf(stage, matches).map(([label, group]) => (
+      {matchGroupsOf(matches).map(([label, group]) => (
         <div key={label} className="space-y-2">
           <h2 className="text-sm uppercase tracking-wide text-text-muted">{label}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

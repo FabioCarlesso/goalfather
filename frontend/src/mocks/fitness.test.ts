@@ -82,6 +82,17 @@ describe('lesões com duração', () => {
     expect(after[0]!.availability).toEqual({ type: 'Injured', roundsOut: 1 })
   })
 
+  it('lesão conta jogos do clube: encaixe sem jogo não anda a lesão (issue #125)', () => {
+    let player = fit(1, 60, { type: 'Injured', roundsOut: 2 })
+
+    player = applyRoundFitness([player], new Set(), new MulberryRng(1), new Map(), false)[0]!
+    expect(player.availability).toEqual({ type: 'Injured', roundsOut: 2 })
+    expect(player.stamina).toBe(60 + BENCH_STAMINA_RECOVERY)
+
+    player = applyRoundFitness([player], new Set(), new MulberryRng(1), new Map(), true)[0]!
+    expect(player.availability).toEqual({ type: 'Injured', roundsOut: 1 })
+  })
+
   it('lesão em curso decrementa até liberar o jogador', () => {
     let player = fit(1, 100, { type: 'Injured', roundsOut: 2 })
 

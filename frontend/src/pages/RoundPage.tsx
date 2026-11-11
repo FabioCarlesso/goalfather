@@ -15,7 +15,7 @@ import { ReadinessCard } from '../components/ReadinessCard'
 import { MatchGrid } from '../components/round/MatchGrid'
 import { RoundProgress } from '../components/round/RoundProgress'
 import { RoundSummary } from '../components/round/RoundSummary'
-import { stageTitle } from '../domain/cup'
+import { formatMatchday, hasKnockout, roundTitle } from '../domain/calendar'
 import { Button } from '../components/ui/Button'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
@@ -80,11 +80,11 @@ export function RoundPage() {
       <PageTitle>Rodada</PageTitle>
       <header className="flex items-center justify-between">
         <div>
-          {/* A data do calendário é rodada de liga OU fase de copa (issue #61). */}
-          <h1 className="text-3xl font-bold text-slate-100">{stageTitle(round.stage)}</h1>
+          {/* O encaixe da semana pode juntar rodada de liga e fase de copa (issues #61/#125). */}
+          <h1 className="text-3xl font-bold text-slate-100">{roundTitle(round)}</h1>
           <p className="text-sm text-slate-400">
-            Temporada {round.season} · Data {round.number} do calendário · {round.matches.length} partidas
-            {round.stage.type === 'Cup' && ' · jogo único, empate vai aos pênaltis'}
+            Temporada {round.season} · {formatMatchday(round.matchday)} · {round.matches.length} partidas
+            {hasKnockout(round) && ' · copa em jogo único, empate vai aos pênaltis'}
           </p>
         </div>
         {/* Com o resumo na tela, o "Próxima rodada" mora nele (issue #112). */}
@@ -147,7 +147,7 @@ export function RoundPage() {
         allFinished={stream.allFinished && status === 'finished'}
       />
 
-      <MatchGrid stage={shown.stage} matches={shown.matches} states={matchStates} myClubId={myClubId} />
+      <MatchGrid matches={shown.matches} states={matchStates} myClubId={myClubId} />
 
       {myMatch && (
         <div ref={detailsRef} className="space-y-2 scroll-mt-4">

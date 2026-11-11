@@ -7,6 +7,7 @@ import { renderWithProviders } from '../test/render'
 import { server } from '../test/setup'
 import { FakeWebSocket } from '../test/fakeWebSocket'
 import type { MatchEvent, Round, RoundEvent, Standings } from '../domain/types'
+import { matchCompetition, testMatchday } from '../test/fixtures'
 
 describe('RoundPage — card de partida (issue #85)', () => {
   it('expõe o nome completo do clube no title, já que nomes longos são truncados', async () => {
@@ -22,20 +23,22 @@ describe('RoundPage — card de partida (issue #85)', () => {
 
 describe('RoundPage — resumo da rodada (issue #112)', () => {
   const played: Round = {
-    number: 1,
+    matchday: testMatchday(1),
     season: 2026,
     status: 'Scheduled',
-    stage: { type: 'League', matchday: 1 },
     matches: [{
       matchId: 10, homeClubId: 1, awayClubId: 2, homeClubName: 'Goal Father FC', awayClubName: 'Rival FC',
       status: 'Scheduled', homeGoals: 0, awayGoals: 0, minute: 0, division: 1,
+      ...matchCompetition({ type: 'League', matchday: 1 }),
     }],
   }
   const next: Round = {
     ...played,
-    number: 2,
-    stage: { type: 'Cup', phase: 'ROUND_OF_16' },
-    matches: [{ ...played.matches[0]!, matchId: 20, awayClubId: 3, awayClubName: 'Copeiro EC' }],
+    matchday: testMatchday(2, 'MIDWEEK'),
+    matches: [{
+      ...played.matches[0]!, matchId: 20, awayClubId: 3, awayClubName: 'Copeiro EC',
+      ...matchCompetition({ type: 'Cup', phase: 'ROUND_OF_16' }),
+    }],
   }
   const table: Standings = {
     season: 2026, division: 1, round: 1, promotionSpots: 0, relegationSpots: 2,
@@ -57,10 +60,10 @@ describe('RoundPage — resumo da rodada (issue #112)', () => {
     let current = played
     server.use(
       http.get('/api/league/round/current', () => HttpResponse.json(current)),
-      http.post('/api/league/round/play', () => HttpResponse.json({ roundNumber: 1 })),
+      http.post('/api/league/round/play', () => HttpResponse.json({ matchday: '2026-W01-WEEKEND' })),
       http.get('/api/league/round/readiness', () =>
         HttpResponse.json({
-          roundNumber: current.number, readyCount: 1, totalCount: 1, pendingUsernames: [],
+          matchday: current.matchday.key, readyCount: 1, totalCount: 1, pendingUsernames: [],
           secondsRemaining: null, timedOut: false, allReady: true, canStart: true,
         }),
       ),

@@ -361,11 +361,14 @@ class PlayMatchService(
 | `POST` | `/api/offers/{id}/withdraw` | Comprador retira — issue #63 |
 | `GET` | `/api/league/standings` | Tabela de classificação |
 | `GET` | `/api/league/cup?season=` | Chave da copa mata-mata (sem `season` = a mais recente) — issue #61 |
-| `GET` | `/api/league/round/readiness` | Prontidão da rodada compartilhada (lobby) — issue #20 |
+| `GET` | `/api/league/calendar?clubId=` | Encaixe corrente (semana + meio/fim de semana) e próximo jogo do clube com a competição — issue #125 |
+| `GET` | `/api/league/round/current` | Jogos do encaixe corrente, de todas as competições — issue #125 |
+| `GET` | `/api/league/round/readiness` | Prontidão do encaixe compartilhado (lobby) — issues #20 e #125 |
 | `POST` | `/api/league/round/ready` | Técnico sinaliza "estou pronto" — issue #20 |
-| `POST` | `/api/league/round/play` | Inicia a rodada (409 `ROUND_NOT_READY` se faltar técnico) |
+| `POST` | `/api/league/round/play` | Inicia o encaixe e devolve a `matchday` (409 `ROUND_NOT_READY` se faltar técnico) |
+| `GET` | `/ws/slot/{key}?speed=` | **WebSocket**: stream multiplexado do encaixe (`2026-W05-WEEKEND`); antes `/ws/round/{n}` — issue #125 |
 
-> **Velocidade da transmissão (issue #115).** `/ws/round/{n}` e `/ws/matches/{id}` aceitam `?speed=SLOW|NORMAL|FAST|INSTANT` (160/80/20/0 ms por minuto simulado). Ausente ou inválido → `NORMAL`, sem recusar o handshake. O ritmo é do adapter (`StreamSpeed` + extension `WebSocketSession.streamSpeed()` em `adapter/in/web/ws`), nunca do domínio; a espera é injetável no construtor dos handlers (`pause: suspend (Long) -> Unit`), então os testes conferem o ritmo pedido sem cronometrar. Como o stream é gerado **por conexão** e é determinístico (seed = `matchId`), a velocidade é por cliente e os eventos são idênticos em qualquer ritmo. "Pular para o fim" não tem mensagem cliente → servidor: o frontend abre outra conexão `INSTANT` e só fecha a antiga quando a nova termina — fechar antes deixaria o stream órfão (que segue sem pacing) vencer o claim `finishRound`, e a conexão nova receberia só o replay (`RoundFinished` sem finanças/treino, sem `SeasonFinished`).
+> **Velocidade da transmissão (issue #115).** `/ws/slot/{key}` (antes `/ws/round/{n}`) e `/ws/matches/{id}` aceitam `?speed=SLOW|NORMAL|FAST|INSTANT` (160/80/20/0 ms por minuto simulado). Ausente ou inválido → `NORMAL`, sem recusar o handshake. O ritmo é do adapter (`StreamSpeed` + extension `WebSocketSession.streamSpeed()` em `adapter/in/web/ws`), nunca do domínio; a espera é injetável no construtor dos handlers (`pause: suspend (Long) -> Unit`), então os testes conferem o ritmo pedido sem cronometrar. Como o stream é gerado **por conexão** e é determinístico (seed = `matchId`), a velocidade é por cliente e os eventos são idênticos em qualquer ritmo. "Pular para o fim" não tem mensagem cliente → servidor: o frontend abre outra conexão `INSTANT` e só fecha a antiga quando a nova termina — fechar antes deixaria o stream órfão (que segue sem pacing) vencer o claim `finishRound`, e a conexão nova receberia só o replay (`RoundFinished` sem finanças/treino, sem `SeasonFinished`).
 >
 > Limitação conhecida (anterior à #115, ficou mais visível com ela): numa liga com vários técnicos assistindo, só o stream que encerra a rodada leva o `RoundFinished` completo; os outros recebem o replay. Com velocidades diferentes, quem usa `INSTANT`/pula tende a ser esse stream.
 
@@ -416,7 +419,7 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
 - [x] Definir `contract/openapi.yaml` cobrindo os 9 endpoints (compartilhado com frontend)
 - [x] Controllers REST + DTOs de request (responses reusam domínio @Serializable)
 - [x] kotlinx.serialization com `@JsonClassDiscriminator("type")` para todos os `sealed` que cruzam o fio (MatchEvent, RoundEventDto, TransferResult, LineupResult)
-- [x] WebSocket `/ws/round/{n}` multiplexado para rodada ao vivo (stream de `Flow<RoundEvent>` → cliente)
+- [x] WebSocket `/ws/round/{n}` multiplexado para rodada ao vivo (stream de `Flow<RoundEvent>` → cliente) — hoje `/ws/slot/{key}`, por encaixe (issue #125)
 - [x] Frontend Vite+TS+MSW consumindo o mesmo contrato (ver [`FRONTEND.md`](FRONTEND.md))
 - [x] Swap incremental: cada endpoint pronto desliga seu handler MSW; **E2E Playwright `npm run e2e:real` passa contra o backend Spring**
 - **Foco de estudo:** `Flow` → WebSocket, serialização (kotlinx.serialization), contrato OpenAPI bidirecional
@@ -484,7 +487,8 @@ DTOs separados das entidades de domínio (mapeamento explícito) — evita vazar
   efeitos. O guard de `finishRound` compara **status E `season`**: a PK de
   `rounds` é só `number`, e a virada de temporada reescreve a rodada 1, então um
   claim atrasado da temporada anterior é rejeitado (senão sobrescreveria a
-  temporada nova).
+  temporada nova). *Desde a issue #125 a PK é o encaixe (ano ISO + semana +
+  slot), que não se repete entre temporadas, e o guard voltou a ser só status.*
   - *Simulação em dobro (consciente):* cada conexão WS simula a rodada inteira,
     logo 2 nós/2 abas simulam em paralelo. A seed é `Random(matchId)`
     (determinística), então os eventos coincidem e **só os efeitos** são
@@ -1129,6 +1133,68 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   código (V16, backfill `BRA`); o mapper resolve no catálogo e um código
   desconhecido cai no default, como o `trainingFocus`. A bandeira (emoji) é
   montada no adapter web (`CountryDto.flag`), então a UI só exibe.
+
+- [x] **Calendário semanal com dois encaixes e temporadas por país** — issue #125
+
+  **Modelo de tempo** (`domain/model/Matchday.kt`, `CompetitionSeason.kt`), só
+  `java.time` — JDK, não framework:
+
+  | Tipo | O que é |
+  |---|---|
+  | `GameWeek(year, week)` | Semana ISO-8601. `year` é o ano **baseado em semana** (`IsoFields.WEEK_BASED_YEAR`): 01/01/2027 é a W53 de 2026. |
+  | `Slot { MIDWEEK, WEEKEND }` | Os dois encaixes da semana: quarta e domingo. A ordem das constantes é a ordem no tempo. |
+  | `Matchday(week, slot)` | A "data" de jogo. `key` (`2026-W05-WEEKEND`) é a identidade que cruza a API, a prontidão e o WebSocket; `serial` (2 por semana desde 1970) alimenta seeds e `matchId`. |
+  | `CompetitionSeason(competition, year, start, end, pausesOnFifaWindows)` | Uma edição de uma competição no tempo. `SeasonSpan` dá a janela por confederação: ano civil (CONMEBOL) ou agosto–maio (UEFA, `2026/27`). `preferredSlot` sai do formato: liga no fim de semana, copa/continental no meio. |
+  | `FifaWindow` | Tipo compartilhado com a #126. As datas vivem **interinas** em `interimFifaWindows(year)` (março, junho, set/out de 16 dias, novembro — padrão FIFA 2026–2030) até o pack (#131). A reserva é por semana inteira (`FifaWindow.touches(week)`). |
+
+  **Agendador** (`domain/rules/MatchdayScheduler.kt`, puro): cada competição
+  chega como lista de RODADAS, cada uma com os clubes que ela ocupa — na liga,
+  os do Berger daquela rodada; no mata-mata ainda não sorteado, todos os que
+  podem estar vivos (reserva pessimista: é ela que garante que o sorteio da fase
+  seguinte cabe no encaixe). `scheduleSeasons` espalha as rodadas pela janela
+  (a rodada `i` de `R` mira a semana `i·W/R`), prefere o encaixe do formato,
+  pula as semanas FIFA de quem pausa, preserva a ordem e **nunca** põe um clube
+  em dois jogos no mesmo encaixe (teste de propriedade com 20 mundos gerados).
+  Uma "folga" garante que as rodadas restantes ainda cabem — senão uma liga de
+  38 rodadas em 36 semanas pegaria só domingos e sobraria sem encaixe. Não
+  caber é `ScheduleResult.NoRoomLeft`, valor e não exception. `Schedule.endingAt`
+  diz quais competições terminam num encaixe e `Schedule.rollOver` agenda a
+  edição seguinte de UMA competição por cima do que as outras ainda têm a jogar
+  — a europeia vira em maio e a brasileira em dezembro, cada uma sozinha.
+
+  **Encaixe no jogo** (`domain/rules/SeasonCalendar.kt`): `seasonPlan` monta a
+  temporada do mundo atual — uma liga por divisão (ano civil, **sem** pausa FIFA,
+  como o Brasileirão) e a copa (fevereiro–novembro, com pausa) — e `roundAt`
+  transforma um encaixe nos jogos. O plano é função pura dos clubes e da copa,
+  então não é persistido: o `PlayRoundService` o recalcula a cada encaixe
+  encerrado e salta direto ao **próximo encaixe com jogo** (semana sem jogo no
+  mundo não tem o que simular). Sem próximo encaixe, a temporada vira.
+  `Round` ficou com o nome, mas virou "os jogos de UM encaixe": `stage` e
+  competição passaram para cada `RoundMatch`, porque liga e copa podem dividir
+  o encaixe — pênaltis, tabela, folha, diretoria e chave da copa decidem por
+  partida.
+
+  **Contagens que eram "por rodada":** lesão conta **jogos do clube**
+  (`applyRoundFitness(clubPlayed)` só anda a lesão de quem jogou; quem folgou
+  descansa o elenco), o prazo das propostas virou `slotsLeft` (encaixes
+  jogados), a folha segue as rodadas de liga do clube e a diretoria só se mexe
+  com rodada de liga. Prontidão multiplayer, claim `finishRound` e WebSocket
+  (`/ws/slot/{key}`) são por encaixe.
+
+  **Persistência:** a V17 recria `rounds` e `round_readiness` com PK
+  `(iso_year, iso_week, slot)` — o encaixe nunca se repete, então o guard por
+  `season` do `finishRound` (que existia porque a PK era só o número da rodada)
+  saiu. `slot` gravado como texto: `MIDWEEK` < `WEEKEND` em ordem alfabética, que
+  é a do tempo. Sem migrar dados (número de rodada não diz a semana): um banco
+  com save em andamento sobe sem encaixe e o `DataInitializer` reinicia a
+  temporada corrente no calendário novo.
+
+  **Cortes deliberados:** o mundo atual tem um país só, então a virada que o
+  `PlayRoundService` aplica é a da temporada inteira (história, envelhecimento,
+  diretoria) quando as competições do Brasil acabam; a virada por competição
+  está no agendador e entra no serviço com o mundo do MVP (#131). Suspensões
+  por cartão ainda não existem (#130); convocações nas datas FIFA são da #134 —
+  aqui só se reserva o tempo. O mando dentro do turno segue o Berger antigo.
 
 ---
 

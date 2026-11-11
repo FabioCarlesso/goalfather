@@ -11,7 +11,8 @@ export function useCurrentRound() {
   })
 }
 
-interface PlayRoundResponse { roundNumber: number }
+/** Chave do encaixe liberado (issue #125). */
+interface PlayRoundResponse { matchday: string }
 
 export function usePlayRound() {
   const qc = useQueryClient()

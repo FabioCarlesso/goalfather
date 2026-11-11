@@ -7,6 +7,7 @@ import { renderWithProviders } from '../../test/render'
 import { server } from '../../test/setup'
 import type { BoardReview, Round, RoundMatch, StandingRow, Standings } from '../../domain/types'
 import type { RoundOutcome, SeasonFinishedEvent } from '../../api/queries/useRoundStream'
+import { matchCompetition, testMatchday } from '../../test/fixtures'
 
 const MY_CLUB = 1
 
@@ -21,6 +22,7 @@ const myMatch: RoundMatch = {
   awayGoals: 2,
   minute: 90,
   division: 1,
+  ...matchCompetition({ type: 'League', matchday: 5 }),
 }
 
 function row(position: number, clubId: number, clubName: string, points: number): StandingRow {
@@ -40,10 +42,9 @@ const table: Standings = {
 }
 
 const played: Round = {
-  number: 6,
+  matchday: testMatchday(6),
   season: 2026,
   status: 'Finished',
-  stage: { type: 'League', matchday: 5 },
   matches: [myMatch],
 }
 
@@ -107,7 +108,7 @@ describe('RoundSummary (issue #112)', () => {
     renderSummary()
 
     const summary = screen.getByRole('region', { name: 'Resumo da rodada' })
-    expect(within(summary).getByText('Rodada 5 · Temporada 2026')).toBeInTheDocument()
+    expect(within(summary).getByText('Rodada 5 · Semana 6 · Fim de semana · 08/02/2026 · Temporada 2026')).toBeInTheDocument()
     // Vitória fora de casa: o rótulo é do ponto de vista do técnico.
     expect(within(summary).getByText('Vitória')).toBeInTheDocument()
     expect(screen.getByTestId('my-match-score')).toHaveTextContent('Rival FC 1 × 2 Goal Father FC')
@@ -159,7 +160,11 @@ describe('RoundSummary (issue #112)', () => {
 
   it('data de copa decidida nos pênaltis', () => {
     renderSummary({
-      outcome: { ...outcome, played: { ...played, stage: { type: 'Cup', phase: 'ROUND_OF_16' } }, training: null },
+      outcome: {
+        ...outcome,
+        played: { ...played, matches: [{ ...myMatch, ...matchCompetition({ type: 'Cup', phase: 'ROUND_OF_16' }) }] },
+        training: null,
+      },
       myMatchState: { homeGoals: 1, awayGoals: 1, minute: 90, status: 'Finished', penalties: { home: 5, away: 4 } },
     })
     expect(screen.getByText('Derrota nos pênaltis')).toBeInTheDocument()

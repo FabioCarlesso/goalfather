@@ -13,7 +13,7 @@ const base: TransferOffer = {
   playerId: 10,
   playerName: 'Renato Silva',
   amount: 900_000_00,
-  roundsLeft: 2,
+  slotsLeft: 2,
   status: { type: 'Pending' },
 }
 
@@ -28,7 +28,7 @@ const offers: TransferOffer[] = [
     sellerClubId: 3,
     sellerClubName: 'Rival FC',
     playerName: 'Craque Rival',
-    roundsLeft: 1,
+    slotsLeft: 1,
   },
 ]
 
@@ -39,13 +39,13 @@ describe('OffersPanel (issue #63)', () => {
     expect(screen.getByRole('heading', { name: /Propostas/ })).toHaveTextContent('1 nova')
     const received = screen.getByText('Recebidas').parentElement!
     expect(within(received).getByText('Renato Silva')).toBeInTheDocument()
-    expect(within(received).getByText('expira em 2 rodadas')).toBeInTheDocument()
+    expect(within(received).getByText('expira em 2 datas de jogo')).toBeInTheDocument()
     // Resolvida aparece com o estado, sem botões; o motivo vai no title.
     expect(within(received).getByText('Expirada')).toHaveAttribute('title', 'o jogador deixou o clube vendedor')
 
     const sent = screen.getByText('Enviadas').parentElement!
     expect(within(sent).getByText('Craque Rival')).toBeInTheDocument()
-    expect(within(sent).getByText('expira em 1 rodada')).toBeInTheDocument()
+    expect(within(sent).getByText('expira em 1 data de jogo')).toBeInTheDocument()
   })
 
   it('dispara aceitar/recusar nas recebidas e retirar nas enviadas', async () => {

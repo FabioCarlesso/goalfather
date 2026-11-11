@@ -280,7 +280,7 @@ function ReserveButton({
   // recusaria com INJURED_PLAYERS, então o botão já nasce desabilitado.
   const roundsOut = injuryRoundsOut(player.availability)
   const injured = isInjured(player)
-  const name = `${playerSummary(player)}${roundsOut !== null ? `, lesionado por ${roundsOut} rodada(s)` : ''}`
+  const name = `${playerSummary(player)}${roundsOut !== null ? `, lesionado por ${roundsOut} jogo(s)` : ''}`
 
   return (
     <button
