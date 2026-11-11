@@ -27,9 +27,12 @@ import java.time.temporal.TemporalAdjusters
  * serviço o recalcula a cada encaixe encerrado.
  *
  * Substitui a sequência de "datas" da issue #61 (liga intercalada com copa,
- * uma por clique). O que se mantém: o primeiro encaixe é de liga, as fases da
- * copa se espalham entre as rodadas, a copa termina antes da última rodada da
- * liga e o campeão chega à virada.
+ * uma por clique). O que se mantém: o primeiro encaixe é de liga e as fases da
+ * copa se espalham entre as rodadas. O campeão da copa sempre chega à virada
+ * porque ela só acontece quando o plano não tem mais NENHUM encaixe — de
+ * nenhuma competição. Que a copa acabe antes da última rodada da liga é
+ * consequência dos parâmetros do seed (janela fev–nov, 4 fases), não uma
+ * garantia do agendador.
  */
 
 /** O que cada competição do mundo atual é — o que o calendário precisa para gerar os jogos do encaixe. */
