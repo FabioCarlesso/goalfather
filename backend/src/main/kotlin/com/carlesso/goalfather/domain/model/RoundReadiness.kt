@@ -32,7 +32,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class ReadinessStatus(
-    val roundNumber: Int,
+    // Encaixe a que a prontidão se refere (issue #125); `null` sem rodada no calendário.
+    val matchday: Matchday?,
     val readyCount: Int,
     val totalCount: Int,
     val pendingUsernames: List<String>,

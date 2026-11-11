@@ -110,6 +110,36 @@ class FitnessRulesTest {
     }
 
     @Test
+    fun `lesao de N jogos dura N jogos do clube, quantos encaixes passarem (issue 125)`() {
+        // Lesão de 3 jogos. O calendário semanal intercala encaixes em que o
+        // clube não joga (copa de quem já caiu, data FIFA): neles o elenco
+        // descansa, mas a lesão NÃO anda. Sequência: joga, folga, folga, joga,
+        // folga, joga — 6 encaixes, 3 jogos do clube.
+        val clubPlays = listOf(true, false, false, true, false, true)
+        var player = makePlayer(1, availability = Availability.Injured(3))
+        val history = clubPlays.map { played ->
+            player = applyRoundFitness(listOf(player), emptySet(), rng = Random(1), clubPlayed = played).single()
+            player.availability
+        }
+
+        assertEquals(
+            listOf(
+                Availability.Injured(2), Availability.Injured(2), Availability.Injured(2),
+                Availability.Injured(1), Availability.Injured(1), Availability.Available,
+            ),
+            history,
+        )
+    }
+
+    @Test
+    fun `clube que nao joga descansa o elenco mesmo com a lesao parada`() {
+        val tired = makePlayer(1, stamina = 50, availability = Availability.Injured(2))
+        val after = applyRoundFitness(listOf(tired), emptySet(), rng = Random(1), clubPlayed = false).single()
+        assertEquals(50 + BENCH_STAMINA_RECOVERY, after.stamina)
+        assertEquals(Availability.Injured(2), after.availability)
+    }
+
+    @Test
     fun `lesao sofrida na rodada nao e decrementada na mesma virada`() {
         // Se o decremento rodasse DEPOIS, uma lesão de 1 rodada nasceria já curada.
         val after = applyRoundFitness(

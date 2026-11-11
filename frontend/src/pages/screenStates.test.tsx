@@ -201,7 +201,7 @@ describe('estados de tela (issue #105)', () => {
       server.use(
         http.get('/api/league/round/readiness', () =>
           HttpResponse.json({
-            roundNumber: 1,
+            matchday: '2026-W01-WEEKEND',
             readyCount: 1,
             totalCount: 1,
             pendingUsernames: [],

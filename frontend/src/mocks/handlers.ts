@@ -9,8 +9,10 @@ import {
   clubMeta,
   applyRoundToStandings,
   careerOf,
-  calendar,
+  isLastSlotOfSeason,
   roundTrainingReports,
+  seasonSlots,
+  slotRound,
   startNewSeason,
   auth,
   clubOwners,
@@ -54,10 +56,12 @@ import {
   type TeamTactics,
 } from './engine'
 import { recordCupRound } from './cup'
+import { matchdaySerial } from './calendar'
 import { boardStatusOf, forNewManager } from './board'
-import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_ROUNDS } from './offers'
+import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
 import type {
   TransferResult,
+  Calendar,
   Club,
   ErrorResponse,
   MatchEvent,
@@ -86,12 +90,13 @@ type CreateOfferRequest    = components['schemas']['CreateOfferRequest']
 
 // ─── WebSocket de partida e rodada ────────────────────────────────────────
 // MSW intercepta o construtor global de WebSocket. Quando MatchPage/RoundPage
-// abrir `ws://host/ws/(matches|round)/...`, estes handlers respondem.
+// abrir `ws://host/ws/(matches|slot)/...`, estes handlers respondem.
 const wsProtocol = typeof window !== 'undefined' && window.location.protocol === 'https:'
   ? 'wss:' : 'ws:'
 const wsHost = typeof window !== 'undefined' ? window.location.host : 'localhost:5173'
 const matchStream = ws.link(`${wsProtocol}//${wsHost}/ws/matches/:id`)
-const roundStream = ws.link(`${wsProtocol}//${wsHost}/ws/round/:number`)
+// Encaixe do calendário semanal (issue #125): `/ws/slot/{key}`.
+const roundStream = ws.link(`${wsProtocol}//${wsHost}/ws/slot/:key`)
 
 // Ritmo da transmissão (issue #115), espelhando o `StreamSpeed` do backend:
 // ms de pausa por minuto simulado. `NORMAL` = 90 minutos em ~7s reais.
@@ -585,7 +590,7 @@ export const handlers = [
       playerId: player.id,
       playerName: player.name,
       amount: body.amount,
-      roundsLeft: OFFER_DEADLINE_ROUNDS,
+      slotsLeft: OFFER_DEADLINE_SLOTS,
       status: { type: 'Pending' },
     }
     state.offers = [offer, ...state.offers]
@@ -607,7 +612,7 @@ export const handlers = [
     if (offer.status.type !== 'Pending') return HttpResponse.json(closedOfferResult(offer) satisfies TransferOfferResult)
     if (state.currentRound.status === 'InProgress') {
       return HttpResponse.json(
-        { type: 'RoundInProgress', roundNumber: state.currentRound.number } satisfies TransferOfferResult,
+        { type: 'RoundInProgress', matchday: state.currentRound.matchday.key } satisfies TransferOfferResult,
       )
     }
     const blocker = offerBlocker(buyer, seller, offer.playerId, offer.amount)
@@ -747,6 +752,36 @@ export const handlers = [
     return HttpResponse.json(cup)
   }),
 
+  // ─── getCalendar (issue #125) ─────────────────────────────────────────
+  // Encaixe corrente + próximo jogo do clube. Busca no encaixe corrente (se
+  // ainda não acabou) e nas datas seguintes da temporada; da copa, só a fase
+  // corrente é conhecida — a mesma regra do `SeasonPlan.nextMatchOf`.
+  http.get('/api/league/calendar', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const round = state.currentRound
+    const clubId = Number(new URL(request.url).searchParams.get('clubId') ?? NaN)
+    const calendarResponse: Calendar = { current: round.matchday, season: round.season }
+    if (Number.isNaN(clubId)) return HttpResponse.json(calendarResponse)
+
+    const involves = (m: RoundMatch) => m.homeClubId === clubId || m.awayClubId === clubId
+    const inPlay = round.status !== 'Finished'
+    const here = inPlay ? round.matches.find(involves) : undefined
+    if (here) return HttpResponse.json({ ...calendarResponse, nextMatch: { matchday: round.matchday, match: here } })
+
+    const slots = seasonSlots(round.season)
+    const from = slots.findIndex((s) => s.matchday.key === round.matchday.key)
+    let cupKnown = !(inPlay && round.matches.some((m) => m.stage.type === 'Cup'))
+    for (const slot of slots.slice(from + 1)) {
+      const isCup = slot.stage.type === 'Cup'
+      if (isCup && !cupKnown) continue
+      const upcoming = slotRound(slot, round.season)
+      const match = upcoming.matches.find(involves)
+      if (match) return HttpResponse.json({ ...calendarResponse, nextMatch: { matchday: slot.matchday, match } })
+      if (isCup) cupKnown = false
+    }
+    return HttpResponse.json(calendarResponse)
+  }),
+
   // ─── getCurrentRound ──────────────────────────────────────────────────
   http.get('/api/league/round/current', async () => {
     await delay(SIMULATED_LATENCY_MS)
@@ -756,7 +791,7 @@ export const handlers = [
   // ─── getRoundReadiness (issue #20) ────────────────────────────────────
   http.get('/api/league/round/readiness', async () => {
     await delay(SIMULATED_LATENCY_MS)
-    return HttpResponse.json(readinessStatus(state.currentRound.number))
+    return HttpResponse.json(readinessStatus(state.currentRound.matchday.key))
   }),
 
   // ─── markRoundReady (issue #20) ───────────────────────────────────────
@@ -769,8 +804,8 @@ export const handlers = [
         { status: 401 },
       )
     }
-    markRoundReady(state.currentRound.number, userId)
-    return HttpResponse.json(readinessStatus(state.currentRound.number))
+    markRoundReady(state.currentRound.matchday.key, userId)
+    return HttpResponse.json(readinessStatus(state.currentRound.matchday.key))
   }),
 
   // ─── playRound ────────────────────────────────────────────────────────
@@ -786,7 +821,7 @@ export const handlers = [
     // Gate de liga compartilhada (issues #20/#45): o mesmo `canStart` que o
     // mock devolve em `GET /round/readiness` — a regra mora em `readinessStatus`
     // (issue #98), não é repetida aqui.
-    const status = readinessStatus(state.currentRound.number)
+    const status = readinessStatus(state.currentRound.matchday.key)
     if (!status.canStart) {
       const err: ErrorResponse = {
         code: 'ROUND_NOT_READY',
@@ -801,18 +836,18 @@ export const handlers = [
       return HttpResponse.json(err, { status: 409 })
     }
     state.currentRound = { ...state.currentRound, status: 'InProgress' }
-    return HttpResponse.json({ roundNumber: state.currentRound.number })
+    return HttpResponse.json({ matchday: state.currentRound.matchday.key })
   }),
 
   // ─── streamRound (WebSocket multiplexado) ─────────────────────────────
-  // Espelha o futuro endpoint Spring `/ws/round/{n}` que emitirá
-  // `Flow<RoundEvent>` coordenando N partidas simultâneas.
+  // Espelha o endpoint Spring `/ws/slot/{key}` (issue #125), que emite o
+  // `Flow<RoundEvent>` do encaixe coordenando N partidas simultâneas.
   roundStream.addEventListener('connection', ({ client, params }) => {
-    const roundNumber = Number(params.number)
+    const key = String(params.key)
     const msPerMinute = msPerMinuteOf(client.url)
     const round = state.currentRound
-    if (round.number !== roundNumber) {
-      client.close(1011, `Rodada ${roundNumber} não está corrente`)
+    if (round.matchday.key !== key) {
+      client.close(1011, `Encaixe ${key} não está corrente`)
       return
     }
 
@@ -822,9 +857,13 @@ export const handlers = [
     type Tagged = { matchId: number; event: MatchEvent }
     const allEvents: Tagged[] = []
     const finalScores = new Map<number, { home: number; away: number }>()
-    // Disputas de pênaltis da data de copa (issue #61), por partida.
+    // Disputas de pênaltis dos jogos de copa (issue #61), por partida.
     const shootouts = new Map<number, PenaltyScore>()
-    const knockout = round.stage.type === 'Cup'
+    // Liga e copa podem dividir o encaixe (issue #125): mata-mata é por partida.
+    const hasCup = round.matches.some((m) => m.stage.type === 'Cup')
+    const leagueClubs = new Set(
+      round.matches.filter((m) => m.stage.type === 'League').flatMap((m) => [m.homeClubId, m.awayClubId]),
+    )
 
     for (const match of round.matches) {
       const home = clubMeta[match.homeClubId]
@@ -840,7 +879,7 @@ export const handlers = [
         awaySquad:    squadInPlay(away),
         homeTactics:  tacticsOf(home.id),
         awayTactics:  tacticsOf(away.id),
-        knockout,
+        knockout:     match.stage.type === 'Cup',
       }
       for (const event of simulateMatch(setup)) {
         allEvents.push({ matchId: match.matchId, event })
@@ -886,7 +925,7 @@ export const handlers = [
       // Data de copa (issue #61): resultados (com pênaltis) vão para a chave,
       // que avança e devolve o prêmio de quem passou em campo.
       let cupPrizes = new Map<number, number>()
-      if (knockout && state.cup) {
+      if (hasCup && state.cup) {
         const outcome = recordCupRound(state.cup, state.currentRound)
         state.cup = outcome.cup
         cupPrizes = outcome.prizes
@@ -897,25 +936,28 @@ export const handlers = [
         applyRoundToStandings(state.currentRound, table))
       // Rodada de LIGA mexe na confiança da diretoria (issue #62).
       // Só as divisões que jogaram: a que folga fica com a confiança parada.
-      if (!knockout) {
-        evaluateBoards(state.standings, new Set(round.matches.flatMap((m) => [m.homeClubId, m.awayClubId])))
-      }
+      if (leagueClubs.size > 0) evaluateBoards(state.standings, leagueClubs)
 
       // Rodada consumida: zera a prontidão para a próxima começar limpa (issue #20).
-      resetRoundReadiness(round.number)
+      resetRoundReadiness(round.matchday.key)
 
       // Balanço financeiro da rodada (issue #4) — espelha computeFinances do
       // backend. Bilheteria só para mandantes; folha salarial a cada N rodadas
       // DE LIGA (data de copa não cobra — issue #61); prêmio da copa a quem avançou.
-      const isSalaryRound =
-        round.stage.type === 'League' && round.stage.matchday % SALARY_EVERY_N_ROUNDS === 0
+      // Por clube desde o encaixe misto (issue #125): paga quem joga, neste
+      // encaixe, uma rodada de liga que é "mês" de salário.
+      const payroll = new Set(
+        round.matches
+          .filter((m) => m.stage.type === 'League' && m.stage.matchday % SALARY_EVERY_N_ROUNDS === 0)
+          .flatMap((m) => [m.homeClubId, m.awayClubId]),
+      )
       const homeIds = new Set(round.matches.map((m) => m.homeClubId))
       const finances: RoundFinance[] = round.matches
         .flatMap((m) => [m.homeClubId, m.awayClubId])
         .map((clubId) => {
           const capacity = clubId === 1 ? (state.clubs[1]?.stadiumCapacity ?? AI_DEFAULT_CAPACITY) : AI_DEFAULT_CAPACITY
           const strength = clubId === 1 ? averageOverall(state.clubs[1]!.squad) : (clubMeta[clubId]?.strength ?? 70)
-          const salaries = isSalaryRound
+          const salaries = payroll.has(clubId)
             ? (clubId === 1 ? state.clubs[1]!.squad.reduce((s, p) => s + p.salary, 0) : 11 * AI_SALARY_PER_PLAYER)
             : 0
           // Preço do ingresso do clube (issue #59). Diferente de capacidade e
@@ -980,8 +1022,10 @@ export const handlers = [
         const rested = applyRoundFitness(
           myClub.squad,
           starterIds,
-          new MulberryRng(round.number * 1000 + 1),
+          new MulberryRng(matchdaySerial(round.matchday) * 1000 + 1),
           injuries,
+          // Lesão conta jogos do clube (issue #125).
+          myClubPlayed,
         )
         // Semana de treino no foco escolhido (issue #58), DEPOIS do desgaste:
         // o elenco cansa na rodada e é o foco que decide se a semana repõe
@@ -994,7 +1038,7 @@ export const handlers = [
             redCards: p.redCards + (red.get(p.id) ?? 0),
           })),
           myClub.trainingFocus,
-          new MulberryRng(round.number * 7919 + 1),
+          new MulberryRng(matchdaySerial(round.matchday) * 7919 + 1),
         )
         myTraining = { clubId: 1, focus: myClub.trainingFocus, events: trained.events }
         state.clubs[1] = {
@@ -1006,8 +1050,8 @@ export const handlers = [
 
       // Tabelas finais desta temporada (capturadas antes de eventual reset).
       const finalStandings = state.standings
-      // Fim da temporada = fim do CALENDÁRIO (liga + copa, issue #61).
-      const seasonEnded = round.number >= calendar().length
+      // Fim da temporada = último encaixe do CALENDÁRIO (liga + copa, issues #61/#125).
+      const seasonEnded = isLastSlotOfSeason()
 
       // Pequeno gap antes do RoundFinished para o cliente processar os
       // ultimos FullTime (MSW WS pode entregar fora de ordem se close vier

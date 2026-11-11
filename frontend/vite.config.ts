@@ -3,6 +3,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+// Backend do proxy: `E2E_BACKEND_URL` (o mesmo que `e2e/helpers.ts` usa para o
+// reset) permite rodar o `e2e:real` contra um backend em outra porta — ex.:
+// worktrees em paralelo, cada uma com o seu. Default: o Spring em :8080.
+const BACKEND_URL = process.env.E2E_BACKEND_URL ?? 'http://localhost:8080'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -13,14 +18,14 @@ export default defineConfig({
       // forward para o backend Spring em :8080. Com MSW ligado, MSW
       // intercepta antes do proxy ver.
       '/api': {
-        target: 'http://localhost:8080',
+        target: BACKEND_URL,
         changeOrigin: true,
       },
       // WebSocket de partida ao vivo: proxy direto para o backend Spring.
       // MSW intercepta no nivel do construtor do WebSocket em DEV; quando
       // MSW estiver desligado (VITE_USE_MOCKS=false), este proxy assume.
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: BACKEND_URL.replace(/^http/, 'ws'),
         ws: true,
         rewriteWsOrigin: true,
       },

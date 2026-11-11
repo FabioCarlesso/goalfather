@@ -8,12 +8,14 @@ import type {
   CupStage,
   CupTie,
   KnockoutPhase,
+  Matchday,
   PenaltyScore,
   Round,
   RoundMatch,
   RoundStage,
 } from '../domain/types'
 import type { MulberryRng } from './engine'
+import { matchdaySerial } from './calendar'
 
 /** Fases na ordem da chave, da mais larga para a final. */
 export const KNOCKOUT_PHASES: readonly KnockoutPhase[] =
@@ -129,7 +131,10 @@ export function recordCupRound(cup: Cup, round: Round): { cup: Cup; prizes: Map<
   if (!stage) return { cup, prizes }
 
   const played = new Map(
-    round.matches.filter((m) => m.status === 'Finished').map((m) => [`${m.homeClubId}-${m.awayClubId}`, m]),
+    // Só jogos de COPA (issue #125): liga e copa podem dividir o encaixe.
+    round.matches
+      .filter((m) => m.status === 'Finished' && m.stage.type === 'Cup')
+      .map((m) => [`${m.homeClubId}-${m.awayClubId}`, m]),
   )
   const ties: CupTie[] = stage.ties.map((tie) => {
     if (tie.type === 'Bye' || tie.result) return tie
@@ -164,11 +169,12 @@ export function recordCupRound(cup: Cup, round: Round): { cup: Cup; prizes: Map<
 }
 
 /**
- * Rodada da data `number` com os confrontos em aberto da fase corrente. Mesma
- * fórmula de matchId do backend: data × 1000 + índice + 1.
+ * Jogos de copa do encaixe `matchday` (issue #125): os confrontos em aberto da
+ * fase corrente. Mesma fórmula de matchId do backend: serial do encaixe ×
+ * 1000 + índice + 1. Cada partida carrega o `stage` e a competição.
  */
 export function cupRound(
-  number: number,
+  matchday: Matchday,
   season: number,
   cup: Cup,
   divisionOf: (clubId: number) => number,
@@ -177,8 +183,9 @@ export function cupRound(
   const pending = (stage?.ties ?? []).filter(
     (t): t is Extract<CupTie, { type: 'Fixture' }> => t.type === 'Fixture' && !t.result,
   )
+  const phase = stage?.phase ?? cup.phases[cup.phases.length - 1]!.phase
   const matches: RoundMatch[] = pending.map((tie) => ({
-    matchId: number * 1000 + tie.index + 1,
+    matchId: matchdaySerial(matchday) * 1000 + tie.index + 1,
     homeClubId: tie.home.id,
     awayClubId: tie.away.id,
     homeClubName: tie.home.name,
@@ -188,10 +195,18 @@ export function cupRound(
     awayGoals: 0,
     minute: 0,
     division: divisionOf(tie.home.id),
+    stage: { type: 'Cup', phase },
+    competitionId: CUP_COMPETITION_ID,
+    competitionName: CUP_COMPETITION_NAME,
   }))
-  const phase = stage?.phase ?? cup.phases[cup.phases.length - 1]!.phase
-  return { number, season, status: 'Scheduled', stage: { type: 'Cup', phase }, matches }
+  return { matchday, season, status: 'Scheduled', matches }
 }
+
+/** Ids e nomes das competições do mundo atual — os mesmos de `SeasonCompetitions.kt`. */
+export const CUP_COMPETITION_ID = 'copa'
+export const CUP_COMPETITION_NAME = 'Copa'
+export const leagueCompetitionId = (division: number): string => `liga-d${division}`
+export const leagueCompetitionName = (division: number): string => `Liga — Divisão ${division}`
 
 /**
  * Calendário da temporada — espelha `seasonCalendar` do backend: a fase `i`

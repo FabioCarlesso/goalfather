@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.result
 
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.ExpiryReason
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.OfferStatus
@@ -83,7 +84,7 @@ sealed interface OfferResult {
      * Aceite bloqueado durante a simulação da rodada (issue #63): o jogador não
      * troca de clube no meio do processamento.
      */
-    data class RoundInProgress(val roundNumber: Int) : Rejection
+    data class RoundInProgress(val matchday: Matchday) : Rejection
 
     /** Lock otimista de um dos clubes (issue #89): nada foi aplicado. */
     data class Conflict(val clubId: ClubId) : Rejection

@@ -131,8 +131,8 @@ private fun Player.trainOneWeek(focus: TrainingFocus, rng: Random): PlayerWeek {
  * próprio: sem ele, treino e desgaste da MESMA rodada/clube sorteariam a
  * mesma sequência — quem cansasse mais evoluiria mais, por acidente.
  */
-fun trainingSeed(roundNumber: Int, clubId: ClubId): Long =
-    ((roundNumber.toLong() shl 32) xor clubId.value) xor TRAINING_SEED_SALT
+fun trainingSeed(matchdaySerial: Int, clubId: ClubId): Long =
+    ((matchdaySerial.toLong() shl 32) xor clubId.value) xor TRAINING_SEED_SALT
 
 /** "TRAIN" em hexa — só para descolar o stream do treino dos demais. */
 private const val TRAINING_SEED_SALT: Long = 0x5452_4149_4EL

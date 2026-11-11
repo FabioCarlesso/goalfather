@@ -109,7 +109,7 @@ describe('FormationGrid', () => {
 
     const buttons = reserves().getAllByRole('button')
     expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
-      expect.stringMatching(/^Bruno Machucado.*lesionado por 3 rodada/),
+      expect.stringMatching(/^Bruno Machucado.*lesionado por 3 jogo/),
       expect.stringMatching(/^Lucas Reserva/),
     ])
     expect(reserves().getByRole('button', { name: /Bruno Machucado/ })).toBeDisabled()

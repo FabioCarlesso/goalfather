@@ -120,7 +120,7 @@ export function offerErrorMessage(
     case 'OfferExpired':
       return `Esta proposta expirou: ${expiryReasonLabel(result.reason)}.`
     case 'RoundInProgress':
-      return `A rodada ${result.roundNumber} está em andamento — aceite depois que ela terminar.`
+      return 'Há jogos em andamento agora — aceite depois que eles terminarem.'
     case 'Conflict':
       return 'Um dos clubes foi alterado por outra operação ao mesmo tempo — nada foi aplicado. Tente de novo.'
   }

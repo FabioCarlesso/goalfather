@@ -11,8 +11,9 @@ test.describe('Cup flow', () => {
   test('joga a rodada de liga, depois a fase da copa, e a chave avança', async ({ page }) => {
     await page.goto('/round')
 
-    // Data 1: rodada de liga.
+    // Encaixe 1: rodada de liga, no domingo (issue #125).
     await expect(page.getByRole('heading', { name: 'Rodada 1' })).toBeVisible()
+    await expect(page.getByText(/Semana \d+ · Fim de semana/)).toBeVisible()
     // Instantânea (issue #115): o placar é o mesmo em qualquer velocidade, e a
     // copa não precisa de 2 × ~7s de transmissão para ser testada.
     await page.getByLabel('Velocidade').selectOption('INSTANT')
@@ -20,8 +21,9 @@ test.describe('Cup flow', () => {
     await page.getByRole('button', { name: 'Jogar rodada' }).click()
     await expect(page.getByText(/Pontuações atualizadas após a rodada 1/i)).toBeVisible({ timeout: 30_000 })
 
-    // Data 2: fase da copa, no mesmo fluxo de prontidão.
+    // Encaixe 2: fase da copa, numa quarta, no mesmo fluxo de prontidão.
     await expect(page.getByRole('heading', { name: 'Copa — Oitavas de final' })).toBeVisible()
+    await expect(page.getByText(/Semana \d+ · Meio de semana/)).toBeVisible()
     await expect(page.getByText(/empate vai aos pênaltis/)).toBeVisible()
     await page.getByRole('button', { name: 'Estou pronto' }).click()
     await page.getByRole('button', { name: 'Próxima rodada' }).click()

@@ -3,11 +3,13 @@ package com.carlesso.goalfather.adapter.out.persistence
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundStatusEnum
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toDomain
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
+import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
 import com.carlesso.goalfather.adapter.out.persistence.mapper.updateFrom
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.StandingsJpaRepository
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.Standings
 import io.micrometer.core.instrument.MeterRegistry
@@ -28,12 +30,12 @@ class LeaguePersistenceAdapter(
     private val meterRegistry: MeterRegistry,
 ) : LeagueRepository {
 
-    override suspend fun findRound(number: Int): Round? = withContext(Dispatchers.IO) {
-        roundRepo.findById(number).orElse(null)?.toDomain(json)
+    override suspend fun findRound(matchday: Matchday): Round? = withContext(Dispatchers.IO) {
+        roundRepo.findById(matchday.toKey()).orElse(null)?.toDomain(json)
     }
 
     override suspend fun findLatest(): Round? = withContext(Dispatchers.IO) {
-        roundRepo.findTopByOrderBySeasonDescNumberDesc()?.toDomain(json)
+        roundRepo.findTopByOrderByIdIsoYearDescIdIsoWeekDescIdSlotDesc()?.toDomain(json)
     }
 
     override suspend fun currentStandings(): List<Standings> = withContext(Dispatchers.IO) {
@@ -62,8 +64,8 @@ class LeaguePersistenceAdapter(
         }
     }
 
-    override suspend fun startRound(roundNumber: Int): Boolean = withContext(Dispatchers.IO) {
-        claim("start") { transition.start(roundNumber) }
+    override suspend fun startRound(matchday: Matchday): Boolean = withContext(Dispatchers.IO) {
+        claim("start") { transition.start(matchday) }
     }
 
     override suspend fun finishRound(round: Round): Boolean = withContext(Dispatchers.IO) {
@@ -94,8 +96,8 @@ class LeaguePersistenceAdapter(
  * clube (#19) e do mercado (#21).
  *
  * Dois mecanismos, dois papéis:
- * - o **guard por status/season** resolve o caso comum, sem corrida (rodada já
- *   finalizada, ou linha reusada por outra temporada → `false` sem escrever);
+ * - o **guard por status** resolve o caso comum, sem corrida (encaixe já
+ *   finalizado → `false` sem escrever);
  * - o **`@Version`** resolve a corrida real, quando duas instâncias leem o mesmo
  *   estado e ambas tentam gravar: o segundo commit não acha mais a versão que
  *   leu, e a `OptimisticLockingFailureException` sobe para o adapter, que a
@@ -109,19 +111,18 @@ class RoundTransition(
     @Transactional
     fun save(round: Round) {
         // Atualiza a linha existente em vez de mapear para uma entidade nova:
-        // preserva o `version` do lock otimista (issue #46). A PK é o número da
-        // rodada, então a virada de temporada reescreve a rodada 1 — sem este
-        // cuidado o save chegaria com version=0 contra uma linha já em version≥1
-        // e estouraria stale state (mesma armadilha do clube, #19). Read e write
+        // preserva o `version` do lock otimista (issue #46) — sem este cuidado o
+        // save chegaria com version=0 contra uma linha já em version≥1 e
+        // estouraria stale state (mesma armadilha do clube, #19). Read e write
         // ficam na MESMA transação (ao contrário do antigo `@Transactional
         // suspend`, que trocava de thread e não segurava nada).
-        val entity = roundRepo.findById(round.number).orElse(null)
+        val entity = roundRepo.findById(round.matchday.toKey()).orElse(null)
         roundRepo.save(entity?.updateFrom(round, json) ?: round.toEntity(json))
     }
 
     @Transactional
-    fun start(number: Int): Boolean {
-        val entity = roundRepo.findById(number).orElse(null) ?: return false
+    fun start(matchday: Matchday): Boolean {
+        val entity = roundRepo.findById(matchday.toKey()).orElse(null) ?: return false
         if (entity.status != RoundStatusEnum.Scheduled) return false
         entity.status = RoundStatusEnum.InProgress
         roundRepo.save(entity) // @Version: a verificação ocorre no flush/commit
@@ -130,13 +131,12 @@ class RoundTransition(
 
     @Transactional
     fun finish(round: Round): Boolean {
-        val entity = roundRepo.findById(round.number).orElse(null) ?: return false
-        // `season` no guard é OBRIGATÓRIO: a PK é só `number`, então após a
-        // virada de temporada a linha 1 já é 1/(N+1) Scheduled. Um perdedor
-        // atrasado com a rodada da temporada ANTERIOR passaria pelo check de
-        // status (Scheduled != Finished) e sobrescreveria a temporada nova,
-        // aplicando efeitos em dobro. Comparar a temporada rejeita esse claim.
-        if (entity.season != round.season || entity.status == RoundStatusEnum.Finished) return false
+        val entity = roundRepo.findById(round.matchday.toKey()).orElse(null) ?: return false
+        // Desde a issue #125 a PK é o ENCAIXE (ano + semana + slot), que nunca
+        // se repete: a linha de uma temporada não é mais reescrita pela seguinte,
+        // e o antigo guard por `season` (que existia porque a PK era só o número
+        // da rodada) deixou de ser necessário. Basta o status.
+        if (entity.status == RoundStatusEnum.Finished) return false
         roundRepo.save(entity.updateFrom(round, json)) // grava placares + Finished
         return true
     }

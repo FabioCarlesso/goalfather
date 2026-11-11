@@ -12,8 +12,9 @@ import com.carlesso.goalfather.domain.model.Tiebreaker
  * (issue #124). Hoje elas servem de ponte: `generateRound` e
  * `applyRoundToStandings` já rodam sobre os geradores e o desempate genéricos,
  * e o [cupFormat] descreve no formato `Knockout` a chave que `drawCup` sorteia.
- * A troca do `PlayRoundService` para enxergar só `Competition` acontece junto
- * com o calendário semanal (issue #125).
+ * Desde o calendário semanal (issue #125) o plano da temporada (`seasonPlan`)
+ * monta uma `Competition` com estes formatos para cada liga e para a copa —
+ * é dela que o agendador tira o encaixe preferido.
  */
 
 /** Critérios da liga do jogo desde a Fase 1: pontos → saldo → gols pró. */

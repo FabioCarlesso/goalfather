@@ -1,34 +1,33 @@
 package com.carlesso.goalfather.adapter.out.persistence.mapper
 
+import com.carlesso.goalfather.adapter.out.persistence.entity.MatchdayKey
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundStatusEnum
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.GameWeek
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
-import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 fun RoundEntity.toDomain(json: Json): Round = Round(
-    number = number,
+    matchday = id.toDomain(),
     season = season,
     status = status.toDomain(),
     matches = json.decodeFromString(ListSerializer(RoundMatch.serializer()), matchesJson),
-    // Linha anterior à copa (issue #61) não tem `stage_json`: era rodada de
-    // liga, e sem copa a rodada de liga coincide com a data.
-    stage = stageJson?.let { json.decodeFromString(RoundStage.serializer(), it) } ?: RoundStage.League(number),
 )
 
 fun Round.toEntity(json: Json): RoundEntity = RoundEntity(
-    number = number,
+    id = matchday.toKey(),
     season = season,
     status = status.toEntity(),
     matchesJson = json.encodeToString(ListSerializer(RoundMatch.serializer()), matches),
-    stageJson = json.encodeToString(RoundStage.serializer(), stage),
 )
 
 /**
@@ -41,8 +40,12 @@ fun RoundEntity.updateFrom(round: Round, json: Json): RoundEntity = apply {
     season = round.season
     status = round.status.toEntity()
     matchesJson = json.encodeToString(ListSerializer(RoundMatch.serializer()), round.matches)
-    stageJson = json.encodeToString(RoundStage.serializer(), round.stage)
 }
+
+/** Encaixe → chave composta da tabela (issue #125). */
+fun Matchday.toKey(): MatchdayKey = MatchdayKey(isoYear = week.year, isoWeek = week.week, slot = slot.name)
+
+fun MatchdayKey.toDomain(): Matchday = Matchday(GameWeek(isoYear, isoWeek), Slot.valueOf(slot))
 
 fun StandingsEntity.toDomain(json: Json): Standings = Standings(
     season = season,

@@ -129,7 +129,7 @@ function OfferList({
               <span>
                 {describe(o)}
                 <span className="ml-2 text-xs text-text-muted">
-                  expira em {o.roundsLeft} rodada{o.roundsLeft === 1 ? '' : 's'}
+                  expira em {o.slotsLeft} data{o.slotsLeft === 1 ? '' : 's'} de jogo
                 </span>
               </span>
               <span className="flex gap-2">{actions(o)}</span>

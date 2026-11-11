@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.test.farMatchday
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
@@ -99,11 +100,11 @@ class LeagueStandingsMvcTest {
     fun `round current expoe a divisao de cada partida`() {
         // Outras suítes de integração também gravam rodadas "latest" no mesmo
         // contexto/H2 — salvar a própria rodada torna o teste imune à ordem.
-        val roundNumber = 9401
+        val matchday = farMatchday(9401)
         runBlocking {
             leagueRepo.saveRound(
                 Round(
-                    number = roundNumber,
+                    matchday = matchday,
                     season = 2026,
                     matches = listOf(
                         RoundMatch(9401101, ClubId(1), ClubId(2), "A", "B"),
@@ -115,7 +116,7 @@ class LeagueStandingsMvcTest {
         val token = register("mvc-round-${System.nanoTime()}")
 
         val round = json.parseToJsonElement(getJson("/api/league/round/current", token)).jsonObject
-        assertEquals(roundNumber, round.getValue("number").jsonPrimitive.int)
+        assertEquals(matchday.key, round.getValue("matchday").jsonObject.getValue("key").jsonPrimitive.content)
 
         val matches = round.getValue("matches").jsonArray.map { it.jsonObject }
         val divisions = matches.map {

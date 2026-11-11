@@ -4,6 +4,7 @@ import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Retirement
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.test.makePlayer
@@ -52,7 +53,7 @@ class RoundWebSocketHandlerTest {
 
     private fun session(open: AtomicBoolean, query: String = ""): WebSocketSession = mockk(relaxed = true) {
         every { id } returns "s1"
-        every { uri } returns URI("ws://localhost/ws/round/1$query")
+        every { uri } returns URI("ws://localhost/ws/slot/2026-W05-WEEKEND$query")
         every { isOpen } answers { open.get() }
     }
 
@@ -73,7 +74,7 @@ class RoundWebSocketHandlerTest {
         every { session.sendMessage(any()) } answers { frames += (firstArg<TextMessage>()).payload }
         every { session.close(any()) } answers { closed.countDown() }
         val useCase = object : PlayRoundUseCase {
-            override fun stream(roundNumber: Int) = roundStream(CountDownLatch(1))
+            override fun stream(matchday: Matchday) = roundStream(CountDownLatch(1))
         }
 
         RoundWebSocketHandler(useCase, json, pause = { pauses += it }).afterConnectionEstablished(session)
@@ -121,7 +122,7 @@ class RoundWebSocketHandlerTest {
         every { session.sendMessage(any()) } answers { frames.incrementAndGet() }
         every { session.close(any()) } answers { closed.countDown() }
         val useCase = object : PlayRoundUseCase {
-            override fun stream(roundNumber: Int) = roundStream(CountDownLatch(1))
+            override fun stream(matchday: Matchday) = roundStream(CountDownLatch(1))
         }
 
         val started = System.nanoTime()
@@ -136,7 +137,7 @@ class RoundWebSocketHandlerTest {
     fun `aba fechada no meio do stream - a rodada vai ate o fim no servidor, sem pacing`() {
         val completed = CountDownLatch(1)
         val useCase = object : PlayRoundUseCase {
-            override fun stream(roundNumber: Int) = roundStream(completed)
+            override fun stream(matchday: Matchday) = roundStream(completed)
         }
         val handler = RoundWebSocketHandler(useCase, json)
         val open = AtomicBoolean(true)
@@ -166,7 +167,7 @@ class RoundWebSocketHandlerTest {
             retirements = listOf(Retirement(ClubId(1), makePlayer(10, overall = 90), makePlayer(11, overall = 50))),
         )
         val useCase = object : PlayRoundUseCase {
-            override fun stream(roundNumber: Int) = flowOf<RoundEvent>(event)
+            override fun stream(matchday: Matchday) = flowOf<RoundEvent>(event)
         }
         val session = session(AtomicBoolean(true))
         every { session.sendMessage(capture(frame)) } answers { sent.countDown() }

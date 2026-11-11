@@ -48,8 +48,8 @@ class TransferOfferEntity(
     @Column(name = "amount", nullable = false)
     var amount: Long = 0,
 
-    @Column(name = "rounds_left", nullable = false)
-    var roundsLeft: Int = 0,
+    @Column(name = "slots_left", nullable = false)
+    var slotsLeft: Int = 0,
 
     @Column(name = "status", nullable = false, length = 16)
     var status: String = PENDING,

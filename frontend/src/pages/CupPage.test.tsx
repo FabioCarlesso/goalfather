@@ -6,6 +6,7 @@ import { renderWithProviders } from '../test/render'
 import { server } from '../test/setup'
 import { state } from '../mocks/seed'
 import { cupRound, recordCupRound } from '../mocks/cup'
+import { matchdayOf } from '../mocks/calendar'
 
 describe('CupPage (issue #61)', () => {
   const seeded = state.cup
@@ -33,7 +34,7 @@ describe('CupPage (issue #61)', () => {
   it('mostra placar, pênaltis e o campeão quando a copa acaba', async () => {
     let cup = state.cup!
     for (let date = 2; cup.currentPhase; date++) {
-      const round = cupRound(date, 2026, cup, () => 1)
+      const round = cupRound(matchdayOf(2026, date, 'MIDWEEK'), 2026, cup, () => 1)
       cup = recordCupRound(cup, {
         ...round,
         matches: round.matches.map((m) => ({

@@ -67,7 +67,8 @@ fun Player.effectiveOverall(): Double =
 fun drawInjuryDuration(rng: Random): Int = INJURY_DURATION.random(rng)
 
 /**
- * Seed determinística do desgaste de um clube numa rodada.
+ * Seed determinística do desgaste de um clube num encaixe — recebe o
+ * `Matchday.serial` (issue #125), único no jogo inteiro.
  *
  * Empacota os dois números em faixas DISJUNTAS do `Long` em vez de somá-los:
  * um `rodada * 1000 + clube` colide assim que um id de clube passa de 999
@@ -75,8 +76,8 @@ fun drawInjuryDuration(rng: Random): Int = INJURY_DURATION.random(rng)
  * elencos cansariam de forma idêntica). O deslocamento de 32 bits é injetivo
  * para qualquer id que caiba num `Int` sem sinal.
  */
-fun fitnessSeed(roundNumber: Int, clubId: ClubId): Long =
-    (roundNumber.toLong() shl 32) xor clubId.value
+fun fitnessSeed(matchdaySerial: Int, clubId: ClubId): Long =
+    (matchdaySerial.toLong() shl 32) xor clubId.value
 
 /**
  * Aplica UMA rodada de desgaste ao elenco: titulares cansam, reservas
@@ -91,14 +92,23 @@ fun fitnessSeed(roundNumber: Int, clubId: ClubId): Long =
  * O RNG é consumido apenas para titulares, na ordem do elenco: dois elencos
  * iguais com a mesma seed produzem exatamente o mesmo resultado.
  *
+ * **Lesão conta JOGOS DO CLUBE, não semanas (issue #125).** Com o calendário
+ * semanal, um clube pode passar encaixes sem jogar (a copa no meio de semana
+ * de quem já caiu, a pausa da data FIFA). A lesão só anda quando o clube
+ * entra em campo ([clubPlayed]): "fora por 3 jogos" são 3 jogos do clube,
+ * quantas semanas eles levarem. Stamina, ao contrário, é física — descansa
+ * todo encaixe.
+ *
  * @param starterIds quem entrou em campo — o resto do elenco descansa.
  * @param newInjuries lesões sofridas nesta rodada (id → duração sorteada).
+ * @param clubPlayed o clube jogou neste encaixe? Senão, as lesões não andam.
  */
 fun applyRoundFitness(
     squad: List<Player>,
     starterIds: Set<PlayerId>,
     rng: Random,
     newInjuries: Map<PlayerId, Int> = emptyMap(),
+    clubPlayed: Boolean = true,
 ): List<Player> = squad.map { player ->
     val stamina =
         if (player.id in starterIds) {
@@ -109,7 +119,8 @@ fun applyRoundFitness(
 
     player.copy(
         stamina = stamina,
-        availability = player.availability.advanceOneRound().withNewInjury(newInjuries[player.id]),
+        availability = (if (clubPlayed) player.availability.advanceOneRound() else player.availability)
+            .withNewInjury(newInjuries[player.id]),
     )
 }
 

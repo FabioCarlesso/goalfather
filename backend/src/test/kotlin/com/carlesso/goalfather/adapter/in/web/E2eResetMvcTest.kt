@@ -4,6 +4,7 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
 import com.carlesso.goalfather.adapter.out.persistence.repository.UserJpaRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.test.md
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
@@ -77,7 +78,7 @@ class E2eResetMvcTest {
         val freeBefore = get("/api/clubs/available", token).jsonArray.size
         mockMvc.post("/api/clubs/1/claim") { header("Authorization", "Bearer $token") }.andReturn().await()
         runBlocking {
-            leagueRepo.saveRound(Round(number = 7, season = 2026, matches = emptyList()))
+            leagueRepo.saveRound(Round(matchday = md(7), season = 2026, matches = emptyList()))
             val elite = leagueRepo.currentStandings().first()
             leagueRepo.saveStandings(elite.copy(rows = elite.rows.map { it.copy(points = 9) }))
         }
@@ -92,7 +93,7 @@ class E2eResetMvcTest {
         assertEquals(0, users.count(), "reset deveria apagar os usuários")
         val fresh = register("limpo")
         assertEquals(freeBefore, get("/api/clubs/available", fresh).jsonArray.size, "todos os clubes livres de novo")
-        assertEquals(1, get("/api/league/round/current", fresh).jsonObject.getValue("number").jsonPrimitive.int)
+        assertEquals("2026-W01-WEEKEND", get("/api/league/round/current", fresh).jsonObject.getValue("matchday").jsonObject.getValue("key").jsonPrimitive.content)
 
         val points = get("/api/league/standings", fresh).jsonArray
             .flatMap { it.jsonObject.getValue("rows").jsonArray }

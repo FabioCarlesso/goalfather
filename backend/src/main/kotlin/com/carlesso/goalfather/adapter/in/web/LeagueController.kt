@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.`in`.web
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.PlayRoundResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
+import com.carlesso.goalfather.application.port.`in`.CalendarUseCase
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.`in`.SeasonHistoryUseCase
 import com.carlesso.goalfather.application.port.out.CupRepository
@@ -36,8 +37,20 @@ class LeagueController(
     private val readiness: RoundReadinessUseCase,
     private val history: SeasonHistoryUseCase,
     private val cups: CupRepository,
+    private val calendar: CalendarUseCase,
     private val json: Json,
 ) {
+
+    /**
+     * Relógio do jogo (issue #125): o encaixe corrente (semana + meio/fim de
+     * semana) e, com `clubId`, o próximo jogo do clube e a competição dele.
+     * Sem encaixe no calendário devolve tudo ausente — estado normal de uma
+     * liga sem calendário, não erro.
+     */
+    @GetMapping("/calendar")
+    suspend fun getCalendar(@RequestParam(required = false) clubId: Long?): ResponseEntity<Any> =
+        json.okJson(calendar.calendar(clubId?.let(::ClubId)).toDto())
+
 
     /**
      * Chave da copa mata-mata (issue #61). Sem `season`, a da temporada mais
@@ -130,17 +143,17 @@ class LeagueController(
 
     @GetMapping("/round/current")
     suspend fun getCurrentRound(): ResponseEntity<Any> {
-        // A rodada "atual" é sempre a de maior número: após cada RoundFinished
-        // o PlayRoundService já cria a próxima (Scheduled), então a mais recente
-        // é a que está em aberto.
+        // O encaixe "atual" é sempre o mais adiante no tempo: após cada
+        // RoundFinished o PlayRoundService já gera o próximo (Scheduled), então
+        // o mais recente é o que está em aberto (issue #125).
         val current = leagueRepo.findLatest()
         return if (current == null) {
             ResponseEntity.status(404).body(
                 ErrorResponse(code = "ROUND_NOT_FOUND", message = "Nenhuma rodada disponivel"),
             )
         } else {
-            // kotlinx explícito: `stage` é `sealed` (liga × copa, issue #61) e
-            // o cliente desambigua pelo `type` — ver `okJson`.
+            // kotlinx explícito: o `stage` de cada partida é `sealed` (liga ×
+            // copa, issue #61) e o cliente desambigua pelo `type` — ver `okJson`.
             json.okJson(current.toDto())
         }
     }
@@ -167,7 +180,7 @@ class LeagueController(
     suspend fun playRound(): ResponseEntity<Any> =
         when (val result = readiness.start()) {
             is StartRoundResult.Started ->
-                ResponseEntity.ok(PlayRoundResponse(roundNumber = result.roundNumber))
+                ResponseEntity.ok(PlayRoundResponse(matchday = result.matchday.key))
 
             is StartRoundResult.NoRound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "ROUND_NOT_FOUND", message = "Nenhuma rodada disponivel"),
@@ -176,7 +189,7 @@ class LeagueController(
             is StartRoundResult.AlreadyFinished -> ResponseEntity.status(409).body(
                 ErrorResponse(
                     code = "ROUND_ALREADY_FINISHED",
-                    message = "Rodada ${result.roundNumber} já encerrada",
+                    message = "Encaixe ${result.matchday.key} já encerrado",
                 ),
             )
 

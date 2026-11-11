@@ -226,7 +226,7 @@ class TransferOfferConcurrencyIntegrationTest {
         val buyer = newHumanClub(970_040)
         val seller = newHumanClub(970_041)
         val pending = offer(buyer, seller, seller.lineMember(5), amount = 100_000_00)
-        val staleSweep = pending.copy(roundsLeft = 1).afterRound()
+        val staleSweep = pending.copy(slotsLeft = 1).afterSlot()
 
         assertIs<OfferResult.Success>(service.accept(pending.id, requesterId = seller.ownerId!!))
 

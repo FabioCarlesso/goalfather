@@ -12,6 +12,7 @@ import type {
   CupClub,
   Dismissal,
   TransferOffer,
+  Matchday,
   Player,
   MarketEntry,
   Position,
@@ -32,7 +33,15 @@ import {
   type EffectiveLineupFields,
   type SquadMember,
 } from './engine'
-import { canHoldCup, cupRound, drawCup, seasonCalendar } from './cup'
+import {
+  canHoldCup,
+  cupRound,
+  drawCup,
+  leagueCompetitionId,
+  leagueCompetitionName,
+  seasonCalendar,
+} from './cup'
+import { matchdaySerial, seasonMatchday } from './calendar'
 import {
   boardExpectations,
   boardsAfterRound,
@@ -250,22 +259,22 @@ export function applyPromotionRelegation(tables: Standings[]): Record<number, nu
 // Round-robin (Berger) POR DIVISÃO, mesclado numa rodada global. Para 6
 // clubes por divisão teremos 5 rodadas de 3 partidas por divisão.
 
-// `roundNumber` é a DATA do calendário e `matchday` a rodada da LIGA (issue
-// #61): com a copa intercalada elas se descolam. O Berger gira pela matchday;
-// o matchId usa a data, como no backend.
-function generateRound(roundNumber: number, season: number, matchday: number = roundNumber): Round {
+// `matchday` é o ENCAIXE do calendário semanal (issue #125) e `leagueRound` a
+// rodada da LIGA: o Berger gira pela rodada; o matchId usa o serial do
+// encaixe, como no backend. Cada partida carrega o `stage` e a competição.
+function generateRound(matchday: Matchday, season: number, leagueRound: number): Round {
   const divisions = divisionAssignments
   const matches: RoundMatch[] = []
 
   for (const division of divisionsInPlay(divisions)) {
     const ids = clubsOfDivision(divisions, division).sort((a, b) => a - b)
     const n = ids.length
-    if (matchday > n - 1) continue // turno desta divisão já terminou
+    if (leagueRound > n - 1) continue // turno desta divisão já terminou
 
     // Algoritmo: clube de menor id fixo, os outros rotacionam (estilo Berger).
     const fixed = ids[0]!
     const rotating = ids.slice(1)
-    const offset = (matchday - 1) % (n - 1)
+    const offset = (leagueRound - 1) % (n - 1)
     const rotated = [...rotating.slice(offset), ...rotating.slice(0, offset)]
     const order = [fixed, ...rotated]
 
@@ -273,9 +282,9 @@ function generateRound(roundNumber: number, season: number, matchday: number = r
       const homeId = order[i]!
       const awayId = order[n - 1 - i]!
       matches.push({
-        // rodada × 1000 + divisão × 100 + índice — fórmula do backend
-        // (RoundFixturesGenerator), única entre divisões da mesma rodada.
-        matchId: roundNumber * 1000 + division * 100 + i + 1,
+        // encaixe × 1000 + divisão × 100 + índice — fórmula do backend
+        // (RoundFixturesGenerator), única no jogo inteiro.
+        matchId: matchdaySerial(matchday) * 1000 + division * 100 + i + 1,
         homeClubId: homeId,
         awayClubId: awayId,
         homeClubName: clubMeta[homeId]!.name,
@@ -285,24 +294,31 @@ function generateRound(roundNumber: number, season: number, matchday: number = r
         awayGoals: 0,
         minute: 0,
         division,
+        stage: { type: 'League', matchday: leagueRound },
+        competitionId: leagueCompetitionId(division),
+        competitionName: leagueCompetitionName(division),
       })
     }
   }
-  return { number: roundNumber, season, status: 'Scheduled', stage: { type: 'League', matchday }, matches }
+  return { matchday, season, status: 'Scheduled', matches }
 }
 
 // ─── Atualização da tabela após uma rodada ───────────────────────────────
 // Aplica a rodada à tabela de UMA divisão: partidas de clubes fora de
 // `current.rows` são ignoradas, então a MESMA rodada global pode ser
 // aplicada a cada tabela (mesma semântica do backend, issue #47).
-// Rodada de COPA não mexe na tabela (issue #61), e a tabela conta a rodada
-// de liga (`matchday`), não a data — mesma regra do backend.
+// Jogo de COPA não mexe na tabela (issue #61) — filtrado POR PARTIDA desde o
+// encaixe misto (issue #125) — e a tabela conta a rodada de liga, não o
+// encaixe. Encaixe sem jogo desta tabela devolve a tabela intacta.
 export function applyRoundToStandings(round: Round, current: Standings): Standings {
-  if (round.stage.type === 'Cup') return current
-  const matchday = round.stage.matchday
   const byId = new Map(current.rows.map((r) => [r.clubId, { ...r }]))
+  const leagueMatches = round.matches.filter(
+    (m) => m.stage.type === 'League' && byId.has(m.homeClubId) && byId.has(m.awayClubId),
+  )
+  const matchday = Math.max(0, ...leagueMatches.map((m) => (m.stage.type === 'League' ? m.stage.matchday : 0)))
+  if (leagueMatches.length === 0) return current
 
-  for (const m of round.matches) {
+  for (const m of leagueMatches) {
     if (m.status !== 'Finished') continue
     const home = byId.get(m.homeClubId)
     const away = byId.get(m.awayClubId)
@@ -378,8 +394,48 @@ export function roundTrainingReports(myTraining: TrainingReport | null): Trainin
 
 /** Calendário da temporada: as rodadas de liga com as fases da copa intercaladas. */
 export function calendar(): RoundStage[] {
-  return seasonCalendar(SEASON_ROUNDS, state.cup?.phases.map((p) => p.phase) ?? [])
+  return calendarFor(state.cup)
 }
+
+function calendarFor(cup: Cup | null): RoundStage[] {
+  return seasonCalendar(SEASON_ROUNDS, cup?.phases.map((p) => p.phase) ?? [])
+}
+
+/**
+ * As datas da temporada já com encaixe (issue #125): liga no domingo, copa na
+ * quarta, espalhadas pelo ano — ver `./calendar`.
+ */
+export function seasonSlots(season: number, cup: Cup | null = state.cup): Array<{ stage: RoundStage; matchday: Matchday }> {
+  const stages = calendarFor(cup)
+  return stages.map((stage, i) => ({
+    stage,
+    matchday: seasonMatchday(season, i, stages.length, stage.type === 'League' ? 'WEEKEND' : 'MIDWEEK'),
+  }))
+}
+
+/** Os jogos de uma data da temporada: rodada de liga ou fase corrente da copa. */
+function roundOf(slot: { stage: RoundStage; matchday: Matchday }, season: number, cup: Cup | null): Round {
+  if (slot.stage.type === 'Cup' && cup) return cupRound(slot.matchday, season, cup, divisionOf)
+  return generateRound(slot.matchday, season, slot.stage.type === 'League' ? slot.stage.matchday : 1)
+}
+
+/** Os jogos de uma data da temporada corrente, com a copa como ela está agora. */
+export function slotRound(slot: { stage: RoundStage; matchday: Matchday }, season: number): Round {
+  return roundOf(slot, season, state.cup)
+}
+
+/** Posição (0-based) do encaixe corrente na temporada; -1 se não está nela. */
+export function currentSlotIndex(): number {
+  const { matchday, season } = state.currentRound
+  return seasonSlots(season).findIndex((s) => s.matchday.key === matchday.key)
+}
+
+/** O encaixe corrente é o último da temporada? Então ela vira ao terminá-lo. */
+export function isLastSlotOfSeason(): boolean {
+  return currentSlotIndex() >= seasonSlots(state.currentRound.season).length - 1
+}
+
+const initialCup = drawSeasonCup(2026)
 
 // Estado mutável — mocks alteram aqui para simular persistência durante a sessão.
 export const state = {
@@ -389,8 +445,8 @@ export const state = {
   // Temporadas encerradas, da mais recente para a mais antiga (issue #60).
   history: [] as SeasonRecord[],
   // Copa da temporada corrente (issue #61).
-  cup: drawSeasonCup(2026) as Cup | null,
-  currentRound: generateRound(1, 2026) as Round,
+  cup: initialCup as Cup | null,
+  currentRound: roundOf(seasonSlots(2026, initialCup)[0]!, 2026, initialCup) as Round,
   // Metas da diretoria da temporada corrente, por clube (issue #62) —
   // preenchidas logo abaixo, porque a força do clube 1 sai de `state.clubs`.
   boards: {} as Record<number, MockBoard>,
@@ -398,12 +454,12 @@ export const state = {
   // estado de sessão, como o resto do mock.
   offers: [] as TransferOffer[],
   nextOfferId: 1,
-  /** Próxima data do calendário — rodada de liga ou fase de copa. */
+  /** Próximo encaixe do calendário — rodada de liga ou fase de copa (issue #125). */
   nextRound: (): Round => {
-    const { number, season } = state.currentRound
-    const next = calendar()[number]
-    if (next?.type === 'Cup' && state.cup) return cupRound(number + 1, season, state.cup, divisionOf)
-    return generateRound(number + 1, season, next?.type === 'League' ? next.matchday : number + 1)
+    const { season } = state.currentRound
+    const slots = seasonSlots(season)
+    const next = slots[currentSlotIndex() + 1] ?? slots[slots.length - 1]!
+    return roundOf(next, season, state.cup)
   },
 }
 
@@ -539,11 +595,11 @@ export const TOKEN_PREFIX = 'mock-token-'
 // ─── Prontidão de rodada (issue #20) ──────────────────────────────────────
 // Espelha a tabela `round_readiness`: ids de usuário prontos por número de
 // rodada. Estado de sessão (não persistido) — o mock é descartável.
-export const roundReadiness: Record<number, Set<number>> = {}
+export const roundReadiness: Record<string, Set<number>> = {}
 
 // Instante (ms) do primeiro "pronto" de cada rodada — ancora o timeout do
 // escape hatch (issue #45), espelhando `MIN(ready_at)` do backend.
-const roundFirstReadyAt: Record<number, number> = {}
+const roundFirstReadyAt: Record<string, number> = {}
 
 // Timeout do escape hatch no mock (issue #45). Curto de propósito (30s) para o
 // comportamento ser demonstrável/E2E-ável sem esperar os 2min do backend real;
@@ -562,8 +618,8 @@ export function managers(): MockUser[] {
  * simular o backend, então calcula `allReady`/`canStart` aqui — o `playRound`
  * de `handlers.ts` lê `canStart` daqui, e a app só lê os campos da resposta.
  */
-export function readinessStatus(roundNumber: number): ReadinessStatus {
-  const ready = roundReadiness[roundNumber] ?? new Set<number>()
+export function readinessStatus(matchday: string): ReadinessStatus {
+  const ready = roundReadiness[matchday] ?? new Set<number>()
   const mgrs = managers()
   const pending = mgrs.filter((u) => !ready.has(u.id))
 
@@ -572,7 +628,7 @@ export function readinessStatus(roundNumber: number): ReadinessStatus {
   // `ready.size > 0` é essencial: sem ele, um `firstAt` remanescente de uma
   // rodada anterior de mesmo número (rollover de temporada volta à rodada 1)
   // faria uma rodada nova, sem ninguém pronto, aparecer como `timedOut`.
-  const firstAt = roundFirstReadyAt[roundNumber]
+  const firstAt = roundFirstReadyAt[matchday]
   const timerRunning = pending.length > 0 && ready.size > 0 && firstAt != null
   const secondsRemaining = timerRunning
     ? Math.max(0, Math.ceil((firstAt + READINESS_TIMEOUT_MS - Date.now()) / 1000))
@@ -585,7 +641,7 @@ export function readinessStatus(roundNumber: number): ReadinessStatus {
   const allReady = totalCount > 0 && readyCount >= totalCount
 
   return {
-    roundNumber,
+    matchday,
     readyCount,
     totalCount,
     pendingUsernames: pending.map((u) => u.username),
@@ -596,19 +652,19 @@ export function readinessStatus(roundNumber: number): ReadinessStatus {
   }
 }
 
-export function markRoundReady(roundNumber: number, userId: number): void {
+export function markRoundReady(matchday: string, userId: number): void {
   // Só técnicos (donos de clube) sinalizam prontidão — parity com o guard do
   // backend (issue #20, ponto #6); evita marcar usuário sem clube.
   if (!managers().some((u) => u.id === userId)) return
-  ;(roundReadiness[roundNumber] ??= new Set<number>()).add(userId)
-  roundFirstReadyAt[roundNumber] ??= Date.now()
+  ;(roundReadiness[matchday] ??= new Set<number>()).add(userId)
+  roundFirstReadyAt[matchday] ??= Date.now()
 }
 
-export function resetRoundReadiness(roundNumber: number): void {
-  delete roundReadiness[roundNumber]
+export function resetRoundReadiness(matchday: string): void {
+  delete roundReadiness[matchday]
   // Limpa também a âncora do timeout: senão o timestamp vaza para uma futura
   // rodada de mesmo número (rollover de temporada reusa a rodada 1).
-  delete roundFirstReadyAt[roundNumber]
+  delete roundFirstReadyAt[matchday]
 }
 
 export function userIdFromAuthHeader(header: string | null): number | null {
@@ -710,7 +766,7 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
   }
   state.standings = freshStandings(season, divisionAssignments)
   state.cup = drawSeasonCup(season)
-  state.currentRound = generateRound(1, season)
+  state.currentRound = roundOf(seasonSlots(season)[0]!, season, state.cup)
   // Metas da temporada nova (issue #62), com o elenco já envelhecido e os
   // clubes já nas divisões novas — mesma ordem do backend.
   state.boards = boardExpectations(season, boardClubs())

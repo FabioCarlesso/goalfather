@@ -17,6 +17,7 @@ import com.carlesso.goalfather.domain.rules.STAMINA_MATCH_FLOOR
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
+import com.carlesso.goalfather.test.md
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -65,7 +66,7 @@ class TrainingRoundEffectsTest {
         .copy(squad = (101L..111L).map { makePlayer(it, overall = 70, age = 20, stamina = 50) })
 
     private val round = Round(
-        number = 1,
+        matchday = md(1),
         season = 2026,
         matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
     )
@@ -80,7 +81,7 @@ class TrainingRoundEffectsTest {
     )
 
     private fun stubRound(status: RoundStatus = RoundStatus.Scheduled) {
-        coEvery { leagueRepo.findRound(1) } returns round.copy(status = status)
+        coEvery { leagueRepo.findRound(md(1)) } returns round.copy(status = status)
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(ClubId(1)) } returns home
         coEvery { clubRepo.findById(ClubId(2)) } returns away
@@ -103,7 +104,7 @@ class TrainingRoundEffectsTest {
         val savedClubs = mutableListOf<Club>()
         coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
-        val finished = service.stream(1).toList()
+        val finished = service.stream(md(1)).toList()
             .filterIsInstance<RoundEvent.RoundFinished>()
             .single()
 
@@ -125,7 +126,7 @@ class TrainingRoundEffectsTest {
         val savedClubs = mutableListOf<Club>()
         coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
-        service.stream(1).toList()
+        service.stream(md(1)).toList()
 
         val trained = savedClubs.last { it.id == ClubId(1) }
         val rival = savedClubs.last { it.id == ClubId(2) }
@@ -152,7 +153,7 @@ class TrainingRoundEffectsTest {
         val savedClubs = mutableListOf<Club>()
         coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
-        val finished = service.stream(1).toList()
+        val finished = service.stream(md(1)).toList()
             .filterIsInstance<RoundEvent.RoundFinished>()
             .single()
 
@@ -175,7 +176,7 @@ class TrainingRoundEffectsTest {
         // efeitos não são reaplicados — nem o treino.
         stubRound(status = RoundStatus.Finished)
 
-        val finished = service.stream(1).toList()
+        val finished = service.stream(md(1)).toList()
             .filterIsInstance<RoundEvent.RoundFinished>()
             .single()
 

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { Badge, type BadgeTone } from '../ui/Badge'
 import { Button } from '../ui/Button'
-import { stageTitle } from '../../domain/cup'
+import { formatMatchday, primaryStage, roundTitle } from '../../domain/calendar'
 import type { RoundMatch, Standings } from '../../domain/types'
 import type { LiveMatchState, RoundOutcome } from '../../api/queries/useRoundStream'
 import { BoardReviewCard } from './BoardReviewCard'
@@ -47,6 +47,9 @@ export function RoundSummary({
   const review = season?.boardReviews?.find((r) => r.clubId === myClubId)
   const fired = review?.verdict.type === 'Fired'
   const table = myDivisionTable(outcome.standings, myClubId)
+  // Liga e copa podem dividir o encaixe (issue #125): o card de tabela fala da
+  // rodada de liga, se houve uma; senão, da fase da copa.
+  const stage = primaryStage(played)
 
   return (
     <section
@@ -62,7 +65,7 @@ export function RoundSummary({
             Resumo da rodada
           </h2>
           <p className="text-sm text-text-muted">
-            {stageTitle(played.stage)} · Temporada {played.season}
+            {roundTitle(played)} · {formatMatchday(played.matchday)} · Temporada {played.season}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -94,11 +97,11 @@ export function RoundSummary({
           <MyMatchResult match={myMatch} state={myMatchState} myClubId={myClubId} />
         ) : (
           <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm text-text-muted">
-            Seu clube não jogou nesta data.
+            Seu clube não jogou neste encaixe.
           </div>
         )}
-        {table && (
-          <StandingsFinanceCard table={table} myClubId={myClubId} stage={played.stage} finance={outcome.finance} />
+        {table && stage && (
+          <StandingsFinanceCard table={table} myClubId={myClubId} stage={stage} finance={outcome.finance} />
         )}
         {outcome.training && <TrainingCard report={outcome.training} />}
       </div>

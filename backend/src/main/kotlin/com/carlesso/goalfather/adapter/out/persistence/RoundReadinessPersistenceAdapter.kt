@@ -4,6 +4,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessEnti
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundReadinessJpaRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.UserId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,25 +25,31 @@ class RoundReadinessPersistenceAdapter(
     private val repo: RoundReadinessJpaRepository,
 ) : RoundReadinessRepository {
 
-    override suspend fun markReady(roundNumber: Int, userId: UserId) {
+    override suspend fun markReady(matchday: Matchday, userId: UserId) {
         withContext(Dispatchers.IO) {
             // save com PK existente apenas atualiza ready_at — idempotente.
-            repo.save(RoundReadinessEntity(RoundReadinessId(roundNumber, userId.value)))
+            repo.save(RoundReadinessEntity(matchday.readinessId(userId)))
         }
     }
 
-    override suspend fun readyUserIds(roundNumber: Int): Set<UserId> = withContext(Dispatchers.IO) {
-        repo.findAllByIdRoundNumber(roundNumber).map { UserId(it.id.userId) }.toSet()
+    override suspend fun readyUserIds(matchday: Matchday): Set<UserId> = withContext(Dispatchers.IO) {
+        rows(matchday).map { UserId(it.id.userId) }.toSet()
     }
 
-    override suspend fun firstReadyAt(roundNumber: Int): Instant? = withContext(Dispatchers.IO) {
-        repo.findFirstReadyAt(roundNumber)
+    override suspend fun firstReadyAt(matchday: Matchday): Instant? = withContext(Dispatchers.IO) {
+        repo.findFirstReadyAt(matchday.week.year, matchday.week.week, matchday.slot.name)
     }
 
-    override suspend fun reset(roundNumber: Int) {
+    override suspend fun reset(matchday: Matchday) {
         withContext(Dispatchers.IO) {
-            val rows = repo.findAllByIdRoundNumber(roundNumber)
+            val rows = rows(matchday)
             if (rows.isNotEmpty()) repo.deleteAll(rows)
         }
     }
+
+    private fun rows(matchday: Matchday): List<RoundReadinessEntity> =
+        repo.findAllByIdIsoYearAndIdIsoWeekAndIdSlot(matchday.week.year, matchday.week.week, matchday.slot.name)
+
+    private fun Matchday.readinessId(userId: UserId) =
+        RoundReadinessId(isoYear = week.year, isoWeek = week.week, slot = slot.name, userId = userId.value)
 }

@@ -1,11 +1,22 @@
 package com.carlesso.goalfather.adapter.`in`.web
 
 import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
+import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
+import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
+import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.test.farMatchday
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -32,6 +43,8 @@ class LeagueCupMvcTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var json: Json
+    @Autowired private lateinit var leagueRepo: LeagueRepository
+    @Autowired private lateinit var roundJpa: RoundJpaRepository
 
     private fun MvcResult.await(): MockHttpServletResponse =
         if (request.isAsyncStarted) mockMvc.perform(asyncDispatch(this)).andReturn().response
@@ -87,13 +100,32 @@ class LeagueCupMvcTest {
     }
 
     @Test
-    fun `rodada corrente traz o stage com o discriminador do contrato`() {
-        val response = get("/api/league/round/current", token())
-        assertEquals(200, response.status)
-        val stage = json.parseToJsonElement(response.contentAsString).jsonObject.getValue("stage").jsonObject
-        // Sem o `type` o cliente não distingue rodada de liga de fase de copa —
-        // é o que o Jackson entregaria para um `ResponseEntity<Any>`.
-        assertTrue(stage.getValue("type").jsonPrimitive.content in setOf("League", "Cup"))
+    fun `cada partida do encaixe corrente traz o stage com o discriminador do contrato`() {
+        // Encaixe próprio "lá na frente": outras suítes gravam encaixes no mesmo H2.
+        val matchday = farMatchday(9990)
+        val match = RoundMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup(KnockoutPhase.FINAL))
+        runBlocking { leagueRepo.saveRound(Round(matchday, 2026, matches = listOf(match))) }
+        try {
+            val response = get("/api/league/round/current", token())
+            assertEquals(200, response.status)
+            val round = json.parseToJsonElement(response.contentAsString).jsonObject
+            assertEquals(matchday.key, round.getValue("matchday").jsonObject.getValue("key").jsonPrimitive.content)
+            val first = round.getValue("matches").jsonArray.first().jsonObject
+            val stage = first.getValue("stage").jsonObject
+            // Sem o `type` o cliente não distingue rodada de liga de fase de copa —
+            // é o que o Jackson entregaria para um `ResponseEntity<Any>`.
+            assertEquals("Cup", stage.getValue("type").jsonPrimitive.content)
+            assertEquals("liga-d1", first.getValue("competitionId").jsonPrimitive.content)
+
+            // Relógio do jogo (issue #125): encaixe corrente + próximo jogo do clube.
+            val calendar = json.parseToJsonElement(get("/api/league/calendar?clubId=1", token()).contentAsString).jsonObject
+            assertEquals(matchday.key, calendar.getValue("current").jsonObject.getValue("key").jsonPrimitive.content)
+            val next = calendar.getValue("nextMatch").jsonObject
+            assertEquals(matchday.key, next.getValue("matchday").jsonObject.getValue("key").jsonPrimitive.content)
+            assertEquals(1L, next.getValue("match").jsonObject.getValue("matchId").jsonPrimitive.long)
+        } finally {
+            roundJpa.deleteById(matchday.toKey())
+        }
     }
 
     @Test

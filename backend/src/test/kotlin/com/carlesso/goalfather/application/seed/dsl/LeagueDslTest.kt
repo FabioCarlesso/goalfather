@@ -1,5 +1,10 @@
 package com.carlesso.goalfather.application.seed.dsl
 
+import com.carlesso.goalfather.domain.model.GameWeek
+import com.carlesso.goalfather.domain.model.Matchday
+import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.domain.model.Slot
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.ClubId
@@ -81,52 +86,28 @@ class LeagueDslTest {
     }
 
     @Test
-    fun `RoundBuilder resolve nomes, divisao e numera partidas`() {
-        val clubs = listOf(
-            simpleClub(1, "Casa"),
-            simpleClub(6, "Fora"),
-            simpleClub(2, "A"),
-            simpleClub(5, "B"),
-        ).associateBy { it.id.value }
+    fun `primeiro encaixe sai do calendario semanal, nao de rodada descrita a mao`() {
+        val league = league(season = 2026) {
+            division(1) {
+                club(1, "D1 A") { cash = 1 }
+                club(2, "D1 B") { cash = 1 }
+            }
+            division(2) {
+                club(7, "D2 A") { cash = 1 }
+                club(8, "D2 B") { cash = 1 }
+            }
+        }
 
-        val round = RoundBuilder(1).apply {
-            match(homeId = 1, awayId = 6)
-            match(homeId = 2, awayId = 5)
-        }.build(season = 2026, clubById = clubs)
-
-        assertEquals(1, round.number)
+        val round = assertNotNull(league.firstRound())
+        // 1º domingo de 2026 (04/01): o agendador abre a temporada pela liga.
+        assertEquals(Matchday(GameWeek(2026, 1), Slot.WEEKEND), round.matchday)
         assertEquals(2026, round.season)
         assertEquals(RoundStatus.Scheduled, round.status)
-        // matchId = rodada × 1000 + divisão × 100 + índice (fórmula do gerador).
-        assertEquals(1101L, round.matches[0].matchId)
-        assertEquals(1102L, round.matches[1].matchId)
-        assertEquals("Casa", round.matches[0].homeClubName)
-        assertEquals("Fora", round.matches[0].awayClubName)
-        assertEquals(Division.FIRST, round.matches[0].division)
-    }
-
-    @Test
-    fun `RoundBuilder numera partidas por divisao e rejeita confronto entre divisoes`() {
-        val clubs = mapOf(
-            1L to simpleClub(1, "D1 A"),
-            2L to simpleClub(2, "D1 B"),
-            7L to simpleClub(7, "D2 A", division = 2),
-            8L to simpleClub(8, "D2 B", division = 2),
-        )
-
-        val round = RoundBuilder(1).apply {
-            match(homeId = 1, awayId = 2)
-            match(homeId = 7, awayId = 8)
-        }.build(season = 2026, clubById = clubs)
-
-        // Índice reinicia por divisão: 1101 (div 1) e 1201 (div 2).
-        assertEquals(listOf(1101L, 1201L), round.matches.map { it.matchId })
-        assertEquals(Division(2), round.matches[1].division)
-
-        assertFailsWith<IllegalArgumentException> {
-            RoundBuilder(1).apply { match(homeId = 1, awayId = 7) }
-                .build(season = 2026, clubById = clubs)
-        }
+        // Um jogo por divisão; matchId = serial do encaixe × 1000 + divisão × 100 + índice.
+        assertEquals(listOf(Division(1), Division(2)), round.matches.map { it.division })
+        val serial = round.matchday.serial * 1000L
+        assertEquals(listOf(serial + 101, serial + 201), round.matches.map { it.matchId })
+        assertTrue(round.matches.all { it.stage == RoundStage.League(1) })
     }
 
     @Test
@@ -145,14 +126,12 @@ class LeagueDslTest {
             market {
                 player(101, "Livre", price = 50) { position = Position.MF; overall = 80 }
             }
-            round(1) { match(homeId = 1, awayId = 2) }
         }
 
         assertEquals(2026, league.season)
         assertEquals(listOf("Casa", "Fora"), league.clubs.map { it.name })
         assertEquals(1, league.market.size)
-        assertEquals(1, league.rounds.size)
-        assertEquals("Fora", league.rounds.first().matches.first().awayClubName)
+        assertEquals("Fora", assertNotNull(league.firstRound()).matches.single().awayClubName)
 
         // Divisão única → uma tabela, sem zona de promoção nem rebaixamento.
         val standings = league.initialStandings().single()
@@ -193,17 +172,13 @@ class LeagueDslTest {
         assertEquals(0, tables[1].relegationSpots)
     }
 
-    /** Clube mínimo para montar mapas do RoundBuilder sem passar por ClubBuilder. */
-    private fun simpleClub(id: Long, name: String, division: Int = 1) =
-        ClubBuilder(id, name, Division(division)).build()
-
     @Test
     fun `liga com 4 ou mais clubes nasce com a copa sorteada (issue 61)`() {
         val league = league(season = 2026) {
             for (id in 1L..6L) club(id, "C$id") { cash = 1 }
         }
         val cup = league.initialCup()
-        kotlin.test.assertNotNull(cup)
+        assertNotNull(cup)
         assertEquals(2026, cup.season)
         // 6 clubes → chave de 8 (quartas) com 2 folgas; o mesmo seed sorteia igual.
         assertEquals(KnockoutPhase.QUARTER_FINALS, cup.stages.single().phase)

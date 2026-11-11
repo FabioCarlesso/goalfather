@@ -61,9 +61,9 @@ function InjuryBadge({ availability }: { availability: Availability }) {
   return (
     <span
       className="ml-2 rounded bg-orange-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300"
-      title={`Lesionado — indisponível por mais ${roundsOut} rodada(s)`}
+      title={`Lesionado — indisponível por mais ${roundsOut} jogo(s) do clube`}
     >
-      🚑 LESIONADO · {roundsOut} rod.
+      🚑 LESIONADO · {roundsOut} jogo{roundsOut === 1 ? '' : 's'}
     </span>
   )
 }

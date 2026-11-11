@@ -49,12 +49,12 @@ describe('regras de proposta do mock (issue #63)', () => {
 
   const offer: TransferOffer = {
     id: 7, buyerClubId: 1, buyerClubName: 'A', sellerClubId: 2, sellerClubName: 'B',
-    playerId: 5, playerName: 'P5', amount: 500_000_00, roundsLeft: 2, status: { type: 'Pending' },
+    playerId: 5, playerName: 'P5', amount: 500_000_00, slotsLeft: 2, status: { type: 'Pending' },
   }
 
   it('o prazo anda uma rodada e a última expira por DEADLINE', () => {
-    expect(afterRound(offer)).toMatchObject({ roundsLeft: 1, status: { type: 'Pending' } })
-    expect(afterRound(afterRound(offer))).toMatchObject({ roundsLeft: 0, status: { type: 'Expired', reason: 'DEADLINE' } })
+    expect(afterRound(offer)).toMatchObject({ slotsLeft: 1, status: { type: 'Pending' } })
+    expect(afterRound(afterRound(offer))).toMatchObject({ slotsLeft: 0, status: { type: 'Expired', reason: 'DEADLINE' } })
     const accepted: TransferOffer = { ...offer, status: { type: 'Accepted' } }
     expect(afterRound(accepted)).toBe(accepted)
   })

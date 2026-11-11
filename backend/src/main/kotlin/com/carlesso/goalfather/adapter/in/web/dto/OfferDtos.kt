@@ -37,7 +37,7 @@ data class TransferOfferDto(
     val playerId: Long,
     val playerName: String,
     val amount: Long,
-    val roundsLeft: Int,
+    val slotsLeft: Int,
     val status: OfferStatus,
 )
 
@@ -98,7 +98,7 @@ sealed interface TransferOfferResultDto {
 
     @Serializable
     @SerialName("RoundInProgress")
-    data class RoundInProgress(val roundNumber: Int) : TransferOfferResultDto
+    data class RoundInProgress(val matchday: String) : TransferOfferResultDto
 
     @Serializable
     @SerialName("Conflict")
@@ -114,7 +114,7 @@ fun TransferOffer.toDto(): TransferOfferDto = TransferOfferDto(
     playerId = playerId.value,
     playerName = playerName,
     amount = amount.cents,
-    roundsLeft = roundsLeft,
+    slotsLeft = slotsLeft,
     status = status,
 )
 
@@ -134,6 +134,6 @@ fun OfferResult.Rejection.toDto(): TransferOfferResultDto = when (this) {
     is OfferResult.OfferAlreadyPending -> TransferOfferResultDto.OfferAlreadyPending(offerId.value)
     is OfferResult.OfferNotPending -> TransferOfferResultDto.OfferNotPending(offerId.value, status)
     is OfferResult.OfferExpired -> TransferOfferResultDto.OfferExpired(offerId.value, reason)
-    is OfferResult.RoundInProgress -> TransferOfferResultDto.RoundInProgress(roundNumber)
+    is OfferResult.RoundInProgress -> TransferOfferResultDto.RoundInProgress(matchday.key)
     is OfferResult.Conflict -> TransferOfferResultDto.Conflict(clubId.value)
 }

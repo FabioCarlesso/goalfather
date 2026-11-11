@@ -15,9 +15,10 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.OfferResult
-import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_ROUNDS
+import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_SLOTS
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
+import com.carlesso.goalfather.test.md
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -53,7 +54,7 @@ class TransferOfferServiceTest {
         playerId = target.id,
         playerName = target.name,
         amount = 400_000_00.cents,
-        roundsLeft = OFFER_DEADLINE_ROUNDS,
+        slotsLeft = OFFER_DEADLINE_SLOTS,
     )
 
     private fun stubClubs(vararg clubs: Club) {
@@ -61,7 +62,7 @@ class TransferOfferServiceTest {
     }
 
     private fun stubRound(status: RoundStatus) {
-        coEvery { leagueRepo.findLatest() } returns Round(number = 4, season = 2026, status = status, matches = emptyList())
+        coEvery { leagueRepo.findLatest() } returns Round(matchday = md(4), season = 2026, status = status, matches = emptyList())
     }
 
     // ─── create ─────────────────────────────────────────────────────────
@@ -78,7 +79,7 @@ class TransferOfferServiceTest {
         assertIs<OfferResult.Success>(result)
         assertEquals(OfferId(99), result.offer.id)
         assertEquals(OfferStatus.Pending, created.captured.status)
-        assertEquals(OFFER_DEADLINE_ROUNDS, created.captured.roundsLeft)
+        assertEquals(OFFER_DEADLINE_SLOTS, created.captured.slotsLeft)
         assertEquals(target.name, created.captured.playerName)
         assertEquals("Vendedor", created.captured.sellerClubName)
     }
@@ -167,7 +168,7 @@ class TransferOfferServiceTest {
         stubRound(RoundStatus.InProgress)
         coEvery { offerRepo.findById(pending.id) } returns pending
 
-        assertEquals(OfferResult.RoundInProgress(4), service.accept(pending.id, requesterId = sellerOwner))
+        assertEquals(OfferResult.RoundInProgress(md(4)), service.accept(pending.id, requesterId = sellerOwner))
         coVerify(exactly = 0) { offerRepo.completeTransfer(any(), any(), any(), any()) }
     }
 

@@ -164,5 +164,5 @@ private fun TransferOfferJpaRepository.saveIfPending(offer: TransferOffer): Int 
         id = offer.id.value,
         status = offer.status.column(),
         expiryReason = offer.status.expiryReasonColumn(),
-        roundsLeft = offer.roundsLeft,
+        slotsLeft = offer.slotsLeft,
     )

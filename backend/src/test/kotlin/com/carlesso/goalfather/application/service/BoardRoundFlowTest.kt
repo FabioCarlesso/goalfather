@@ -26,6 +26,7 @@ import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.INITIAL_BOARD_CONFIDENCE
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
+import com.carlesso.goalfather.test.md
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -79,8 +80,8 @@ class BoardRoundFlowTest {
     )
 
     private fun stubRound(clubs: List<Club>, vararg standings: Standings) {
-        coEvery { leagueRepo.findRound(1) } returns Round(
-            number = 1,
+        coEvery { leagueRepo.findRound(md(1)) } returns Round(
+            matchday = md(1),
             season = 2026,
             matches = listOf(RoundMatch(1001, ClubId(100), ClubId(101), "X", "Y")),
         )
@@ -101,7 +102,7 @@ class BoardRoundFlowTest {
         val clubs = (1L..4L).map { makeClub(id = it, name = "C$it").copy(board = titleBoard()) }
         stubRound(clubs, table(1, 2, 3, 4))
 
-        service.stream(1).toList()
+        service.stream(md(1)).toList()
 
         // Líder com meta de título: na meta, sobe. Lanterna com a mesma meta:
         // 3 posições abaixo, cai — e mais rápido do que o líder sobe.
@@ -122,7 +123,7 @@ class BoardRoundFlowTest {
         }
         stubRound(first + idle, table(1, 2, 3, 4), table(5, 6, division = Division(2)))
 
-        service.stream(1).toList()
+        service.stream(md(1)).toList()
 
         assertTrue(assertNotNull(lastSaved(1).board).confidence > INITIAL_BOARD_CONFIDENCE)
         // Lanterna da divisão parada: abaixo da meta, mas sem jogo não perde
@@ -142,7 +143,7 @@ class BoardRoundFlowTest {
         )
         stubRound(clubs, table(1, 2, 3, 4))
 
-        service.stream(1).toList()
+        service.stream(md(1)).toList()
 
         // Elenco mais forte da divisão ⇒ meta de título, já avaliada na rodada.
         val board = assertNotNull(lastSaved(1).board)
@@ -158,7 +159,7 @@ class BoardRoundFlowTest {
         val flop = makeClub(id = 2, name = "Fiasco", ownerId = 8).copy(board = titleBoard(confidence = 10))
         stubRound(listOf(champion, flop), table(1, 2))
 
-        val events = service.stream(1).toList()
+        val events = service.stream(md(1)).toList()
 
         val reviews = events.filterIsInstance<RoundEvent.SeasonFinished>().single().boardReviews
         val met = assertIs<BoardVerdict.TargetMet>(reviews.single { it.clubId == ClubId(1) }.verdict)
@@ -197,7 +198,7 @@ class BoardRoundFlowTest {
         stubRound(listOf(champion, flop), table(1, 2))
         fun offer(id: Long, buyer: Long, seller: Long) = TransferOffer(
             id = OfferId(id), buyerClubId = ClubId(buyer), buyerClubName = "B", sellerClubId = ClubId(seller),
-            sellerClubName = "S", playerId = PlayerId(5), playerName = "P", amount = 100_000_00.cents, roundsLeft = 3,
+            sellerClubName = "S", playerId = PlayerId(5), playerName = "P", amount = 100_000_00.cents, slotsLeft = 3,
         )
         // O demitido (clube 2) como comprador e como vendedor; e uma entre terceiros.
         val asBuyer = offer(1, buyer = 2, seller = 1)
@@ -207,7 +208,7 @@ class BoardRoundFlowTest {
         val saved = mutableListOf<TransferOffer>()
         coEvery { offerRepo.saveIfPending(capture(saved)) } returns true
 
-        service.stream(1).toList()
+        service.stream(md(1)).toList()
 
         val managerLeft = saved.filter { it.status == OfferStatus.Expired(ExpiryReason.MANAGER_LEFT) }
         assertEquals(setOf(OfferId(1), OfferId(2)), managerLeft.map { it.id }.toSet())
@@ -220,7 +221,7 @@ class BoardRoundFlowTest {
         val aiFlop = makeClub(id = 2, name = "IA").copy(board = titleBoard(confidence = 0))
         stubRound(listOf(leader, aiFlop), table(1, 2))
 
-        val events = service.stream(1).toList()
+        val events = service.stream(md(1)).toList()
 
         val review = events.filterIsInstance<RoundEvent.SeasonFinished>().single()
             .boardReviews.single { it.clubId == ClubId(2) }

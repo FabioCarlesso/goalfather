@@ -18,6 +18,7 @@ import com.carlesso.goalfather.domain.model.SeasonStanding
 import com.carlesso.goalfather.domain.model.SeasonTopScorer
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.test.md
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -158,54 +159,63 @@ class LeagueDtosTest {
     private val matchKeys = setOf(
         "matchId", "homeClubId", "awayClubId", "homeClubName", "awayClubName",
         "status", "homeGoals", "awayGoals", "minute", "division",
+        "stage", "competitionId", "competitionName",
     )
 
     private val leagueRound = Round(
-        number = 5,
+        matchday = md(5),
         season = 2026,
-        matches = listOf(RoundMatch(501, ClubId(1), ClubId(2), "Alfa", "Beta", division = Division(2))),
-        stage = RoundStage.League(matchday = 3),
+        matches = listOf(
+            RoundMatch(501, ClubId(1), ClubId(2), "Alfa", "Beta", division = Division(2), stage = RoundStage.League(matchday = 3)),
+        ),
     )
 
     @Test
-    fun `rodada de liga tem as chaves do contrato e o stage League discriminado`() {
+    fun `encaixe tem as chaves do contrato e cada partida o stage League discriminado`() {
         val encoded = encode(RoundDto.serializer(), leagueRound.toDto())
 
-        assertEquals(setOf("number", "season", "status", "stage", "matches"), encoded.keys)
+        assertEquals(setOf("matchday", "season", "status", "matches"), encoded.keys)
         assertEquals("Scheduled", encoded.string("status"))
 
-        val stage = encoded.obj("stage")
-        assertEquals(setOf("type", "matchday"), stage.keys)
-        assertEquals("League", stage.string("type"))
-        assertEquals("3", stage.string("matchday"))
+        val matchday = encoded.obj("matchday")
+        assertEquals(setOf("key", "year", "week", "slot", "date"), matchday.keys)
+        assertEquals("2026-W05-WEEKEND", matchday.string("key"))
+        assertEquals("WEEKEND", matchday.string("slot"))
+        assertEquals("2026-02-01", matchday.string("date"))
 
         // Sem pênaltis a chave some — `penalties` não é requerido no contrato.
         val match = encoded.getValue("matches").jsonArray.single().jsonObject
         assertEquals(matchKeys, match.keys)
         assertEquals("2", match.string("division"))
         assertEquals("2", match.string("awayClubId"))
+        assertEquals("liga-d2", match.string("competitionId"))
+
+        val stage = match.obj("stage")
+        assertEquals(setOf("type", "matchday"), stage.keys)
+        assertEquals("League", stage.string("type"))
+        assertEquals("3", stage.string("matchday"))
     }
 
     @Test
     fun `fase de copa tem o stage Cup discriminado e os penaltis da partida`() {
         val cupRound = leagueRound.copy(
             status = RoundStatus.Finished,
-            stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS),
             matches = listOf(
                 leagueRound.matches.single().copy(
                     status = RoundStatus.Finished, homeGoals = 1, awayGoals = 1, minute = 90,
                     penalties = PenaltyScore(home = 4, away = 3),
+                    stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS),
                 ),
             ),
         )
         val encoded = encode(RoundDto.serializer(), cupRound.toDto())
 
-        val stage = encoded.obj("stage")
+        val match = encoded.getValue("matches").jsonArray.single().jsonObject
+        val stage = match.obj("stage")
         assertEquals(setOf("type", "phase"), stage.keys)
         assertEquals("Cup", stage.string("type"))
         assertEquals("SEMI_FINALS", stage.string("phase"))
 
-        val match = encoded.getValue("matches").jsonArray.single().jsonObject
         assertEquals(matchKeys + "penalties", match.keys)
         assertEquals(setOf("home", "away"), match.obj("penalties").keys)
         assertEquals("4", match.obj("penalties").string("home"))
@@ -216,14 +226,14 @@ class LeagueDtosTest {
     @Test
     fun `prontidao emite exatamente as chaves do contrato, com allReady e canStart materializados`() {
         val status = ReadinessStatus(
-            roundNumber = 5, readyCount = 1, totalCount = 2,
+            matchday = md(5), readyCount = 1, totalCount = 2,
             pendingUsernames = listOf("beltrano"), secondsRemaining = 30,
         )
         val encoded = encode(ReadinessStatusDto.serializer(), status.toDto())
 
         assertEquals(
             setOf(
-                "roundNumber", "readyCount", "totalCount", "pendingUsernames",
+                "matchday", "readyCount", "totalCount", "pendingUsernames",
                 "secondsRemaining", "timedOut", "allReady", "canStart",
             ),
             encoded.keys,
@@ -266,7 +276,7 @@ class LeagueDtosTest {
         secondsRemaining: Int? = null,
         timedOut: Boolean = false,
     ) = ReadinessStatus(
-        roundNumber = 5,
+        matchday = md(5),
         readyCount = ready,
         totalCount = 2,
         pendingUsernames = pending,
@@ -276,7 +286,7 @@ class LeagueDtosTest {
 
     @Test
     fun `liga sem tecnicos nunca esta pronta`() {
-        val semTecnicos = ReadinessStatus(roundNumber = 5, readyCount = 0, totalCount = 0, pendingUsernames = emptyList())
+        val semTecnicos = ReadinessStatus(matchday = md(5), readyCount = 0, totalCount = 0, pendingUsernames = emptyList())
         val encoded = encode(ReadinessStatusDto.serializer(), semTecnicos.toDto())
 
         assertEquals("false", encoded.string("allReady"))
@@ -285,7 +295,7 @@ class LeagueDtosTest {
 
     @Test
     fun `prontidao sem cronometro armado omite secondsRemaining`() {
-        val status = ReadinessStatus(roundNumber = 5, readyCount = 0, totalCount = 2, pendingUsernames = listOf("a", "b"))
+        val status = ReadinessStatus(matchday = md(5), readyCount = 0, totalCount = 2, pendingUsernames = listOf("a", "b"))
 
         assertNull(encode(ReadinessStatusDto.serializer(), status.toDto())["secondsRemaining"])
     }
