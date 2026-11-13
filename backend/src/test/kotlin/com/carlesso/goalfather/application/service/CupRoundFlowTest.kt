@@ -94,7 +94,12 @@ class CupRoundFlowTest {
     private val savedClubs = mutableListOf<Club>()
 
     private fun stubLeague(vararg rounds: Round) {
-        for (round in rounds) coEvery { leagueRepo.findRound(round.matchday) } returns round
+        // O WS só simula encaixe já liberado pelo `play` (issue #151): o
+        // `Scheduled` dos fixtures vira `InProgress`, como depois do `start`.
+        for (round in rounds) {
+            val released = if (round.status == RoundStatus.Scheduled) round.copy(status = RoundStatus.InProgress) else round
+            coEvery { leagueRepo.findRound(round.matchday) } returns released
+        }
         coEvery { leagueRepo.currentStandings() } returns listOf(table)
         coEvery { leagueRepo.saveRound(capture(savedRounds)) } just Runs
         coEvery { leagueRepo.finishRound(capture(claimed)) } returns true

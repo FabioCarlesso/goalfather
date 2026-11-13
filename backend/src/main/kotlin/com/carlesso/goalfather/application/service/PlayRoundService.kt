@@ -148,6 +148,22 @@ class PlayRoundService(
         val round = leagueRepo.findRound(matchday)
             ?: throw IllegalArgumentException("Encaixe ${matchday.key} não encontrado")
 
+        // Gate de prontidão no servidor (issue #151): só simula encaixe que o
+        // `RoundReadinessService.start()` já liberou (`Scheduled → InProgress`,
+        // com todos prontos ou timeout vencido). Antes, o gate só existia no
+        // `POST /round/play`, e qualquer cliente que abrisse o WS direto jogava
+        // o encaixe sozinho. Desfecho como VALOR (um `RoundEvent`), não
+        // exception: "ainda não liberado" é regra de negócio, não falha.
+        //
+        // Fica ANTES da simulação de propósito: nenhum trabalho de engine nem
+        // amostra de métrica para um stream que não vai jogar. Sem claim novo:
+        // `start` grava `InProgress` antes de responder ao `play`, então o WS
+        // que abre depois já lê o status certo.
+        if (round.status == RoundStatus.Scheduled) {
+            emit(RoundEvent.RoundNotStarted)
+            return@flow
+        }
+
         // Pré-computa todos os eventos de todas as partidas.
         // (Em uma versão futura podemos intercalar geração + emissão para
         // não materializar tudo na memória, mas com ~3 partidas × ~30

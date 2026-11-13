@@ -44,6 +44,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
  * alguém reconectar. Sem ninguém assistindo, o pacing perde o sentido: os
  * delays e os envios são pulados e a rodada termina em milissegundos.
  * Reconexões concorrentes continuam seguras — só um stream vence o claim.
+ *
+ * Prontidão (issue #151): encaixe ainda não liberado pelo `POST /round/play`
+ * não é simulado. O use case devolve só `RoundNotStarted`, que vai ao cliente
+ * como evento, seguido de close NORMAL com motivo [NOT_STARTED_REASON].
  */
 class RoundWebSocketHandler(
     private val playRound: PlayRoundUseCase,
@@ -60,6 +64,9 @@ class RoundWebSocketHandler(
     companion object {
         /** Pausa antes dos sinais de encerramento, em qualquer velocidade. */
         const val END_SIGNAL_GAP_MS: Long = 50
+
+        /** Motivo do close quando o encaixe ainda não foi liberado (issue #151). */
+        const val NOT_STARTED_REASON = "Encaixe nao liberado"
     }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
@@ -76,8 +83,25 @@ class RoundWebSocketHandler(
         scope.launch {
             try {
                 var lastMinute = 0
+                // Motivo do close normal: muda se o encaixe não estava liberado.
+                var closeReason = "Rodada encerrada"
                 playRound.stream(matchday).collect { event ->
                     val delayMs = when (event) {
+                        // Encaixe ainda `Scheduled` (issue #151): o gate de
+                        // prontidão barrou. Não é erro do servidor — o cliente
+                        // recebe o evento e um close NORMAL (1000), e volta a
+                        // aguardar a prontidão. WARN porque o frontend oficial só
+                        // abre o WS depois de um `play` com sucesso: chegar aqui
+                        // indica cliente fora do fluxo (ou com bug).
+                        RoundEvent.RoundNotStarted -> {
+                            log.warn(
+                                "WS slot rejeitado, encaixe nao liberado: session={} matchday={}",
+                                session.id,
+                                matchday.key,
+                            )
+                            closeReason = NOT_STARTED_REASON
+                            0L
+                        }
                         is RoundEvent.MatchUpdate -> {
                             val gap = speed.gapMs(lastMinute, event.event.minute)
                             lastMinute = event.event.minute
@@ -98,7 +122,7 @@ class RoundWebSocketHandler(
                 }
                 if (session.isOpen) {
                     delay(END_SIGNAL_GAP_MS)
-                    session.close(CloseStatus.NORMAL.withReason("Rodada encerrada"))
+                    session.close(CloseStatus.NORMAL.withReason(closeReason))
                 }
             } catch (e: CancellationException) {
                 // Cancelamento é fluxo normal de coroutine (ex.: shutdown), não

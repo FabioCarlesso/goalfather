@@ -971,6 +971,15 @@ paths:
         recebe só o replay (`RoundFinished` com a tabela). Fechar a conexão
         antiga antes faria o stream órfão (que segue sem pacing no servidor)
         vencer essa corrida.
+
+        **Prontidão (issue #151).** O servidor só simula encaixe já liberado
+        por `POST /api/league/round/play` (status `InProgress`, com todos os
+        técnicos prontos ou o timeout vencido). Se o encaixe ainda está
+        `Scheduled`, a conexão recebe UMA única mensagem `RoundNotStarted` e
+        é fechada com close code `1000` e motivo `Encaixe nao liberado` —
+        nada é simulado nem gravado. O cliente volta a aguardar a prontidão.
+        Encaixe `Finished` segue devolvendo o replay (`MatchUpdate`… e
+        `RoundFinished` só com a tabela), sem reaplicar efeitos.
       parameters:
         - name: key
           in: path
@@ -2426,21 +2435,35 @@ components:
     RoundEvent:
       description: |
         Mensagem do WebSocket `/ws/slot/{key}`. Multiplexa eventos
-        de várias partidas + sinal de fim do encaixe.
+        de várias partidas + sinal de fim do encaixe — ou, sozinho, o
+        `RoundNotStarted` quando o encaixe ainda não foi liberado (issue #151).
 
         Discriminado por `type` — TS exige `switch` exaustivo sobre
-        ambas as variantes (espelha o `when` exaustivo do `sealed
-        interface RoundEvent` que o backend Kotlin terá).
+        todas as variantes (espelha o `when` exaustivo do `sealed
+        interface RoundEvent` do backend Kotlin).
       oneOf:
+        - $ref: '#/components/schemas/RoundNotStartedEvent'
         - $ref: '#/components/schemas/MatchUpdateEvent'
         - $ref: '#/components/schemas/RoundFinishedEvent'
         - $ref: '#/components/schemas/SeasonFinishedEvent'
       discriminator:
         propertyName: type
         mapping:
-          MatchUpdate:    '#/components/schemas/MatchUpdateEvent'
-          RoundFinished:  '#/components/schemas/RoundFinishedEvent'
-          SeasonFinished: '#/components/schemas/SeasonFinishedEvent'
+          RoundNotStarted: '#/components/schemas/RoundNotStartedEvent'
+          MatchUpdate:     '#/components/schemas/MatchUpdateEvent'
+          RoundFinished:   '#/components/schemas/RoundFinishedEvent'
+          SeasonFinished:  '#/components/schemas/SeasonFinishedEvent'
+
+    RoundNotStartedEvent:
+      description: |
+        O encaixe ainda está `Scheduled`: nem todos os técnicos humanos
+        sinalizaram prontos e o timeout não venceu (issue #151). É a única
+        mensagem da conexão, que fecha em seguida com code `1000`. Nada foi
+        simulado — tabela, caixa, propostas e encaixe corrente seguem iguais.
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [RoundNotStarted] }
 
     MatchUpdateEvent:
       type: object

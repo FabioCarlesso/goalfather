@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
-import { deriveMatchStates, useRoundStream } from './useRoundStream'
+import { deriveMatchStates, NOT_STARTED_MESSAGE, useRoundStream } from './useRoundStream'
 import { standingsKey } from './useStandings'
 import { makeQueryClient } from '../../test/render'
 import { server } from '../../test/setup'
@@ -205,6 +205,20 @@ describe('useRoundStream (issue #112)', () => {
     expect(result.current.status).toBe('finished')
     expect(result.current.error).toBe('Rodada 3 não está corrente')
     expect(result.current.outcome).toBeNull()
+  })
+
+  it('encaixe não liberado volta ao estado ocioso, aguardando a prontidão (issue #151)', async () => {
+    const { result } = renderStream()
+    const socket = await startAndOpen(result)
+    socket.emit({ type: 'RoundNotStarted' })
+    socket.serverClose(1000, 'Encaixe nao liberado')
+
+    // `idle`, e não `finished`: a rodada não foi jogada.
+    expect(result.current.status).toBe('idle')
+    expect(result.current.error).toBe(NOT_STARTED_MESSAGE)
+    expect(result.current.outcome).toBeNull()
+    expect(result.current.shownRound).toBe(round)
+    expect(result.current.matchStates.get(10)?.status).toBe('Scheduled')
   })
 
   it('jogar de novo solta o socket anterior e recomeça do zero', async () => {

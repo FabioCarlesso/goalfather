@@ -9,6 +9,7 @@ import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.test.InMemoryCupRepository
@@ -59,9 +60,11 @@ class SimulationMetricsTest {
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
 
+    // `InProgress`: o WS só simula encaixe já liberado pelo `play` (issue #151).
     private val round = Round(
         matchday = md(1),
         season = 2026,
+        status = RoundStatus.InProgress,
         matches = listOf(
             RoundMatch(
                 matchId = 1001,

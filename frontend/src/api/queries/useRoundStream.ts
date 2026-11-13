@@ -30,6 +30,10 @@ export type RoundStreamStatus = 'idle' | 'connecting' | 'live' | 'finished' | 'e
 
 // Variante do union RoundEvent — fim de temporada (issue #11).
 export type SeasonFinishedEvent = Extract<RoundEvent, { type: 'SeasonFinished' }>
+type RoundFinishedEvent = Extract<RoundEvent, { type: 'RoundFinished' }>
+
+/** Mostrado quando o servidor recusa o stream de encaixe não liberado (issue #151). */
+export const NOT_STARTED_MESSAGE = 'O encaixe ainda não foi liberado: aguardando a prontidão dos técnicos.'
 
 /** Placar/relógio de uma partida enquanto a rodada é transmitida. */
 export interface LiveMatchState {
@@ -174,47 +178,84 @@ export function useRoundStream(
 
   const wsRef = useRef<WebSocket | null>(null)
 
-  const handleEvent = useCallback(
-    (event: RoundEvent) => {
-      setEvents((prev) => [...prev, event])
-      if (event.type === 'RoundFinished') {
-        setFinalStandings(event.standings)
-        setFinalFinance(event.finances?.find((f) => f.clubId === myClubId) ?? null)
-        // Empurra a nova tabela direto no cache (sem refetch desnecessário)
-        qc.setQueryData(standingsKey, event.standings)
-        // Próxima rodada já está pronta no backend mock — invalida para buscar
-        qc.invalidateQueries({ queryKey: currentRoundKey })
-        // A prontidão foi resetada no servidor — rebusca para a próxima rodada (issue #20)
-        qc.invalidateQueries({ queryKey: roundReadinessKey })
-        // Data de copa avança a chave (issue #61); data de liga pode ter
-        // sido a última antes da fase seguinte. Rebusca sempre — é barato.
-        qc.invalidateQueries({ queryKey: cupKey })
-        // Rodada de liga mexe na confiança da diretoria (issue #62); na
-        // virada, a meta também é outra.
-        qc.invalidateQueries({ queryKey: boardKey(myClubId) })
-        // O relógio andou um encaixe (issue #125): data corrente e próximo jogo.
-        qc.invalidateQueries({ queryKey: ['calendar'] })
-        // Treino da semana (issue #58): o evento traz o extrato de todos os
-        // clubes; só o do técnico interessa aqui. Fica DEPOIS das
-        // invalidações e com acesso opcional de propósito: um payload sem
-        // `training`/`finances` (backend fora de sincronia com o contrato)
-        // custa o card, não o avanço da rodada — o `catch` do onmessage só
-        // loga, então o que estivesse abaixo do throw nunca rodaria.
-        setTraining(event.training?.find((t) => t.clubId === myClubId) ?? null)
-      } else if (event.type === 'SeasonFinished') {
-        // Fim de temporada (issue #11): celebra o campeão. O backend já
-        // abriu a próxima temporada; a invalidação do RoundFinished (que vem
-        // logo a seguir) faz a UI buscar a rodada 1 da nova temporada.
-        setChampion(event)
-        setFinalStandings(event.standings)
-        qc.setQueryData(standingsKey, event.standings)
-        // A temporada que acabou virou história (issue #60): o record já foi
-        // gravado no servidor, então a tela de Histórico precisa rebuscar.
-        qc.invalidateQueries({ queryKey: seasonHistoryKey })
-        qc.invalidateQueries({ queryKey: clubCareerKey(myClubId) })
-      }
+  const onRoundFinished = useCallback(
+    (event: RoundFinishedEvent) => {
+      setFinalStandings(event.standings)
+      setFinalFinance(event.finances?.find((f) => f.clubId === myClubId) ?? null)
+      // Empurra a nova tabela direto no cache (sem refetch desnecessário)
+      qc.setQueryData(standingsKey, event.standings)
+      // Próxima rodada já está pronta no backend mock — invalida para buscar
+      qc.invalidateQueries({ queryKey: currentRoundKey })
+      // A prontidão foi resetada no servidor — rebusca para a próxima rodada (issue #20)
+      qc.invalidateQueries({ queryKey: roundReadinessKey })
+      // Data de copa avança a chave (issue #61); data de liga pode ter
+      // sido a última antes da fase seguinte. Rebusca sempre — é barato.
+      qc.invalidateQueries({ queryKey: cupKey })
+      // Rodada de liga mexe na confiança da diretoria (issue #62); na
+      // virada, a meta também é outra.
+      qc.invalidateQueries({ queryKey: boardKey(myClubId) })
+      // O relógio andou um encaixe (issue #125): data corrente e próximo jogo.
+      qc.invalidateQueries({ queryKey: ['calendar'] })
+      // Treino da semana (issue #58): o evento traz o extrato de todos os
+      // clubes; só o do técnico interessa aqui. Fica DEPOIS das
+      // invalidações e com acesso opcional de propósito: um payload sem
+      // `training`/`finances` (backend fora de sincronia com o contrato)
+      // custa o card, não o avanço da rodada — o `catch` do onmessage só
+      // loga, então o que estivesse abaixo do throw nunca rodaria.
+      setTraining(event.training?.find((t) => t.clubId === myClubId) ?? null)
     },
     [qc, myClubId],
+  )
+
+  const onSeasonFinished = useCallback(
+    (event: SeasonFinishedEvent) => {
+      // Fim de temporada (issue #11): celebra o campeão. O backend já
+      // abriu a próxima temporada; a invalidação do RoundFinished (que vem
+      // logo a seguir) faz a UI buscar a rodada 1 da nova temporada.
+      setChampion(event)
+      setFinalStandings(event.standings)
+      qc.setQueryData(standingsKey, event.standings)
+      // A temporada que acabou virou história (issue #60): o record já foi
+      // gravado no servidor, então a tela de Histórico precisa rebuscar.
+      qc.invalidateQueries({ queryKey: seasonHistoryKey })
+      qc.invalidateQueries({ queryKey: clubCareerKey(myClubId) })
+    },
+    [qc, myClubId],
+  )
+
+  const handleEvent = useCallback(
+    (event: RoundEvent) => {
+      switch (event.type) {
+        case 'RoundNotStarted':
+          // Encaixe ainda não liberado (issue #151): o servidor não simulou
+          // nada e vai fechar a conexão em seguida. Volta ao "aguardando
+          // prontidão" — `idle` faz o `onclose` não marcar `finished`, e a
+          // data exibida volta a ser a corrente.
+          setPlayedRound(null)
+          setStatus('idle')
+          setError(NOT_STARTED_MESSAGE)
+          qc.invalidateQueries({ queryKey: roundReadinessKey })
+          qc.invalidateQueries({ queryKey: currentRoundKey })
+          return
+        case 'MatchUpdate':
+          setEvents((prev) => [...prev, event])
+          return
+        case 'RoundFinished':
+          setEvents((prev) => [...prev, event])
+          onRoundFinished(event)
+          return
+        case 'SeasonFinished':
+          setEvents((prev) => [...prev, event])
+          onSeasonFinished(event)
+          return
+        default: {
+          // Exaustividade: variante nova no contrato quebra a compilação aqui.
+          const unhandled: never = event
+          console.error('RoundEvent desconhecido', unhandled)
+        }
+      }
+    },
+    [qc, onRoundFinished, onSeasonFinished],
   )
 
   /** Descarta o que o stream anterior acumulou (eventos, erro, desfecho). */
@@ -261,7 +302,9 @@ export function useRoundStream(
         setStatus('error')
       }
       socket.onclose = (e) => {
-        setStatus((prev) => (prev === 'error' ? 'error' : 'finished'))
+        // `idle` aqui = o servidor recusou com `RoundNotStarted` (issue #151):
+        // a rodada não foi jogada, então nada de `finished`.
+        setStatus((prev) => (prev === 'error' || prev === 'idle' ? prev : 'finished'))
         if (e.code !== 1000 && e.code !== 1005 && e.reason) setError(e.reason)
       }
     },

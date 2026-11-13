@@ -80,7 +80,8 @@ class TrainingRoundEffectsTest {
         ),
     )
 
-    private fun stubRound(status: RoundStatus = RoundStatus.Scheduled) {
+    // Default `InProgress`: o WS só simula encaixe já liberado pelo `play` (issue #151).
+    private fun stubRound(status: RoundStatus = RoundStatus.InProgress) {
         coEvery { leagueRepo.findRound(md(1)) } returns round.copy(status = status)
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(ClubId(1)) } returns home

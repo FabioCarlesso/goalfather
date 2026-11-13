@@ -276,6 +276,10 @@ Quando o backend Kotlin tiver `/ws/matches/{id}` (Spring WebSocket + `Flow` → 
 - **Pular para o fim** não usa mensagem cliente → servidor: abre uma conexão `INSTANT` (o stream é determinístico e reprocessa desde o início), zera os eventos acumulados e aposenta a antiga com `handOff` (`src/api/streamHandoff.ts`), que silencia os handlers dela e só a fecha quando a nova termina — no backend real, quem chega ao fim primeiro é quem recebe o `RoundFinished` completo. Na `MatchPage` (drill-down, que não grava nada) basta fechar e reconectar.
 - Os E2E de copa e de a11y jogam em `INSTANT`; `round.spec` mantém o fluxo canônico em `NORMAL` e cobre o pulo e a persistência da escolha.
 
+### Encaixe não liberado (issue #151)
+
+O servidor só simula encaixe liberado pelo `playRound` (`InProgress`). Se o WS abrir num encaixe ainda `Scheduled`, chega um único `RoundNotStarted` e close `1000`. O `useRoundStream` trata o evento no `switch (event.type)` exaustivo: volta a `idle` (o `onclose` não marca `finished`), solta a data jogada, mostra `NOT_STARTED_MESSAGE` e rebusca prontidão e encaixe corrente — a `RoundPage` volta ao "aguardando prontidão". O handler MSW de `/ws/slot/:key` faz o mesmo gate; `round.spec` abre o WS direto com um técnico pendente e confere que nada andou (mock e `e2e:real`).
+
 ---
 
 ## 7. Fluxo de dados (uma tela típica)

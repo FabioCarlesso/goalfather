@@ -850,6 +850,17 @@ export const handlers = [
       client.close(1011, `Encaixe ${key} não está corrente`)
       return
     }
+    // Gate de prontidão no stream (issue #151), como no backend: encaixe ainda
+    // não liberado pelo `POST /round/play` não simula — um único
+    // `RoundNotStarted` e close normal, sem tocar no estado.
+    if (round.status === 'Scheduled') {
+      const notStarted: RoundEvent = { type: 'RoundNotStarted' }
+      client.send(JSON.stringify(notStarted))
+      // Pequeno gap antes do close, como o backend: fechar na mesma volta
+      // do event loop descartava a mensagem no cliente.
+      void delay(50).then(() => client.close(1000, 'Encaixe nao liberado'))
+      return
+    }
 
     // Pré-computa todos os eventos de todas as partidas e ordena por minuto.
     // Cada partida usa o próprio matchId como seed do RNG, então a sequência

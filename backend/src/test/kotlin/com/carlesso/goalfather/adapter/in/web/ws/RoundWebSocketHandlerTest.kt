@@ -181,4 +181,29 @@ class RoundWebSocketHandlerTest {
         assertEquals("true", retirement.getValue("retired").jsonObject.getValue("star").jsonPrimitive.content)
         assertEquals("false", retirement.getValue("promoted").jsonObject.getValue("star").jsonPrimitive.content)
     }
+
+    @Test
+    fun `encaixe nao liberado - envia RoundNotStarted e fecha NORMAL com motivo proprio`() {
+        // Issue #151: o use case barra o encaixe `Scheduled` com um único evento;
+        // o handler o repassa como `{"type":"RoundNotStarted"}` e fecha em 1000
+        // (não é erro de servidor), sem pausa de pacing.
+        val closed = CountDownLatch(1)
+        val frames = Collections.synchronizedList(mutableListOf<String>())
+        val pauses = Collections.synchronizedList(mutableListOf<Long>())
+        val closeStatus = slot<CloseStatus>()
+        val useCase = object : PlayRoundUseCase {
+            override fun stream(matchday: Matchday) = flowOf<RoundEvent>(RoundEvent.RoundNotStarted)
+        }
+        val session = session(AtomicBoolean(true))
+        every { session.sendMessage(any()) } answers { frames += firstArg<TextMessage>().payload }
+        every { session.close(capture(closeStatus)) } answers { closed.countDown() }
+
+        RoundWebSocketHandler(useCase, json, pause = { pauses += it }).afterConnectionEstablished(session)
+
+        assertTrue(closed.await(2, TimeUnit.SECONDS), "o handler deveria encerrar a conexão")
+        assertEquals(listOf("""{"type":"RoundNotStarted"}"""), frames.toList())
+        assertEquals(CloseStatus.NORMAL.code, closeStatus.captured.code)
+        assertEquals(RoundWebSocketHandler.NOT_STARTED_REASON, closeStatus.captured.reason)
+        assertEquals(emptyList(), pauses.toList())
+    }
 }

@@ -87,9 +87,12 @@ class PlayRoundServiceTest {
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
 
+    // `InProgress`: o estado em que o WS encontra o encaixe depois de um
+    // `POST /round/play` com sucesso. `Scheduled` não simula (issue #151).
     private val round = Round(
         matchday = md(1),
         season = 2026,
+        status = RoundStatus.InProgress,
         matches = listOf(
             RoundMatch(
                 matchId = 1001,
@@ -109,6 +112,25 @@ class PlayRoundServiceTest {
             StandingRow(position = 2, clubId = ClubId(2), clubName = "Away FC"),
         ),
     )
+
+    @Test
+    fun `encaixe Scheduled - so RoundNotStarted, sem simular nem gravar nada`() = runTest {
+        // Issue #151: o gate de prontidão vale no stream, não só no `play`.
+        // Mocks estritos de clube/liga: qualquer leitura de clube ou escrita
+        // além do `findRound` estouraria por falta de stub.
+        coEvery { leagueRepo.findRound(md(1)) } returns round.copy(status = RoundStatus.Scheduled)
+
+        val events = service.stream(md(1)).toList()
+
+        assertEquals(listOf<RoundEvent>(RoundEvent.RoundNotStarted), events)
+        coVerify(exactly = 0) { leagueRepo.finishRound(any()) }
+        coVerify(exactly = 0) { leagueRepo.saveStandings(any()) }
+        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
+        coVerify(exactly = 0) { clubRepo.findById(any()) }
+        coVerify(exactly = 0) { clubRepo.save(any()) }
+        coVerify(exactly = 0) { offerRepo.saveIfPending(any()) }
+        coVerify(exactly = 0) { readinessRepo.reset(any()) }
+    }
 
     @Test
     fun `stream comeca com KickOff e termina com RoundFinished`() = runTest {
@@ -285,6 +307,7 @@ class PlayRoundServiceTest {
         val finalRound = Round(
             matchday = lastMatchday,
             season = 2026,
+            status = RoundStatus.InProgress,
             matches = listOf(RoundMatch(3101, ClubId(100), ClubId(101), "X", "Y", stage = RoundStage.League(3))),
         )
         coEvery { leagueRepo.findRound(lastMatchday) } returns finalRound
@@ -342,6 +365,7 @@ class PlayRoundServiceTest {
         val midRound = Round(
             matchday = md(1),
             season = 2026,
+            status = RoundStatus.InProgress,
             matches = listOf(
                 RoundMatch(1001, ClubId(1), ClubId(4), "C1", "C4"),
                 RoundMatch(1002, ClubId(2), ClubId(3), "C2", "C3"),
@@ -678,6 +702,7 @@ class PlayRoundServiceTest {
         val lastRound = Round(
             matchday = md(1),
             season = 2026,
+            status = RoundStatus.InProgress,
             matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
@@ -712,6 +737,7 @@ class PlayRoundServiceTest {
         val lastRound = Round(
             matchday = md(1),
             season = 2026,
+            status = RoundStatus.InProgress,
             matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
@@ -767,6 +793,7 @@ class PlayRoundServiceTest {
         val lastRound = Round(
             matchday = md(1),
             season = 2026,
+            status = RoundStatus.InProgress,
             matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
@@ -801,6 +828,7 @@ class PlayRoundServiceTest {
         val lastRound = Round(
             matchday = md(1),
             season = 2026,
+            status = RoundStatus.InProgress,
             matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
@@ -838,6 +866,7 @@ class PlayRoundServiceTest {
         val salaryRound = Round(
             matchday = md(2),
             season = 2026,
+            status = RoundStatus.InProgress,
             matches = listOf(
                 RoundMatch(2001, ClubId(1), ClubId(2), "Home FC", "Away FC", stage = RoundStage.League(2)),
             ),

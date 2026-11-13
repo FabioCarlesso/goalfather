@@ -19,6 +19,20 @@ import com.carlesso.goalfather.domain.model.Standings
  */
 sealed interface RoundEvent {
 
+    /**
+     * O encaixe ainda não foi liberado pelo fluxo de início (issue #151): segue
+     * `Scheduled` porque nem todos os técnicos sinalizaram prontos e o timeout
+     * não venceu. É o ÚNICO evento do stream nesse caso — nada é simulado nem
+     * gravado. O gate de prontidão vale para qualquer cliente que abra o WS,
+     * não só para quem passa antes pelo `POST /round/play`.
+     *
+     * `data object` (Kotlin 1.9+): singleton como `object`, mas com
+     * `toString()`/`equals`/`hashCode` gerados como numa `data class` — sai
+     * `RoundNotStarted` no log em vez de `RoundEvent$RoundNotStarted@1b2c3d`.
+     * Não há payload: o cliente já sabe qual encaixe pediu (está na URL).
+     */
+    data object RoundNotStarted : RoundEvent
+
     data class MatchUpdate(
         val matchId: Long,
         val event: MatchEvent,
