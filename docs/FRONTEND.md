@@ -364,7 +364,9 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 - O reset só existe no profile `e2e` (H2 em memória: o save de `backend/data/` não é tocado). Fora dele, a rota responde 404, e o helper falha com uma mensagem dizendo como subir o backend.
 - `workers: 1` e sem `fullyParallel` no modo real: dois testes simultâneos resetariam a liga um do outro. A suíte leva ~1,2 min.
 - Sem retry no modo real, nem no CI (o mock mantém 2): um teste que só passasse na segunda tentativa esconderia justamente a dependência de ordem e estado que o reset eliminou.
-- Limitação conhecida: uma simulação de rodada que ainda esteja rodando quando o teste acaba pode gravar depois do reset. Sem cliente no WS ela termina em milissegundos, e nos runs de validação isso não apareceu.
+- A rodada de um teste continua no servidor depois que ele acaba (a coroutine sobrevive ao cliente) e chegou a gravar por cima da liga recém-resetada do teste seguinte, na PR da onda 3. Duas travas fecham isso no backend:
+  - o `finish` só termina encaixe `InProgress`: depois do reset, o mesmo encaixe volta `Scheduled`, e o stream órfão não vence o claim;
+  - o reset espera as finalizações em curso (claim + efeitos) e barra as novas até recriar a liga, pelo `RoundFinalizationGate`.
 
 **Acessibilidade (issue #113, alvo WCAG 2.1 AA):** duas barreiras contra regressão.
 - **Lint:** `eslint-plugin-jsx-a11y` (`flatConfigs.recommended`) roda no `npm run lint`. Pega o que é visível no JSX: botão/link sem nome, `onClick` em `div` sem teclado, `img` sem `alt`, `label` sem controle. O plugin (6.10.x) ainda declara peer `eslint ≤ 9`, então o `package.json` tem um `overrides` que o deixa usar o ESLint 10 do projeto. As regras funcionam normalmente; remova o override quando sair uma versão com suporte oficial.

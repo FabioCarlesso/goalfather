@@ -36,6 +36,7 @@ import com.carlesso.goalfather.application.service.ExpandStadiumService
 import com.carlesso.goalfather.application.service.LoginService
 import com.carlesso.goalfather.application.service.PlayMatchService
 import com.carlesso.goalfather.application.service.PlayRoundService
+import com.carlesso.goalfather.application.service.RoundFinalizationGate
 import com.carlesso.goalfather.application.service.RegisterUserService
 import com.carlesso.goalfather.application.service.RoundReadinessService
 import com.carlesso.goalfather.application.service.SaveLineupService
@@ -136,6 +137,8 @@ class BeanConfig {
         // MeterRegistry é provido pelo actuator; injetado para o timer da
         // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
         meterRegistry: MeterRegistry,
+        // Portão entre a finalização de encaixes e o reset do profile e2e.
+        finalizationGate: RoundFinalizationGate,
     ): PlayRoundUseCase = PlayRoundService(
         clubRepo,
         leagueRepo,
@@ -148,7 +151,15 @@ class BeanConfig {
         offerRepo,
         simulator,
         meterRegistry,
+        finalizationGate = finalizationGate,
     )
+
+    /**
+     * Um portão só para o processo: o `PlayRoundService` finaliza encaixes com
+     * ele e o `E2eStateReset` (profile e2e) o fecha antes de recriar a liga.
+     */
+    @Bean
+    fun roundFinalizationGate(): RoundFinalizationGate = RoundFinalizationGate()
 
     /** Propostas de transferência entre técnicos humanos (issue #63). */
     @Bean

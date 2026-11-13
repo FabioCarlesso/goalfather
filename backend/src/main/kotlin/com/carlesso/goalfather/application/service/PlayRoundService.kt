@@ -164,6 +164,10 @@ class PlayRoundService(
     // é injetável para teste; em produção, o pool de CPU do `Dispatchers.Default`.
     quickSimulator: QuickMatchSimulator = QuickMatchSimulator(),
     simulationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    // Claim + efeitos de um encaixe rodam com uma licença deste portão: o
+    // reset do profile e2e espera as finalizações em curso antes de apagar a
+    // liga. Default próprio para os testes que montam o service à mão.
+    private val finalizationGate: RoundFinalizationGate = RoundFinalizationGate(),
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
@@ -276,35 +280,41 @@ class PlayRoundService(
         val finishedMatches = round.matches.map { m -> m.finish(byMatch[m.matchId]?.score, byMatch[m.matchId]?.penalties) }
         val finishedRound = round.copy(matches = finishedMatches, status = RoundStatus.Finished)
 
-        if (!leagueRepo.finishRound(finishedRound)) {
+        // Claim e efeitos dentro de uma licença do portão de finalização: o
+        // reset do profile e2e espera este bloco terminar antes de apagar a
+        // liga (ver [RoundFinalizationGate]). `null` = perdemos o claim.
+        val tailEvents: List<RoundEvent>? = finalizationGate.finalizing {
+            if (!leagueRepo.finishRound(finishedRound)) return@finalizing null
+
+            // Vencemos a corrida: aplicamos os efeitos exatamente uma vez.
+            //
+            // Ordem (claim ANTES dos efeitos) troca a semântica de *at-least-once*
+            // para *at-most-once*: nunca dobramos caixa/estatísticas, mas uma
+            // interrupção entre o claim e o fim da persistência deixaria a rodada
+            // `Finished` com efeitos parciais — e como todo stream seguinte cai no
+            // replay, a liga travaria (a próxima rodada nunca seria gerada). Por
+            // isso o bloco roda em `NonCancellable`: nenhum cancelamento do coletor
+            // (shutdown, um adapter que cancele o Flow) pode rasgar a finalização no
+            // meio. O `RoundWebSocketHandler` nem cancela mais ao fechar a aba: a
+            // rodada segue até o fim sem pacing (revisão do PR #92).
+            //
+            // NonCancellable NÃO cobre crash de processo entre o claim e o fim —
+            // esse resíduo de durabilidade fica documentado em docs/ARQUITETURA.md
+            // (fechá-lo exige efeitos + claim na MESMA transação, hoje inviável com
+            // os ports `suspend` por agregado). É estreito: dezenas de ms.
+            //
+            // Enquanto os efeitos não são gravados, um leitor concorrente vê a
+            // tabela sem os pontos desta rodada; uma reconexão posterior já devolve
+            // a definitiva (não vale para o caso de crash acima).
+            withContext(NonCancellable) {
+                // Efeitos leem a SÚMULA de cada jogo (feed completo ou destaques do
+                // rápido), não o que foi transmitido.
+                finalizeRound(round, finishedRound, simulated.flatMap { it.sheet }, involvedClubs.values)
+            }
+        }
+        if (tailEvents == null) {
             emit(RoundEvent.RoundFinished(leagueRepo.currentStandings()))
             return@flow
-        }
-
-        // Vencemos a corrida: aplicamos os efeitos exatamente uma vez.
-        //
-        // Ordem (claim ANTES dos efeitos) troca a semântica de *at-least-once*
-        // para *at-most-once*: nunca dobramos caixa/estatísticas, mas uma
-        // interrupção entre o claim e o fim da persistência deixaria a rodada
-        // `Finished` com efeitos parciais — e como todo stream seguinte cai no
-        // replay, a liga travaria (a próxima rodada nunca seria gerada). Por
-        // isso o bloco roda em `NonCancellable`: nenhum cancelamento do coletor
-        // (shutdown, um adapter que cancele o Flow) pode rasgar a finalização no
-        // meio. O `RoundWebSocketHandler` nem cancela mais ao fechar a aba: a
-        // rodada segue até o fim sem pacing (revisão do PR #92).
-        //
-        // NonCancellable NÃO cobre crash de processo entre o claim e o fim —
-        // esse resíduo de durabilidade fica documentado em docs/ARQUITETURA.md
-        // (fechá-lo exige efeitos + claim na MESMA transação, hoje inviável com
-        // os ports `suspend` por agregado). É estreito: dezenas de ms.
-        //
-        // Enquanto os efeitos não são gravados, um leitor concorrente vê a
-        // tabela sem os pontos desta rodada; uma reconexão posterior já devolve
-        // a definitiva (não vale para o caso de crash acima).
-        val tailEvents = withContext(NonCancellable) {
-            // Efeitos leem a SÚMULA de cada jogo (feed completo ou destaques do
-            // rápido), não o que foi transmitido.
-            finalizeRound(round, finishedRound, simulated.flatMap { it.sheet }, involvedClubs.values)
         }
         // Emissão fora do NonCancellable: `emit` exige o mesmo contexto do
         // coletor (invariante do Flow), que `withContext` quebraria.
