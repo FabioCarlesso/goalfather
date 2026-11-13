@@ -1143,6 +1143,32 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   desconhecido cai no default, como o `trainingFocus`. A bandeira (emoji) é
   montada no adapter web (`CountryDto.flag`), então a UI só exibe.
 
+- [x] **Suspensão por cartões e limite de estrangeiros** — issue #130
+  `Player.suspensions: List<Suspension(competitionId, matchesLeft)>` e
+  `Player.pendingYellows: Map<CompetitionId, Int>`: a contagem é **por
+  competição**, e "suspenso por zero jogos" não é representável (mesmo idioma
+  do `Availability`). A regra é dado da competição: `Competition.discipline`
+  (`DisciplineRules`: amarelos para suspender, jogos por vermelho, se zera no
+  mata-mata) e `Competition.foreignPlayerLimit: Int?` (`null` = sem limite),
+  ambos com default. Funções puras em `domain/rules/SuspensionRules.kt`:
+  `Player.afterMatchIn` (suspenso cumpre um jogo; expulsão — vermelho ou 2º
+  amarelo — dá o gancho da regra e absorve os amarelos do jogo; o 3º amarelo
+  vira 1 jogo e zera), `Club.startingLineupIn(competição)` (sem os suspensos
+  dela e dentro do limite de estrangeiros — a escalação automática da IA
+  também) e `Round.competitionByClub()`. O `PlayRoundService` só escolhe a
+  competição de cada partida. Salvar escalação acima do limite da liga do clube
+  devolve `LineupResult.TooManyForeignPlayers` → 400 `TOO_MANY_FOREIGN_PLAYERS`;
+  suspenso **não** é recusado ao salvar (a escalação serve a todas as
+  competições — quem o tira é o apito inicial). Persistência: coluna
+  `players.discipline_json` (V18, `null` = ficha limpa), com um registro próprio
+  do mapper. A virada de temporada limpa a ficha. **Limite:** 9 estrangeiros
+  relacionados por jogo no Brasileirão 2026 (CBF; redução aprovada em set/2026
+  para 8 em 2027 até 5 em 2030) — o jogo não tem banco, então vale para os 11.
+  **Interino:** as regras das competições do mundo atual vivem em
+  `SeasonCompetitions.disciplineOf`/`foreignPlayerLimitOf` até o pack (#131);
+  `enteringKnockoutOf` (zerar amarelos no mata-mata) ainda não tem chamador,
+  porque nenhuma competição atual tem fase de grupos.
+
 - [x] **Provedor de dados do mundo** — issue #126
   Port `WorldDataProvider` com o adapter `FileWorldDataProvider`, que lê o pack
   `data/world/v1/` (property `app.world-data.path`) e o traduz por uma camada

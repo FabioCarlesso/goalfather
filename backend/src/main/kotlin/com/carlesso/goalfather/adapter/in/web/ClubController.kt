@@ -157,6 +157,14 @@ class ClubController(
                     details = playerIdsDetail(result.playerIds),
                 ),
             )
+            is LineupResult.TooManyForeignPlayers -> ResponseEntity.badRequest().body(
+                ErrorResponse(
+                    code = "TOO_MANY_FOREIGN_PLAYERS",
+                    message = "Escalação com ${result.playerIds.size} estrangeiros; o limite é ${result.limit}",
+                    // `+` em Map devolve um mapa NOVO com o par acrescentado.
+                    details = playerIdsDetail(result.playerIds) + ("limit" to result.limit.toString()),
+                ),
+            )
             is LineupResult.Conflict -> clubWriteConflict(result.clubId)
         }
 

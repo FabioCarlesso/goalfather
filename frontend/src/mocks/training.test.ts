@@ -29,7 +29,7 @@ const player = (id: number, age: number, overall = 70, stamina = 100): Player =>
   goals: 0,
   yellowCards: 0,
   redCards: 0,
-  availability: { type: 'Available' },
+  availability: { type: 'Available' }, suspensions: [],
   star: overall >= 82,
 })
 

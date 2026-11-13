@@ -69,6 +69,13 @@ class PlayerEntity(
 
     @Column(name = "second_nationality", length = 3)
     var secondNationality: String? = null,
+
+    /**
+     * Ficha disciplinar por competição (issue #130) em JSON; `null` = limpa.
+     * O formato é o `PlayerDisciplineRecord` do mapper, não o domínio.
+     */
+    @Column(name = "discipline_json", columnDefinition = "TEXT")
+    var disciplineJson: String? = null,
 )
 
 /**

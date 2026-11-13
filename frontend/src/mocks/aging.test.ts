@@ -40,7 +40,7 @@ const guy = (
   goals: 0,
   yellowCards: 0,
   redCards: 0,
-  availability: { type: 'Available' },
+  availability: { type: 'Available' }, suspensions: [],
   star: overall >= 82,
 })
 

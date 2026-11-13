@@ -24,6 +24,7 @@ import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
@@ -64,6 +65,11 @@ import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.recordRound
 import com.carlesso.goalfather.domain.rules.seasonBoardReviews
 import com.carlesso.goalfather.domain.rules.seasonPlan
+import com.carlesso.goalfather.domain.rules.MatchCards
+import com.carlesso.goalfather.domain.rules.afterMatchIn
+import com.carlesso.goalfather.domain.rules.competitionByClub
+import com.carlesso.goalfather.domain.rules.startingLineupIn
+import com.carlesso.goalfather.domain.rules.withCleanRecord
 import com.carlesso.goalfather.domain.rules.seasonRecordOf
 import com.carlesso.goalfather.domain.rules.seasonStandings
 import com.carlesso.goalfather.domain.rules.train
@@ -121,6 +127,12 @@ import kotlin.random.Random
  * `QuickMatchSimulator`, em paralelo, e o stream leva apenas o desfecho deles.
  * A separação e o paralelismo moram no [MatchdaySimulator]; daqui para baixo
  * (claim, efeitos, virada) nada sabe qual engine rodou.
+ *
+ * **Suspensões e estrangeiros (issue #130).** Cada clube entra em campo com
+ * `startingLineupIn(competição da partida)` — sem os suspensos dela e dentro do
+ * limite de estrangeiros dela — e os cartões do jogo contam só para aquela
+ * competição (`afterMatchIn`). As regras são funções puras de
+ * `domain/rules/SuspensionRules.kt`; aqui só se escolhe a competição.
  */
 class PlayRoundService(
     private val clubRepo: ClubRepository,
@@ -196,8 +208,10 @@ class PlayRoundService(
             away?.let { involvedClubs[it.id.value] = it }
 
             val setup = MatchSetup(
-                home = home?.startingLineup() ?: emptyLineup(),
-                away = away?.startingLineup() ?: emptyLineup(),
+                // Sem suspensos daquela competição e dentro do limite de
+                // estrangeiros dela (issue #130).
+                home = home?.startingLineupIn(match.competition) ?: emptyLineup(),
+                away = away?.startingLineupIn(match.competition) ?: emptyLineup(),
                 homeName = match.homeClubName,
                 awayName = match.awayClubName,
                 // Jogo de copa = mata-mata: empate decide nos pênaltis (issue #61).
@@ -346,7 +360,15 @@ class PlayRoundService(
             .map { applyRoundToStandings(finishedRound, it) }
         val boardAfterRound = boardEvaluator(finishedRound, newStandings, clubs)
 
-        val training = persistRoundEffects(round.matchday, events, clubs, involvedClubs, finances, boardAfterRound)
+        val training = persistRoundEffects(
+            round.matchday,
+            events,
+            clubs,
+            involvedClubs,
+            finances,
+            boardAfterRound,
+            round.competitionByClub(),
+        )
         newStandings.forEach { leagueRepo.saveStandings(it) }
 
         // Encaixe consumido: zera a prontidão para o próximo começar limpo
@@ -646,7 +668,7 @@ class PlayRoundService(
                         redCards = 0,
                         availability = Availability.Available,
                         stamina = 100,
-                    )
+                    ).withCleanRecord() // sem amarelo pendente nem gancho (issue #130)
                 }
                 current.copy(
                     squad = reset,
@@ -726,6 +748,7 @@ class PlayRoundService(
         cupPrizes: Map<ClubId, Money>,
     ): List<RoundFinance> {
         val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
+        val competitionOf = round.competitionByClub()
         // Folha segue as rodadas de LIGA; jogo de copa não cobra (issue #61).
         // Por clube desde o calendário semanal (issue #125): paga quem joga,
         // neste encaixe, uma rodada de liga que é "mês" de salário.
@@ -737,7 +760,9 @@ class PlayRoundService(
                 if (club.id.value in homeClubIds) {
                     gate(
                         stadiumCapacity = club.stadiumCapacity,
-                        homeStrength = club.startingLineup().teamStrength(),
+                        // Mesmo time que a engine pôs em campo (issue #130).
+                        homeStrength = (competitionOf[club.id]?.let(club::startingLineupIn) ?: club.startingLineup())
+                            .teamStrength(),
                         ticketPriceCents = club.ticketPriceCents,
                     )
                 } else {
@@ -791,6 +816,9 @@ class PlayRoundService(
      *   de titulares é vazio, então o elenco inteiro descansa.
      * @param boardAfterRound a confiança da diretoria depois da rodada (issue
      *   #62) — ver [boardEvaluator].
+     * @param competitionOf a competição que cada clube jogou no encaixe (issue
+     *   #130): decide o limite de estrangeiros dos titulares e em que
+     *   competição os cartões contam para suspensão.
      */
     private suspend fun persistRoundEffects(
         matchday: Matchday,
@@ -799,6 +827,7 @@ class PlayRoundService(
         playedClubs: Collection<Club>,
         finances: List<RoundFinance>,
         boardAfterRound: (Club) -> BoardExpectation?,
+        competitionOf: Map<ClubId, CompetitionId>,
     ): List<TrainingReport> {
         val playedIds = playedClubs.map { it.id }.toSet()
         val goals = mutableMapOf<Long, Int>()
@@ -829,14 +858,18 @@ class PlayRoundService(
         }
 
         val financeByClub = finances.associateBy { it.clubId.value }
+        val cardsByPlayer: Map<PlayerId, MatchCards> = (yellow.keys + red.keys).associate { id ->
+            PlayerId(id) to MatchCards(yellow = yellow[id] ?: 0, red = red[id] ?: 0)
+        }
         val training = mutableListOf<TrainingReport>()
 
         for (club in clubs) {
             // Quem entrou em campo — mesma escalação que a engine usou. Clube
             // que folgou não tem titular: o elenco inteiro recupera.
             val starterIds =
-                if (club.id in playedIds) club.startingLineup().players.map { it.id }.toSet()
-                else emptySet()
+                competitionOf[club.id]?.takeIf { club.id in playedIds }
+                    ?.let { club.startingLineupIn(it).players.map { p -> p.id }.toSet() }
+                    ?: emptySet()
 
             // Efeitos da rodada sobre o clube ATUAL (issue #89): na 1ª tentativa
             // é o `club` já lido; se outra escrita chegar antes do `save`,
@@ -871,13 +904,20 @@ class PlayRoundService(
                     }
                 }
 
+                // Suspensão por cartões (issue #130): conta só na competição que
+                // o clube jogou — quem estava suspenso cumpre um jogo, o 3º
+                // amarelo ou o vermelho abre gancho. Clube que folgou não muda.
+                val disciplined = competitionOf[club.id]?.takeIf { club.id in playedIds }
+                    ?.let { updatedSquad.afterMatchIn(it, cardsByPlayer) }
+                    ?: updatedSquad
+
                 // Semana de treino no foco escolhido (issue #58). Seed própria
                 // (`trainingSeed`) para não repetir a sequência do desgaste desta
                 // mesma rodada/clube. O relatório sai daqui pronto para o evento
                 // de fim de rodada, mesmo vazio — "treinei e ninguém evoluiu"
                 // também é notícia.
                 val trained = train(
-                    squad = updatedSquad,
+                    squad = disciplined,
                     focus = current.trainingFocus,
                     rng = Random(trainingSeed(matchday.serial, current.id)),
                 )

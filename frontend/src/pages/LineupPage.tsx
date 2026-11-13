@@ -12,6 +12,7 @@ import {
   POSTURE_LABEL,
   remapSlots,
 } from '../domain/formations'
+import { isForeign } from '../domain/players'
 import type { Club, Formation, Posture } from '../domain/types'
 import { FormationGrid } from '../components/FormationGrid'
 import { Button } from '../components/ui/Button'
@@ -91,10 +92,15 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
   const autoNotice = club.lineupIsDefault
     ? 'Escalação automática — é este o time que entra em campo se você não salvar.'
     : club.lineupAdjusted
-      ? 'Escalação ajustada — titulares lesionados ou vendidos foram trocados por reservas. É este o time que entra em campo se você não salvar.'
+      ? 'Escalação ajustada — titulares lesionados, suspensos ou vendidos foram trocados por reservas. É este o time que entra em campo se você não salvar.'
       : null
 
   const complete = slots.every((id) => id !== null)
+  // Contador de estrangeiros (issue #130): só CONTA o `foreign` que o backend
+  // marcou em cada jogador — quem é estrangeiro e qual o limite vêm do contrato.
+  const foreignersOnField = slots.filter(
+    (id) => id !== null && club.squad.some((p) => p.id === id && isForeign(p)),
+  ).length
 
   const setSlot = (i: number, playerId: number | null) => {
     setDraft((prev) => {
@@ -167,6 +173,9 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
           <p className="text-sm text-slate-400">
             {slots.filter((s) => s !== null).length}/11 titulares
           </p>
+          {club.foreignPlayerLimit !== undefined && (
+            <ForeignCounter count={foreignersOnField} limit={club.foreignPlayerLimit} />
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm text-slate-400" htmlFor="formation">Formação</label>
@@ -253,6 +262,24 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
         Suas alterações na escalação ainda não foram salvas e serão perdidas.
       </Modal>
     </section>
+  )
+}
+
+/**
+ * "Estrangeiros 3/9". Acima do limite fica vermelho e avisa — o salvamento
+ * segue permitido: quem recusa é o backend (`TOO_MANY_FOREIGN_PLAYERS`), e a
+ * mensagem do erro explica.
+ */
+function ForeignCounter({ count, limit }: { count: number; limit: number }) {
+  const over = count > limit
+  return (
+    <p
+      data-testid="foreign-counter"
+      className={over ? 'text-sm font-semibold text-red-400' : 'text-sm text-slate-400'}
+    >
+      Estrangeiros: {count}/{limit}
+      {over && ' — acima do limite da competição'}
+    </p>
   )
 }
 

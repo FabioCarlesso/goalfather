@@ -9,7 +9,14 @@
 // com a do slot — leitura, não regra.
 import { useState } from 'react'
 import { FORMATION_SLOTS, POSITION_ABBR, POSITION_LABEL } from '../domain/formations'
-import { injuryRoundsOut, isInjured, staminaLevel } from '../domain/players'
+import {
+  injuryRoundsOut,
+  isForeign,
+  isInjured,
+  isSuspended,
+  staminaLevel,
+  suspensionSummary,
+} from '../domain/players'
 import type { Formation, Player, Position } from '../domain/types'
 import { cx } from './ui/cx'
 
@@ -57,6 +64,9 @@ const playerSummary = (p: Player): string =>
     `OVR ${p.overall}`,
     `stamina ${p.stamina}%`,
     p.star ? 'estrela' : null,
+    isForeign(p) ? 'estrangeiro' : null,
+    // Suspenso (issue #130): o backend o deixa fora dos jogos da competição.
+    isSuspended(p) ? `suspenso: ${suspensionSummary(p)}` : null,
   ]
     .filter(Boolean)
     .join(', ')
@@ -200,6 +210,36 @@ function StaminaBar({ stamina }: { stamina: number }) {
   )
 }
 
+/**
+ * Selo de suspenso (issue #130): um cartão vermelho estilizado. Só visual — o
+ * texto para leitor de tela já está no `playerSummary`. O suspenso continua
+ * escalável: a suspensão é por competição e o backend o tira só do jogo dela.
+ */
+function SuspendedIcon() {
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="suspended-icon"
+      title="Suspenso"
+      className="inline-block h-3 w-2 shrink-0 rounded-[1px] bg-red-500"
+    />
+  )
+}
+
+/** Selo de estrangeiro (issue #130) — o `foreign` vem do contrato. */
+function ForeignIcon() {
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="foreign-icon"
+      title="Estrangeiro"
+      className="shrink-0 rounded bg-sky-900/50 px-1 text-[10px] font-semibold text-sky-300"
+    >
+      EST
+    </span>
+  )
+}
+
 const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300'
 
 function SlotButton({
@@ -249,6 +289,8 @@ function SlotButton({
           <span className="flex w-full min-w-0 items-center justify-center gap-0.5 text-xs font-medium">
             {player.star && <span aria-hidden="true" className="text-yellow-400">★</span>}
             <span className="truncate">{shortName(player.name)}</span>
+            {isSuspended(player) && <SuspendedIcon />}
+            {isForeign(player) && <ForeignIcon />}
           </span>
           <span className="text-xs tabular-nums text-slate-300">
             {player.overall}
@@ -308,6 +350,8 @@ function ReserveButton({
           Lesionado
         </span>
       )}
+      {isSuspended(player) && <SuspendedIcon />}
+      {isForeign(player) && <ForeignIcon />}
       <span className="w-6 shrink-0 text-right text-xs tabular-nums text-slate-300">{player.overall}</span>
       <span className="w-10 shrink-0">
         <StaminaBar stamina={player.stamina} />

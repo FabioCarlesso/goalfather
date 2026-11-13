@@ -144,7 +144,14 @@ fun seasonPlan(
 
     val leagues = byDivision.map { (division, divisionClubs) ->
         val country = divisionClubs.first().country
-        val competition = Competition(SeasonCompetitions.leagueId(division), SeasonCompetitions.leagueName(division), LEAGUE_FORMAT)
+        val leagueId = SeasonCompetitions.leagueId(division)
+        val competition = Competition(
+            leagueId,
+            SeasonCompetitions.leagueName(division),
+            LEAGUE_FORMAT,
+            discipline = SeasonCompetitions.disciplineOf(leagueId),
+            foreignPlayerLimit = SeasonCompetitions.foreignPlayerLimitOf(leagueId),
+        )
         val competitionSeason = CompetitionSeason.of(
             competition,
             SeasonSpan.of(country.confederation),
@@ -160,7 +167,13 @@ fun seasonPlan(
 
     val cupEntry = cup?.let {
         val (start, end) = cupWindow(season)
-        val competition = Competition(SeasonCompetitions.CUP_ID, SeasonCompetitions.CUP_NAME, cupFormat(clubs.size))
+        val competition = Competition(
+            SeasonCompetitions.CUP_ID,
+            SeasonCompetitions.CUP_NAME,
+            cupFormat(clubs.size),
+            discipline = SeasonCompetitions.disciplineOf(SeasonCompetitions.CUP_ID),
+            foreignPlayerLimit = SeasonCompetitions.foreignPlayerLimitOf(SeasonCompetitions.CUP_ID),
+        )
         val competitionSeason = CompetitionSeason(competition, season, start, end, pausesOnFifaWindows = true)
         val everyone = clubs.mapTo(HashSet()) { club -> club.id }
         SeasonCompetition.SeasonCup(competitionSeason) to it.phases.map { everyone }

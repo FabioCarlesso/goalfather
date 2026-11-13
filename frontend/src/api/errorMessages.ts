@@ -16,6 +16,7 @@ const MESSAGES: Record<string, string> = {
   INCOMPLETE_LINEUP: 'Escalação incompleta — preencha os 11 titulares.',
   INVALID_LINEUP: 'Escalação inválida — jogadores fora do elenco.',
   DUPLICATE_PLAYERS: 'Escalação inválida — o mesmo jogador está em mais de uma vaga.',
+  TOO_MANY_FOREIGN_PLAYERS: 'Escalação inválida — mais estrangeiros que o limite da competição.',
   INVALID_STADIUM_EXPANSION: `A ampliação mínima é de ${formatSeats(MIN_STADIUM_EXPANSION_SEATS)} assentos.`,
   // Lock otimista do clube (issue #89): nada foi aplicado.
   CLUB_WRITE_CONFLICT: 'O clube foi alterado por outra operação ao mesmo tempo. Confira os dados e tente de novo.',
@@ -39,6 +40,11 @@ export function isClubWriteConflict(error: unknown): boolean {
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     const code = error.body?.code
+    // O limite vem no `details` (issue #130): a mensagem diz o número sem a UI conhecê-lo.
+    const foreignLimit = error.body?.details?.limit
+    if (code === 'TOO_MANY_FOREIGN_PLAYERS' && foreignLimit) {
+      return `Escalação inválida — no máximo ${foreignLimit} estrangeiros em campo.`
+    }
     if (code && MESSAGES[code]) return MESSAGES[code]
     if (error.body?.message) return error.body.message
     if (error.status >= 500) return 'Erro no servidor. Tente novamente em instantes.'
