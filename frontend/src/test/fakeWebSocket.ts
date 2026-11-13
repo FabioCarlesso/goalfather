@@ -47,6 +47,11 @@ export class FakeWebSocket {
     act(() => this.onmessage?.({ data: JSON.stringify(event) }))
   }
 
+  /** Falha de rede/protocolo do lado do browser (`error` antes do `close`). */
+  fail() {
+    act(() => this.onerror?.())
+  }
+
   serverClose(code = 1000, reason = '') {
     act(() => {
       this.onclose?.({ code, reason })

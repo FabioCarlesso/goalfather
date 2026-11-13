@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useCurrentRound } from '../api/queries/useCurrentRound'
 import { useMatchPlayerLookup } from '../api/queries/useMatchPlayerLookup'
 import { wsUrl } from '../api/wsUrl'
+import { WS_CLOSE_NOT_STARTED } from '../api/wsProtocol'
 import { useMyClubId } from '../auth/useMyClubId'
 import { GoalAnnouncer } from '../components/GoalAnnouncer'
 import { MatchEventFeed } from '../components/MatchEventFeed'
@@ -13,7 +14,12 @@ import { useStreamSpeed } from '../lib/useStreamSpeed'
 import { POSTURE_LABEL } from '../domain/formations'
 import type { MatchEvent, MatchStats, Posture, StreamSpeed } from '../domain/types'
 
-type Status = 'connecting' | 'live' | 'finished' | 'error'
+// `notStarted` (issue #151): partida de encaixe ainda não liberado — o
+// servidor recusa o drill-down para não virar prévia do resultado.
+type Status = 'connecting' | 'live' | 'notStarted' | 'finished' | 'error'
+
+/** Mostrado quando o drill-down é recusado por encaixe não liberado (issue #151). */
+export const MATCH_NOT_STARTED_MESSAGE = 'Esta partida ainda não começou. Jogue a rodada para acompanhá-la ao vivo.'
 
 interface Teams {
   home: string
@@ -76,6 +82,11 @@ function MatchView({ matchId }: { matchId: string }) {
       setStatus('error')
     }
     socket.onclose = (e) => {
+      if (e.code === WS_CLOSE_NOT_STARTED) {
+        setStatus('notStarted')
+        setError(MATCH_NOT_STARTED_MESSAGE)
+        return
+      }
       setStatus((prev) => (prev === 'error' ? 'error' : 'finished'))
       if (e.code !== 1000 && e.code !== 1005 && e.reason) setError(e.reason)
     }
@@ -150,7 +161,16 @@ function MatchView({ matchId }: { matchId: string }) {
       </header>
 
       {error && (
-        <div className="rounded-lg border border-red-700/50 bg-red-900/20 p-3 text-sm text-red-300">
+        // Encaixe não liberado (issue #151) é aviso, não falha: tom neutro e
+        // anunciado como status, não como erro.
+        <div
+          role={status === 'notStarted' ? 'status' : undefined}
+          className={
+            status === 'notStarted'
+              ? 'rounded-lg border border-amber-700/50 bg-amber-900/20 p-3 text-sm text-amber-200'
+              : 'rounded-lg border border-red-700/50 bg-red-900/20 p-3 text-sm text-red-300'
+          }
+        >
           {error}
         </div>
       )}

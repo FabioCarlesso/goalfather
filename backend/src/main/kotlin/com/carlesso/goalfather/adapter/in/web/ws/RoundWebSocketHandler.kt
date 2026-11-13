@@ -10,7 +10,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.lastOrNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -44,6 +45,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
  * alguém reconectar. Sem ninguém assistindo, o pacing perde o sentido: os
  * delays e os envios são pulados e a rodada termina em milissegundos.
  * Reconexões concorrentes continuam seguras — só um stream vence o claim.
+ *
+ * Prontidão (issue #151): encaixe ainda não liberado pelo `POST /round/play`
+ * não é simulado. O use case devolve só `RoundNotStarted`, que vai ao cliente
+ * como evento, seguido de close NORMAL com motivo [NOT_STARTED_REASON].
  */
 class RoundWebSocketHandler(
     private val playRound: PlayRoundUseCase,
@@ -60,6 +65,9 @@ class RoundWebSocketHandler(
     companion object {
         /** Pausa antes dos sinais de encerramento, em qualquer velocidade. */
         const val END_SIGNAL_GAP_MS: Long = 50
+
+        /** Motivo do close quando o encaixe ainda não foi liberado (issue #151). */
+        const val NOT_STARTED_REASON = "Encaixe nao liberado"
     }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
@@ -76,8 +84,26 @@ class RoundWebSocketHandler(
         scope.launch {
             try {
                 var lastMinute = 0
-                playRound.stream(matchday).collect { event ->
+                // `onEach` faz o envio de cada evento; `lastOrNull` é o operador
+                // terminal que coleta o Flow e devolve o último — é dele que sai
+                // o motivo do close, sem estado mutável compartilhado com o
+                // cálculo do pacing.
+                val last = playRound.stream(matchday).onEach { event ->
                     val delayMs = when (event) {
+                        // Encaixe ainda `Scheduled` (issue #151): o gate de
+                        // prontidão barrou. Não é erro do servidor — o cliente
+                        // recebe o evento e um close NORMAL (1000), e volta a
+                        // aguardar a prontidão. WARN porque o frontend oficial só
+                        // abre o WS depois de um `play` com sucesso: chegar aqui
+                        // indica cliente fora do fluxo (ou com bug).
+                        RoundEvent.RoundNotStarted -> {
+                            log.warn(
+                                "WS slot rejeitado, encaixe nao liberado: session={} matchday={}",
+                                session.id,
+                                matchday.key,
+                            )
+                            0L
+                        }
                         is RoundEvent.MatchUpdate -> {
                             val gap = speed.gapMs(lastMinute, event.event.minute)
                             lastMinute = event.event.minute
@@ -95,10 +121,14 @@ class RoundWebSocketHandler(
                         val payload = json.encodeToString(RoundEventDto.serializer(), event.toDto())
                         session.sendMessage(TextMessage(payload))
                     }
-                }
+                }.lastOrNull()
+
                 if (session.isOpen) {
-                    delay(END_SIGNAL_GAP_MS)
-                    session.close(CloseStatus.NORMAL.withReason("Rodada encerrada"))
+                    val reason = if (last == RoundEvent.RoundNotStarted) NOT_STARTED_REASON else "Rodada encerrada"
+                    // Pelo `pause` injetado, como o resto do pacing: os testes
+                    // enxergam essa espera em vez de dormir de verdade.
+                    pause(END_SIGNAL_GAP_MS)
+                    session.close(CloseStatus.NORMAL.withReason(reason))
                 }
             } catch (e: CancellationException) {
                 // Cancelamento é fluxo normal de coroutine (ex.: shutdown), não

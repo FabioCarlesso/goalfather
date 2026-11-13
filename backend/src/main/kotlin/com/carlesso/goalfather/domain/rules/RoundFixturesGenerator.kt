@@ -73,7 +73,7 @@ fun leagueMatches(matchday: Matchday, leagueRound: Int, division: Division, club
             // encaixe × 1000 + divisão × 100 + índice: único no jogo inteiro (o
             // serial do encaixe não se repete entre temporadas) e é a seed do RNG
             // da simulação. Mesma fórmula do mock em frontend/src/mocks/seed.ts.
-            matchId = matchday.serial * 1000L + division.value * 100L + i + 1,
+            matchId = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY + division.value * 100L + i + 1,
             homeClubId = home.id,
             awayClubId = away.id,
             homeClubName = home.name,

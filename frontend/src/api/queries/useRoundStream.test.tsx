@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
-import { deriveMatchStates, useRoundStream } from './useRoundStream'
+import { deriveMatchStates, NOT_STARTED_MESSAGE, useRoundStream } from './useRoundStream'
 import { standingsKey } from './useStandings'
 import { makeQueryClient } from '../../test/render'
 import { server } from '../../test/setup'
@@ -205,6 +205,43 @@ describe('useRoundStream (issue #112)', () => {
     expect(result.current.status).toBe('finished')
     expect(result.current.error).toBe('Rodada 3 não está corrente')
     expect(result.current.outcome).toBeNull()
+  })
+
+  it('encaixe não liberado volta a aguardar a prontidão (issue #151)', async () => {
+    const { result } = renderStream()
+    const socket = await startAndOpen(result)
+    socket.emit({ type: 'RoundNotStarted' })
+    socket.serverClose(1000)
+
+    // `notStarted`, e não `finished`: a rodada não foi jogada.
+    expect(result.current.status).toBe('notStarted')
+    expect(result.current.error).toBe(NOT_STARTED_MESSAGE)
+    expect(result.current.outcome).toBeNull()
+    expect(result.current.shownRound).toBe(round)
+    expect(result.current.matchStates.get(10)?.status).toBe('Scheduled')
+  })
+
+  it('depois do RoundNotStarted, erro ou close anormal não troca o aviso (issue #151)', async () => {
+    const { result } = renderStream()
+    const socket = await startAndOpen(result)
+    socket.emit({ type: 'RoundNotStarted' })
+    socket.fail()
+    socket.serverClose(1006, 'Conexão caiu')
+
+    expect(result.current.status).toBe('notStarted')
+    expect(result.current.error).toBe(NOT_STARTED_MESSAGE)
+  })
+
+  it('abre o WS no encaixe que o play liberou, não no do cache (issue #151)', async () => {
+    // Cache atrasado: a rodada corrente em cache é a W03, mas o servidor já
+    // liberou a W04 (outro técnico encerrou a anterior).
+    server.use(http.post('/api/league/round/play', () => HttpResponse.json({ matchday: '2026-W04-WEEKEND' })))
+    const { result } = renderStream()
+    await act(() => result.current.start())
+
+    expect(FakeSocket.last().url).toContain('/ws/slot/2026-W04-WEEKEND')
+    // A grade não fica presa na data velha: volta para a corrente.
+    expect(result.current.shownRound).toBe(round)
   })
 
   it('jogar de novo solta o socket anterior e recomeça do zero', async () => {

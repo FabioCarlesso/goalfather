@@ -19,6 +19,7 @@ import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TransferOffer
@@ -83,6 +84,8 @@ class BoardRoundFlowTest {
         coEvery { leagueRepo.findRound(md(1)) } returns Round(
             matchday = md(1),
             season = 2026,
+            // O WS só simula encaixe já liberado pelo `play` (issue #151).
+            status = RoundStatus.InProgress,
             matches = listOf(RoundMatch(1001, ClubId(100), ClubId(101), "X", "Y")),
         )
         coEvery { leagueRepo.currentStandings() } returns standings.toList()

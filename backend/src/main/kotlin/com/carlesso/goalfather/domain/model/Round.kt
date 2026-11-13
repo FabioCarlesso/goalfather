@@ -113,6 +113,16 @@ data class Round(
     val isFinished: Boolean
         get() = matches.all { it.status == RoundStatus.Finished }
 
+    /**
+     * Liberado pelo fluxo de início (issue #151): só `RoundReadinessService.start`
+     * tira o encaixe de `Scheduled`, e só com todos os técnicos prontos ou o
+     * timeout vencido. Antes disso, nenhum stream — rodada ou drill-down — pode
+     * simular as partidas: o resultado é determinístico (seed = `matchId`), e
+     * vê-lo antes seria trocar a escalação até ganhar.
+     */
+    val isReleased: Boolean
+        get() = status != RoundStatus.Scheduled
+
     /** Clubes em campo neste encaixe — quem "joga" para lesões, folha e diretoria. */
     val clubsInAction: Set<ClubId>
         get() = matches.flatMapTo(HashSet()) { listOf(it.homeClubId, it.awayClubId) }

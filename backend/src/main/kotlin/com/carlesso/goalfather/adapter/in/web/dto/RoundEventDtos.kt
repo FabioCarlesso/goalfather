@@ -98,6 +98,14 @@ data class BoardReviewDto(
 @JsonClassDiscriminator("type")
 sealed interface RoundEventDto {
 
+    /**
+     * Encaixe ainda não liberado (issue #151). `object` serializável sai só com
+     * o discriminador: `{"type":"RoundNotStarted"}`.
+     */
+    @Serializable
+    @SerialName("RoundNotStarted")
+    data object RoundNotStarted : RoundEventDto
+
     @Serializable
     @SerialName("MatchUpdate")
     data class MatchUpdate(val matchId: Long, val event: MatchEvent) : RoundEventDto
@@ -163,6 +171,9 @@ fun BoardReview.toDto(): BoardReviewDto = BoardReviewDto(
  * compilação aqui em vez de sair no formato errado em runtime.
  */
 fun RoundEvent.toDto(): RoundEventDto = when (this) {
+    // `data object`: casa por igualdade (sem `is`), como uma constante de enum.
+    RoundEvent.RoundNotStarted -> RoundEventDto.RoundNotStarted
+
     is RoundEvent.MatchUpdate -> RoundEventDto.MatchUpdate(matchId = matchId, event = event)
 
     is RoundEvent.RoundFinished -> RoundEventDto.RoundFinished(

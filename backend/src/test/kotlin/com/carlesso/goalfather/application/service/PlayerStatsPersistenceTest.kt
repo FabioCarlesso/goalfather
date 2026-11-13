@@ -10,6 +10,7 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.test.InMemoryCupRepository
@@ -53,9 +54,11 @@ class PlayerStatsPersistenceTest {
     private val away = makeClub(id = 2, name = "Away FC")
         .copy(squad = (101L..111L).map { makePlayer(it, overall = 70) })
 
+    // `InProgress`: o WS só simula encaixe já liberado pelo `play` (issue #151).
     private val round = Round(
         matchday = md(1),
         season = 2026,
+        status = RoundStatus.InProgress,
         matches = listOf(
             RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC"),
         ),

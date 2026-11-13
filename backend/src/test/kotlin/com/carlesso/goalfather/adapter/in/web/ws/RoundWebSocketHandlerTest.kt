@@ -83,8 +83,9 @@ class RoundWebSocketHandlerTest {
         return Transmission(pauses.toList(), frames.toList())
     }
 
-    // 9 saltos de 10 minutos entre os 10 MatchUpdate + o gap fixo do RoundFinished.
-    private fun expectedPauses(msPerMinute: Long) = List(9) { 10 * msPerMinute }.filter { it > 0 } + 50L
+    // 9 saltos de 10 minutos entre os 10 MatchUpdate + o gap fixo do
+    // RoundFinished + o gap antes do close (também pelo `pause`).
+    private fun expectedPauses(msPerMinute: Long) = List(9) { 10 * msPerMinute }.filter { it > 0 } + 50L + 50L
 
     @Test
     fun `speed ausente - ritmo NORMAL de 80ms por minuto`() {
@@ -95,8 +96,8 @@ class RoundWebSocketHandlerTest {
     fun `speed valido - cada velocidade aplica o proprio intervalo`() {
         assertEquals(expectedPauses(160), transmit("?speed=SLOW").pauses)
         assertEquals(expectedPauses(20), transmit("?speed=FAST").pauses)
-        // INSTANT: só sobra o gap dos sinais de encerramento.
-        assertEquals(listOf(50L), transmit("?token=x&speed=INSTANT").pauses)
+        // INSTANT: só sobram os gaps de encerramento (RoundFinished e close).
+        assertEquals(listOf(50L, 50L), transmit("?token=x&speed=INSTANT").pauses)
     }
 
     @Test
@@ -180,5 +181,30 @@ class RoundWebSocketHandlerTest {
         val retirement = payload.getValue("retirements").jsonArray.single().jsonObject
         assertEquals("true", retirement.getValue("retired").jsonObject.getValue("star").jsonPrimitive.content)
         assertEquals("false", retirement.getValue("promoted").jsonObject.getValue("star").jsonPrimitive.content)
+    }
+
+    @Test
+    fun `encaixe nao liberado - envia RoundNotStarted e fecha NORMAL com motivo proprio`() {
+        // Issue #151: o use case barra o encaixe `Scheduled` com um único evento;
+        // o handler o repassa como `{"type":"RoundNotStarted"}` e fecha em 1000
+        // (não é erro de servidor), sem pacing — só o gap antes do close.
+        val closed = CountDownLatch(1)
+        val frames = Collections.synchronizedList(mutableListOf<String>())
+        val pauses = Collections.synchronizedList(mutableListOf<Long>())
+        val closeStatus = slot<CloseStatus>()
+        val useCase = object : PlayRoundUseCase {
+            override fun stream(matchday: Matchday) = flowOf<RoundEvent>(RoundEvent.RoundNotStarted)
+        }
+        val session = session(AtomicBoolean(true))
+        every { session.sendMessage(any()) } answers { frames += firstArg<TextMessage>().payload }
+        every { session.close(capture(closeStatus)) } answers { closed.countDown() }
+
+        RoundWebSocketHandler(useCase, json, pause = { pauses += it }).afterConnectionEstablished(session)
+
+        assertTrue(closed.await(2, TimeUnit.SECONDS), "o handler deveria encerrar a conexão")
+        assertEquals(listOf("""{"type":"RoundNotStarted"}"""), frames.toList())
+        assertEquals(CloseStatus.NORMAL.code, closeStatus.captured.code)
+        assertEquals(RoundWebSocketHandler.NOT_STARTED_REASON, closeStatus.captured.reason)
+        assertEquals(listOf(RoundWebSocketHandler.END_SIGNAL_GAP_MS), pauses.toList())
     }
 }

@@ -207,6 +207,18 @@ class RoundEventDtosTest {
         assertEquals("false", injured.getValue("player").jsonObject.string("star"))
     }
 
+    // ─── RoundNotStarted ──────────────────────────────────────────────────
+
+    @Test
+    fun `RoundNotStarted sai so com o discriminador do contrato (issue 151)`() {
+        // `RoundNotStartedEvent` no contrato: `required: [type]`, nenhum campo a
+        // mais. O `ContractDriftTest` não olha rotas `/ws`, então a guarda é aqui.
+        val encoded = encode(RoundEvent.RoundNotStarted)
+
+        assertEquals(setOf("type"), encoded.keys)
+        assertEquals("RoundNotStarted", encoded.string("type"))
+    }
+
     // ─── MatchUpdate ──────────────────────────────────────────────────────
 
     @Test

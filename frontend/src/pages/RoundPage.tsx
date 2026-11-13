@@ -67,8 +67,10 @@ export function RoundPage() {
 
   const shown = shownRound ?? round
   const busy = status === 'connecting' || status === 'live'
+  // `notStarted` (issue #151): o servidor recusou o stream — de volta ao início.
+  const idle = status === 'idle' || status === 'notStarted'
   const buttonLabel =
-    status === 'idle'       ? 'Jogar rodada' :
+    idle                    ? 'Jogar rodada' :
     status === 'connecting' ? 'Iniciando…' :
     status === 'live'       ? 'Rodada em andamento…' :
     status === 'finished'   ? 'Próxima rodada' :
@@ -128,7 +130,16 @@ export function RoundPage() {
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-700/50 bg-red-900/20 p-3 text-sm text-red-300">
+        // Encaixe não liberado (issue #151) é aviso, não falha: tom neutro e
+        // anunciado como status, não como erro.
+        <div
+          role={status === 'notStarted' ? 'status' : undefined}
+          className={
+            status === 'notStarted'
+              ? 'rounded-lg border border-amber-700/50 bg-amber-900/20 p-3 text-sm text-amber-200'
+              : 'rounded-lg border border-red-700/50 bg-red-900/20 p-3 text-sm text-red-300'
+          }
+        >
           {error}
         </div>
       )}
@@ -165,7 +176,7 @@ export function RoundPage() {
           <MatchEventFeed
             events={myMatchEvents}
             playerLookup={playerLookup}
-            emptyLabel={status === 'idle' ? 'Clique em "Jogar rodada" para começar.' : 'Aguardando início…'}
+            emptyLabel={idle ? 'Clique em "Jogar rodada" para começar.' : 'Aguardando início…'}
             className="h-72"
           />
           {myMatchStats && (

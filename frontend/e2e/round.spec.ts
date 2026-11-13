@@ -1,4 +1,4 @@
-import { expect, test } from './helpers'
+import { expect, registerRival, test } from './helpers'
 
 // Fluxo critico do FRONTEND.md: abrir /round, jogar a rodada, ver o feed
 // da partida do usuario chegar ao FullTime, e validar que a tabela foi
@@ -100,5 +100,53 @@ test.describe('Round flow', () => {
 
     await page.reload()
     await expect(page.getByLabel('Velocidade')).toHaveValue('FAST')
+  })
+
+  // Issue #151: o gate de prontidão vale no WS, não só no `POST /round/play`.
+  // Com um técnico pendente, abrir `/ws/slot/{key}` direto (sem a UI) não pode
+  // jogar o encaixe: chega só o `RoundNotStarted`, e a data corrente segue a
+  // mesma, ainda `Scheduled`.
+  test('WS de encaixe não liberado não simula nada, mesmo aberto sem passar pelo play', async ({ page }) => {
+    await page.goto('/round')
+    await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
+    const rival = await registerRival(page)
+    expect(rival, 'precisa de um clube livre para o segundo técnico').not.toBeNull()
+
+    // Pronto → play → WS no MESMO evaluate, a milissegundos um do outro: no
+    // profile `e2e` o timeout da prontidão é 5s, e passar dele liberaria o
+    // encaixe de verdade (escape hatch da #45) — o teste mediria outra coisa.
+    const outcome = await page.evaluate(async () => {
+      const token = localStorage.getItem('gf:token') ?? ''
+      const auth = { Authorization: `Bearer ${token}` }
+      const current = async () =>
+        (await (await fetch('/api/league/round/current', { headers: auth })).json()) as
+          { matchday: { key: string }; status: string }
+      const before = await current()
+      await fetch('/api/league/round/ready', { method: 'POST', headers: auth })
+      const play = await fetch('/api/league/round/play', { method: 'POST', headers: auth })
+
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const url = `${protocol}//${location.host}/ws/slot/${before.matchday.key}?token=${token}&speed=INSTANT`
+      const { messages, code } = await new Promise<{ messages: string[]; code: number }>((resolve) => {
+        const received: string[] = []
+        const socket = new WebSocket(url)
+        // Sem close em 10s = regressão (ex.: o gate sumiu e o stream segue):
+        // falha rápido, com o que chegou até ali, em vez do timeout global.
+        const timer = setTimeout(() => resolve({ messages: received, code: -1 }), 10_000)
+        socket.onmessage = (e) => received.push(String(e.data))
+        socket.onclose = (e) => {
+          clearTimeout(timer)
+          resolve({ messages: received, code: e.code })
+        }
+      })
+      const after = await current()
+      return { playStatus: play.status, messages, code, before, after }
+    })
+
+    expect(outcome.playStatus).toBe(409)
+    expect(outcome.messages.map((m) => (JSON.parse(m) as { type: string }).type)).toEqual(['RoundNotStarted'])
+    expect(outcome.code).toBe(1000)
+    expect(outcome.after.matchday.key).toBe(outcome.before.matchday.key)
+    expect(outcome.after.status).toBe('Scheduled')
   })
 })
