@@ -136,7 +136,13 @@ class RoundTransition(
         // se repete: a linha de uma temporada não é mais reescrita pela seguinte,
         // e o antigo guard por `season` (que existia porque a PK era só o número
         // da rodada) deixou de ser necessário. Basta o status.
-        if (entity.status == RoundStatusEnum.Finished) return false
+        // Só um encaixe LIBERADO termina. Desde a #151 o stream só roda depois
+        // de `start` (`Scheduled → InProgress`), então `Scheduled` aqui é um
+        // stream órfão: a coroutine da rodada sobrevive ao cliente (ver
+        // `RoundWebSocketHandler`) e, se o estado foi recriado no meio (reset
+        // do profile e2e), o mesmo encaixe reaparece `Scheduled` — sem este
+        // guard o órfão aplicaria lesões, cartões e suspensões à liga nova.
+        if (entity.status != RoundStatusEnum.InProgress) return false
         roundRepo.save(entity.updateFrom(round, json)) // grava placares + Finished
         return true
     }
