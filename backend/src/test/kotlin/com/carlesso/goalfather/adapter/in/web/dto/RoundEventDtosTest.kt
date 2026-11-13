@@ -142,12 +142,13 @@ class RoundEventDtosTest {
         assertEquals(
             setOf(
                 "position", "clubId", "clubName", "played", "wins", "draws", "losses",
-                "goalsFor", "goalsAgainst", "goalDifference", "points",
+                "goalsFor", "goalsAgainst", "goalDifference", "points", "zone",
             ),
             rowJson.keys,
         )
         assertEquals("1", rowJson.string("clubId"))
         assertEquals("6", rowJson.string("points"))
+        assertEquals("NONE", rowJson.string("zone"))
     }
 
     // ─── RoundFinished ────────────────────────────────────────────────────

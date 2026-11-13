@@ -1,10 +1,11 @@
 // Testes do mock de divisões (issue #47) — garantem que a engine de mock
-// espelha as regras do backend (PromotionRelegationRules/RoundFixturesGenerator)
+// espelha as regras do backend (QualificationRules/RoundFixturesGenerator)
 // até o backend assumir de vez.
 
 import { describe, expect, it } from 'vitest'
 import {
   applyPromotionRelegation,
+  applyRoundToStandings,
   initialStandings,
   PROMOTION_RELEGATION_SPOTS,
   SEASON_ROUNDS,
@@ -23,7 +24,7 @@ const table = (division: number, clubIds: number[], overrides?: Partial<Standing
     clubId,
     clubName: `Club ${clubId}`,
     played: 5, wins: 0, draws: 0, losses: 0,
-    goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+    goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, zone: 'NONE',
   })),
   ...overrides,
 })
@@ -72,5 +73,29 @@ describe('seed de divisões (issue #47)', () => {
     // Balanceado: 6 clubes em cada divisão após a troca.
     expect(Object.values(next).filter((d) => d === 1)).toHaveLength(6)
     expect(Object.values(next).filter((d) => d === 2)).toHaveLength(6)
+  })
+})
+
+describe('faixas da tabela no mock (issue #128)', () => {
+  it('a faixa de cada linha espelha a pirâmide: Z-2 na elite, acesso no topo da 2ª', () => {
+    expect(initialStandings[0]!.rows.map((r) => r.zone)).toEqual(
+      ['NONE', 'NONE', 'NONE', 'NONE', 'RELEGATION', 'RELEGATION'],
+    )
+    expect(initialStandings[1]!.rows.map((r) => r.zone)).toEqual(
+      ['PROMOTION', 'PROMOTION', 'NONE', 'NONE', 'NONE', 'NONE'],
+    )
+  })
+
+  it('a faixa é da POSIÇÃO: reordenar a tabela mantém as faixas no lugar', () => {
+    // Todos os visitantes vencem: a ordem da tabela muda.
+    const round = {
+      ...state.currentRound,
+      matches: state.currentRound.matches.map((m) => ({ ...m, status: 'Finished' as const, homeGoals: 0, awayGoals: 3 })),
+    }
+    const before = initialStandings[0]!
+    const after = applyRoundToStandings(round, before)
+
+    expect(after.rows.map((r) => r.clubId)).not.toEqual(before.rows.map((r) => r.clubId))
+    expect(after.rows.map((r) => r.zone)).toEqual(before.rows.map((r) => r.zone))
   })
 })

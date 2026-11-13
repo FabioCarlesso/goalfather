@@ -18,6 +18,7 @@ import com.carlesso.goalfather.domain.model.SeasonStanding
 import com.carlesso.goalfather.domain.model.SeasonTopScorer
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.TableZone
 import com.carlesso.goalfather.test.md
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -58,7 +59,7 @@ class LeagueDtosTest {
 
     private val standingRowKeys = setOf(
         "position", "clubId", "clubName", "played", "wins", "draws", "losses",
-        "goalsFor", "goalsAgainst", "goalDifference", "points",
+        "goalsFor", "goalsAgainst", "goalDifference", "points", "zone",
     )
     private val seasonStandingKeys = setOf("division", "row", "pointsPercentage")
 
@@ -86,6 +87,21 @@ class LeagueDtosTest {
         val rowJson = encoded.getValue("rows").jsonArray.single().jsonObject
         assertEquals(standingRowKeys, rowJson.keys)
         assertEquals("1", rowJson.string("clubId"))
+    }
+
+    @Test
+    fun `cada linha traz a faixa da posicao com o nome do enum do contrato (issue 128)`() {
+        val relegated = row.copy(position = 6, clubId = ClubId(6), clubName = "Zeta", zone = TableZone.RELEGATION)
+
+        // JSON literal: a faixa sai com o nome exato do `enum` TableZone do contrato.
+        assertEquals(
+            """{"position":6,"clubId":6,"clubName":"Zeta","played":10,"wins":8,"draws":0,"losses":2,""" +
+                """"goalsFor":20,"goalsAgainst":8,"goalDifference":12,"points":24,"zone":"RELEGATION"}""",
+            json.encodeToString(StandingRowDto.serializer(), relegated.toDto()),
+        )
+        val zones = listOf(TableZone.QUALIFICATION, TableZone.PROMOTION, TableZone.PLAYOFF, TableZone.NONE)
+            .map { encode(StandingRowDto.serializer(), row.copy(zone = it).toDto()).string("zone") }
+        assertEquals(listOf("QUALIFICATION", "PROMOTION", "PLAYOFF", "NONE"), zones)
     }
 
     // ─── SeasonRecord ─────────────────────────────────────────────────────

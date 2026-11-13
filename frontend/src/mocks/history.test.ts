@@ -19,6 +19,7 @@ const table = (division: number, clubIds: number[], points: number[]): Standings
     played: 5, wins: 0, draws: 0, losses: 0,
     goalsFor: 0, goalsAgainst: 0, goalDifference: 0,
     points: points[i] ?? 0,
+    zone: 'NONE',
   })),
 })
 

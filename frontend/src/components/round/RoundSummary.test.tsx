@@ -28,7 +28,7 @@ const myMatch: RoundMatch = {
 function row(position: number, clubId: number, clubName: string, points: number): StandingRow {
   return {
     position, clubId, clubName, points,
-    played: 5, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0,
+    played: 5, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, zone: 'NONE',
   }
 }
 
