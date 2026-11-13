@@ -126,7 +126,15 @@ class PlayMatchServiceTest {
         coEvery { clubRepo.findById(ClubId(2)) } returns away
 
         val expected = MatchSimulator().simulate(
-            MatchSetup(home.startingLineup(), away.startingLineup(), "Home FC", "Away FC", knockout = true),
+            MatchSetup(
+                home.startingLineup(),
+                away.startingLineup(),
+                "Home FC",
+                "Away FC",
+                knockout = true,
+                homeClubId = home.id,
+                awayClubId = away.id,
+            ),
             Random(cupId),
         ).toList()
         assertEquals(expected, events(cupId))
@@ -144,6 +152,8 @@ class PlayMatchServiceTest {
             makeClub(id = 2, overall = 70).startingLineup(),
             "Home FC",
             "Away FC",
+            homeClubId = ClubId(1),
+            awayClubId = ClubId(2),
         )
         val quick = QuickMatchSimulator().simulate(setup, Random(matchId))
         assertEquals(listOf(setup.kickOff()) + quick.summary(), events())

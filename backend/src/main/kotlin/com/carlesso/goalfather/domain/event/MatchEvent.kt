@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.event
 
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Posture
 import kotlinx.serialization.SerialName
@@ -37,6 +38,14 @@ sealed interface MatchEvent {
         val awayStrength: Double,
         val homePosture: Posture = Posture.BALANCED,
         val awayPosture: Posture = Posture.BALANCED,
+        /**
+         * Ids dos clubes, para o drill-down resolver os nomes dos jogadores
+         * mesmo depois que o encaixe saiu da rodada corrente. `null` (e
+         * ausente no JSON, por `explicitNulls = false`) em partida avulsa sem
+         * clube persistido.
+         */
+        val homeClubId: ClubId? = null,
+        val awayClubId: ClubId? = null,
     ) : MatchEvent
 
     @Serializable

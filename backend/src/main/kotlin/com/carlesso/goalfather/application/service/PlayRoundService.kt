@@ -218,6 +218,8 @@ class PlayRoundService(
                 // Por PARTIDA desde o calendário semanal (issue #125): o mesmo
                 // encaixe pode ter liga e copa.
                 knockout = match.isKnockout,
+                homeClubId = match.homeClubId,
+                awayClubId = match.awayClubId,
             )
             // Com técnico humano em campo → engine completa e stream; jogo só
             // da IA → simulação rápida, sem transmissão (issue #129).

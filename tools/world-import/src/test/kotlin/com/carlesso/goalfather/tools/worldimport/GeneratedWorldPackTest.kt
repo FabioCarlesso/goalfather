@@ -4,6 +4,7 @@ import com.carlesso.goalfather.adapter.out.worlddata.FileWorldDataProvider
 import com.carlesso.goalfather.application.port.out.PackLoadResult
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Position
+import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.world.WorldPack
 import com.carlesso.goalfather.tools.worldimport.wikidata.CacheMode
 import com.carlesso.goalfather.tools.worldimport.wikidata.SparqlClient
@@ -61,6 +62,30 @@ class GeneratedWorldPackTest {
         pack().clubs.forEach { club ->
             assertTrue(club.squad.size >= 22, "${club.id}: ${club.squad.size} jogadores")
             assertTrue(club.squad.count { it.position == Position.GK } >= 2, "${club.id}: menos de 2 goleiros")
+        }
+    }
+
+    /**
+     * Limite de estrangeiros (issue #130): com mais estrangeiros que o limite e
+     * sem nacionais suficientes, a escalação automática entraria com menos de
+     * 11 — correto pela regra, mas um clube da IA jogaria desfalcado toda
+     * rodada. O pack garante que nenhum clube brasileiro chegue nesse estado.
+     */
+    @Test
+    fun `todo clube brasileiro escala 11 dentro do limite de estrangeiros`() = runTest {
+        val pack = pack()
+        val limit = SeasonCompetitions.NATIONAL_FOREIGN_PLAYER_LIMIT
+        val brazilian = pack.competitions
+            .filter { it.id.value.startsWith("bra-") }
+            .flatMap { it.clubIds }
+            .toSet()
+        brazilian.map { id -> pack.clubs.single { it.id == id } }.forEach { club ->
+            // `partition` separa numa passada só: (estrangeiros, nacionais).
+            val (foreigners, nationals) = club.squad.partition {
+                it.nationality != club.country && it.secondNationality != club.country
+            }
+            val eligible = nationals.size + minOf(foreigners.size, limit)
+            assertTrue(eligible >= 11, "${club.id}: só $eligible aptos (${foreigners.size} estrangeiros, limite $limit)")
         }
     }
 

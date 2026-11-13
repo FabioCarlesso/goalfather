@@ -758,6 +758,7 @@ export const handlers = [
       awaySquad:    aiOpponentSquad,
       homeTactics:  tacticsOf(1),
       awayTactics:  DEFAULT_TACTICS,   // adversário mock: sempre equilibrado
+      homeClubId:   1,
     }
 
     let cancelled = false
@@ -938,6 +939,8 @@ export const handlers = [
         homeTactics:  tacticsOf(home.id),
         awayTactics:  tacticsOf(away.id),
         knockout:     match.stage.type === 'Cup',
+        homeClubId:   match.homeClubId,
+        awayClubId:   match.awayClubId,
       }
       for (const event of simulateMatch(setup)) {
         allEvents.push({ matchId: match.matchId, event })

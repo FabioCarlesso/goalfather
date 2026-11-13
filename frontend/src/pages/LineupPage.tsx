@@ -92,7 +92,7 @@ function LineupForm({ club, serverStale }: { club: Club; serverStale: boolean })
   const autoNotice = club.lineupIsDefault
     ? 'Escalação automática — é este o time que entra em campo se você não salvar.'
     : club.lineupAdjusted
-      ? 'Escalação ajustada — titulares lesionados, suspensos ou vendidos foram trocados por reservas. É este o time que entra em campo se você não salvar.'
+      ? 'Escalação ajustada — titulares lesionados, suspensos, vendidos ou acima do limite de estrangeiros saíram do time (no lugar entra um reserva apto, se houver). É este o time que entra em campo se você não salvar.'
       : null
 
   const complete = slots.every((id) => id !== null)

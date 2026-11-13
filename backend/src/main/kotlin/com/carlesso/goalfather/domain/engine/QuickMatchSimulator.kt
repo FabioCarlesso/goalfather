@@ -2,17 +2,13 @@ package com.carlesso.goalfather.domain.engine
 
 import com.carlesso.goalfather.domain.engine.MatchSimulator.Companion.EVENT_RATE
 import com.carlesso.goalfather.domain.engine.MatchSimulator.Companion.P_CARD
-import com.carlesso.goalfather.domain.engine.MatchSimulator.Companion.P_GOAL
 import com.carlesso.goalfather.domain.engine.MatchSimulator.Companion.P_MISS
 import com.carlesso.goalfather.domain.engine.MatchSimulator.Companion.P_RED_CARD
-import com.carlesso.goalfather.domain.engine.MatchSimulator.Companion.P_SAVE
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.MatchStats
 import com.carlesso.goalfather.domain.event.TeamStats
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
-import com.carlesso.goalfather.domain.model.attackFactor
-import com.carlesso.goalfather.domain.model.defenseFactor
 import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.drawInjuryDuration
 import com.carlesso.goalfather.domain.rules.drawShooter
@@ -222,35 +218,6 @@ class QuickMatchSimulator {
 }
 
 /**
- * As probabilidades de um lance, função pura do `MatchSetup` (força × tática).
- * É a MESMA conta que o [MatchSimulator] faz no início de cada partida — com os
- * mesmos fatores de domínio (`teamStrength`, `attackFactor`, `defenseFactor`)
- * e as mesmas constantes do companion dele. A engine completa não foi tocada
- * pela issue #129 (fora de escopo); o teste estatístico rápida × completa é o
- * que garante que as duas contas não se afastem.
- */
-internal data class MatchOdds(
-    val goalP: Double,
-    val saveP: Double,
-    val homeRatio: Double,
-) {
-    companion object {
-        fun of(setup: MatchSetup): MatchOdds {
-            val homeGoalWeight = setup.home.attackFactor() * setup.away.defenseFactor()
-            val awayGoalWeight = setup.away.attackFactor() * setup.home.defenseFactor()
-            val goalP = (P_GOAL * (homeGoalWeight + awayGoalWeight) / 2).coerceIn(0.0, P_GOAL + P_SAVE)
-            val homeShare = setup.home.teamStrength() * homeGoalWeight
-            val awayShare = setup.away.teamStrength() * awayGoalWeight
-            return MatchOdds(
-                goalP = goalP,
-                saveP = P_GOAL + P_SAVE - goalP,
-                homeRatio = if (homeShare + awayShare > 0) homeShare / (homeShare + awayShare) else 0.5,
-            )
-        }
-    }
-}
-
-/**
  * Apito inicial de um setup, no mesmo formato que a engine completa emite.
  * Serve ao drill-down de um jogo rápido (`PlayMatchService`), que precisa de um
  * `KickOff` para a tela montar o placar mesmo sem o feed minuto a minuto.
@@ -263,4 +230,6 @@ fun MatchSetup.kickOff(): MatchEvent.KickOff = MatchEvent.KickOff(
     awayStrength = away.teamStrength(),
     homePosture = home.tactics.posture,
     awayPosture = away.tactics.posture,
+    homeClubId = homeClubId,
+    awayClubId = awayClubId,
 )

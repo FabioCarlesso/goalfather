@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.engine
 
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.matchStats
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
@@ -184,5 +185,18 @@ class QuickMatchSimulatorTest {
     private companion object {
         const val GOALS_TOLERANCE = 0.10
         const val HOME_WIN_TOLERANCE = 0.03
+    }
+
+    @Test
+    fun `KickOff das duas engines carrega os ids dos clubes do setup`() = runTest {
+        // O drill-down resolve os nomes dos jogadores por esses ids quando a
+        // partida já saiu da rodada corrente.
+        val withIds = setup.copy(homeClubId = ClubId(7), awayClubId = ClubId(8))
+
+        val full = assertIs<MatchEvent.KickOff>(MatchSimulator().simulate(withIds, Random(1)).toList().first())
+        val quick = withIds.kickOff()
+
+        assertEquals(ClubId(7) to ClubId(8), full.homeClubId to full.awayClubId)
+        assertEquals(full, quick)
     }
 }

@@ -78,6 +78,10 @@ export interface MatchSetup {
   // Jogo de mata-mata (issue #61): empate no tempo normal vai aos pênaltis.
   // Ausente = partida de liga, que aceita empate e consome o RNG como antes.
   knockout?: boolean
+  // Ids dos clubes, só repassados ao KickOff (o drill-down resolve os nomes
+  // dos jogadores por eles). Ausentes = não vão no evento, como no contrato.
+  homeClubId?: number
+  awayClubId?: number
 }
 
 const EVENT_RATE       = 0.12  // chance de algo acontecer por minuto
@@ -199,6 +203,8 @@ export function* simulateMatch(
     awayStrength: setup.awayStrength,
     homePosture: setup.homeTactics?.posture ?? 'BALANCED',
     awayPosture: setup.awayTactics?.posture ?? 'BALANCED',
+    ...(setup.homeClubId !== undefined && { homeClubId: setup.homeClubId }),
+    ...(setup.awayClubId !== undefined && { awayClubId: setup.awayClubId }),
   })
 
   let homeGoals = 0

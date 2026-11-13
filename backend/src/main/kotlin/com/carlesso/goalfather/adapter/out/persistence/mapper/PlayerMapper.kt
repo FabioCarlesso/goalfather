@@ -12,38 +12,43 @@ import com.carlesso.goalfather.domain.model.Suspension
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-fun PlayerEntity.toDomain(): Player = Player(
-    id = PlayerId(id),
-    name = name,
-    position = position.toDomain(),
-    overall = overall,
-    pace = pace,
-    shooting = shooting,
-    passing = passing,
-    defending = defending,
-    stamina = stamina,
-    salary = Money(salary.toLong()),
-    age = age,
-    goals = goals,
-    yellowCards = yellowCards,
-    redCards = redCards,
-    availability = if (injuredForRounds >= 1) Availability.Injured(injuredForRounds)
-    else Availability.Available,
-    nationality = nationality.toCountry(),
-    // `takeIf` descarta a segunda nacionalidade se ela coincidir com a primeira
-    // depois de resolvidas (ex.: dois códigos desconhecidos caindo no default),
-    // em vez de deixar o `require` do `Player` derrubar a leitura.
-    secondNationality = secondNationality.toCountryOrNull()?.takeIf { it != nationality.toCountry() },
-    pendingYellows = discipline().pendingYellows
-        .filterValues { it >= 1 }
-        .mapKeys { (id, _) -> CompetitionId(id) },
-    // `distinctBy` acomoda uma linha corrompida com dois ganchos na mesma
-    // competição em vez de deixar o `require` do `Player` derrubar a leitura.
-    suspensions = discipline().suspensions
-        .filter { it.matchesLeft >= 1 }
-        .distinctBy { it.competitionId }
-        .map { Suspension(CompetitionId(it.competitionId), it.matchesLeft) },
-)
+fun PlayerEntity.toDomain(): Player {
+    // Decodifica o `discipline_json` UMA vez por jogador: a leitura de elenco
+    // passa por aqui para cada jogador de cada clube.
+    val discipline = discipline()
+    return Player(
+        id = PlayerId(id),
+        name = name,
+        position = position.toDomain(),
+        overall = overall,
+        pace = pace,
+        shooting = shooting,
+        passing = passing,
+        defending = defending,
+        stamina = stamina,
+        salary = Money(salary.toLong()),
+        age = age,
+        goals = goals,
+        yellowCards = yellowCards,
+        redCards = redCards,
+        availability = if (injuredForRounds >= 1) Availability.Injured(injuredForRounds)
+        else Availability.Available,
+        nationality = nationality.toCountry(),
+        // `takeIf` descarta a segunda nacionalidade se ela coincidir com a primeira
+        // depois de resolvidas (ex.: dois códigos desconhecidos caindo no default),
+        // em vez de deixar o `require` do `Player` derrubar a leitura.
+        secondNationality = secondNationality.toCountryOrNull()?.takeIf { it != nationality.toCountry() },
+        pendingYellows = discipline.pendingYellows
+            .filterValues { it >= 1 }
+            .mapKeys { (id, _) -> CompetitionId(id) },
+        // `distinctBy` acomoda uma linha corrompida com dois ganchos na mesma
+        // competição em vez de deixar o `require` do `Player` derrubar a leitura.
+        suspensions = discipline.suspensions
+            .filter { it.matchesLeft >= 1 }
+            .distinctBy { it.competitionId }
+            .map { Suspension(CompetitionId(it.competitionId), it.matchesLeft) },
+    )
+}
 
 fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     id = id.value,

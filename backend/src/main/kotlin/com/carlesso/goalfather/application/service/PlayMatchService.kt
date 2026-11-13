@@ -77,6 +77,8 @@ class PlayMatchService(
             // Mesmo modo da rodada: jogo de copa reproduz a mesma disputa de
             // pênaltis no drill-down (issue #61).
             knockout = match.isKnockout,
+            homeClubId = match.homeClubId,
+            awayClubId = match.awayClubId,
         )
 
         // Cronometra só a geração dos eventos da engine. Materializamos ANTES de

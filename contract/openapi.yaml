@@ -1531,7 +1531,9 @@ components:
           type: boolean
           description: |
             `true` quando há escalação salva mas `effectiveLineup` difere dela
-            (titular lesionado ou vendido foi substituído). Sempre `false`
+            (titular lesionado, suspenso, vendido ou acima do limite de
+            estrangeiros foi substituído, ou a vaga ficou vazia por falta de
+            reserva apto). Sempre `false`
             quando `lineupIsDefault` é `true`.
         ownerId:
           type: integer
@@ -2012,6 +2014,17 @@ components:
             awayPosture:
               $ref: '#/components/schemas/Posture'
               description: Postura com que o visitante entrou em campo.
+            homeClubId:
+              type: integer
+              format: int64
+              description: |
+                Id do mandante. Com ele o drill-down resolve os nomes dos
+                jogadores mesmo quando a partida já saiu da rodada corrente.
+                Ausente em partida sem clube persistido.
+            awayClubId:
+              type: integer
+              format: int64
+              description: Id do visitante (mesma regra de `homeClubId`).
 
     GoalEvent:
       allOf:

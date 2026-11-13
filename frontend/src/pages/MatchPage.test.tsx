@@ -9,6 +9,7 @@ import { makeQueryClient } from '../test/render'
 import { FakeWebSocket } from '../test/fakeWebSocket'
 import { STREAM_SPEED_KEY } from '../lib/useStreamSpeed'
 import { WS_CLOSE_NOT_STARTED, WS_REASON_NOT_STARTED } from '../api/wsProtocol'
+import type { MatchEvent } from '../domain/types'
 
 // Rota com `:matchId` de verdade (o `renderWithProviders` usa curinga), para
 // navegar de uma partida para outra sem remontar a página inteira.
@@ -77,5 +78,34 @@ describe('MatchPage — encaixe não liberado (issue #151)', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(MATCH_NOT_STARTED_MESSAGE)
     expect(screen.queryByText(WS_REASON_NOT_STARTED)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Pular para o fim' })).not.toBeInTheDocument()
+  })
+})
+
+describe('MatchPage — nomes dos jogadores fora da rodada corrente', () => {
+  beforeEach(() => {
+    FakeWebSocket.instances = []
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Depois que o encaixe termina, o relógio anda e a partida some da rodada
+  // corrente: os ids dos clubes passam a vir do KickOff (antes, o feed caía
+  // no fallback "#N" para o elenco que não era o do usuário).
+  it('resolve o autor do gol pelos ids de clube do KickOff', async () => {
+    renderMatchRoute('/round/match/999999')
+    await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1))
+    const socket = FakeWebSocket.last()
+    socket.open()
+
+    const send = (event: MatchEvent) => act(() => socket.onmessage?.({ data: JSON.stringify(event) }))
+    send({
+      type: 'KickOff', minute: 0, homeClubName: 'Casa', awayClubName: 'Fora',
+      homeStrength: 70, awayStrength: 70, homePosture: 'BALANCED', awayPosture: 'BALANCED',
+      homeClubId: 2, awayClubId: 3,
+    })
+    send({ type: 'Goal', minute: 10, scorerId: 3001, home: false })
+
+    await waitFor(() => expect(screen.queryByText(/#3001/)).not.toBeInTheDocument())
+    expect(await screen.findByText(/GOL!/)).not.toHaveTextContent('#3001')
   })
 })

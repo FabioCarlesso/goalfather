@@ -1258,7 +1258,7 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   | Drill-down (`/ws/matches/{id}`) | re-roda a completa | `KickOff` + destaques + `FullTime` da rápida |
 
   **Mesma distribuição, outro consumo do RNG.** A rápida usa as mesmas fatias
-  de probabilidade (`MatchOdds`, a mesma conta força × tática da engine), o
+  de probabilidade (`MatchOdds`, a conta força × tática que as duas engines compartilham), o
   mesmo `drawShooter`, `drawInjuryDuration` e `penaltyShootout`. Mesma seed não
   dá o mesmo jogo que a completa, mas dá sempre o mesmo jogo rápido — e a seed
   continua sendo o `matchId`, criada dentro da tarefa de cada jogo, então o
