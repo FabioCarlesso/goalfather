@@ -7,6 +7,8 @@ import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
+import com.carlesso.goalfather.domain.engine.QuickMatchSimulator
+import com.carlesso.goalfather.domain.engine.kickOff
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Matchday
@@ -25,6 +27,12 @@ import kotlin.random.Random
  *
  * Sem efeitos colaterais (não persiste): é só visualização. Espelha o
  * handler MSW `matchStream` do frontend.
+ *
+ * Jogo só da IA (issue #129) foi decidido na rodada pela simulação RÁPIDA —
+ * re-rodar a engine completa aqui mostraria outro placar. O drill-down usa a
+ * mesma regra de modo ([simulationModeOf]) e, para esse jogo, emite o resumo
+ * dele: `KickOff`, gols/cartões/lesões, pênaltis e `FullTime`, sem o
+ * minuto a minuto que a rápida não gera.
  */
 class PlayMatchService(
     private val clubRepo: ClubRepository,
@@ -32,6 +40,7 @@ class PlayMatchService(
     private val simulator: MatchSimulator = MatchSimulator(),
     // Injetável para métricas; default isolado preserva os construtores dos testes.
     private val meterRegistry: MeterRegistry = SimpleMeterRegistry(),
+    private val quickSimulator: QuickMatchSimulator = QuickMatchSimulator(),
 ) : StreamMatchUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.MATCH_SIMULATION)
@@ -74,7 +83,12 @@ class PlayMatchService(
         return MatchStream.Live(
             flow {
                 val sample = Timer.start(meterRegistry)
-                val events = simulator.simulate(setup, Random(matchId)).toList()
+                // `when` exaustivo sobre o enum: um terceiro modo obriga a
+                // decidir aqui como o drill-down o reproduz.
+                val events = when (simulationModeOf(home, away)) {
+                    SimulationMode.FULL -> simulator.simulate(setup, Random(matchId)).toList()
+                    SimulationMode.QUICK -> listOf(setup.kickOff()) + quickSimulator.simulate(setup, Random(matchId)).summary()
+                }
                 sample.stop(simulationTimer)
 
                 for (event in events) emit(event)

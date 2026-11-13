@@ -57,7 +57,9 @@ class SimulationMetricsTest {
         meterRegistry = registry,
     )
 
-    private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
+    // Com dono: o teste cronometra a engine COMPLETA (mockada), que só roda
+    // para jogo de técnico humano desde a issue #129.
+    private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80, ownerId = 9)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
 
     // `InProgress`: o WS só simula encaixe já liberado pelo `play` (issue #151).

@@ -136,7 +136,8 @@ class PlayRoundServiceTest {
     fun `stream comeca com KickOff e termina com RoundFinished`() = runTest {
         coEvery { leagueRepo.findRound(md(1)) } returns round
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
-        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
+        // Com dono: só jogo de técnico humano é transmitido lance a lance (#129).
+        coEvery { clubRepo.findById(ClubId(1)) } returns homeClub.copy(ownerId = 9)
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
         coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
         coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }

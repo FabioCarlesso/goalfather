@@ -1214,6 +1214,47 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   por cartão ainda não existem (#130); convocações nas datas FIFA são da #134 —
   aqui só se reserva o tempo. O mando dentro do turno segue o Berger antigo.
 
+- [x] **Simulação rápida para partidas sem técnico humano** — issue #129
+
+  Um encaixe do mundo tem 50–60 jogos, e só os de clube com dono precisam do
+  minuto a minuto. O `MatchdaySimulator` (`application/service`) separa o
+  encaixe por `simulationModeOf(home, away)`: técnico humano em qualquer lado →
+  `MatchSimulator` completo, transmitido inteiro; jogo só da IA →
+  `QuickMatchSimulator` (`domain/engine`), em paralelo com
+  `coroutineScope { map { async(Dispatchers.Default) { } }.awaitAll() }`.
+
+  | | Completa | Rápida |
+  |---|---|---|
+  | Saída | `Flow<MatchEvent>` (~30 eventos) | `QuickMatchResult`: placar, destaques (`Goal`/`Card`/`Injury`), pênaltis, `MatchStats` |
+  | Sorteio de minutos | 90 Bernoullis (`EVENT_RATE`) | geométrica por inversão — só os ~11 minutos com lance |
+  | No WS da rodada | feed inteiro | só pênaltis + `FullTime` (minuto 90) |
+  | Drill-down (`/ws/matches/{id}`) | re-roda a completa | `KickOff` + destaques + `FullTime` da rápida |
+
+  **Mesma distribuição, outro consumo do RNG.** A rápida usa as mesmas fatias
+  de probabilidade (`MatchOdds`, a mesma conta força × tática da engine), o
+  mesmo `drawShooter`, `drawInjuryDuration` e `penaltyShootout`. Mesma seed não
+  dá o mesmo jogo que a completa, mas dá sempre o mesmo jogo rápido — e a seed
+  continua sendo o `matchId`, criada dentro da tarefa de cada jogo, então o
+  paralelismo não muda resultado. O `QuickMatchSimulatorTest` compara 10 mil
+  jogos de cada engine (tolerância documentada no teste: 0,10 gol/jogo e 3 p.p.
+  de vitória do mandante, ~4 erros-padrão; medido 3,46 × 3,51 gols e 44,2 % ×
+  43,7 %). 60 jogos rápidos em paralelo: ~9 ms pela métrica, na máquina de dev
+  carregada). Os efeitos da rodada leem a
+  "súmula" de cada jogo (`SimulatedMatch.sheet`) — o mesmo código para as duas
+  engines. A engine completa não foi alterada.
+
+  **Métrica:** `goalfather.matchday.quick.simulation` (wall time do lote rápido,
+  uma amostra por encaixe); `goalfather.round.simulation` segue cobrindo o
+  encaixe inteiro. **Gravação em lote:** o `ClubSaveTransaction` sincroniza o
+  elenco com `saveAll` (antes, um `findById` + `save` por jogador) e o Hibernate
+  agrupa os UPDATEs (`hibernate.jdbc.batch_size: 50`, `order_updates`).
+
+  **Cortes:** a gravação continua sendo uma transação por clube (o port
+  `ClubRepository` não ganhou `saveAll`, que mexeria em todos os mocks dos
+  testes de serviço); o modo é decidido pela posse NA HORA, então o drill-down
+  de um jogo antigo de um clube assumido depois roda a completa — mesma ressalva
+  do elenco alterado depois do jogo.
+
 ---
 
 ## 9. Stack consolidada

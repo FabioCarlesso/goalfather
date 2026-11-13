@@ -6,6 +6,8 @@ import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
+import com.carlesso.goalfather.domain.engine.QuickMatchSimulator
+import com.carlesso.goalfather.domain.engine.kickOff
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.Matchday
@@ -116,7 +118,8 @@ class PlayMatchServiceTest {
             matchday = md(2),
             matches = round.matches.map { it.copy(matchId = cupId, stage = RoundStage.Cup(KnockoutPhase.FINAL)) },
         )
-        val home = makeClub(id = 1, overall = 75)
+        // Com dono: jogo de técnico humano passa pela engine completa (issue #129).
+        val home = makeClub(id = 1, overall = 75, ownerId = 9)
         val away = makeClub(id = 2, overall = 75)
         coEvery { leagueRepo.findRound(md(2)) } returns cupDate
         coEvery { clubRepo.findById(ClubId(1)) } returns home
@@ -127,5 +130,22 @@ class PlayMatchServiceTest {
             Random(cupId),
         ).toList()
         assertEquals(expected, events(cupId))
+    }
+
+    @Test
+    fun `drill-down de jogo so da IA reproduz a simulacao rapida da rodada (issue 129)`() = runTest {
+        // A rodada decidiu este jogo pela rápida; re-rodar a completa aqui
+        // mostraria outro placar. O resumo sai da MESMA rápida, mesma seed.
+        coEvery { leagueRepo.findRound(md(1)) } returns round
+        stubClubs()
+
+        val setup = MatchSetup(
+            makeClub(id = 1, overall = 80).startingLineup(),
+            makeClub(id = 2, overall = 70).startingLineup(),
+            "Home FC",
+            "Away FC",
+        )
+        val quick = QuickMatchSimulator().simulate(setup, Random(matchId))
+        assertEquals(listOf(setup.kickOff()) + quick.summary(), events())
     }
 }
