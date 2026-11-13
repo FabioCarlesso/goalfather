@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "simone-colombi",
+        "name": "Simone Colombi",
+        "birthDate": "1991-07-01",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "ita-parma-gen-01",
+        "name": "Fabio Conti",
+        "birthDate": "2005-11-27",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-15",
+        "name": "Gabriele Colombo",
+        "birthDate": "2006-07-25",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "botond-balogh",
+        "name": "Botond Balogh",
+        "birthDate": "2002-06-06",
+        "nationality": "HUN",
+        "position": "DF"
+      },
+      {
+        "id": "diego-carlos",
+        "name": "Diego Carlos",
+        "birthDate": "1993-03-15",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-parma-gen-03",
+        "name": "Francesco Santoro",
+        "birthDate": "2003-09-10",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-16",
+        "name": "Leonardo Ferrari",
+        "birthDate": "1996-08-22",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-09",
+        "name": "Manuel Martini",
+        "birthDate": "1998-07-09",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-12",
+        "name": "Marco Conti",
+        "birthDate": "2008-04-29",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-06",
+        "name": "Paolo Ferrari",
+        "birthDate": "2001-01-25",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "mandela-keita",
+        "name": "Mandela Keita",
+        "birthDate": "2002-05-10",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "ita-parma-gen-10",
+        "name": "Christian Santoro",
+        "birthDate": "2004-11-19",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-07",
+        "name": "Emanuele Mariani",
+        "birthDate": "1997-11-12",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-02",
+        "name": "Gabriele Moretti",
+        "birthDate": "2000-06-11",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-04",
+        "name": "Gabriele Rinaldi",
+        "birthDate": "2003-07-18",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-13",
+        "name": "Gianluca Esposito",
+        "birthDate": "2006-09-24",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-17",
+        "name": "Valerio Mariani",
+        "birthDate": "2006-05-23",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-08",
+        "name": "Andrea D'Amico",
+        "birthDate": "2003-04-17",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-14",
+        "name": "Christian D'Amico",
+        "birthDate": "2006-07-23",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-18",
+        "name": "Emanuele Bruno",
+        "birthDate": "1997-05-17",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-05",
+        "name": "Michele Greco",
+        "birthDate": "2007-03-29",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-parma-gen-11",
+        "name": "Nicola Rinaldi",
+        "birthDate": "1996-01-01",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

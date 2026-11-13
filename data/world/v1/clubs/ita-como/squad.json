@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "robert-sanchez",
+        "name": "Robert Sánchez",
+        "birthDate": "1997-11-18",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "ita-como-gen-12",
+        "name": "Daniele Rizzo",
+        "birthDate": "1995-02-12",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-01",
+        "name": "Matteo Ferrari",
+        "birthDate": "2002-07-06",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "jacobo-ramon",
+        "name": "Jacobo Ramón",
+        "birthDate": "2005-01-06",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "ita-como-gen-06",
+        "name": "Antonio Ferrara",
+        "birthDate": "2001-10-18",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-13",
+        "name": "Daniele Rinaldi",
+        "birthDate": "1993-09-14",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-09",
+        "name": "Fabio Colombo",
+        "birthDate": "1997-04-03",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-02",
+        "name": "Gabriele Caruso",
+        "birthDate": "2005-12-16",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-04",
+        "name": "Mattia Gallo",
+        "birthDate": "2000-10-01",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-03",
+        "name": "Mattia Testa",
+        "birthDate": "1999-08-11",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "luis-milla-manzanares",
+        "name": "Luis Milla Manzanares",
+        "birthDate": "1994-10-07",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "nico-paz",
+        "name": "Nico Paz",
+        "birthDate": "2004-09-08",
+        "nationality": "ARG",
+        "secondNationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "tommaso-arrigoni",
+        "name": "Tommaso Arrigoni",
+        "birthDate": "1994-02-26",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "ita-como-gen-05",
+        "name": "Davide Ferrara",
+        "birthDate": "2000-07-16",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-07",
+        "name": "Lorenzo Pellegrini",
+        "birthDate": "1998-02-25",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-14",
+        "name": "Mattia D'Amico",
+        "birthDate": "1996-12-10",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-10",
+        "name": "Nicolò Esposito",
+        "birthDate": "1995-10-21",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "anastasios-douvikas",
+        "name": "Anastasios Douvikas",
+        "birthDate": "1999-08-02",
+        "nationality": "GRE",
+        "position": "FW"
+      },
+      {
+        "id": "moise-kean",
+        "name": "Moise Kean",
+        "birthDate": "2000-02-28",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "ita-como-gen-11",
+        "name": "Christian Serra",
+        "birthDate": "2002-01-29",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-15",
+        "name": "Gabriele Moretti",
+        "birthDate": "2007-01-08",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-como-gen-08",
+        "name": "Luca Bruno",
+        "birthDate": "1996-01-31",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

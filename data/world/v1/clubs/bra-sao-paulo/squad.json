@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-sao-paulo-gen-01",
+        "name": "Bruno Medeiros",
+        "birthDate": "2004-10-13",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-15",
+        "name": "Caio Andrade",
+        "birthDate": "2002-11-25",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-02",
+        "name": "Wesley Brandão",
+        "birthDate": "2001-11-05",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "cedric-soares",
+        "name": "Cédric Soares",
+        "birthDate": "1991-08-31",
+        "nationality": "POR",
+        "position": "DF"
+      },
+      {
+        "id": "wendell-nascimento-borges",
+        "name": "Wendell Nascimento Borges",
+        "birthDate": "1993-07-20",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-sao-paulo-gen-16",
+        "name": "Caio Fonseca",
+        "birthDate": "1995-01-02",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-12",
+        "name": "Davi Azevedo",
+        "birthDate": "1996-05-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-09",
+        "name": "Everton Cavalcanti",
+        "birthDate": "1998-08-25",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-06",
+        "name": "Gabriel Queiroz",
+        "birthDate": "2001-02-18",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-04",
+        "name": "Jorge Santos",
+        "birthDate": "1993-09-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "lucas-moura",
+        "name": "Lucas Moura",
+        "birthDate": "1992-08-13",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-sao-paulo-gen-05",
+        "name": "Alexandre Souza",
+        "birthDate": "1994-03-17",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-10",
+        "name": "Anderson Batista",
+        "birthDate": "1999-01-31",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-07",
+        "name": "Cristiano Azevedo",
+        "birthDate": "2008-02-24",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-13",
+        "name": "Danilo Barbosa",
+        "birthDate": "2003-07-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-03",
+        "name": "Fábio Duarte",
+        "birthDate": "2004-04-23",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-17",
+        "name": "Luiz Teixeira",
+        "birthDate": "1996-07-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "jonas-toro",
+        "name": "Jonas Toró",
+        "birthDate": "1999-05-30",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-sao-paulo-gen-14",
+        "name": "Arthur Andrade",
+        "birthDate": "2006-10-07",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-08",
+        "name": "Elias Fonseca",
+        "birthDate": "1998-04-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-11",
+        "name": "Everton Nascimento",
+        "birthDate": "2002-07-20",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-sao-paulo-gen-18",
+        "name": "Luan Nogueira",
+        "birthDate": "1998-10-04",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

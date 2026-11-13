@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "jack-butland",
+        "name": "Jack Butland",
+        "birthDate": "1993-03-10",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "matt-ingram",
+        "name": "Matt Ingram",
+        "birthDate": "1993-12-18",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "eng-hull-city-gen-08",
+        "name": "Scott Wilson",
+        "birthDate": "2007-06-13",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "brooke-norton-cuffy",
+        "name": "Brooke Norton-Cuffy",
+        "birthDate": "2004-01-12",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "cyrus-christie",
+        "name": "Cyrus Christie",
+        "birthDate": "1992-09-30",
+        "nationality": "IRL",
+        "position": "DF"
+      },
+      {
+        "id": "matt-targett",
+        "name": "Matt Targett",
+        "birthDate": "1995-09-18",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "eng-hull-city-gen-05",
+        "name": "Dominic Parker",
+        "birthDate": "2001-09-24",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-hull-city-gen-01",
+        "name": "Harvey Edwards",
+        "birthDate": "2002-05-23",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-hull-city-gen-03",
+        "name": "Jordan Watson",
+        "birthDate": "1993-09-01",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-hull-city-gen-09",
+        "name": "Tom Wilson",
+        "birthDate": "2005-03-24",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "amir-hadziahmetovic",
+        "name": "Amir Hadžiahmetović",
+        "birthDate": "1997-03-08",
+        "nationality": "BIH",
+        "position": "MF"
+      },
+      {
+        "id": "christos-mouzakitis",
+        "name": "Christos Mouzakitis",
+        "birthDate": "2006-12-25",
+        "nationality": "GRE",
+        "position": "MF"
+      },
+      {
+        "id": "hidemasa-morita",
+        "name": "Hidemasa Morita",
+        "birthDate": "1995-05-10",
+        "nationality": "JPN",
+        "position": "MF"
+      },
+      {
+        "id": "eng-hull-city-gen-04",
+        "name": "Ethan Wright",
+        "birthDate": "1997-08-29",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-hull-city-gen-02",
+        "name": "Jake Jackson",
+        "birthDate": "2000-10-19",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-hull-city-gen-10",
+        "name": "Josh Harris",
+        "birthDate": "1996-09-04",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-hull-city-gen-06",
+        "name": "Liam Carter",
+        "birthDate": "2002-06-13",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "jaden-philogene",
+        "name": "Jaden Philogene",
+        "birthDate": "2002-02-08",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "joao-pedro-galvao",
+        "name": "João Pedro Galvao",
+        "birthDate": "1992-03-09",
+        "nationality": "ITA",
+        "secondNationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "mohamed-ali-cho",
+        "name": "Mohamed-Ali Cho",
+        "birthDate": "2004-01-19",
+        "nationality": "FRA",
+        "secondNationality": "CIV",
+        "position": "FW"
+      },
+      {
+        "id": "eng-hull-city-gen-11",
+        "name": "Luke Watson",
+        "birthDate": "2006-05-03",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-hull-city-gen-07",
+        "name": "Ryan King",
+        "birthDate": "1993-08-09",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

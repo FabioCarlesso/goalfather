@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "daniel-heuer-fernandes",
+        "name": "Daniel Heuer Fernandes",
+        "birthDate": "1992-11-13",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "sander-tangvik",
+        "name": "Sander Tangvik",
+        "birthDate": "2002-11-29",
+        "nationality": "NOR",
+        "position": "GK"
+      },
+      {
+        "id": "ger-hamburger-sv-gen-09",
+        "name": "Felix Müller",
+        "birthDate": "2000-08-18",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "mario-vuskovic",
+        "name": "Mario Vušković",
+        "birthDate": "2001-11-16",
+        "nationality": "CRO",
+        "position": "DF"
+      },
+      {
+        "id": "ger-hamburger-sv-gen-01",
+        "name": "Alexander Bauer",
+        "birthDate": "2000-02-08",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-06",
+        "name": "Alexander Neumann",
+        "birthDate": "1998-02-25",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-02",
+        "name": "Jan Müller",
+        "birthDate": "1998-04-17",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-03",
+        "name": "Pascal Lehmann",
+        "birthDate": "1998-02-28",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-10",
+        "name": "Philipp Friedrich",
+        "birthDate": "2004-11-05",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-04",
+        "name": "Tim Weber",
+        "birthDate": "1996-05-24",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "adrian-fein",
+        "name": "Adrian Fein",
+        "birthDate": "1999-03-18",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "albert-gronbaek",
+        "name": "Albert Grønbæk",
+        "birthDate": "2001-05-23",
+        "nationality": "DEN",
+        "position": "MF"
+      },
+      {
+        "id": "albert-sambi-lokonga",
+        "name": "Albert Sambi Lokonga",
+        "birthDate": "1999-10-22",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "fabio-vieira",
+        "name": "Fábio Vieira",
+        "birthDate": "2000-05-30",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "miro-muheim",
+        "name": "Miro Muheim",
+        "birthDate": "1998-03-24",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "ger-hamburger-sv-gen-11",
+        "name": "Alexander Hoffmann",
+        "birthDate": "1996-10-22",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-07",
+        "name": "Maximilian Frank",
+        "birthDate": "2006-10-20",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "terem-moffi",
+        "name": "Terem Moffi",
+        "birthDate": "1999-05-25",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "yussuf-poulsen",
+        "name": "Yussuf Poulsen",
+        "birthDate": "1994-06-15",
+        "nationality": "DEN",
+        "secondNationality": "TAN",
+        "position": "FW"
+      },
+      {
+        "id": "ger-hamburger-sv-gen-05",
+        "name": "Benedikt Neumann",
+        "birthDate": "2008-01-27",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-12",
+        "name": "Fabian Schneider",
+        "birthDate": "2004-02-21",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-hamburger-sv-gen-08",
+        "name": "Niklas Hoffmann",
+        "birthDate": "2006-08-20",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

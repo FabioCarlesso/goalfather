@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "matthieu-dreyer",
+        "name": "Matthieu Dreyer",
+        "birthDate": "1989-03-20",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "yvon-mvogo",
+        "name": "Yvon Mvogo",
+        "birthDate": "1994-06-06",
+        "nationality": "SUI",
+        "secondNationality": "CMR",
+        "position": "GK"
+      },
+      {
+        "id": "fra-lorient-gen-08",
+        "name": "Mathieu Petit",
+        "birthDate": "2004-08-30",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "andreaw-gravillon",
+        "name": "Andreaw Gravillon",
+        "birthDate": "1998-02-08",
+        "nationality": "GPE",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "dembo-sylla",
+        "name": "Dembo Sylla",
+        "birthDate": "2002-11-10",
+        "nationality": "GUI",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "julien-laporte",
+        "name": "Julien Laporte",
+        "birthDate": "1993-11-04",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "montassar-talbi",
+        "name": "Montassar Talbi",
+        "birthDate": "1998-05-26",
+        "nationality": "TUN",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "thomas-fontaine",
+        "name": "Thomas Fontaine",
+        "birthDate": "1991-05-08",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-lorient-gen-05",
+        "name": "Arthur Richard",
+        "birthDate": "2000-05-12",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-lorient-gen-09",
+        "name": "Théo Fontaine",
+        "birthDate": "2008-03-18",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "enzo-le-fee",
+        "name": "Enzo Le Fée",
+        "birthDate": "2000-02-03",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "laurent-abergel",
+        "name": "Laurent Abergel",
+        "birthDate": "1993-02-01",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-lorient-gen-01",
+        "name": "Antoine Durand",
+        "birthDate": "1995-03-12",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lorient-gen-10",
+        "name": "Baptiste Robert",
+        "birthDate": "2008-05-03",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lorient-gen-02",
+        "name": "Benjamin Bernard",
+        "birthDate": "2006-12-14",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lorient-gen-06",
+        "name": "Noah Michel",
+        "birthDate": "1995-08-13",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lorient-gen-03",
+        "name": "Pierre Fontaine",
+        "birthDate": "1995-02-08",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "armand-lauriente",
+        "name": "Armand Laurienté",
+        "birthDate": "1998-12-04",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "umut-bozok",
+        "name": "Umut Bozok",
+        "birthDate": "1996-09-19",
+        "nationality": "TUR",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-lorient-gen-04",
+        "name": "Mathis Simon",
+        "birthDate": "2000-10-01",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lorient-gen-07",
+        "name": "Pierre Dubois",
+        "birthDate": "1996-06-18",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lorient-gen-11",
+        "name": "Romain Boyer",
+        "birthDate": "1999-10-04",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

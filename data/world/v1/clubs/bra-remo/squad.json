@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-remo-gen-01",
+        "name": "Cláudio Lopes",
+        "birthDate": "2005-11-21",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-19",
+        "name": "Hélio Lima",
+        "birthDate": "2005-09-27",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-02",
+        "name": "Marcelo Ribeiro",
+        "birthDate": "1997-03-08",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-07",
+        "name": "Antônio Guimarães",
+        "birthDate": "2000-07-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-16",
+        "name": "Danilo Rocha",
+        "birthDate": "2005-04-02",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-13",
+        "name": "Emerson Teixeira",
+        "birthDate": "1993-08-16",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-10",
+        "name": "Hugo Lopes",
+        "birthDate": "2002-06-25",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-03",
+        "name": "Mateus Rezende",
+        "birthDate": "2001-10-07",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-20",
+        "name": "Márcio Oliveira",
+        "birthDate": "2003-05-29",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-05",
+        "name": "Rogério Cunha",
+        "birthDate": "2008-01-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-11",
+        "name": "Edson Moreira",
+        "birthDate": "2003-04-11",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-08",
+        "name": "Elias Barros",
+        "birthDate": "1994-11-22",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-17",
+        "name": "Gustavo Castro",
+        "birthDate": "2002-09-29",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-06",
+        "name": "Jorge Santos",
+        "birthDate": "1997-12-26",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-21",
+        "name": "Nathan Tavares",
+        "birthDate": "1994-05-17",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-14",
+        "name": "Paulo Carvalho",
+        "birthDate": "2001-04-16",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-04",
+        "name": "Valdir Rocha",
+        "birthDate": "1994-07-07",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-22",
+        "name": "Adriano Moraes",
+        "birthDate": "2003-08-23",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-18",
+        "name": "Luiz Moreira",
+        "birthDate": "2008-06-25",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-09",
+        "name": "Márcio Moraes",
+        "birthDate": "1995-04-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-12",
+        "name": "Samuel Gonçalves",
+        "birthDate": "2006-08-30",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-remo-gen-15",
+        "name": "Thiago Rocha",
+        "birthDate": "2007-06-21",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

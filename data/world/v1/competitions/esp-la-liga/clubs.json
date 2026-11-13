@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "esp-alaves",
+      "name": "Alavés",
+      "country": "ESP",
+      "reputation": 50,
+      "stadium": {
+        "name": "Estadio de Mendizorroza",
+        "capacity": 19840
+      }
+    },
+    {
+      "id": "esp-athletic-bilbao",
+      "name": "Athletic Bilbao",
+      "country": "ESP",
+      "reputation": 74,
+      "stadium": {
+        "name": "Estadio de San Mamés",
+        "capacity": 53289
+      }
+    },
+    {
+      "id": "esp-atletico-madrid",
+      "name": "Atlético de Madrid",
+      "country": "ESP",
+      "reputation": 86,
+      "stadium": {
+        "name": "Estadio Metropolitano",
+        "capacity": 70813
+      }
+    },
+    {
+      "id": "esp-barcelona",
+      "name": "Barcelona",
+      "country": "ESP",
+      "reputation": 94,
+      "stadium": {
+        "name": "Camp Nou",
+        "capacity": 105000
+      }
+    },
+    {
+      "id": "esp-celta-vigo",
+      "name": "Celta de Vigo",
+      "country": "ESP",
+      "reputation": 60,
+      "stadium": {
+        "name": "Estadio Abanca Balaídos",
+        "capacity": 24870
+      }
+    },
+    {
+      "id": "esp-deportivo-la-coruna",
+      "name": "Deportivo La Coruña",
+      "country": "ESP",
+      "reputation": 50,
+      "stadium": {
+        "name": "Estadio de Abanca Riazor",
+        "capacity": 32490
+      }
+    },
+    {
+      "id": "esp-elche",
+      "name": "Elche",
+      "country": "ESP",
+      "reputation": 46,
+      "stadium": {
+        "name": "Estadio Manuel Martínez Valero",
+        "capacity": 31388
+      }
+    },
+    {
+      "id": "esp-espanyol",
+      "name": "Espanyol",
+      "country": "ESP",
+      "reputation": 54,
+      "stadium": {
+        "name": "RCDE Stadium",
+        "capacity": 40500
+      }
+    },
+    {
+      "id": "esp-getafe",
+      "name": "Getafe",
+      "country": "ESP",
+      "reputation": 54,
+      "stadium": {
+        "name": "Coliseum (Getafe)",
+        "capacity": 16500
+      }
+    },
+    {
+      "id": "esp-levante",
+      "name": "Levante",
+      "country": "ESP",
+      "reputation": 46,
+      "stadium": {
+        "name": "Estadio Ciudad de Valencia",
+        "capacity": 26354
+      }
+    },
+    {
+      "id": "esp-malaga",
+      "name": "Málaga",
+      "country": "ESP",
+      "reputation": 48,
+      "stadium": {
+        "name": "Estadio La Rosaleda",
+        "capacity": 30778
+      }
+    },
+    {
+      "id": "esp-osasuna",
+      "name": "Osasuna",
+      "country": "ESP",
+      "reputation": 56,
+      "stadium": {
+        "name": "Estadio El Sadar",
+        "capacity": 23576
+      }
+    },
+    {
+      "id": "esp-racing-santander",
+      "name": "Racing Santander",
+      "country": "ESP",
+      "reputation": 44,
+      "stadium": {
+        "name": "Campos de Sport de El Sardinero",
+        "capacity": 22308
+      }
+    },
+    {
+      "id": "esp-rayo-vallecano",
+      "name": "Rayo Vallecano",
+      "country": "ESP",
+      "reputation": 54,
+      "stadium": {
+        "name": "Campo de Fútbol de Vallecas",
+        "capacity": 14708
+      }
+    },
+    {
+      "id": "esp-real-betis",
+      "name": "Real Betis",
+      "country": "ESP",
+      "reputation": 70,
+      "stadium": {
+        "name": "Estadio Benito Villamarín",
+        "capacity": 60721
+      }
+    },
+    {
+      "id": "esp-real-madrid",
+      "name": "Real Madrid",
+      "country": "ESP",
+      "reputation": 96,
+      "stadium": {
+        "name": "Estadio Santiago Bernabéu",
+        "capacity": 83186
+      }
+    },
+    {
+      "id": "esp-real-sociedad",
+      "name": "Real Sociedad",
+      "country": "ESP",
+      "reputation": 72,
+      "stadium": {
+        "name": "Estadio Municipal de Anoeta",
+        "capacity": 40000
+      }
+    },
+    {
+      "id": "esp-sevilla",
+      "name": "Sevilla",
+      "country": "ESP",
+      "reputation": 70,
+      "stadium": {
+        "name": "Estadio Ramón Sánchez-Pizjuán",
+        "capacity": 43751
+      }
+    },
+    {
+      "id": "esp-valencia",
+      "name": "Valencia",
+      "country": "ESP",
+      "reputation": 68,
+      "stadium": {
+        "name": "Campo de Mestalla",
+        "capacity": 49430
+      }
+    },
+    {
+      "id": "esp-villarreal",
+      "name": "Villarreal",
+      "country": "ESP",
+      "reputation": 74,
+      "stadium": {
+        "name": "Estadio de la Cerámica",
+        "capacity": 24891
+      }
+    }
+  ]
+}

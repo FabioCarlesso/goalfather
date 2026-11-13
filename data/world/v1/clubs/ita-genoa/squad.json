@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "daniele-sommariva",
+        "name": "Daniele Sommariva",
+        "birthDate": "1997-07-18",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "justin-bijlow",
+        "name": "Justin Bijlow",
+        "birthDate": "1998-01-22",
+        "nationality": "NED",
+        "position": "GK"
+      },
+      {
+        "id": "cody-drameh",
+        "name": "Cody Drameh",
+        "birthDate": "2001-12-08",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "david-puczka",
+        "name": "David Puczka",
+        "birthDate": "2005-01-26",
+        "nationality": "AUT",
+        "secondNationality": "POL",
+        "position": "DF"
+      },
+      {
+        "id": "kingsley-ehizibue",
+        "name": "Kingsley Ehizibue",
+        "birthDate": "1995-05-25",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "leo-ostigard",
+        "name": "Leo Østigård",
+        "birthDate": "1999-11-28",
+        "nationality": "NOR",
+        "position": "DF"
+      },
+      {
+        "id": "mario-mitaj",
+        "name": "Mario Mitaj",
+        "birthDate": "2003-08-06",
+        "nationality": "ALB",
+        "secondNationality": "GRE",
+        "position": "DF"
+      },
+      {
+        "id": "sebastian-otoa",
+        "name": "Sebastian Otoa",
+        "birthDate": "2004-05-13",
+        "nationality": "DEN",
+        "position": "DF"
+      },
+      {
+        "id": "stefano-sabelli",
+        "name": "Stefano Sabelli",
+        "birthDate": "1993-01-13",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "alexsandro-amorim-de-freitas-filho",
+        "name": "Alexsandro Amorim de Freitas Filho",
+        "birthDate": "2005-05-18",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "djibril-sow",
+        "name": "Djibril Sow",
+        "birthDate": "1997-02-06",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "ethan-meichtry",
+        "name": "Ethan Meichtry",
+        "birthDate": "2005-07-08",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "gaston-pereiro",
+        "name": "Gastón Pereiro",
+        "birthDate": "1995-06-11",
+        "nationality": "URU",
+        "position": "MF"
+      },
+      {
+        "id": "mikael-egill-ellertsson",
+        "name": "Mikael Egill Ellertsson",
+        "birthDate": "2002-03-11",
+        "nationality": "ISL",
+        "position": "MF"
+      },
+      {
+        "id": "morten-frendrup",
+        "name": "Morten Frendrup",
+        "birthDate": "2001-04-07",
+        "nationality": "DEN",
+        "position": "MF"
+      },
+      {
+        "id": "nicolo-rovella",
+        "name": "Nicolò Rovella",
+        "birthDate": "2001-12-04",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "samuel-wiafe",
+        "name": "Samuel Wiafe",
+        "birthDate": "2008-06-22",
+        "nationality": "ITA",
+        "secondNationality": "GHA",
+        "position": "MF"
+      },
+      {
+        "id": "sinan-gumus",
+        "name": "Sinan Gümüş",
+        "birthDate": "1994-01-15",
+        "nationality": "GER",
+        "secondNationality": "TUR",
+        "position": "MF"
+      },
+      {
+        "id": "tommaso-baldanzi",
+        "name": "Tommaso Baldanzi",
+        "birthDate": "2003-03-23",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "elias-havel",
+        "name": "Elias Havel",
+        "birthDate": "2003-04-16",
+        "nationality": "AUT",
+        "position": "FW"
+      },
+      {
+        "id": "junior-messias",
+        "name": "Junior Messias",
+        "birthDate": "1991-05-13",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "lorenzo-colombo",
+        "name": "Lorenzo Colombo",
+        "birthDate": "2002-03-08",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "milutin-osmajic",
+        "name": "Milutin Osmajić",
+        "birthDate": "1999-07-25",
+        "nationality": "MNE",
+        "position": "FW"
+      },
+      {
+        "id": "robinho-junior",
+        "name": "Robinho Júnior",
+        "birthDate": "2007-12-17",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "stephan-el-shaarawy",
+        "name": "Stephan El Shaarawy",
+        "birthDate": "1992-10-27",
+        "nationality": "ITA",
+        "secondNationality": "EGY",
+        "position": "FW"
+      },
+      {
+        "id": "vitor-oliveira",
+        "name": "Vítor Oliveira",
+        "birthDate": "2000-03-15",
+        "nationality": "POR",
+        "position": "FW"
+      }
+    ]
+  }
+}

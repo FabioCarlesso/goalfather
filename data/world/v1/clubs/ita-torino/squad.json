@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "franco-israel",
+        "name": "Franco Israel",
+        "birthDate": "2000-04-22",
+        "nationality": "URU",
+        "position": "GK"
+      },
+      {
+        "id": "ita-torino-gen-09",
+        "name": "Giuseppe Fabbri",
+        "birthDate": "2005-04-03",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-01",
+        "name": "Valerio Mariani",
+        "birthDate": "2006-08-13",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ardian-ismajli",
+        "name": "Ardian Ismajli",
+        "birthDate": "1996-09-30",
+        "nationality": "ALB",
+        "secondNationality": "KVX",
+        "position": "DF"
+      },
+      {
+        "id": "cristiano-biraghi",
+        "name": "Cristiano Biraghi",
+        "birthDate": "1992-09-01",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "eray-comert",
+        "name": "Eray Cömert",
+        "birthDate": "1998-02-04",
+        "nationality": "SUI",
+        "position": "DF"
+      },
+      {
+        "id": "ricardo-rodriguez",
+        "name": "Ricardo Rodriguez",
+        "birthDate": "1992-08-25",
+        "nationality": "SUI",
+        "position": "DF"
+      },
+      {
+        "id": "ita-torino-gen-06",
+        "name": "Francesco Rizzo",
+        "birthDate": "1994-06-21",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-04",
+        "name": "Giorgio Serra",
+        "birthDate": "2004-03-10",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-10",
+        "name": "Pietro Testa",
+        "birthDate": "1998-03-30",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "cesare-casadei",
+        "name": "Cesare Casadei",
+        "birthDate": "2003-01-10",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "nikola-vlasic",
+        "name": "Nikola Vlašić",
+        "birthDate": "1997-10-04",
+        "nationality": "CRO",
+        "position": "MF"
+      },
+      {
+        "id": "ita-torino-gen-11",
+        "name": "Alessandro Marino",
+        "birthDate": "2006-09-09",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-03",
+        "name": "Giorgio Ferrara",
+        "birthDate": "2005-12-20",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-07",
+        "name": "Nicolò Serra",
+        "birthDate": "1997-03-12",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-02",
+        "name": "Paolo D'Amico",
+        "birthDate": "2003-06-02",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-05",
+        "name": "Stefano Moretti",
+        "birthDate": "2006-01-25",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "che-adams",
+        "name": "Ché Adams",
+        "birthDate": "1996-07-13",
+        "nationality": "SCO",
+        "position": "FW"
+      },
+      {
+        "id": "duvan-zapata",
+        "name": "Duván Zapata",
+        "birthDate": "1991-04-01",
+        "nationality": "COL",
+        "position": "FW"
+      },
+      {
+        "id": "zakaria-aboukhlal",
+        "name": "Zakaria Aboukhlal",
+        "birthDate": "2000-02-18",
+        "nationality": "NED",
+        "secondNationality": "MAR",
+        "position": "FW"
+      },
+      {
+        "id": "ita-torino-gen-12",
+        "name": "Giovanni Serra",
+        "birthDate": "1995-10-25",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-torino-gen-08",
+        "name": "Stefano Gallo",
+        "birthDate": "1999-10-19",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

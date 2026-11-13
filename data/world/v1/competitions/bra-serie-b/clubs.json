@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "bra-america-mg",
+      "name": "América Mineiro",
+      "country": "BRA",
+      "reputation": 58,
+      "stadium": {
+        "name": "Estádio Raimundo Sampaio",
+        "capacity": 23018
+      }
+    },
+    {
+      "id": "bra-athletic-club",
+      "name": "Athletic Club",
+      "country": "BRA",
+      "reputation": 38,
+      "stadium": {
+        "name": "Estádio Joaquim Portugal",
+        "capacity": 6000
+      }
+    },
+    {
+      "id": "bra-atletico-goianiense",
+      "name": "Atlético Goianiense",
+      "country": "BRA",
+      "reputation": 55,
+      "stadium": {
+        "name": "Estádio Serra Dourada",
+        "capacity": 54084
+      }
+    },
+    {
+      "id": "bra-avai",
+      "name": "Avaí",
+      "country": "BRA",
+      "reputation": 50,
+      "stadium": {
+        "name": "Ressacada",
+        "capacity": 17800
+      }
+    },
+    {
+      "id": "bra-botafogo-sp",
+      "name": "Botafogo-SP",
+      "country": "BRA",
+      "reputation": 40,
+      "stadium": {
+        "name": "Estádio Santa Cruz",
+        "capacity": 31527
+      }
+    },
+    {
+      "id": "bra-ceara",
+      "name": "Ceará",
+      "country": "BRA",
+      "reputation": 62,
+      "stadium": {
+        "name": "Estádio Presidente Vargas",
+        "capacity": 20600
+      }
+    },
+    {
+      "id": "bra-crb",
+      "name": "CRB",
+      "country": "BRA",
+      "reputation": 45,
+      "stadium": {
+        "name": "Estádio Rei Pelé",
+        "capacity": 20551
+      }
+    },
+    {
+      "id": "bra-criciuma",
+      "name": "Criciúma",
+      "country": "BRA",
+      "reputation": 52,
+      "stadium": {
+        "name": "Estádio Heriberto Hülse",
+        "capacity": 19300
+      }
+    },
+    {
+      "id": "bra-cuiaba",
+      "name": "Cuiabá",
+      "country": "BRA",
+      "reputation": 55,
+      "stadium": {
+        "name": "Arena Pantanal",
+        "capacity": 42968
+      }
+    },
+    {
+      "id": "bra-fortaleza",
+      "name": "Fortaleza",
+      "country": "BRA",
+      "reputation": 66,
+      "stadium": {
+        "name": "Estádio Governador Plácido Castelo",
+        "capacity": 57876
+      }
+    },
+    {
+      "id": "bra-goias",
+      "name": "Goiás",
+      "country": "BRA",
+      "reputation": 60,
+      "stadium": {
+        "name": "Estádio Serra Dourada",
+        "capacity": 54084
+      }
+    },
+    {
+      "id": "bra-juventude",
+      "name": "Juventude",
+      "country": "BRA",
+      "reputation": 55,
+      "stadium": {
+        "name": "Estádio Alfredo Jaconi",
+        "capacity": 30519
+      }
+    },
+    {
+      "id": "bra-londrina",
+      "name": "Londrina",
+      "country": "BRA",
+      "reputation": 45,
+      "stadium": {
+        "name": "Estádio do Café",
+        "capacity": 36000
+      }
+    },
+    {
+      "id": "bra-nautico",
+      "name": "Náutico",
+      "country": "BRA",
+      "reputation": 50,
+      "stadium": {
+        "name": "Estádio Eládio de Barros Carvalho",
+        "capacity": 19800
+      }
+    },
+    {
+      "id": "bra-novorizontino",
+      "name": "Novorizontino",
+      "country": "BRA",
+      "reputation": 45,
+      "stadium": {
+        "name": "Estádio Jorge Ismael de Biasi",
+        "capacity": 16000
+      }
+    },
+    {
+      "id": "bra-operario-ferroviario",
+      "name": "Operário Ferroviário",
+      "country": "BRA",
+      "reputation": 42,
+      "stadium": {
+        "name": "Estádio Germano Krüger",
+        "capacity": 13000
+      }
+    },
+    {
+      "id": "bra-ponte-preta",
+      "name": "Ponte Preta",
+      "country": "BRA",
+      "reputation": 52,
+      "stadium": {
+        "name": "Estádio Moisés Lucarelli",
+        "capacity": 19728
+      }
+    },
+    {
+      "id": "bra-sao-bernardo",
+      "name": "São Bernardo",
+      "country": "BRA",
+      "reputation": 40,
+      "stadium": {
+        "name": "Estádio Primeiro de Maio",
+        "capacity": 15159
+      }
+    },
+    {
+      "id": "bra-sport",
+      "name": "Sport",
+      "country": "BRA",
+      "reputation": 65,
+      "stadium": {
+        "name": "Estádio Adelmar da Costa Carvalho",
+        "capacity": 35020
+      }
+    },
+    {
+      "id": "bra-vila-nova",
+      "name": "Vila Nova",
+      "country": "BRA",
+      "reputation": 48,
+      "stadium": {
+        "name": "Estádio Serra Dourada",
+        "capacity": 54084
+      }
+    }
+  ]
+}

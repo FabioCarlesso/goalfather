@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "daniel-peretz",
+        "name": "Daniel Peretz",
+        "birthDate": "2000-07-10",
+        "nationality": "ISR",
+        "position": "GK"
+      },
+      {
+        "id": "ger-bayern-munchen-gen-04",
+        "name": "Lars Schmidt",
+        "birthDate": "2007-06-07",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-bayern-munchen-gen-01",
+        "name": "Simon Richter",
+        "birthDate": "2000-09-23",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "adam-aznou",
+        "name": "Adam Aznou",
+        "birthDate": "2006-06-02",
+        "nationality": "MAR",
+        "secondNationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "alphonso-davies",
+        "name": "Alphonso Davies",
+        "birthDate": "2000-11-02",
+        "nationality": "CAN",
+        "secondNationality": "LBR",
+        "position": "DF"
+      },
+      {
+        "id": "dayot-upamecano",
+        "name": "Dayot Upamecano",
+        "birthDate": "1998-10-27",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "deniz-emre-ofli",
+        "name": "Deniz Emre Ofli",
+        "birthDate": "2007-03-29",
+        "nationality": "TUR",
+        "position": "DF"
+      },
+      {
+        "id": "jonathan-tah",
+        "name": "Jonathan Tah",
+        "birthDate": "1996-02-11",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "kim-min-jae",
+        "name": "Kim Min-jae",
+        "birthDate": "1996-11-15",
+        "nationality": "KOR",
+        "position": "DF"
+      },
+      {
+        "id": "konrad-laimer",
+        "name": "Konrad Laimer",
+        "birthDate": "1997-05-27",
+        "nationality": "AUT",
+        "position": "DF"
+      },
+      {
+        "id": "sacha-boey",
+        "name": "Sacha Boey",
+        "birthDate": "2000-09-13",
+        "nationality": "FRA",
+        "secondNationality": "CMR",
+        "position": "DF"
+      },
+      {
+        "id": "arijon-ibrahimovic",
+        "name": "Arijon Ibrahimović",
+        "birthDate": "2005-12-11",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "ismael-saibari",
+        "name": "Ismael Saibari",
+        "birthDate": "2001-01-28",
+        "nationality": "MAR",
+        "secondNationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "jamal-musiala",
+        "name": "Jamal Musiala",
+        "birthDate": "2003-02-26",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "lennart-karl",
+        "name": "Lennart Karl",
+        "birthDate": "2008-02-22",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "marc-roca-junque",
+        "name": "Marc Roca Junqué",
+        "birthDate": "1996-11-26",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "michael-olise",
+        "name": "Michael Olise",
+        "birthDate": "2001-12-12",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "michael-cuisance",
+        "name": "Michaël Cuisance",
+        "birthDate": "1999-08-16",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "harry-kane",
+        "name": "Harry Kane",
+        "birthDate": "1993-07-28",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "luis-diaz",
+        "name": "Luis Díaz",
+        "birthDate": "1997-01-13",
+        "nationality": "COL",
+        "position": "FW"
+      },
+      {
+        "id": "ger-bayern-munchen-gen-02",
+        "name": "Maximilian Müller",
+        "birthDate": "2002-11-07",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-bayern-munchen-gen-03",
+        "name": "Niklas Koch",
+        "birthDate": "2001-11-07",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

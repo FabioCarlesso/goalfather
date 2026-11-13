@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "robin-risser",
+        "name": "Robin Risser",
+        "birthDate": "2004-12-02",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "wuilker-farinez",
+        "name": "Wuilker Faríñez",
+        "birthDate": "1998-02-15",
+        "nationality": "VEN",
+        "position": "GK"
+      },
+      {
+        "id": "fra-lens-gen-07",
+        "name": "Maxime Bertrand",
+        "birthDate": "2005-08-29",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "jean-clair-todibo",
+        "name": "Jean-Clair Todibo",
+        "birthDate": "1999-12-30",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "nidal-celik",
+        "name": "Nidal Čelik",
+        "birthDate": "2006-07-17",
+        "nationality": "BIH",
+        "position": "DF"
+      },
+      {
+        "id": "saud-abdulhamid",
+        "name": "Saud Abdulhamid",
+        "birthDate": "1999-07-18",
+        "nationality": "KSA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-lens-gen-03",
+        "name": "Jordan Roux",
+        "birthDate": "1993-07-19",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-lens-gen-01",
+        "name": "Julien Michel",
+        "birthDate": "2007-08-31",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-lens-gen-05",
+        "name": "Mathieu Dubois",
+        "birthDate": "1999-08-17",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-lens-gen-08",
+        "name": "Rayan Michel",
+        "birthDate": "2000-06-05",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alpha-diallo",
+        "name": "Alpha Diallo",
+        "birthDate": "2006-02-25",
+        "nationality": "FRA",
+        "secondNationality": "GUI",
+        "position": "MF"
+      },
+      {
+        "id": "david-costa",
+        "name": "David Costa",
+        "birthDate": "2001-01-05",
+        "nationality": "POR",
+        "secondNationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "florian-thauvin",
+        "name": "Florian Thauvin",
+        "birthDate": "1993-01-26",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "michal-skoras",
+        "name": "Michał Skóraś",
+        "birthDate": "2000-02-15",
+        "nationality": "POL",
+        "position": "MF"
+      },
+      {
+        "id": "salis-abdul-samed",
+        "name": "Salis Abdul Samed",
+        "birthDate": "2000-03-26",
+        "nationality": "GHA",
+        "position": "MF"
+      },
+      {
+        "id": "thorgan-hazard",
+        "name": "Thorgan Hazard",
+        "birthDate": "1993-03-29",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "fra-lens-gen-09",
+        "name": "Valentin Bertrand",
+        "birthDate": "2004-06-14",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "florian-sotoca",
+        "name": "Florian Sotoca",
+        "birthDate": "1990-10-25",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-lens-gen-10",
+        "name": "Baptiste Martin",
+        "birthDate": "2004-03-03",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lens-gen-04",
+        "name": "Benjamin Fournier",
+        "birthDate": "2002-09-11",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lens-gen-02",
+        "name": "Florian Leroy",
+        "birthDate": "1994-04-12",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lens-gen-06",
+        "name": "Olivier Dupont",
+        "birthDate": "2004-08-05",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

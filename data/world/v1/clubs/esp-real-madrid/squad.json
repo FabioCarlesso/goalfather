@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "esp-real-madrid-gen-02",
+        "name": "Jorge Fernández",
+        "birthDate": "1995-08-05",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-real-madrid-gen-01",
+        "name": "Miguel Muñoz",
+        "birthDate": "1995-05-23",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "dean-huijsen",
+        "name": "Dean Huijsen",
+        "birthDate": "2005-04-14",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "denzel-dumfries",
+        "name": "Denzel Dumfries",
+        "birthDate": "1996-04-18",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "diego-aguado",
+        "name": "Diego Aguado",
+        "birthDate": "2007-02-07",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "ferland-mendy",
+        "name": "Ferland Mendy",
+        "birthDate": "1995-06-08",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "ibrahima-konate",
+        "name": "Ibrahima Konaté",
+        "birthDate": "1999-05-25",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "jose-martinez-lopez",
+        "name": "Jose Martinez Lopez",
+        "birthDate": "2001-08-17",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "marc-cucurella",
+        "name": "Marc Cucurella",
+        "birthDate": "1998-07-22",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "raul-asencio",
+        "name": "Raúl Asencio",
+        "birthDate": "2003-02-13",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "trent-alexander-arnold",
+        "name": "Trent Alexander-Arnold",
+        "birthDate": "1998-10-07",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "alvaro-fernandez-2003",
+        "name": "Álvaro Fernández",
+        "birthDate": "2003-03-23",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "eder-militao",
+        "name": "Éder Militão",
+        "birthDate": "1998-01-18",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "arda-guler",
+        "name": "Arda Güler",
+        "birthDate": "2005-02-25",
+        "nationality": "TUR",
+        "position": "MF"
+      },
+      {
+        "id": "bernardo-silva",
+        "name": "Bernardo Silva",
+        "birthDate": "1994-08-10",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "eduardo-camavinga",
+        "name": "Eduardo Camavinga",
+        "birthDate": "2002-11-10",
+        "nationality": "FRA",
+        "secondNationality": "ANG",
+        "position": "MF"
+      },
+      {
+        "id": "jude-bellingham",
+        "name": "Jude Bellingham",
+        "birthDate": "2003-06-29",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "esp-real-madrid-gen-04",
+        "name": "Juan Muñoz",
+        "birthDate": "1995-05-27",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-real-madrid-gen-03",
+        "name": "Raúl Gómez",
+        "birthDate": "2000-10-15",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "kylian-mbappe",
+        "name": "Kylian Mbappé",
+        "birthDate": "1998-12-20",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "rodrygo",
+        "name": "Rodrygo",
+        "birthDate": "2001-01-09",
+        "nationality": "BRA",
+        "secondNationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "yan-diomande",
+        "name": "Yan Diomande",
+        "birthDate": "2006-11-14",
+        "nationality": "CIV",
+        "position": "FW"
+      }
+    ]
+  }
+}

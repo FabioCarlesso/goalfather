@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "robin-roefs",
+        "name": "Robin Roefs",
+        "birthDate": "2003-01-17",
+        "nationality": "NED",
+        "position": "GK"
+      },
+      {
+        "id": "eng-sunderland-gen-10",
+        "name": "Ben Fletcher",
+        "birthDate": "1996-09-02",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-01",
+        "name": "Charlie Davies",
+        "birthDate": "2005-12-30",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "kevin-danso",
+        "name": "Kevin Danso",
+        "birthDate": "1998-09-19",
+        "nationality": "AUT",
+        "position": "DF"
+      },
+      {
+        "id": "nordi-mukiele",
+        "name": "Nordi Mukiele",
+        "birthDate": "1997-11-01",
+        "nationality": "FRA",
+        "secondNationality": "COD",
+        "position": "DF"
+      },
+      {
+        "id": "thomas-meunier",
+        "name": "Thomas Meunier",
+        "birthDate": "1991-09-12",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "timothee-pembele",
+        "name": "Timothée Pembélé",
+        "birthDate": "2002-09-09",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "eng-sunderland-gen-11",
+        "name": "Alfie Mills",
+        "birthDate": "2003-01-09",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-05",
+        "name": "Dominic Morgan",
+        "birthDate": "1993-10-08",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-07",
+        "name": "Jake Green",
+        "birthDate": "1998-03-03",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "granit-xhaka",
+        "name": "Granit Xhaka",
+        "birthDate": "1992-09-27",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "eng-sunderland-gen-12",
+        "name": "Dominic Marshall",
+        "birthDate": "1993-11-13",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-06",
+        "name": "Ethan Mills",
+        "birthDate": "1999-07-19",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-03",
+        "name": "Jacob Bennett",
+        "birthDate": "1999-11-20",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-04",
+        "name": "Jake Shaw",
+        "birthDate": "2001-11-09",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-08",
+        "name": "Kieran Fletcher",
+        "birthDate": "2006-10-23",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-02",
+        "name": "Kieran Ward",
+        "birthDate": "1999-01-07",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "brian-brobbey",
+        "name": "Brian Brobbey",
+        "birthDate": "2002-02-01",
+        "nationality": "NED",
+        "position": "FW"
+      },
+      {
+        "id": "malick-fofana",
+        "name": "Malick Fofana",
+        "birthDate": "2005-03-31",
+        "nationality": "BEL",
+        "position": "FW"
+      },
+      {
+        "id": "tom-watson",
+        "name": "Tom Watson",
+        "birthDate": "2006-04-18",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "eng-sunderland-gen-09",
+        "name": "Ben Hughes",
+        "birthDate": "1999-02-06",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-sunderland-gen-13",
+        "name": "Joe Shaw",
+        "birthDate": "2007-04-02",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

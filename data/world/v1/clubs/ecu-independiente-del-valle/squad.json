@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ecu-independiente-del-valle-gen-02",
+        "name": "Ezequiel Ruiz",
+        "birthDate": "2008-06-27",
+        "nationality": "ECU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-17",
+        "name": "Federico Ríos",
+        "birthDate": "2007-06-17",
+        "nationality": "ECU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-01",
+        "name": "Ignacio Núñez",
+        "birthDate": "2003-03-10",
+        "nationality": "ECU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-08",
+        "name": "Emiliano Cáceres",
+        "birthDate": "1996-09-09",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-04",
+        "name": "Jhon Morales",
+        "birthDate": "1994-05-13",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-11",
+        "name": "Julián Duarte",
+        "birthDate": "2000-08-02",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-06",
+        "name": "Lautaro Giménez",
+        "birthDate": "1998-11-08",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-14",
+        "name": "Lucas Suárez",
+        "birthDate": "2002-02-24",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-18",
+        "name": "Santiago Medina",
+        "birthDate": "1997-01-25",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-03",
+        "name": "Tomás Suárez",
+        "birthDate": "1995-04-17",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jhegson-mendez",
+        "name": "Jhegson Méndez",
+        "birthDate": "1997-04-26",
+        "nationality": "ECU",
+        "position": "MF"
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-09",
+        "name": "Gonzalo Acosta",
+        "birthDate": "1998-02-07",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-19",
+        "name": "Juan Pablo Valdez",
+        "birthDate": "1995-04-13",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-07",
+        "name": "Kevin Silva",
+        "birthDate": "1993-12-31",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-12",
+        "name": "Luciano Vega",
+        "birthDate": "2005-05-19",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-05",
+        "name": "Rodrigo Cabrera",
+        "birthDate": "2000-10-01",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-15",
+        "name": "Valentín Gómez",
+        "birthDate": "2001-09-10",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "romario-ibarra",
+        "name": "Romario Ibarra",
+        "birthDate": "1994-09-24",
+        "nationality": "ECU",
+        "position": "FW"
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-20",
+        "name": "Agustín Duarte",
+        "birthDate": "2002-01-31",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-10",
+        "name": "Emiliano Fernández",
+        "birthDate": "2007-09-05",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-13",
+        "name": "Juan Pablo Sosa",
+        "birthDate": "2005-10-23",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-independiente-del-valle-gen-16",
+        "name": "Matías Benítez",
+        "birthDate": "1997-01-11",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

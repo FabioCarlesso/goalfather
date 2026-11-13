@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-ponte-preta-gen-01",
+        "name": "Arthur Pinheiro",
+        "birthDate": "2003-05-13",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-02",
+        "name": "Danilo Abreu",
+        "birthDate": "2003-03-05",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-18",
+        "name": "Flávio Moreira",
+        "birthDate": "2006-09-16",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "rafael-santos",
+        "name": "Rafael Santos",
+        "birthDate": "1998-02-05",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-ponte-preta-gen-19",
+        "name": "Cláudio Gonçalves",
+        "birthDate": "1996-02-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-09",
+        "name": "Cristiano Batista",
+        "birthDate": "2001-12-24",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-04",
+        "name": "Raul Borges",
+        "birthDate": "1995-07-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-06",
+        "name": "Ricardo Ramos",
+        "birthDate": "2003-04-21",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-12",
+        "name": "Samuel Azevedo",
+        "birthDate": "1998-02-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-15",
+        "name": "Thiago Cavalcanti",
+        "birthDate": "1999-03-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-03",
+        "name": "Adriano Oliveira",
+        "birthDate": "1998-03-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-13",
+        "name": "Flávio Queiroz",
+        "birthDate": "1998-06-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-16",
+        "name": "Jefferson Brandão",
+        "birthDate": "1997-10-05",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-20",
+        "name": "Roberto Andrade",
+        "birthDate": "2001-02-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-10",
+        "name": "Roberto Medeiros",
+        "birthDate": "2003-08-01",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-05",
+        "name": "Samuel Araújo",
+        "birthDate": "2008-06-02",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-07",
+        "name": "Valdir Barbosa",
+        "birthDate": "1995-03-02",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-11",
+        "name": "Jonas Ferreira",
+        "birthDate": "2007-04-11",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-08",
+        "name": "Juliano Batista",
+        "birthDate": "1998-04-15",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-14",
+        "name": "Maurício Andrade",
+        "birthDate": "2007-02-09",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-17",
+        "name": "Márcio Xavier",
+        "birthDate": "2006-06-21",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ponte-preta-gen-21",
+        "name": "Willian Queiroz",
+        "birthDate": "1993-10-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

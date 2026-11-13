@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "per-cusco-gen-19",
+        "name": "Leandro Ramírez",
+        "birthDate": "2002-09-23",
+        "nationality": "PER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-02",
+        "name": "Luciano Ibarra",
+        "birthDate": "1995-04-26",
+        "nationality": "PER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-01",
+        "name": "Maximiliano Aguirre",
+        "birthDate": "2007-01-25",
+        "nationality": "PER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-10",
+        "name": "Cristian Villalba",
+        "birthDate": "2000-12-12",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-20",
+        "name": "Emiliano González",
+        "birthDate": "2000-06-07",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-16",
+        "name": "Gonzalo Ríos",
+        "birthDate": "2003-05-04",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-03",
+        "name": "Jonathan Cáceres",
+        "birthDate": "2001-03-12",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-07",
+        "name": "Jonathan Valdez",
+        "birthDate": "2002-07-19",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-13",
+        "name": "Nahuel Fernández",
+        "birthDate": "2003-08-04",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-05",
+        "name": "Sebastián Fernández",
+        "birthDate": "2004-12-01",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-11",
+        "name": "Julián Romero",
+        "birthDate": "2006-11-29",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-06",
+        "name": "Lautaro Méndez",
+        "birthDate": "2004-08-31",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-04",
+        "name": "Lautaro Romero",
+        "birthDate": "1994-11-01",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-17",
+        "name": "Leandro Pereyra",
+        "birthDate": "1997-12-05",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-08",
+        "name": "Lucas Méndez",
+        "birthDate": "1997-05-06",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-21",
+        "name": "Tomás Giménez",
+        "birthDate": "2000-03-13",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-14",
+        "name": "Yeferson Morales",
+        "birthDate": "1997-08-26",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-09",
+        "name": "Alexis Torres",
+        "birthDate": "2005-04-05",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-18",
+        "name": "Cristian Ibarra",
+        "birthDate": "2003-06-10",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-12",
+        "name": "Lucas Romero",
+        "birthDate": "1998-09-21",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-15",
+        "name": "Nahuel Ruiz",
+        "birthDate": "1996-03-02",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-cusco-gen-22",
+        "name": "Nicolás Pereyra",
+        "birthDate": "2000-02-11",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

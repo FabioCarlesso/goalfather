@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "helton-leite",
+        "name": "Helton Leite",
+        "birthDate": "1990-11-02",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "leo-roman",
+        "name": "Leo Román",
+        "birthDate": "2000-07-06",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "alvaro-fernandez-1998",
+        "name": "Álvaro Fernández",
+        "birthDate": "1998-04-13",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "angelino",
+        "name": "Angeliño",
+        "birthDate": "1997-01-04",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "joaquin-navarro-jimenez",
+        "name": "Joaquín Navarro Jiménez",
+        "birthDate": "1990-01-23",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "jose-maria-gimenez",
+        "name": "José María Giménez",
+        "birthDate": "1995-01-20",
+        "nationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "lucas-noubi",
+        "name": "Lucas Noubi",
+        "birthDate": "2005-01-15",
+        "nationality": "BEL",
+        "secondNationality": "CMR",
+        "position": "DF"
+      },
+      {
+        "id": "miguel-loureiro",
+        "name": "Miguel Loureiro",
+        "birthDate": "1996-11-21",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "omenuke-mfulu",
+        "name": "Omenuke Mfulu",
+        "birthDate": "1994-03-20",
+        "nationality": "COD",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "pablo-garcia-taboada",
+        "name": "Pablo García Taboada",
+        "birthDate": "2008-01-23",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "rafael-obrador",
+        "name": "Rafael Obrador",
+        "birthDate": "2004-02-24",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "adama-traore",
+        "name": "Adama Traoré",
+        "birthDate": "1996-01-25",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "charlie-patino",
+        "name": "Charlie Patino",
+        "birthDate": "2003-10-17",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "david-alvarez",
+        "name": "David Álvarez",
+        "birthDate": "1994-12-18",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "denis-genreau",
+        "name": "Denis Genreau",
+        "birthDate": "1999-05-21",
+        "nationality": "AUS",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "diego-villares-yanez",
+        "name": "Diego Villares Yáñez",
+        "birthDate": "1996-06-17",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "jose-gragera-amado",
+        "name": "José Gragera Amado",
+        "birthDate": "2000-11-30",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "jose-angel-jurado-de-la-torre",
+        "name": "José Ángel Jurado de la Torre",
+        "birthDate": "1992-06-21",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "marc-casado",
+        "name": "Marc Casadó",
+        "birthDate": "2003-09-14",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "ricardo-rodriguez-gil-carcedo",
+        "name": "Ricardo Rodríguez Gil Carcedo",
+        "birthDate": "1997-09-25",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "zakaria-eddahchouri",
+        "name": "Zakaria Eddahchouri",
+        "birthDate": "2000-05-11",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "bil-nsongo",
+        "name": "Bil Nsongo",
+        "birthDate": "2004-09-21",
+        "nationality": "CMR",
+        "position": "FW"
+      },
+      {
+        "id": "cristian-herrera-lopez",
+        "name": "Cristian Herrera López",
+        "birthDate": "1991-03-13",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "luis-rodriguez-chacon",
+        "name": "Luis Rodríguez Chacón",
+        "birthDate": "2000-05-30",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "pierre-emerick-aubameyang",
+        "name": "Pierre-Emerick Aubameyang",
+        "birthDate": "1989-06-18",
+        "nationality": "GAB",
+        "secondNationality": "ESP",
+        "position": "FW"
+      }
+    ]
+  }
+}

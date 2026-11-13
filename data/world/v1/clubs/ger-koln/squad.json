@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "marvin-schwabe",
+        "name": "Marvin Schwäbe",
+        "birthDate": "1995-04-25",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "ron-robert-zieler",
+        "name": "Ron-Robert Zieler",
+        "birthDate": "1989-02-12",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "ger-koln-gen-11",
+        "name": "Florian Weber",
+        "birthDate": "2002-04-21",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "borna-sosa",
+        "name": "Borna Sosa",
+        "birthDate": "1998-01-21",
+        "nationality": "CRO",
+        "position": "DF"
+      },
+      {
+        "id": "rasmus-carstensen",
+        "name": "Rasmus Carstensen",
+        "birthDate": "2000-11-10",
+        "nationality": "DEN",
+        "position": "DF"
+      },
+      {
+        "id": "ger-koln-gen-01",
+        "name": "Alexander Richter",
+        "birthDate": "1996-12-14",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-05",
+        "name": "Christian Ziegler",
+        "birthDate": "1996-10-14",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-08",
+        "name": "Jannik Klein",
+        "birthDate": "1994-07-29",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-12",
+        "name": "Max Schäfer",
+        "birthDate": "2001-01-05",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-03",
+        "name": "Patrick Koch",
+        "birthDate": "2002-07-23",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ellyes-skhiri",
+        "name": "Ellyes Skhiri",
+        "birthDate": "1995-05-10",
+        "nationality": "FRA",
+        "secondNationality": "TUN",
+        "position": "MF"
+      },
+      {
+        "id": "luca-durholtz",
+        "name": "Luca Dürholtz",
+        "birthDate": "1993-08-18",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "ger-koln-gen-13",
+        "name": "Jannik Schmidt",
+        "birthDate": "2000-01-07",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-02",
+        "name": "Leon Schröder",
+        "birthDate": "2008-03-06",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-09",
+        "name": "Luca Krüger",
+        "birthDate": "2007-04-27",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-06",
+        "name": "Patrick Friedrich",
+        "birthDate": "2000-01-15",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-04",
+        "name": "Tobias Lehmann",
+        "birthDate": "2001-03-29",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "damion-downs",
+        "name": "Damion Downs",
+        "birthDate": "2004-07-06",
+        "nationality": "USA",
+        "secondNationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "ragnar-ache",
+        "name": "Ragnar Ache",
+        "birthDate": "1998-07-28",
+        "nationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "ger-koln-gen-14",
+        "name": "Marco Frank",
+        "birthDate": "1996-08-22",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-10",
+        "name": "Patrick Hoffmann",
+        "birthDate": "1998-03-04",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-koln-gen-07",
+        "name": "Tobias Walter",
+        "birthDate": "2003-06-24",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

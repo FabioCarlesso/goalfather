@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bernd-leno",
+        "name": "Bernd Leno",
+        "birthDate": "1992-03-04",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "eng-fulham-gen-10",
+        "name": "Callum Lewis",
+        "birthDate": "2007-04-06",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-01",
+        "name": "Harvey Walker",
+        "birthDate": "2001-04-23",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "antonee-robinson",
+        "name": "Antonee Robinson",
+        "birthDate": "1997-08-08",
+        "nationality": "USA",
+        "position": "DF"
+      },
+      {
+        "id": "david-affengruber",
+        "name": "David Affengruber",
+        "birthDate": "2001-03-19",
+        "nationality": "AUT",
+        "position": "DF"
+      },
+      {
+        "id": "timothy-castagne",
+        "name": "Timothy Castagne",
+        "birthDate": "1995-12-05",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "eng-fulham-gen-04",
+        "name": "Alfie Cooper",
+        "birthDate": "1997-09-28",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-07",
+        "name": "Charlie Mills",
+        "birthDate": "1996-01-25",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-02",
+        "name": "James Davies",
+        "birthDate": "2003-07-05",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-11",
+        "name": "Tyler Green",
+        "birthDate": "2003-07-29",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alex-iwobi",
+        "name": "Alex Iwobi",
+        "birthDate": "1996-05-03",
+        "nationality": "NGA",
+        "position": "MF"
+      },
+      {
+        "id": "harrison-reed",
+        "name": "Harrison Reed",
+        "birthDate": "1995-01-27",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "ivan-cavaleiro",
+        "name": "Ivan Cavaleiro",
+        "birthDate": "1993-10-18",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "sander-berge",
+        "name": "Sander Berge",
+        "birthDate": "1998-02-14",
+        "nationality": "NOR",
+        "position": "MF"
+      },
+      {
+        "id": "eng-fulham-gen-08",
+        "name": "Adam Clarke",
+        "birthDate": "1997-06-25",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-05",
+        "name": "James Wilson",
+        "birthDate": "1999-05-10",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-12",
+        "name": "Tom Taylor",
+        "birthDate": "1997-07-16",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "cesar-palacios",
+        "name": "César Palacios",
+        "birthDate": "2004-11-11",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "eng-fulham-gen-03",
+        "name": "Daniel Shaw",
+        "birthDate": "2003-03-18",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-13",
+        "name": "Lewis Morris",
+        "birthDate": "2002-07-14",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-06",
+        "name": "Lewis Taylor",
+        "birthDate": "2005-12-12",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-fulham-gen-09",
+        "name": "Matthew Watson",
+        "birthDate": "2007-03-07",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

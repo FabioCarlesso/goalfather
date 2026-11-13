@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ita-bologna-gen-02",
+        "name": "Gabriele Fontana",
+        "birthDate": "2008-05-05",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-01",
+        "name": "Leonardo Testa",
+        "birthDate": "2001-02-16",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-13",
+        "name": "Simone Russo",
+        "birthDate": "1994-08-08",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arthur-theate",
+        "name": "Arthur Theate",
+        "birthDate": "2000-05-25",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "martin-vitik",
+        "name": "Martin Vitík",
+        "birthDate": "2003-01-21",
+        "nationality": "CZE",
+        "position": "DF"
+      },
+      {
+        "id": "matteo-darmian",
+        "name": "Matteo Darmian",
+        "birthDate": "1989-12-02",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-bologna-gen-14",
+        "name": "Federico D'Amico",
+        "birthDate": "1993-10-25",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-04",
+        "name": "Federico Ferrara",
+        "birthDate": "1996-09-22",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-07",
+        "name": "Simone Mancini",
+        "birthDate": "2002-06-02",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-10",
+        "name": "Stefano D'Amico",
+        "birthDate": "1999-04-25",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "federico-bernardeschi",
+        "name": "Federico Bernardeschi",
+        "birthDate": "1994-02-16",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "samuel-mbangula",
+        "name": "Samuel Mbangula",
+        "birthDate": "2004-01-16",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "ita-bologna-gen-05",
+        "name": "Antonio Fabbri",
+        "birthDate": "2004-10-27",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-03",
+        "name": "Filippo Martini",
+        "birthDate": "1994-03-16",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-15",
+        "name": "Paolo Villa",
+        "birthDate": "1995-07-06",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-08",
+        "name": "Riccardo Rossi",
+        "birthDate": "2005-01-28",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-11",
+        "name": "Tommaso Martini",
+        "birthDate": "2007-11-13",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "artem-dovbyk",
+        "name": "Artem Dovbyk",
+        "birthDate": "1997-06-21",
+        "nationality": "UKR",
+        "position": "FW"
+      },
+      {
+        "id": "ita-bologna-gen-09",
+        "name": "Federico Conti",
+        "birthDate": "1999-11-01",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-06",
+        "name": "Giovanni Costa",
+        "birthDate": "2006-03-02",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-12",
+        "name": "Giuseppe Ferrari",
+        "birthDate": "2005-05-24",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-bologna-gen-16",
+        "name": "Nicola Barbieri",
+        "birthDate": "2004-01-02",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

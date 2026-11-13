@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "antonin-kinsky",
+        "name": "Antonín Kinský",
+        "birthDate": "2003-03-13",
+        "nationality": "CZE",
+        "position": "GK"
+      },
+      {
+        "id": "martin-dubravka",
+        "name": "Martin Dúbravka",
+        "birthDate": "1989-01-15",
+        "nationality": "SVK",
+        "position": "GK"
+      },
+      {
+        "id": "andrew-robertson",
+        "name": "Andrew Robertson",
+        "birthDate": "1994-03-11",
+        "nationality": "SCO",
+        "position": "DF"
+      },
+      {
+        "id": "archie-gray",
+        "name": "Archie Gray",
+        "birthDate": "2006-03-12",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "destiny-udogie",
+        "name": "Destiny Udogie",
+        "birthDate": "2002-11-28",
+        "nationality": "ITA",
+        "secondNationality": "NGA",
+        "position": "DF"
+      },
+      {
+        "id": "marcos-senesi",
+        "name": "Marcos Senesi",
+        "birthDate": "1997-05-10",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "micky-van-de-ven",
+        "name": "Micky van de Ven",
+        "birthDate": "2001-04-19",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "pedro-porro",
+        "name": "Pedro Porro",
+        "birthDate": "1999-09-13",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "rodrigo-bentancur",
+        "name": "Rodrigo Bentancur",
+        "birthDate": "1997-06-25",
+        "nationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "tosin-adarabioyo",
+        "name": "Tosin Adarabioyo",
+        "birthDate": "1997-09-24",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "conor-gallagher",
+        "name": "Conor Gallagher",
+        "birthDate": "2000-02-06",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "dejan-kulusevski",
+        "name": "Dejan Kulusevski",
+        "birthDate": "2000-04-25",
+        "nationality": "SWE",
+        "secondNationality": "MKD",
+        "position": "MF"
+      },
+      {
+        "id": "james-maddison",
+        "name": "James Maddison",
+        "birthDate": "1996-11-23",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "manor-solomon",
+        "name": "Manor Solomon",
+        "birthDate": "1999-07-24",
+        "nationality": "ISR",
+        "position": "MF"
+      },
+      {
+        "id": "sandro-tonali",
+        "name": "Sandro Tonali",
+        "birthDate": "2000-05-08",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "xavi-simons",
+        "name": "Xavi Simons",
+        "birthDate": "2003-04-21",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "dominic-solanke",
+        "name": "Dominic Solanke",
+        "birthDate": "1997-09-14",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "mathys-tel",
+        "name": "Mathys Tel",
+        "birthDate": "2005-04-27",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "mohammed-kudus",
+        "name": "Mohammed Kudus",
+        "birthDate": "2000-08-02",
+        "nationality": "GHA",
+        "position": "FW"
+      },
+      {
+        "id": "mykhailo-mudryk",
+        "name": "Mykhailo Mudryk",
+        "birthDate": "2001-01-05",
+        "nationality": "UKR",
+        "position": "FW"
+      },
+      {
+        "id": "omar-marmoush",
+        "name": "Omar Marmoush",
+        "birthDate": "1999-02-07",
+        "nationality": "EGY",
+        "position": "FW"
+      },
+      {
+        "id": "richarlison",
+        "name": "Richarlison",
+        "birthDate": "1997-05-10",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "savinho",
+        "name": "Savinho",
+        "birthDate": "2004-04-10",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "wilson-odobert",
+        "name": "Wilson Odobert",
+        "birthDate": "2004-11-28",
+        "nationality": "FRA",
+        "position": "FW"
+      }
+    ]
+  }
+}

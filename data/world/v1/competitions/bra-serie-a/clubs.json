@@ -1,21 +1,208 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T00:00:00Z",
-  "source": "exemplo mínimo montado à mão a partir de fatos públicos; substituído pela importação do Wikidata (issue #127)",
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
   "data": [
+    {
+      "id": "bra-athletico-paranaense",
+      "name": "Athletico Paranaense",
+      "country": "BRA",
+      "reputation": 68,
+      "stadium": {
+        "name": "Estádio Mário Celso Petraglia",
+        "capacity": 42372
+      }
+    },
+    {
+      "id": "bra-atletico-mineiro",
+      "name": "Atlético Mineiro",
+      "country": "BRA",
+      "reputation": 78,
+      "stadium": {
+        "name": "Arena MRV",
+        "capacity": 44892
+      }
+    },
+    {
+      "id": "bra-bahia",
+      "name": "Bahia",
+      "country": "BRA",
+      "reputation": 68,
+      "stadium": {
+        "name": "Arena Fonte Nova",
+        "capacity": 47915
+      }
+    },
+    {
+      "id": "bra-botafogo",
+      "name": "Botafogo",
+      "country": "BRA",
+      "reputation": 78,
+      "stadium": {
+        "name": "Estádio Nilton Santos",
+        "capacity": 46931
+      }
+    },
+    {
+      "id": "bra-chapecoense",
+      "name": "Chapecoense",
+      "country": "BRA",
+      "reputation": 45,
+      "stadium": {
+        "name": "Arena Condá",
+        "capacity": 22600
+      }
+    },
+    {
+      "id": "bra-corinthians",
+      "name": "Corinthians",
+      "country": "BRA",
+      "reputation": 80,
+      "stadium": {
+        "name": "Neo Química Arena",
+        "capacity": 47252
+      }
+    },
+    {
+      "id": "bra-coritiba",
+      "name": "Coritiba",
+      "country": "BRA",
+      "reputation": 50,
+      "stadium": {
+        "name": "Estádio Major Antônio Couto Pereira",
+        "capacity": 34872
+      }
+    },
+    {
+      "id": "bra-cruzeiro",
+      "name": "Cruzeiro",
+      "country": "BRA",
+      "reputation": 76,
+      "stadium": {
+        "name": "Estádio Governador Magalhães Pinto",
+        "capacity": 66658
+      }
+    },
     {
       "id": "bra-flamengo",
       "name": "Flamengo",
       "country": "BRA",
       "reputation": 90,
-      "stadium": { "name": "Maracanã", "capacity": 78838 }
+      "stadium": {
+        "name": "Estádio Jornalista Mário Filho",
+        "capacity": 78838
+      }
+    },
+    {
+      "id": "bra-fluminense",
+      "name": "Fluminense",
+      "country": "BRA",
+      "reputation": 76,
+      "stadium": {
+        "name": "Estádio Jornalista Mário Filho",
+        "capacity": 78838
+      }
+    },
+    {
+      "id": "bra-gremio",
+      "name": "Grêmio",
+      "country": "BRA",
+      "reputation": 75,
+      "stadium": {
+        "name": "Arena do Grêmio",
+        "capacity": 60540
+      }
+    },
+    {
+      "id": "bra-internacional",
+      "name": "Internacional",
+      "country": "BRA",
+      "reputation": 76,
+      "stadium": {
+        "name": "Estádio Beira-Rio",
+        "capacity": 49055
+      }
+    },
+    {
+      "id": "bra-mirassol",
+      "name": "Mirassol",
+      "country": "BRA",
+      "reputation": 48,
+      "stadium": {
+        "name": "Estádio Municipal José Maria de Campos Maia",
+        "capacity": 14534
+      }
     },
     {
       "id": "bra-palmeiras",
       "name": "Palmeiras",
       "country": "BRA",
       "reputation": 88,
-      "stadium": { "name": "Allianz Parque", "capacity": 43713 }
+      "stadium": {
+        "name": "Nubank Parque",
+        "capacity": 43713
+      }
+    },
+    {
+      "id": "bra-red-bull-bragantino",
+      "name": "Red Bull Bragantino",
+      "country": "BRA",
+      "reputation": 60,
+      "stadium": {
+        "name": "Estádio Nabi Abi Chedid",
+        "capacity": 21209
+      }
+    },
+    {
+      "id": "bra-remo",
+      "name": "Remo",
+      "country": "BRA",
+      "reputation": 45,
+      "stadium": {
+        "name": "Estádio Evandro Almeida",
+        "capacity": 17518
+      }
+    },
+    {
+      "id": "bra-santos",
+      "name": "Santos",
+      "country": "BRA",
+      "reputation": 72,
+      "stadium": {
+        "name": "Estádio Urbano Caldeira",
+        "capacity": 16068
+      }
+    },
+    {
+      "id": "bra-sao-paulo",
+      "name": "São Paulo",
+      "country": "BRA",
+      "reputation": 78,
+      "stadium": {
+        "name": "Estádio do Morumbi",
+        "capacity": 120000
+      }
+    },
+    {
+      "id": "bra-vasco-da-gama",
+      "name": "Vasco da Gama",
+      "country": "BRA",
+      "reputation": 70,
+      "stadium": {
+        "name": "Estádio Vasco da Gama",
+        "capacity": 25000
+      }
+    },
+    {
+      "id": "bra-vitoria",
+      "name": "Vitória",
+      "country": "BRA",
+      "reputation": 52,
+      "stadium": {
+        "name": "Estádio Manoel Barradas",
+        "capacity": 35632
+      }
     }
   ]
 }

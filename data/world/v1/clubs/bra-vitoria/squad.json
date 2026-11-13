@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-vitoria-gen-19",
+        "name": "Márcio Oliveira",
+        "birthDate": "2000-11-10",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-01",
+        "name": "Paulo Souza",
+        "birthDate": "2005-07-10",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-02",
+        "name": "Wagner Farias",
+        "birthDate": "2005-06-25",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-13",
+        "name": "Flávio Medeiros",
+        "birthDate": "2008-03-26",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-03",
+        "name": "Leonardo Toledo",
+        "birthDate": "2008-03-18",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-05",
+        "name": "Rafael Batista",
+        "birthDate": "2006-09-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-07",
+        "name": "Samuel Freitas",
+        "birthDate": "2004-12-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-10",
+        "name": "Valdir Andrade",
+        "birthDate": "1995-04-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-20",
+        "name": "Vinícius Valente",
+        "birthDate": "1996-08-17",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-16",
+        "name": "Wesley Duarte",
+        "birthDate": "2005-04-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-06",
+        "name": "Breno Souza",
+        "birthDate": "2002-04-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-17",
+        "name": "Cláudio Oliveira",
+        "birthDate": "1995-02-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-11",
+        "name": "Cristiano Pereira",
+        "birthDate": "2001-01-26",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-21",
+        "name": "Guilherme Ribeiro",
+        "birthDate": "2004-04-09",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-08",
+        "name": "Leandro Nascimento",
+        "birthDate": "2005-02-03",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-04",
+        "name": "Rafael Nogueira",
+        "birthDate": "2001-01-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-14",
+        "name": "Sérgio Guimarães",
+        "birthDate": "2004-11-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-09",
+        "name": "Arthur Santana",
+        "birthDate": "2003-04-25",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-15",
+        "name": "Daniel Moraes",
+        "birthDate": "1999-03-15",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-22",
+        "name": "Guilherme Valente",
+        "birthDate": "2003-07-01",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-18",
+        "name": "Maurício Teixeira",
+        "birthDate": "1998-12-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vitoria-gen-12",
+        "name": "Roberto Santos",
+        "birthDate": "2008-04-17",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

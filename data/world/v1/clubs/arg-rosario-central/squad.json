@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "arg-rosario-central-gen-01",
+        "name": "Emiliano Ortiz",
+        "birthDate": "1997-10-14",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-02",
+        "name": "Nicolás Castillo",
+        "birthDate": "1996-01-20",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-17",
+        "name": "Valentín Cáceres",
+        "birthDate": "1994-11-19",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-08",
+        "name": "Alexis Gómez",
+        "birthDate": "1993-10-10",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-18",
+        "name": "Brian Flores",
+        "birthDate": "1998-03-23",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-14",
+        "name": "Cristian Vargas",
+        "birthDate": "2004-03-02",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-11",
+        "name": "Gastón Torres",
+        "birthDate": "1998-06-11",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-05",
+        "name": "Luciano Fernández",
+        "birthDate": "2005-11-01",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-04",
+        "name": "Luciano Méndez",
+        "birthDate": "1997-06-19",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-03",
+        "name": "Matías Benítez",
+        "birthDate": "2005-04-30",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alan-marinelli",
+        "name": "Alan Marinelli",
+        "birthDate": "1999-04-07",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "angel-di-maria",
+        "name": "Ángel Di María",
+        "birthDate": "1988-02-14",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "arg-rosario-central-gen-09",
+        "name": "Alexis Ortiz",
+        "birthDate": "1997-10-31",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-15",
+        "name": "Luciano Suárez",
+        "birthDate": "1995-11-20",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-06",
+        "name": "Rodrigo Méndez",
+        "birthDate": "2000-09-25",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-12",
+        "name": "Sebastián Herrera",
+        "birthDate": "2002-02-06",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-19",
+        "name": "Yeferson Méndez",
+        "birthDate": "2008-05-25",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-20",
+        "name": "Franco Cáceres",
+        "birthDate": "1997-09-28",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-07",
+        "name": "Ignacio Quintero",
+        "birthDate": "1997-09-11",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-13",
+        "name": "Luciano Castillo",
+        "birthDate": "2000-05-22",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-16",
+        "name": "Rodrigo Sosa",
+        "birthDate": "2001-02-28",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-rosario-central-gen-10",
+        "name": "Walter Sosa",
+        "birthDate": "1997-02-09",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

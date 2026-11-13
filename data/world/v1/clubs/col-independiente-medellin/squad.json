@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "col-independiente-medellin-gen-02",
+        "name": "Cristian Villalba",
+        "birthDate": "1999-02-27",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-01",
+        "name": "Juan Pablo Ibarra",
+        "birthDate": "1999-02-18",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-17",
+        "name": "Nicolás Fernández",
+        "birthDate": "2007-05-31",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-14",
+        "name": "Cristian González",
+        "birthDate": "2005-08-14",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-18",
+        "name": "Emiliano Pereyra",
+        "birthDate": "2000-01-06",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-05",
+        "name": "Ignacio Vargas",
+        "birthDate": "2002-02-10",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-04",
+        "name": "Leandro Quintero",
+        "birthDate": "1999-11-09",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-03",
+        "name": "Lucas Flores",
+        "birthDate": "1996-12-09",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-11",
+        "name": "Walter Gómez",
+        "birthDate": "1997-11-21",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-08",
+        "name": "Yeferson Ríos",
+        "birthDate": "2007-07-24",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "juan-fernando-quintero",
+        "name": "Juan Fernando Quintero",
+        "birthDate": "1993-01-18",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "miguel-camargo",
+        "name": "Miguel Camargo",
+        "birthDate": "1993-05-09",
+        "nationality": "PAN",
+        "position": "MF"
+      },
+      {
+        "id": "col-independiente-medellin-gen-09",
+        "name": "Emiliano Gómez",
+        "birthDate": "2000-03-27",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-15",
+        "name": "Ezequiel Cáceres",
+        "birthDate": "2007-04-18",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-19",
+        "name": "Ezequiel Romero",
+        "birthDate": "2007-08-22",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-06",
+        "name": "Nahuel Ibarra",
+        "birthDate": "1994-05-03",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-12",
+        "name": "Yeferson Valdez",
+        "birthDate": "1995-11-07",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-13",
+        "name": "Alexis Silva",
+        "birthDate": "2006-06-29",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-10",
+        "name": "Luciano Ramírez",
+        "birthDate": "2000-11-07",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-20",
+        "name": "Sebastián Medina",
+        "birthDate": "1996-06-07",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-07",
+        "name": "Sebastián Morales",
+        "birthDate": "2000-01-09",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-independiente-medellin-gen-16",
+        "name": "Valentín Vega",
+        "birthDate": "1998-11-18",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

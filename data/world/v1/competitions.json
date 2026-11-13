@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T00:00:00Z",
-  "source": "exemplo mínimo montado à mão a partir de fatos públicos; substituído pela importação do Wikidata (issue #127)",
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
   "data": [
     {
       "id": "bra-serie-a",
@@ -9,13 +10,177 @@
       "country": "BRA",
       "tier": 1,
       "strength": 70,
-      "format": { "type": "roundRobin", "legs": 2 },
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
       "tiebreakers": [
         "POINTS",
         "WINS",
         "GOAL_DIFFERENCE",
         "GOALS_FOR",
         "HEAD_TO_HEAD",
+        "FEWER_RED_CARDS",
+        "FEWER_YELLOW_CARDS",
+        "DRAWING_OF_LOTS"
+      ]
+    },
+    {
+      "id": "bra-serie-b",
+      "name": "Campeonato Brasileiro Série B",
+      "country": "BRA",
+      "tier": 2,
+      "strength": 62,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "WINS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "FEWER_RED_CARDS",
+        "FEWER_YELLOW_CARDS",
+        "DRAWING_OF_LOTS"
+      ]
+    },
+    {
+      "id": "eng-premier-league",
+      "name": "Premier League",
+      "country": "ENG",
+      "tier": 1,
+      "strength": 78,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "DRAWING_OF_LOTS"
+      ]
+    },
+    {
+      "id": "esp-la-liga",
+      "name": "La Liga",
+      "country": "ESP",
+      "tier": 1,
+      "strength": 76,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "HEAD_TO_HEAD",
+        "HEAD_TO_HEAD_GOAL_DIFFERENCE",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "DRAWING_OF_LOTS"
+      ]
+    },
+    {
+      "id": "ita-serie-a",
+      "name": "Serie A",
+      "country": "ITA",
+      "tier": 1,
+      "strength": 75,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "HEAD_TO_HEAD",
+        "HEAD_TO_HEAD_GOAL_DIFFERENCE",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "DRAWING_OF_LOTS"
+      ]
+    },
+    {
+      "id": "ger-bundesliga",
+      "name": "Bundesliga",
+      "country": "GER",
+      "tier": 1,
+      "strength": 75,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "DRAWING_OF_LOTS"
+      ]
+    },
+    {
+      "id": "fra-ligue-1",
+      "name": "Ligue 1",
+      "country": "FRA",
+      "tier": 1,
+      "strength": 72,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "DRAWING_OF_LOTS"
+      ]
+    },
+    {
+      "id": "conmebol-libertadores",
+      "name": "Copa Libertadores",
+      "confederation": "CONMEBOL",
+      "format": {
+        "type": "groupsThenKnockout",
+        "groups": 8,
+        "perGroup": 4,
+        "qualifiersPerGroup": 2,
+        "groupLegs": 2,
+        "knockout": [
+          {
+            "name": "Oitavas de final",
+            "teams": 16,
+            "legs": 2,
+            "newEntrants": 16
+          },
+          {
+            "name": "Quartas de final",
+            "teams": 8,
+            "legs": 2,
+            "newEntrants": 0
+          },
+          {
+            "name": "Semifinal",
+            "teams": 4,
+            "legs": 2,
+            "newEntrants": 0
+          },
+          {
+            "name": "Final",
+            "teams": 2,
+            "legs": 1,
+            "newEntrants": 0
+          }
+        ]
+      },
+      "tiebreakers": [
+        "POINTS",
+        "HEAD_TO_HEAD",
+        "HEAD_TO_HEAD_GOAL_DIFFERENCE",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
         "FEWER_RED_CARDS",
         "FEWER_YELLOW_CARDS",
         "DRAWING_OF_LOTS"

@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "senne-lammens",
+        "name": "Senne Lammens",
+        "birthDate": "2002-07-07",
+        "nationality": "BEL",
+        "position": "GK"
+      },
+      {
+        "id": "tom-heaton",
+        "name": "Tom Heaton",
+        "birthDate": "1986-04-15",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "eng-manchester-united-gen-01",
+        "name": "Ben Robinson",
+        "birthDate": "2006-06-16",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ethan-laird",
+        "name": "Ethan Laird",
+        "birthDate": "2001-08-05",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "harry-maguire",
+        "name": "Harry Maguire",
+        "birthDate": "1993-03-05",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "leny-yoro",
+        "name": "Leny Yoro",
+        "birthDate": "2005-11-13",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "lisandro-martinez",
+        "name": "Lisandro Martínez",
+        "birthDate": "1998-01-18",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "matthijs-de-ligt",
+        "name": "Matthijs de Ligt",
+        "birthDate": "1999-08-12",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "noussair-mazraoui",
+        "name": "Noussair Mazraoui",
+        "birthDate": "1997-11-14",
+        "nationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "patrick-dorgu",
+        "name": "Patrick Dorgu",
+        "birthDate": "2004-10-26",
+        "nationality": "DEN",
+        "position": "DF"
+      },
+      {
+        "id": "bruno-fernandes",
+        "name": "Bruno Fernandes",
+        "birthDate": "1994-09-08",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "carlos-baleba",
+        "name": "Carlos Baleba",
+        "birthDate": "2004-01-03",
+        "nationality": "CMR",
+        "position": "MF"
+      },
+      {
+        "id": "ethan-galbraith",
+        "name": "Ethan Galbraith",
+        "birthDate": "2001-05-11",
+        "nationality": "NIR",
+        "position": "MF"
+      },
+      {
+        "id": "kobbie-mainoo",
+        "name": "Kobbie Mainoo",
+        "birthDate": "2005-04-19",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "manuel-ugarte",
+        "name": "Manuel Ugarte",
+        "birthDate": "2001-04-11",
+        "nationality": "URU",
+        "position": "MF"
+      },
+      {
+        "id": "mason-mount",
+        "name": "Mason Mount",
+        "birthDate": "1999-01-10",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "youri-tielemans",
+        "name": "Youri Tielemans",
+        "birthDate": "1997-05-07",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "benjamin-sesko",
+        "name": "Benjamin Šeško",
+        "birthDate": "2003-05-31",
+        "nationality": "SVN",
+        "position": "FW"
+      },
+      {
+        "id": "bryan-mbeumo",
+        "name": "Bryan Mbeumo",
+        "birthDate": "1999-08-07",
+        "nationality": "CMR",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "chido-obi",
+        "name": "Chido Obi",
+        "birthDate": "2007-11-29",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "joshua-zirkzee",
+        "name": "Joshua Zirkzee",
+        "birthDate": "2001-05-22",
+        "nationality": "NED",
+        "position": "FW"
+      },
+      {
+        "id": "eng-manchester-united-gen-02",
+        "name": "Charlie Fletcher",
+        "birthDate": "2004-01-06",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

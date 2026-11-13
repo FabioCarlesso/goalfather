@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-coritiba-gen-01",
+        "name": "Gilberto Santos",
+        "birthDate": "1994-09-01",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-17",
+        "name": "Leonardo Rezende",
+        "birthDate": "2001-01-14",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-02",
+        "name": "Willian Guimarães",
+        "birthDate": "2002-03-22",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "rodrigo-moledo",
+        "name": "Rodrigo Moledo",
+        "birthDate": "1987-10-27",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-coritiba-gen-06",
+        "name": "Alexandre Martins",
+        "birthDate": "2003-12-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-04",
+        "name": "Douglas Ramos",
+        "birthDate": "1994-06-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-08",
+        "name": "José Gonçalves",
+        "birthDate": "1995-11-23",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-11",
+        "name": "Otávio Carvalho",
+        "birthDate": "1994-05-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-14",
+        "name": "Rafael Nascimento",
+        "birthDate": "1996-11-04",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-18",
+        "name": "Ricardo Ribeiro",
+        "birthDate": "1995-12-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-05",
+        "name": "Alexandre Barbosa",
+        "birthDate": "2003-03-22",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-07",
+        "name": "Daniel Souza",
+        "birthDate": "1996-05-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-09",
+        "name": "Edson Xavier",
+        "birthDate": "1997-12-31",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-03",
+        "name": "Elias Dias",
+        "birthDate": "2005-05-06",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-12",
+        "name": "Gilberto Cunha",
+        "birthDate": "2003-11-27",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-15",
+        "name": "Luiz Batista",
+        "birthDate": "2002-08-15",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-19",
+        "name": "Murilo Nogueira",
+        "birthDate": "2000-07-11",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "breno-lopes",
+        "name": "Breno Lopes",
+        "birthDate": "1996-01-24",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-coritiba-gen-10",
+        "name": "Anderson Sampaio",
+        "birthDate": "2005-01-23",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-20",
+        "name": "Jonas Soares",
+        "birthDate": "2002-10-07",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-16",
+        "name": "Rafael Ferreira",
+        "birthDate": "1998-11-13",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-coritiba-gen-13",
+        "name": "Samuel Cunha",
+        "birthDate": "1997-02-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

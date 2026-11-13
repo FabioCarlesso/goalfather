@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "alexander-dominguez",
+        "name": "Alexánder Domínguez",
+        "birthDate": "1987-06-05",
+        "nationality": "ECU",
+        "position": "GK"
+      },
+      {
+        "id": "ecu-ldu-quito-gen-01",
+        "name": "Emiliano Sosa",
+        "birthDate": "2003-02-27",
+        "nationality": "ECU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-16",
+        "name": "Franco Morales",
+        "birthDate": "1995-01-02",
+        "nationality": "ECU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arturo-mina",
+        "name": "Arturo Mina",
+        "birthDate": "1990-10-08",
+        "nationality": "ECU",
+        "position": "DF"
+      },
+      {
+        "id": "ecu-ldu-quito-gen-13",
+        "name": "Alexis González",
+        "birthDate": "1994-02-19",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-07",
+        "name": "Brian Ramírez",
+        "birthDate": "2002-08-14",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-05",
+        "name": "Bruno Sosa",
+        "birthDate": "1999-05-02",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-10",
+        "name": "Emiliano Suárez",
+        "birthDate": "2001-07-13",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-17",
+        "name": "Ezequiel Romero",
+        "birthDate": "2001-05-06",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-03",
+        "name": "Gonzalo Romero",
+        "birthDate": "2000-08-12",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-06",
+        "name": "Agustín Romero",
+        "birthDate": "1997-11-18",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-04",
+        "name": "Alexis Méndez",
+        "birthDate": "2008-03-19",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-14",
+        "name": "Facundo Valdez",
+        "birthDate": "2002-04-02",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-02",
+        "name": "Gastón Ramírez",
+        "birthDate": "2008-03-30",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-11",
+        "name": "Gonzalo Espinoza",
+        "birthDate": "2004-01-20",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-08",
+        "name": "Gonzalo Medina",
+        "birthDate": "1997-12-23",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-18",
+        "name": "Luciano Torres",
+        "birthDate": "2002-12-01",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "michael-estrada",
+        "name": "Michael Estrada",
+        "birthDate": "1996-04-07",
+        "nationality": "ECU",
+        "position": "FW"
+      },
+      {
+        "id": "ecu-ldu-quito-gen-15",
+        "name": "Ezequiel Sosa",
+        "birthDate": "1997-06-16",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-09",
+        "name": "Jhon Duarte",
+        "birthDate": "2003-10-26",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-12",
+        "name": "Juan Pablo Suárez",
+        "birthDate": "2005-09-02",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-ldu-quito-gen-19",
+        "name": "Nahuel González",
+        "birthDate": "1994-08-05",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

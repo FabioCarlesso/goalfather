@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "col-santa-fe-gen-01",
+        "name": "Agustín Ramírez",
+        "birthDate": "1999-11-03",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-18",
+        "name": "Bruno Méndez",
+        "birthDate": "2007-08-19",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-02",
+        "name": "Jonathan Rojas",
+        "birthDate": "2001-06-07",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-07",
+        "name": "Cristian Acosta",
+        "birthDate": "1994-02-21",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-12",
+        "name": "Facundo Valdez",
+        "birthDate": "1998-08-01",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-03",
+        "name": "Joaquín Morales",
+        "birthDate": "2000-12-07",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-15",
+        "name": "Jonathan Castillo",
+        "birthDate": "1996-08-19",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-19",
+        "name": "Leandro Flores",
+        "birthDate": "1998-12-07",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-09",
+        "name": "Luciano Cabrera",
+        "birthDate": "2006-06-28",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-05",
+        "name": "Santiago Vega",
+        "birthDate": "1995-12-06",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-16",
+        "name": "Brian Valdez",
+        "birthDate": "1996-09-03",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-13",
+        "name": "Emiliano Quintero",
+        "birthDate": "2006-07-19",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-04",
+        "name": "Ignacio Acosta",
+        "birthDate": "1994-04-26",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-20",
+        "name": "Jhon Espinoza",
+        "birthDate": "1993-08-02",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-10",
+        "name": "Juan Pablo Ibarra",
+        "birthDate": "2004-03-16",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-06",
+        "name": "Leandro Silva",
+        "birthDate": "2008-01-08",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-08",
+        "name": "Matías Benítez",
+        "birthDate": "1998-11-23",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "hugo-rodallega",
+        "name": "Hugo Rodallega",
+        "birthDate": "1985-07-25",
+        "nationality": "COL",
+        "position": "FW"
+      },
+      {
+        "id": "col-santa-fe-gen-17",
+        "name": "Kevin Acosta",
+        "birthDate": "2001-03-04",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-14",
+        "name": "Luciano Quintero",
+        "birthDate": "2008-04-28",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-11",
+        "name": "Santiago Benítez",
+        "birthDate": "1998-03-29",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-santa-fe-gen-21",
+        "name": "Yeferson Fernández",
+        "birthDate": "1994-07-08",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

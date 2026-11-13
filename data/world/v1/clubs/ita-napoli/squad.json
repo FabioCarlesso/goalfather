@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "simone-scuffet",
+        "name": "Simone Scuffet",
+        "birthDate": "1996-05-31",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "vanja-milinkovic-savic",
+        "name": "Vanja Milinković-Savić",
+        "birthDate": "1997-02-20",
+        "nationality": "SRB",
+        "position": "GK"
+      },
+      {
+        "id": "ita-napoli-gen-04",
+        "name": "Giacomo Gallo",
+        "birthDate": "1996-09-25",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "alessandro-buongiorno",
+        "name": "Alessandro Buongiorno",
+        "birthDate": "1999-06-06",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "amir-rrahmani",
+        "name": "Amir Rrahmani",
+        "birthDate": "1994-02-24",
+        "nationality": "ALB",
+        "secondNationality": "KVX",
+        "position": "DF"
+      },
+      {
+        "id": "benoit-badiashile",
+        "name": "Benoît Badiashile",
+        "birthDate": "2001-03-26",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "giovanni-di-lorenzo",
+        "name": "Giovanni Di Lorenzo",
+        "birthDate": "1993-08-04",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "leonardo-spinazzola",
+        "name": "Leonardo Spinazzola",
+        "birthDate": "1993-03-25",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-napoli-gen-02",
+        "name": "Giovanni Marchetti",
+        "birthDate": "1994-08-19",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-napoli-gen-05",
+        "name": "Nicolò Ferrari",
+        "birthDate": "2001-11-09",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "andre-frank-zambo-anguissa",
+        "name": "André-Frank Zambo Anguissa",
+        "birthDate": "1995-11-16",
+        "nationality": "CMR",
+        "position": "MF"
+      },
+      {
+        "id": "billy-gilmour",
+        "name": "Billy Gilmour",
+        "birthDate": "2001-06-11",
+        "nationality": "SCO",
+        "position": "MF"
+      },
+      {
+        "id": "david-neres",
+        "name": "David Neres",
+        "birthDate": "1997-03-03",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "diego-demme",
+        "name": "Diego Demme",
+        "birthDate": "1991-11-21",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "kevin-de-bruyne",
+        "name": "Kevin De Bruyne",
+        "birthDate": "1991-06-28",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "scott-mctominay",
+        "name": "Scott McTominay",
+        "birthDate": "1996-12-08",
+        "nationality": "SCO",
+        "position": "MF"
+      },
+      {
+        "id": "stanislav-lobotka",
+        "name": "Stanislav Lobotka",
+        "birthDate": "1994-11-25",
+        "nationality": "SVK",
+        "position": "MF"
+      },
+      {
+        "id": "matteo-politano",
+        "name": "Matteo Politano",
+        "birthDate": "1993-08-03",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "rasmus-hojlund",
+        "name": "Rasmus Højlund",
+        "birthDate": "2003-02-04",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "ita-napoli-gen-03",
+        "name": "Gianluca Fontana",
+        "birthDate": "1993-11-01",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-napoli-gen-06",
+        "name": "Lorenzo Santoro",
+        "birthDate": "2006-02-20",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-napoli-gen-01",
+        "name": "Valerio Costa",
+        "birthDate": "2008-01-12",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

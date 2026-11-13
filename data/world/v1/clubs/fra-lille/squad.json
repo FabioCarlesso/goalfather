@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fra-lille-gen-11",
+        "name": "Clément Durand",
+        "birthDate": "1995-10-04",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-01",
+        "name": "Mathis André",
+        "birthDate": "1996-12-27",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-02",
+        "name": "Romain Thomas",
+        "birthDate": "2000-11-07",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bafode-diakite",
+        "name": "Bafodé Diakité",
+        "birthDate": "2001-01-06",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "benjamin-andre",
+        "name": "Benjamin André",
+        "birthDate": "1990-08-03",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "nathan-ngoy",
+        "name": "Nathan Ngoy",
+        "birthDate": "2003-06-10",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "tanguy-nianzou",
+        "name": "Tanguy Nianzou",
+        "birthDate": "2002-06-07",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-lille-gen-05",
+        "name": "Corentin Mercier",
+        "birthDate": "1997-10-20",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-08",
+        "name": "Enzo David",
+        "birthDate": "1996-11-20",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-12",
+        "name": "Nicolas Blanc",
+        "birthDate": "2004-09-12",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "angel-gomes",
+        "name": "Angel Gomes",
+        "birthDate": "2000-08-31",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "nabil-bentaleb",
+        "name": "Nabil Bentaleb",
+        "birthDate": "1994-11-24",
+        "nationality": "ALG",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-lille-gen-06",
+        "name": "Baptiste Bernard",
+        "birthDate": "2002-11-21",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-03",
+        "name": "Corentin Fontaine",
+        "birthDate": "2004-05-30",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-04",
+        "name": "Pierre Simon",
+        "birthDate": "2005-03-24",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-09",
+        "name": "Rayan André",
+        "birthDate": "2005-04-10",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-13",
+        "name": "Thomas Robert",
+        "birthDate": "2001-03-20",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "mohamed-bayo",
+        "name": "Mohamed Bayo",
+        "birthDate": "1998-06-04",
+        "nationality": "GUI",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "olivier-giroud",
+        "name": "Olivier Giroud",
+        "birthDate": "1986-09-30",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-lille-gen-10",
+        "name": "Nicolas Girard",
+        "birthDate": "2007-03-31",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-07",
+        "name": "Olivier Roux",
+        "birthDate": "2007-04-23",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lille-gen-14",
+        "name": "Yoann Lambert",
+        "birthDate": "1995-10-08",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bol-always-ready-gen-19",
+        "name": "Cristian Ibarra",
+        "birthDate": "2005-10-24",
+        "nationality": "BOL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-02",
+        "name": "Gonzalo Ortiz",
+        "birthDate": "2007-06-06",
+        "nationality": "BOL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-01",
+        "name": "Lautaro Méndez",
+        "birthDate": "2004-04-20",
+        "nationality": "BOL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-05",
+        "name": "Ezequiel Méndez",
+        "birthDate": "2007-07-03",
+        "nationality": "BOL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-13",
+        "name": "Facundo Cabrera",
+        "birthDate": "2004-04-16",
+        "nationality": "BOL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-16",
+        "name": "Federico Cáceres",
+        "birthDate": "2002-10-19",
+        "nationality": "BOL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-20",
+        "name": "Joaquín Castillo",
+        "birthDate": "1994-08-31",
+        "nationality": "BOL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-10",
+        "name": "Juan Pablo Flores",
+        "birthDate": "1994-07-26",
+        "nationality": "BOL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-03",
+        "name": "Matías Villalba",
+        "birthDate": "1997-05-16",
+        "nationality": "BOL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-07",
+        "name": "Maximiliano Cabrera",
+        "birthDate": "2000-10-23",
+        "nationality": "BOL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-14",
+        "name": "Facundo Aguirre",
+        "birthDate": "1993-09-29",
+        "nationality": "BOL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-06",
+        "name": "Jhon Sosa",
+        "birthDate": "1995-07-23",
+        "nationality": "BOL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-21",
+        "name": "Julián Silva",
+        "birthDate": "2008-04-26",
+        "nationality": "BOL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-04",
+        "name": "Lucas Fernández",
+        "birthDate": "2005-07-08",
+        "nationality": "BOL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-11",
+        "name": "Rodrigo Herrera",
+        "birthDate": "2007-07-05",
+        "nationality": "BOL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-17",
+        "name": "Santiago Rojas",
+        "birthDate": "2001-01-09",
+        "nationality": "BOL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-08",
+        "name": "Sebastián Vega",
+        "birthDate": "2006-06-12",
+        "nationality": "BOL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-12",
+        "name": "Ezequiel Morales",
+        "birthDate": "2006-08-23",
+        "nationality": "BOL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-09",
+        "name": "Federico Giménez",
+        "birthDate": "1994-12-02",
+        "nationality": "BOL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-15",
+        "name": "Jhon Torres",
+        "birthDate": "2003-04-19",
+        "nationality": "BOL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-22",
+        "name": "Kevin Villalba",
+        "birthDate": "2004-07-31",
+        "nationality": "BOL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bol-always-ready-gen-18",
+        "name": "Lucas Quintero",
+        "birthDate": "1998-11-25",
+        "nationality": "BOL",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

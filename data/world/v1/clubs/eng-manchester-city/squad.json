@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "geronimo-rulli",
+        "name": "Gerónimo Rulli",
+        "birthDate": "1992-05-20",
+        "nationality": "ARG",
+        "position": "GK"
+      },
+      {
+        "id": "gianluigi-donnarumma",
+        "name": "Gianluigi Donnarumma",
+        "birthDate": "1999-02-25",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "james-trafford",
+        "name": "James Trafford",
+        "birthDate": "2002-10-10",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "abdukodir-khusanov",
+        "name": "Abdukodir Khusanov",
+        "birthDate": "2004-02-29",
+        "nationality": "UZB",
+        "position": "DF"
+      },
+      {
+        "id": "josko-gvardiol",
+        "name": "Joško Gvardiol",
+        "birthDate": "2002-01-23",
+        "nationality": "CRO",
+        "position": "DF"
+      },
+      {
+        "id": "marc-guehi",
+        "name": "Marc Guéhi",
+        "birthDate": "2000-07-13",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "matheus-nunes",
+        "name": "Matheus Nunes",
+        "birthDate": "1998-08-27",
+        "nationality": "POR",
+        "secondNationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "max-alleyne",
+        "name": "Max Alleyne",
+        "birthDate": "2005-07-21",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "rico-lewis",
+        "name": "Rico Lewis",
+        "birthDate": "2004-11-21",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "ruben-dias",
+        "name": "Rúben Dias",
+        "birthDate": "1997-05-14",
+        "nationality": "POR",
+        "position": "DF"
+      },
+      {
+        "id": "allan-2004",
+        "name": "Allan",
+        "birthDate": "2004-04-19",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "ayyoub-bouaddi",
+        "name": "Ayyoub Bouaddi",
+        "birthDate": "2007-10-02",
+        "nationality": "FRA",
+        "secondNationality": "MAR",
+        "position": "MF"
+      },
+      {
+        "id": "elliot-anderson",
+        "name": "Elliot Anderson",
+        "birthDate": "2002-11-06",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "enzo-fernandez",
+        "name": "Enzo Fernández",
+        "birthDate": "2001-01-17",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "mateo-kovacic",
+        "name": "Mateo Kovačić",
+        "birthDate": "1994-05-06",
+        "nationality": "CRO",
+        "position": "MF"
+      },
+      {
+        "id": "eng-manchester-city-gen-01",
+        "name": "Sam Edwards",
+        "birthDate": "2006-11-01",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "antoine-semenyo",
+        "name": "Antoine Semenyo",
+        "birthDate": "2000-01-07",
+        "nationality": "GHA",
+        "position": "FW"
+      },
+      {
+        "id": "erling-haaland",
+        "name": "Erling Haaland",
+        "birthDate": "2000-07-21",
+        "nationality": "NOR",
+        "position": "FW"
+      },
+      {
+        "id": "iliman-ndiaye",
+        "name": "Iliman Ndiaye",
+        "birthDate": "2000-03-06",
+        "nationality": "SEN",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "jeremy-monga",
+        "name": "Jeremy Monga",
+        "birthDate": "2009-07-10",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "jeremy-doku",
+        "name": "Jérémy Doku",
+        "birthDate": "2002-05-27",
+        "nationality": "BEL",
+        "position": "FW"
+      },
+      {
+        "id": "rayan-cherki",
+        "name": "Rayan Cherki",
+        "birthDate": "2003-08-17",
+        "nationality": "FRA",
+        "position": "FW"
+      }
+    ]
+  }
+}

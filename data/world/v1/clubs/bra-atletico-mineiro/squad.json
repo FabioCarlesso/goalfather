@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-atletico-mineiro-gen-09",
+        "name": "Cássio Castro",
+        "birthDate": "1997-01-18",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-02",
+        "name": "Elias Dias",
+        "birthDate": "1999-05-12",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-01",
+        "name": "Gustavo Macedo",
+        "birthDate": "1996-10-13",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "guga",
+        "name": "Guga",
+        "birthDate": "1998-08-29",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "lucas-hernandez-perdomo",
+        "name": "Lucas Hernández Perdomo",
+        "birthDate": "1992-08-05",
+        "nationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "renan-lodi",
+        "name": "Renan Lodi",
+        "birthDate": "1998-04-08",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "vitor-hugo-franchescoli-de-souza",
+        "name": "Vitor Hugo Franchescoli de Souza",
+        "birthDate": "1991-05-20",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-05",
+        "name": "Adriano Melo",
+        "birthDate": "2005-04-16",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-10",
+        "name": "Edson Oliveira",
+        "birthDate": "2008-02-23",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-07",
+        "name": "Maurício Pereira",
+        "birthDate": "1995-07-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bernard",
+        "name": "Bernard",
+        "birthDate": "1992-09-08",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "fred",
+        "name": "Fred",
+        "birthDate": "1993-03-05",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "gustavo-scarpa",
+        "name": "Gustavo Scarpa",
+        "birthDate": "1994-01-05",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "igor-silveira-gomes",
+        "name": "Igor Silveira Gomes",
+        "birthDate": "1999-03-17",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "reinier",
+        "name": "Reinier",
+        "birthDate": "2002-01-19",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "rodrigo-battaglia",
+        "name": "Rodrigo Battaglia",
+        "birthDate": "1991-07-12",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-11",
+        "name": "Wesley Carvalho",
+        "birthDate": "2000-06-30",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-08",
+        "name": "Antônio Monteiro",
+        "birthDate": "2006-07-31",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-06",
+        "name": "Caio Barbosa",
+        "birthDate": "2003-08-05",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-12",
+        "name": "Daniel Andrade",
+        "birthDate": "1998-01-06",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-04",
+        "name": "Thiago Monteiro",
+        "birthDate": "2004-02-09",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-mineiro-gen-03",
+        "name": "Wesley Monteiro",
+        "birthDate": "2007-04-14",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

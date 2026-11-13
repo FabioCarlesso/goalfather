@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "fra-angers",
+      "name": "Angers",
+      "country": "FRA",
+      "reputation": 46,
+      "stadium": {
+        "name": "stade Raymond-Kopa",
+        "capacity": 18000
+      }
+    },
+    {
+      "id": "fra-auxerre",
+      "name": "Auxerre",
+      "country": "FRA",
+      "reputation": 50,
+      "stadium": {
+        "name": "Stade de l'Abbé-Deschamps",
+        "capacity": 18541
+      }
+    },
+    {
+      "id": "fra-brest",
+      "name": "Brest",
+      "country": "FRA",
+      "reputation": 58,
+      "stadium": {
+        "name": "stade Francis-Le Blé",
+        "capacity": 15097
+      }
+    },
+    {
+      "id": "fra-le-havre",
+      "name": "Le Havre",
+      "country": "FRA",
+      "reputation": 48,
+      "stadium": {
+        "name": "stade Océane",
+        "capacity": 33000
+      }
+    },
+    {
+      "id": "fra-le-mans",
+      "name": "Le Mans",
+      "country": "FRA",
+      "reputation": 42,
+      "stadium": {
+        "name": "stade Marie-Marvingt",
+        "capacity": 25000
+      }
+    },
+    {
+      "id": "fra-lens",
+      "name": "Lens",
+      "country": "FRA",
+      "reputation": 70,
+      "stadium": {
+        "name": "stade Bollaert-Delelis",
+        "capacity": 38223
+      }
+    },
+    {
+      "id": "fra-lille",
+      "name": "Lille",
+      "country": "FRA",
+      "reputation": 76,
+      "stadium": {
+        "name": "stade Pierre-Mauroy",
+        "capacity": 50000
+      }
+    },
+    {
+      "id": "fra-lorient",
+      "name": "Lorient",
+      "country": "FRA",
+      "reputation": 50,
+      "stadium": {
+        "name": "stade du Moustoir",
+        "capacity": 19010
+      }
+    },
+    {
+      "id": "fra-lyon",
+      "name": "Lyon",
+      "country": "FRA",
+      "reputation": 80,
+      "stadium": {
+        "name": "Parc Olympique lyonnais",
+        "capacity": 59286
+      }
+    },
+    {
+      "id": "fra-marseille",
+      "name": "Olympique de Marseille",
+      "country": "FRA",
+      "reputation": 84,
+      "stadium": {
+        "name": "stade Vélodrome",
+        "capacity": 67394
+      }
+    },
+    {
+      "id": "fra-monaco",
+      "name": "Monaco",
+      "country": "FRA",
+      "reputation": 80,
+      "stadium": {
+        "name": "stade Louis-II",
+        "capacity": 18523
+      }
+    },
+    {
+      "id": "fra-nice",
+      "name": "Nice",
+      "country": "FRA",
+      "reputation": 70,
+      "stadium": {
+        "name": "Allianz Riviera",
+        "capacity": 36178
+      }
+    },
+    {
+      "id": "fra-paris-fc",
+      "name": "Paris FC",
+      "country": "FRA",
+      "reputation": 50,
+      "stadium": {
+        "name": "stade Charléty",
+        "capacity": 20000
+      }
+    },
+    {
+      "id": "fra-psg",
+      "name": "Paris Saint-Germain",
+      "country": "FRA",
+      "reputation": 96,
+      "stadium": {
+        "name": "Parc des Princes",
+        "capacity": 47930
+      }
+    },
+    {
+      "id": "fra-rennes",
+      "name": "Rennes",
+      "country": "FRA",
+      "reputation": 70,
+      "stadium": {
+        "name": "Roazhon Park",
+        "capacity": 31127
+      }
+    },
+    {
+      "id": "fra-strasbourg",
+      "name": "Strasbourg",
+      "country": "FRA",
+      "reputation": 62,
+      "stadium": {
+        "name": "stade de la Meinau",
+        "capacity": 26109
+      }
+    },
+    {
+      "id": "fra-toulouse",
+      "name": "Toulouse",
+      "country": "FRA",
+      "reputation": 58,
+      "stadium": {
+        "name": "Stadium municipal de Toulouse",
+        "capacity": 33150
+      }
+    },
+    {
+      "id": "fra-troyes",
+      "name": "Troyes",
+      "country": "FRA",
+      "reputation": 44,
+      "stadium": {
+        "name": "stade de l'Aube",
+        "capacity": 20400
+      }
+    }
+  ]
+}

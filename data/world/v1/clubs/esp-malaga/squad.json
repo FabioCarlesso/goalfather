@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "manuel-reina-rodriguez",
+        "name": "Manuel Reina Rodríguez",
+        "birthDate": "1985-04-01",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "esp-malaga-gen-01",
+        "name": "Antonio Iglesias",
+        "birthDate": "1995-12-20",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-12",
+        "name": "Enrique Ortega",
+        "birthDate": "2007-10-05",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "einar-galilea",
+        "name": "Einar Galilea",
+        "birthDate": "1994-05-22",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "fernando-calero-villa",
+        "name": "Fernando Calero Villa",
+        "birthDate": "1995-09-14",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "esp-malaga-gen-05",
+        "name": "Antonio Moreno",
+        "birthDate": "2007-02-16",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-03",
+        "name": "Daniel Rodríguez",
+        "birthDate": "1998-09-06",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-07",
+        "name": "Iker Alonso",
+        "birthDate": "2005-05-17",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-13",
+        "name": "Luis Pérez",
+        "birthDate": "2002-10-30",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-09",
+        "name": "Rubén Castro",
+        "birthDate": "2008-04-01",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "david-ferreiro",
+        "name": "David Ferreiro",
+        "birthDate": "1988-04-01",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-malaga-gen-08",
+        "name": "Adrián Cruz",
+        "birthDate": "2002-07-17",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-02",
+        "name": "Antonio Navarro",
+        "birthDate": "1996-05-09",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-14",
+        "name": "Enrique Ruiz",
+        "birthDate": "2000-08-18",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-10",
+        "name": "Francisco Ortega",
+        "birthDate": "2007-08-14",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-04",
+        "name": "Juan Gómez",
+        "birthDate": "1996-10-07",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-06",
+        "name": "Miguel González",
+        "birthDate": "1994-10-19",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eneko-jauregi",
+        "name": "Eneko Jauregi",
+        "birthDate": "1996-07-13",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "julen-lobete",
+        "name": "Julen Lobete",
+        "birthDate": "2000-09-18",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "loren-zuniga",
+        "name": "Loren Zúñiga",
+        "birthDate": "2003-01-18",
+        "nationality": "ESP",
+        "secondNationality": "EQG",
+        "position": "FW"
+      },
+      {
+        "id": "esp-malaga-gen-11",
+        "name": "Borja Jiménez",
+        "birthDate": "1997-12-20",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-malaga-gen-15",
+        "name": "Fernando Torres",
+        "birthDate": "2004-04-21",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

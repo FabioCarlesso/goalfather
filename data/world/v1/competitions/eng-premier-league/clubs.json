@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "eng-arsenal",
+      "name": "Arsenal",
+      "country": "ENG",
+      "reputation": 90,
+      "stadium": {
+        "name": "Emirates Stadium",
+        "capacity": 60338
+      }
+    },
+    {
+      "id": "eng-aston-villa",
+      "name": "Aston Villa",
+      "country": "ENG",
+      "reputation": 76,
+      "stadium": {
+        "name": "Villa Park",
+        "capacity": 42640
+      }
+    },
+    {
+      "id": "eng-bournemouth",
+      "name": "Bournemouth",
+      "country": "ENG",
+      "reputation": 56,
+      "stadium": {
+        "name": "Dean Court",
+        "capacity": 12000
+      }
+    },
+    {
+      "id": "eng-brentford",
+      "name": "Brentford",
+      "country": "ENG",
+      "reputation": 58,
+      "stadium": {
+        "name": "Brentford Community Stadium",
+        "capacity": 17250
+      }
+    },
+    {
+      "id": "eng-brighton",
+      "name": "Brighton & Hove Albion",
+      "country": "ENG",
+      "reputation": 66,
+      "stadium": {
+        "name": "Brighton Community Stadium",
+        "capacity": 31800
+      }
+    },
+    {
+      "id": "eng-chelsea",
+      "name": "Chelsea",
+      "country": "ENG",
+      "reputation": 86,
+      "stadium": {
+        "name": "Stamford Bridge",
+        "capacity": 41875
+      }
+    },
+    {
+      "id": "eng-coventry-city",
+      "name": "Coventry City",
+      "country": "ENG",
+      "reputation": 42,
+      "stadium": {
+        "name": "Coventry Building Society Arena",
+        "capacity": 32609
+      }
+    },
+    {
+      "id": "eng-crystal-palace",
+      "name": "Crystal Palace",
+      "country": "ENG",
+      "reputation": 62,
+      "stadium": {
+        "name": "Selhurst Park",
+        "capacity": 26255
+      }
+    },
+    {
+      "id": "eng-everton",
+      "name": "Everton",
+      "country": "ENG",
+      "reputation": 64,
+      "stadium": {
+        "name": "Hill Dickinson Stadium",
+        "capacity": 52769
+      }
+    },
+    {
+      "id": "eng-fulham",
+      "name": "Fulham",
+      "country": "ENG",
+      "reputation": 58,
+      "stadium": {
+        "name": "Craven Cottage",
+        "capacity": 25700
+      }
+    },
+    {
+      "id": "eng-hull-city",
+      "name": "Hull City",
+      "country": "ENG",
+      "reputation": 42,
+      "stadium": {
+        "name": "MKM Stadium",
+        "capacity": 25400
+      }
+    },
+    {
+      "id": "eng-ipswich-town",
+      "name": "Ipswich Town",
+      "country": "ENG",
+      "reputation": 45,
+      "stadium": {
+        "name": "Portman Road",
+        "capacity": 30311
+      }
+    },
+    {
+      "id": "eng-leeds-united",
+      "name": "Leeds United",
+      "country": "ENG",
+      "reputation": 58,
+      "stadium": {
+        "name": "Elland Road",
+        "capacity": 37792
+      }
+    },
+    {
+      "id": "eng-liverpool",
+      "name": "Liverpool",
+      "country": "ENG",
+      "reputation": 92,
+      "stadium": {
+        "name": "Anfield",
+        "capacity": 61276
+      }
+    },
+    {
+      "id": "eng-manchester-city",
+      "name": "Manchester City",
+      "country": "ENG",
+      "reputation": 92,
+      "stadium": {
+        "name": "Etihad Stadium",
+        "capacity": 52900
+      }
+    },
+    {
+      "id": "eng-manchester-united",
+      "name": "Manchester United",
+      "country": "ENG",
+      "reputation": 86,
+      "stadium": {
+        "name": "Old Trafford",
+        "capacity": 75731
+      }
+    },
+    {
+      "id": "eng-newcastle-united",
+      "name": "Newcastle United",
+      "country": "ENG",
+      "reputation": 80,
+      "stadium": {
+        "name": "St James’ Park",
+        "capacity": 52305
+      }
+    },
+    {
+      "id": "eng-nottingham-forest",
+      "name": "Nottingham Forest",
+      "country": "ENG",
+      "reputation": 64,
+      "stadium": {
+        "name": "City Ground",
+        "capacity": 30404
+      }
+    },
+    {
+      "id": "eng-sunderland",
+      "name": "Sunderland",
+      "country": "ENG",
+      "reputation": 52,
+      "stadium": {
+        "name": "Stadium of Light",
+        "capacity": 48339
+      }
+    },
+    {
+      "id": "eng-tottenham-hotspur",
+      "name": "Tottenham Hotspur",
+      "country": "ENG",
+      "reputation": 80,
+      "stadium": {
+        "name": "Tottenham Hotspur Stadium",
+        "capacity": 62850
+      }
+    }
+  ]
+}

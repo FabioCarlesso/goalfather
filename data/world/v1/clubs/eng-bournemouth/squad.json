@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "darren-randolph",
+        "name": "Darren Randolph",
+        "birthDate": "1987-05-12",
+        "nationality": "IRL",
+        "position": "GK"
+      },
+      {
+        "id": "fraser-forster",
+        "name": "Fraser Forster",
+        "birthDate": "1988-03-17",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "michele-di-gregorio",
+        "name": "Michele Di Gregorio",
+        "birthDate": "1997-07-27",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "adrien-truffert",
+        "name": "Adrien Truffert",
+        "birthDate": "2001-11-20",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "brooklyn-genesini",
+        "name": "Brooklyn Genesini",
+        "birthDate": "2001-12-12",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "julio-soler",
+        "name": "Julio Soler",
+        "birthDate": "2005-02-16",
+        "nationality": "ARG",
+        "secondNationality": "PAR",
+        "position": "DF"
+      },
+      {
+        "id": "tyler-adams",
+        "name": "Tyler Adams",
+        "birthDate": "1999-02-14",
+        "nationality": "USA",
+        "position": "DF"
+      },
+      {
+        "id": "eng-bournemouth-gen-09",
+        "name": "Ben Davies",
+        "birthDate": "2005-06-17",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-12",
+        "name": "Kieran Hall",
+        "birthDate": "2002-05-01",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-06",
+        "name": "Luke Hughes",
+        "birthDate": "2007-02-03",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "philip-billing",
+        "name": "Philip Billing",
+        "birthDate": "1996-06-11",
+        "nationality": "DEN",
+        "position": "MF"
+      },
+      {
+        "id": "eng-bournemouth-gen-02",
+        "name": "Adam Robinson",
+        "birthDate": "2002-05-20",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-13",
+        "name": "Alfie Phillips",
+        "birthDate": "1997-07-06",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-10",
+        "name": "Harry Edwards",
+        "birthDate": "1998-10-30",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-04",
+        "name": "Harvey Marshall",
+        "birthDate": "2005-06-12",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-01",
+        "name": "William Cooper",
+        "birthDate": "2002-10-18",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-07",
+        "name": "William Evans",
+        "birthDate": "2008-01-11",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-05",
+        "name": "Finley Jackson",
+        "birthDate": "2003-05-07",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-03",
+        "name": "George Davies",
+        "birthDate": "1995-05-31",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-11",
+        "name": "Kieran Robinson",
+        "birthDate": "1994-11-05",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-14",
+        "name": "Nathan Harris",
+        "birthDate": "2000-10-20",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-bournemouth-gen-08",
+        "name": "Sam Wilson",
+        "birthDate": "2000-03-22",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

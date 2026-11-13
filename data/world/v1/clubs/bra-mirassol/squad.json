@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-mirassol-gen-01",
+        "name": "Gilberto Santana",
+        "birthDate": "2000-03-09",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-19",
+        "name": "Leandro Vieira",
+        "birthDate": "1997-09-07",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-02",
+        "name": "Marcelo Medeiros",
+        "birthDate": "2007-06-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-20",
+        "name": "Cláudio Pinheiro",
+        "birthDate": "2002-12-21",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-13",
+        "name": "Gilberto Abreu",
+        "birthDate": "2005-02-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-03",
+        "name": "Jefferson Santana",
+        "birthDate": "2001-12-01",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-16",
+        "name": "Leonardo Pinheiro",
+        "birthDate": "2002-01-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-10",
+        "name": "Marcelo Azevedo",
+        "birthDate": "1994-02-12",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-05",
+        "name": "Valdir Queiroz",
+        "birthDate": "2003-06-28",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-07",
+        "name": "Vinícius Ribeiro",
+        "birthDate": "1997-09-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-21",
+        "name": "Daniel Lopes",
+        "birthDate": "2000-01-22",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-11",
+        "name": "Danilo Toledo",
+        "birthDate": "1994-07-07",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-06",
+        "name": "Everton Correia",
+        "birthDate": "2004-02-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-17",
+        "name": "Fábio Santana",
+        "birthDate": "1994-08-07",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-14",
+        "name": "Hélio Castro",
+        "birthDate": "1997-08-15",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-08",
+        "name": "Raul Tavares",
+        "birthDate": "1999-10-30",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-04",
+        "name": "Valdir Melo",
+        "birthDate": "2002-03-28",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-15",
+        "name": "Antônio Medeiros",
+        "birthDate": "2003-06-21",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-18",
+        "name": "Antônio Monteiro",
+        "birthDate": "2002-08-06",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-22",
+        "name": "Danilo Guimarães",
+        "birthDate": "1994-03-11",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-09",
+        "name": "Elias Medeiros",
+        "birthDate": "2002-04-22",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-mirassol-gen-12",
+        "name": "Jefferson Teixeira",
+        "birthDate": "1994-03-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

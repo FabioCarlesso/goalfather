@@ -1,0 +1,54 @@
+# Correções manuais aplicadas DEPOIS da importação do Wikidata (issue #127).
+#
+# O Wikidata é a fonte (CC0), mas traz lacunas: país sem confederação, clube
+# com o nome oficial longo, estádio sem capacidade, jogador que mudou de clube.
+# Corrija aqui e rode `./gradlew worldImport` de novo; NUNCA edite à mão os
+# arquivos de data/world/v1/ (a próxima importação apagaria a correção).
+#
+# Toda correção é um FATO público (nome, estádio, capacidade, clube atual) ou
+# uma decisão nossa (displayName simulado). Nada de atributo, salário ou valor.
+#
+# Formato:
+#   countries:   trigrama FIFA → { name, confederation, isoAlpha2, wikidata: [QIDs que significam este país] }
+#   clubs:       id do clube   → { name, stadium: { name, capacity } }
+#   players:     QID           → { club: id-do-clube | exclude: true, name, displayName, position, nationality, birthDate }
+
+# Seleções cuja federação não tem `P463` (membro de) confederação no Wikidata.
+countries:
+  CHA: { confederation: CAF }
+  GER: { confederation: UEFA }
+  NED: { confederation: UEFA }
+  NIR: { confederation: UEFA }
+  SVK: { confederation: UEFA }
+  SWE: { confederation: UEFA }
+  TUN: { confederation: CAF }
+  UKR: { confederation: UEFA }
+
+# Estádios sem capacidade (`P1083`) no Wikidata. Capacidades conferidas nos
+# artigos da Wikipédia em inglês (tabela de estádios da temporada ou o artigo
+# do estádio), em 2026-11-13.
+clubs:
+  bra-mirassol:
+    stadium: { name: Estádio Municipal José Maria de Campos Maia, capacity: 14534 }
+  bra-athletic-club:
+    stadium: { name: Estádio Joaquim Portugal, capacity: 6000 }
+  bra-novorizontino:
+    stadium: { name: Estádio Jorge Ismael de Biasi, capacity: 16000 }
+  bra-sao-bernardo:
+    stadium: { name: Estádio Primeiro de Maio, capacity: 15159 }
+  bol-always-ready:
+    stadium: { name: Estadio Municipal de El Alto, capacity: 23000 }
+  par-cerro-porteno:
+    stadium: { name: Estadio General Pablo Rojas, capacity: 43050 }
+  # Capacidade cadastrada errada no Wikidata ("60", "22").
+  ecu-barcelona:
+    stadium: { name: Estadio Monumental Isidro Romero Carbo, capacity: 57267 }
+  esp-racing-santander:
+    stadium: { name: Campos de Sport de El Sardinero, capacity: 22308 }
+  # Estádio antigo ainda sem data de fim no Wikidata.
+  bra-atletico-mineiro:
+    stadium: { name: Arena MRV, capacity: 44892 }
+  eng-brentford:
+    stadium: { name: Brentford Community Stadium, capacity: 17250 }
+
+players: {}

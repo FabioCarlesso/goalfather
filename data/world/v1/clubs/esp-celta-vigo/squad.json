@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "radu-ionut",
+        "name": "Radu Ionut",
+        "birthDate": "1997-05-28",
+        "nationality": "ROU",
+        "position": "GK"
+      },
+      {
+        "id": "esp-celta-vigo-gen-12",
+        "name": "Adrián Ramos",
+        "birthDate": "2000-03-28",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-01",
+        "name": "Daniel Martínez",
+        "birthDate": "1996-08-24",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "marcos-alonso-mendoza",
+        "name": "Marcos Alonso Mendoza",
+        "birthDate": "1990-12-28",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "alvaro-nunez",
+        "name": "Álvaro Núñez",
+        "birthDate": "2000-07-07",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "esp-celta-vigo-gen-13",
+        "name": "Alberto Ortega",
+        "birthDate": "1996-12-25",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-09",
+        "name": "Daniel Moreno",
+        "birthDate": "2005-07-29",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-06",
+        "name": "Iván Gutiérrez",
+        "birthDate": "1993-10-24",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-03",
+        "name": "Juan Iglesias",
+        "birthDate": "2008-02-05",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-02",
+        "name": "Miguel Castro",
+        "birthDate": "1996-12-17",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "franco-cervi",
+        "name": "Franco Cervi",
+        "birthDate": "1994-05-26",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "jailson",
+        "name": "Jailson",
+        "birthDate": "1995-09-07",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "matias-vecino",
+        "name": "Matías Vecino",
+        "birthDate": "1991-08-24",
+        "nationality": "URU",
+        "secondNationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "esp-celta-vigo-gen-07",
+        "name": "Alejandro Ruiz",
+        "birthDate": "2006-07-16",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-10",
+        "name": "Daniel García",
+        "birthDate": "2006-04-16",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-04",
+        "name": "Gonzalo Blanco",
+        "birthDate": "1994-04-30",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-14",
+        "name": "Mario Castro",
+        "birthDate": "2004-10-31",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "borja-iglesias",
+        "name": "Borja Iglesias",
+        "birthDate": "1993-01-17",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "esp-celta-vigo-gen-05",
+        "name": "José Navarro",
+        "birthDate": "2001-02-26",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-08",
+        "name": "Manuel García",
+        "birthDate": "1997-06-08",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-15",
+        "name": "Mario Ortega",
+        "birthDate": "1997-10-06",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-celta-vigo-gen-11",
+        "name": "Xabier Hernández",
+        "birthDate": "1995-10-15",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

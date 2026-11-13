@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ita-atalanta-gen-05",
+        "name": "Giacomo Testa",
+        "birthDate": "1996-09-29",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-atalanta-gen-02",
+        "name": "Simone Romano",
+        "birthDate": "2007-11-02",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-atalanta-gen-01",
+        "name": "Tommaso Rizzo",
+        "birthDate": "1994-03-09",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "davide-zappacosta",
+        "name": "Davide Zappacosta",
+        "birthDate": "1992-06-11",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "giorgio-scalvini",
+        "name": "Giorgio Scalvini",
+        "birthDate": "2003-12-11",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "mitchel-bakker",
+        "name": "Mitchel Bakker",
+        "birthDate": "2000-06-20",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "odilon-kossounou",
+        "name": "Odilon Kossounou",
+        "birthDate": "2001-01-04",
+        "nationality": "CIV",
+        "position": "DF"
+      },
+      {
+        "id": "raoul-bellanova",
+        "name": "Raoul Bellanova",
+        "birthDate": "2000-05-17",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "sead-kolasinac",
+        "name": "Sead Kolašinac",
+        "birthDate": "1993-06-20",
+        "nationality": "BIH",
+        "secondNationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "ita-atalanta-gen-06",
+        "name": "Stefano Santoro",
+        "birthDate": "2004-05-09",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "charles-de-ketelaere",
+        "name": "Charles De Ketelaere",
+        "birthDate": "2001-03-10",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "eljif-elmas",
+        "name": "Eljif Elmas",
+        "birthDate": "1999-09-24",
+        "nationality": "MKD",
+        "position": "MF"
+      },
+      {
+        "id": "enrico-delprato",
+        "name": "Enrico Delprato",
+        "birthDate": "1999-11-10",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "franck-kessie",
+        "name": "Franck Kessié",
+        "birthDate": "1996-12-19",
+        "nationality": "CIV",
+        "position": "MF"
+      },
+      {
+        "id": "mario-pasalic",
+        "name": "Mario Pašalić",
+        "birthDate": "1995-02-09",
+        "nationality": "CRO",
+        "position": "MF"
+      },
+      {
+        "id": "ita-atalanta-gen-07",
+        "name": "Michele Santoro",
+        "birthDate": "2004-12-14",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-atalanta-gen-03",
+        "name": "Stefano Testa",
+        "birthDate": "2001-05-03",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "gianluca-scamacca",
+        "name": "Gianluca Scamacca",
+        "birthDate": "1999-01-01",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "jonathan-rowe",
+        "name": "Jonathan Rowe",
+        "birthDate": "2003-04-30",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "moustapha-cisse",
+        "name": "Moustapha Cissé",
+        "birthDate": "2003-09-14",
+        "nationality": "GUI",
+        "position": "FW"
+      },
+      {
+        "id": "ita-atalanta-gen-04",
+        "name": "Andrea Romano",
+        "birthDate": "2005-12-23",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-atalanta-gen-08",
+        "name": "Marco Ferrara",
+        "birthDate": "2003-05-06",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

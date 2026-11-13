@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "alejandro-remiro",
+        "name": "Alejandro Remiro",
+        "birthDate": "1995-03-24",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "esp-real-sociedad-gen-01",
+        "name": "Diego Sánchez",
+        "birthDate": "2007-09-19",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "diego-rico",
+        "name": "Diego Rico",
+        "birthDate": "1993-02-23",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "hector-fort",
+        "name": "Héctor Fort",
+        "birthDate": "2006-08-02",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "inaki-ruperez",
+        "name": "Iñaki Rupérez",
+        "birthDate": "2003-01-07",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "jon-aramburu",
+        "name": "Jon Aramburu",
+        "birthDate": "2002-07-23",
+        "nationality": "VEN",
+        "position": "DF"
+      },
+      {
+        "id": "jon-balda",
+        "name": "Jon Balda",
+        "birthDate": "2002-04-20",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "jon-martin",
+        "name": "Jon Martin",
+        "birthDate": "2006-04-23",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "luken-beitia-aguirregomezcorta",
+        "name": "Luken Beitia Aguirregomezcorta",
+        "birthDate": "2004-06-30",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "mamadou-sarr",
+        "name": "Mamadou Sarr",
+        "birthDate": "2005-08-29",
+        "nationality": "SEN",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "sergio-gomez",
+        "name": "Sergio Gómez",
+        "birthDate": "2000-09-04",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "alvaro-odriozola",
+        "name": "Álvaro Odriozola",
+        "birthDate": "1995-12-14",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "benat-turrientes",
+        "name": "Beñat Turrientes",
+        "birthDate": "2002-01-31",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "carlos-soler",
+        "name": "Carlos Soler",
+        "birthDate": "1997-01-02",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "goncalo-guedes",
+        "name": "Gonçalo Guedes",
+        "birthDate": "1996-11-29",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "ibai-aguirre",
+        "name": "Ibai Aguirre",
+        "birthDate": "2007-01-10",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "jon-gorrotxategi",
+        "name": "Jon Gorrotxategi",
+        "birthDate": "2002-09-02",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "takefusa-kubo",
+        "name": "Takefusa Kubo",
+        "birthDate": "2001-06-04",
+        "nationality": "JPN",
+        "position": "MF"
+      },
+      {
+        "id": "yangel-herrera",
+        "name": "Yangel Herrera",
+        "birthDate": "1998-01-07",
+        "nationality": "VEN",
+        "position": "MF"
+      },
+      {
+        "id": "alex-marchal",
+        "name": "Alex Marchal",
+        "birthDate": "2007-09-17",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "ander-barrenetxea-muguruza",
+        "name": "Ander Barrenetxea Muguruza",
+        "birthDate": "2001-12-27",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "arkaitz-mariezkurrena",
+        "name": "Arkaitz Mariezkurrena",
+        "birthDate": "2005-04-05",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "carlos-fernandez-luna",
+        "name": "Carlos Fernández Luna",
+        "birthDate": "1996-05-22",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "dani-diaz",
+        "name": "Dani Díaz",
+        "birthDate": "2006-06-22",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "gorka-carrera",
+        "name": "Gorka Carrera",
+        "birthDate": "2005-05-15",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "lander-astiazaran",
+        "name": "Lander Astiazaran",
+        "birthDate": "2006-04-07",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "orri-oskarsson",
+        "name": "Orri Óskarsson",
+        "birthDate": "2004-08-29",
+        "nationality": "ISL",
+        "position": "FW"
+      },
+      {
+        "id": "pablo-marin",
+        "name": "Pablo Marín",
+        "birthDate": "2003-07-03",
+        "nationality": "ESP",
+        "position": "FW"
+      }
+    ]
+  }
+}
