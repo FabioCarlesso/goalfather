@@ -27,7 +27,9 @@ import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.SeasonRecord
+import com.carlesso.goalfather.domain.model.Suspension
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainingFocus
@@ -652,6 +654,69 @@ class PlayRoundServiceTest {
         val injuredPlayer = savedHome.squad.first { it.id == PlayerId(1) }
         assertTrue(injuredPlayer.stamina >= 100, "lesionado no banco deveria recuperar, não cansar")
         assertEquals(Availability.Injured(1), injuredPlayer.availability, "lesão anda uma rodada")
+    }
+
+    @Test
+    fun `suspenso na liga fica fora do jogo de liga, cumpre o gancho e cartoes contam so na liga (issue 130)`() = runTest {
+        val league = SeasonCompetitions.leagueId(Division.FIRST)
+        val base = makeClub(id = 1, name = "Home FC", squadSize = 14, overall = 80)
+        val suspendedHome = base.copy(
+            lineup = Lineup(players = base.squad.take(11), formation = Formation.F_4_4_2),
+            squad = base.squad.mapIndexed { i, p ->
+                when (i) {
+                    0 -> p.copy(suspensions = listOf(Suspension(league, 1)))
+                    // Gancho na COPA: não pode andar num jogo de liga.
+                    1 -> p.copy(suspensions = listOf(Suspension(SeasonCompetitions.CUP_ID, 1)))
+                    else -> p
+                }
+            },
+        )
+        coEvery { leagueRepo.findRound(md(1)) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns suspendedHome
+        coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
+        coEvery { clubRepo.findAll() } returns listOf(
+            suspendedHome,
+            awayClub,
+            makeClub(id = 3, name = "C3"),
+            makeClub(id = 4, name = "C4"),
+        )
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
+
+        val events = service.stream(md(1)).toList()
+
+        val updates = events.filterIsInstance<RoundEvent.MatchUpdate>().map { it.event }
+        val actors = updates.mapNotNull {
+            when (it) {
+                is MatchEvent.Goal -> it.scorerId
+                is MatchEvent.Card -> it.playerId
+                is MatchEvent.Injury -> it.playerId
+                else -> null
+            }
+        }.toSet()
+        assertTrue(PlayerId(1) !in actors, "suspenso não deveria participar da partida")
+
+        // Só o clube 1: `makeClub` repete os ids 1..N em todos os clubes.
+        val persisted = savedClubs.last { it.id == ClubId(1) }.squad.associateBy { it.id }
+        assertEquals(emptyList(), persisted.getValue(PlayerId(1)).suspensions, "gancho da liga cumprido")
+        assertEquals(
+            listOf(Suspension(SeasonCompetitions.CUP_ID, 1)),
+            persisted.getValue(PlayerId(2)).suspensions,
+            "gancho da copa não anda em jogo de liga",
+        )
+        // Todo cartão do jogo vira acumulado ou gancho NA LIGA, nunca na copa.
+        for (card in updates.filterIsInstance<MatchEvent.Card>()) {
+            val player = persisted[card.playerId] ?: continue
+            assertTrue(
+                player.pendingYellows.containsKey(league) || player.isSuspendedIn(league),
+                "cartão de ${card.playerId} deveria contar na liga: $player",
+            )
+            assertTrue(SeasonCompetitions.CUP_ID !in player.pendingYellows)
+        }
     }
 
     @Test

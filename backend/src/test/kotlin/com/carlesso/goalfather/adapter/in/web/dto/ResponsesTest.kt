@@ -15,6 +15,8 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Posture
+import com.carlesso.goalfather.domain.model.SeasonCompetitions
+import com.carlesso.goalfather.domain.model.Suspension
 import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.result.TransferResult
@@ -54,6 +56,34 @@ class ResponsesTest {
         json.parseToJsonElement(json.encodeToString(ClubDto.serializer(), dto)).jsonObject
 
     private val club = makeClub(squadSize = 12, ownerId = 7L)
+
+    @Test
+    fun `elenco traz foreign e suspensions, e o clube o limite de estrangeiros (issue 130)`() {
+        val withDiscipline = club.copy(
+            squad = club.squad.mapIndexed { i, p ->
+                when (i) {
+                    0 -> p.copy(nationality = Countries.ARGENTINA)
+                    1 -> p.copy(suspensions = listOf(Suspension(SeasonCompetitions.CUP_ID, 2)))
+                    else -> p
+                }
+            },
+        )
+
+        val body = encode(withDiscipline.toDto())
+        val squad = body.getValue("squad").jsonArray.map { it.jsonObject }
+
+        assertEquals("9", body.getValue("foreignPlayerLimit").jsonPrimitive.content)
+        assertEquals("true", squad[0].getValue("foreign").jsonPrimitive.content)
+        assertEquals("false", squad[1].getValue("foreign").jsonPrimitive.content)
+        val suspension = squad[1].getValue("suspensions").jsonArray.single().jsonObject
+        assertEquals("copa", suspension.getValue("competitionId").jsonPrimitive.content)
+        assertEquals("Copa", suspension.getValue("competitionName").jsonPrimitive.content)
+        assertEquals("2", suspension.getValue("matchesLeft").jsonPrimitive.content)
+        // Sempre presente (vazia), como o contrato exige.
+        assertEquals(0, squad[0].getValue("suspensions").jsonArray.size)
+        // Os amarelos pendentes são estado interno: não vazam na API.
+        assertNull(squad[0]["pendingYellows"])
+    }
 
     @Test
     fun `lineup sai como playerIds e posture achatada, nao como o domínio`() {
@@ -143,6 +173,8 @@ class ResponsesTest {
                 "ticketPriceCents",
                 // Escalação efetiva (issue #87) — idem.
                 "effectiveLineup", "lineupIsDefault", "lineupAdjusted",
+                // Limite de estrangeiros (issue #130) — idem.
+                "foreignPlayerLimit",
                 // País do clube (issue #123) — idem.
                 "country",
             ),

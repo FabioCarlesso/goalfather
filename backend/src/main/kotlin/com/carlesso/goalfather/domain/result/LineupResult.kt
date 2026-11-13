@@ -56,6 +56,15 @@ sealed interface LineupResult {
     data class DuplicatePlayers(val playerIds: List<Long>) : LineupResult
 
     /**
+     * Mais estrangeiros que o limite da competição (issue #130) — controller
+     * mapeia 400 `TOO_MANY_FOREIGN_PLAYERS`. Carrega o limite e os estrangeiros
+     * escalados para a UI explicar a recusa sem refazer a conta.
+     */
+    @Serializable
+    @SerialName("TooManyForeignPlayers")
+    data class TooManyForeignPlayers(val limit: Int, val playerIds: List<Long>) : LineupResult
+
+    /**
      * Outra escrita alterou o clube entre a leitura e a gravação (lock otimista,
      * issue #89) — nada foi gravado, mesmo depois das releituras automáticas.
      * Controller mapeia 409 `CLUB_WRITE_CONFLICT`.
