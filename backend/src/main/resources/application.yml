@@ -19,6 +19,12 @@ spring:
       ddl-auto: validate   # Flyway controla o schema
     properties:
       hibernate.format_sql: true
+      # Gravação em lote (issue #129): a rodada regrava o elenco de todos os
+      # clubes, e sem batch cada jogador era um round-trip. Ordenar inserts e
+      # updates por entidade é o que permite o Hibernate agrupá-los.
+      hibernate.jdbc.batch_size: 50
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
     open-in-view: false
 
   flyway:

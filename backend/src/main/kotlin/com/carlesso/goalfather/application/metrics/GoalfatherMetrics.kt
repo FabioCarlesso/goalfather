@@ -17,6 +17,14 @@ object GoalfatherMetrics {
     /** Timer da simulação de uma rodada inteira (todas as partidas). */
     const val ROUND_SIMULATION = "goalfather.round.simulation"
 
+    /**
+     * Timer do lote de jogos RÁPIDOS de um encaixe (issue #129): o wall time da
+     * simulação paralela dos jogos sem técnico humano. Uma amostra por encaixe
+     * que tenha ao menos um jogo rápido — é a métrica do critério "60 jogos em
+     * menos de 1 s". O [ROUND_SIMULATION] continua cobrindo o encaixe inteiro.
+     */
+    const val QUICK_SIMULATION = "goalfather.matchday.quick.simulation"
+
     /** Timer da simulação de uma única partida (drill-down do WS de match). */
     const val MATCH_SIMULATION = "goalfather.match.simulation"
 

@@ -49,7 +49,9 @@ class PlayerStatsPersistenceTest {
             mockk(relaxed = true),
         )
 
-    private val home = makeClub(id = 1, name = "Home FC")
+    // Com dono: o teste lê os gols do STREAM, e só jogo de técnico humano é
+    // transmitido lance a lance (issue #129; o jogo rápido está no QuickRoundFlowTest).
+    private val home = makeClub(id = 1, name = "Home FC", ownerId = 9)
         .copy(squad = (1L..11L).map { makePlayer(it, overall = 85) })
     private val away = makeClub(id = 2, name = "Away FC")
         .copy(squad = (101L..111L).map { makePlayer(it, overall = 70) })
