@@ -17,7 +17,7 @@ import type { Player, Position, TransferOffer } from '../domain/types'
 const player = (id: number, position: Position = 'MF'): Player => ({
   id, name: `P${id}`, position, overall: 75, pace: 75, shooting: 75, passing: 75, defending: 75,
   stamina: 100, salary: 10_000_00, age: 25, goals: 0, yellowCards: 0, redCards: 0,
-  availability: { type: 'Available' }, star: false,
+  availability: { type: 'Available' }, suspensions: [], star: false,
 })
 
 /** Goleiro (id 1) + linha. */

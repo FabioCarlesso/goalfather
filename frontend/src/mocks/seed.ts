@@ -31,6 +31,7 @@ import {
   ageSquadOneSeason,
   DEFAULT_TICKET_PRICE_CENTS,
   type EffectiveLineupFields,
+  type PendingYellows,
   type SquadMember,
 } from './engine'
 import {
@@ -85,6 +86,8 @@ const player = (
   yellowCards: 0,
   redCards: 0,
   availability: { type: 'Available' },
+  // Suspensões por competição (issue #130): todo mundo começa com a ficha limpa.
+  suspensions: [],
   star: ovr >= 82,
   nationality,
   ...(secondNationality ? { secondNationality } : {}),
@@ -454,6 +457,9 @@ export const state = {
   // estado de sessão, como o resto do mock.
   offers: [] as TransferOffer[],
   nextOfferId: 1,
+  // Amarelos pendentes por jogador e competição (issue #130) — o contrato não
+  // os expõe, então o mock guarda à parte, como o backend no `discipline_json`.
+  pendingYellows: {} as PendingYellows,
   /** Próximo encaixe do calendário — rodada de liga ou fase de copa (issue #125). */
   nextRound: (): Round => {
     const { season } = state.currentRound
@@ -758,12 +764,15 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
         redCards: 0,
         stamina: 100,
         availability: { type: 'Available' as const },
+        // Pré-temporada sem gancho (issue #130).
+        suspensions: [],
         // `star` é derivado no backend; aqui o mock recalcula, já que o
         // overall mudou na virada.
         star: p.overall >= 82,
       })),
     }
   }
+  state.pendingYellows = {}
   state.standings = freshStandings(season, divisionAssignments)
   state.cup = drawSeasonCup(season)
   state.currentRound = roundOf(seasonSlots(season)[0]!, season, state.cup)
