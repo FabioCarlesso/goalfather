@@ -34,7 +34,7 @@ const table = (clubIds: number[], division = 1): Standings => ({
   relegationSpots: 0,
   rows: clubIds.map((clubId, i) => ({
     position: i + 1, clubId, clubName: `C${clubId}`,
-    played: 3, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+    played: 3, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, zone: 'NONE',
   })),
 })
 

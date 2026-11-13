@@ -2,6 +2,12 @@ package com.carlesso.goalfather.domain.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Linha da tabela. [zone] é a faixa da POSIÇÃO (issue #128) — vaga, acesso,
+ * playoff, rebaixamento —, gravada junto da linha no snapshot: a temporada
+ * histórica mostra a faixa da época, e a tabela não precisa de coluna nova.
+ * Quem reordena a tabela (`applyRoundToStandings`) devolve a faixa à posição.
+ */
 @Serializable
 data class StandingRow(
     val position: Int,
@@ -15,6 +21,7 @@ data class StandingRow(
     val goalsAgainst: Int = 0,
     val goalDifference: Int = 0,
     val points: Int = 0,
+    val zone: TableZone = TableZone.NONE,
 )
 
 /**
@@ -22,9 +29,10 @@ data class StandingRow(
  * divisões tem N `Standings` por temporada.
  *
  * `promotionSpots`/`relegationSpots` dizem quantas posições do topo/fundo
- * trocam de divisão na virada — a UI pinta as zonas a partir deles, sem
- * duplicar a regra de negócio no frontend (regra de ouro do CLAUDE.md).
- * São 0 quando não há para onde subir (elite) ou descer (última divisão).
+ * trocam de divisão na virada. São 0 quando não há para onde subir (elite) ou
+ * descer (última divisão). Desde a issue #128 a UI pinta pela [StandingRow.zone]
+ * de cada linha (que também cobre vaga continental e playoff); os contadores
+ * ficam por compatibilidade do contrato e saem das mesmas regras.
  */
 @Serializable
 data class Standings(

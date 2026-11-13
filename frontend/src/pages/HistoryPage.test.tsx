@@ -20,6 +20,7 @@ const finalTables: Standings[] = [
       played: 5, wins: 0, draws: 0, losses: 0,
       goalsFor: 0, goalsAgainst: 0, goalDifference: 0,
       points: 15 - i * 3,
+      zone: 'NONE',
     })),
   },
 ]

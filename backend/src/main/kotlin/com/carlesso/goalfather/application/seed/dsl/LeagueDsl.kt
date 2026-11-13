@@ -18,9 +18,8 @@ import com.carlesso.goalfather.domain.rules.canHoldCup
 import com.carlesso.goalfather.domain.rules.canScheduleSeason
 import com.carlesso.goalfather.domain.rules.cupDrawSeed
 import com.carlesso.goalfather.domain.rules.drawCup
-import com.carlesso.goalfather.domain.rules.promotionSpotsFor
-import com.carlesso.goalfather.domain.rules.relegationSpotsFor
 import com.carlesso.goalfather.domain.rules.seasonPlan
+import com.carlesso.goalfather.domain.rules.withPyramidZones
 import kotlin.random.Random
 
 /**
@@ -94,10 +93,8 @@ data class League(
                     StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
                 },
                 division = division,
-                promotionSpots = promotionSpotsFor(division),
-                relegationSpots = relegationSpotsFor(division, byDivision.size),
             )
-        }
+        }.withPyramidZones()
     }
 
     /**

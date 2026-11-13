@@ -20,6 +20,7 @@ import type {
   SeasonRecord,
   SeasonTopScorer,
   Standings,
+  TableZone,
   Retirement,
   Round,
   RoundMatch,
@@ -184,7 +185,7 @@ const allClubIds = Object.values(clubMeta).map((c) => c.id)
 
 // ─── Divisões (issue #47) ────────────────────────────────────────────────
 // Divisão corrente de cada clube — muda na virada de temporada via
-// promoção/rebaixamento. Espelha PromotionRelegationRules.kt do backend
+// promoção/rebaixamento. Espelha pyramidRules (QualificationRules.kt) do backend
 // (regra duplicada APENAS aqui em mocks/, que é descartável — CLAUDE.md).
 
 export const PROMOTION_RELEGATION_SPOTS = 2
@@ -210,24 +211,40 @@ const promotionSpotsOf = (division: number): number =>
 const relegationSpotsOf = (division: number, divisionCount: number): number =>
   division >= divisionCount ? 0 : PROMOTION_RELEGATION_SPOTS
 
-// Tabelas zeradas de uma temporada, uma por divisão — espelha freshStandings
-// do PlayRoundService.
+// Faixa de cada posição (issue #128) — espelha `tableZones` sobre as regras da
+// pirâmide (`pyramidRules`) do backend: só acesso e rebaixamento, porque o
+// mundo atual não tem vaga continental nem playoff. A faixa é da POSIÇÃO e
+// viaja na linha; quem reordena a tabela devolve a faixa ao lugar.
+function zoneOf(position: number, size: number, promotion: number, relegation: number): TableZone {
+  if (position <= promotion) return 'PROMOTION'
+  if (position > size - relegation) return 'RELEGATION'
+  return 'NONE'
+}
+
+// Tabelas zeradas de uma temporada, uma por divisão — espelha seasonStandings
+// do backend.
 function freshStandings(season: number, divisions: Record<number, number>): Standings[] {
   const tiers = divisionsInPlay(divisions)
-  return tiers.map((division) => ({
-    season,
-    division,
-    round: 0,
-    promotionSpots: promotionSpotsOf(division),
-    relegationSpots: relegationSpotsOf(division, tiers.length),
-    rows: clubsOfDivision(divisions, division).map((id, i) => ({
-      position: i + 1,
-      clubId: id,
-      clubName: clubMeta[id]!.name,
-      played: 0, wins: 0, draws: 0, losses: 0,
-      goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
-    })),
-  }))
+  return tiers.map((division) => {
+    const promotionSpots = promotionSpotsOf(division)
+    const relegationSpots = relegationSpotsOf(division, tiers.length)
+    const clubs = clubsOfDivision(divisions, division)
+    return {
+      season,
+      division,
+      round: 0,
+      promotionSpots,
+      relegationSpots,
+      rows: clubs.map((id, i) => ({
+        position: i + 1,
+        clubId: id,
+        clubName: clubMeta[id]!.name,
+        played: 0, wins: 0, draws: 0, losses: 0,
+        goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+        zone: zoneOf(i + 1, clubs.length, promotionSpots, relegationSpots),
+      })),
+    }
+  })
 }
 
 export const initialStandings: Standings[] = freshStandings(2026, initialDivisions)
@@ -352,11 +369,13 @@ export function applyRoundToStandings(round: Round, current: Standings): Standin
       a.clubName.localeCompare(b.clubName),
   )
 
+  // A faixa é da posição (issue #128): quem muda de lugar herda a do lugar novo.
+  const zoneAt = new Map(current.rows.map((r) => [r.position, r.zone]))
   return {
     // Spread preserva divisão e vagas de promoção/rebaixamento da tabela.
     ...current,
     round: matchday,
-    rows: sorted.map((r, i) => ({ ...r, position: i + 1 })),
+    rows: sorted.map((r, i) => ({ ...r, position: i + 1, zone: zoneAt.get(i + 1) ?? 'NONE' })),
   }
 }
 

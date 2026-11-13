@@ -451,9 +451,10 @@ O mundo do jogo vem de um pack versionado em `data/world/v1/`, lido **como se fo
 - [x] **4.6** Múltiplas divisões com promoção/rebaixamento — issue #47
   (clubes têm `division`; fixtures Berger e tabela por divisão; na virada de
   temporada os últimos N da divisão de cima trocam com os primeiros N da de
-  baixo — regra pura em `domain/rules/PromotionRelegationRules.kt`. O
-  contrato expõe `promotionSpots`/`relegationSpots` por tabela para a UI
-  pintar as zonas sem duplicar a regra.)
+  baixo — desde a issue #128, um caso das regras de vaga em
+  `domain/rules/QualificationRules.kt` (`pyramidRules`). O contrato expõe
+  `promotionSpots`/`relegationSpots` por tabela e, desde a #128, a `zone` de
+  cada linha, para a UI pintar as zonas sem duplicar a regra.)
 - [ ] Mercado dinâmico — *futuro* (habilitado pelas divisões da 4.6)
 
 ### Fase 4.5 — DevOps / empacotamento ✅
@@ -1213,6 +1214,42 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   está no agendador e entra no serviço com o mundo do MVP (#131). Suspensões
   por cartão ainda não existem (#130); convocações nas datas FIFA são da #134 —
   aqui só se reserva o tempo. O mando dentro do turno segue o Berger antigo.
+
+- [x] **Vagas, acesso, rebaixamento e playoff** — issue #128
+
+  `sealed interface QualificationRule` (`domain/model/QualificationRule.kt`):
+  `TopN(from, n, to, entryStage)`, `Champion(from, to, entryStage)`,
+  `Relegation(from, bottomN, to)`, `Promotion(from, topN, to)` e
+  `Playoff(upper, upperPosition, lower, lowerPosition, format)`. As regras
+  referenciam competições só por `CompetitionId` e moram **fora** de
+  `Competition`: a vaga é relação entre competições.
+
+  `applyQualificationRules` (`domain/rules/QualificationRules.kt`, puro) recebe
+  as tabelas finais, os campeões das copas e os vencedores de playoff e devolve
+  o `sealed SeasonTransition`: `PlayoffsPending(ties)` enquanto houver playoff
+  sem vencedor (cada `PlayoffTie` gera os próprios jogos com `knockoutLegs` e
+  decide o vencedor por `TieResult`/`TwoLeggedTieResult`), ou `Resolved` com a
+  liga da temporada seguinte de cada clube e as vagas concedidas. **Cascata:**
+  `Champion` vem antes de `TopN`, e `TopN` pega os próximos **sem vaga** — o
+  campeão da Copa do Brasil no G-6 abre a vaga para o 7º. Um clube recebe no
+  máximo uma vaga (destinos exclusivos no MVP).
+
+  **Faixas:** `tableZones` dá a `TableZone` de cada posição (`QUALIFICATION`,
+  `PROMOTION`, `PLAYOFF`, `RELEGATION`, `NONE`), nominal como na TV. A faixa
+  viaja em `StandingRow.zone`, gravada no `rows_json` do snapshot (sem
+  migration; temporada antiga mostra a faixa da época), e `applyRoundToStandings`
+  a devolve à posição depois de reordenar. A UI só pinta.
+
+  **A liga do jogo** (12 clubes, 2 divisões) passou a ser `pyramidRules`: um par
+  `Relegation` + `Promotion` por degrau; `applyPromotionRelegation` manteve nome
+  e contrato, então o `PlayRoundService` não mudou. **Cortes:** as regras do
+  mundo do MVP estão interinas em `WorldQualificationRules` (Brasil: Copa do
+  Brasil + G-4 na fase de grupos da Libertadores, 5º–6º na segunda fase, Série
+  A/B trocam 4) até virarem dado do pack na #131; as **ligas europeias são
+  fechadas** (sem rebaixamento, sem playoff, sem vaga) até as segundas
+  divisões da #146 e as copas europeias da #145. Agendar os jogos de playoff no
+  calendário entra com a primeira liga que tiver playoff (a Bundesliga, na #146);
+  a vaga ganha só é consumida pela Libertadores da #132.
 
 ---
 

@@ -2146,6 +2146,7 @@ components:
         - goalsAgainst
         - goalDifference
         - points
+        - zone
       properties:
         position:        { type: integer, minimum: 1 }
         clubId:          { type: integer, format: int64 }
@@ -2158,14 +2159,27 @@ components:
         goalsAgainst:    { type: integer, minimum: 0 }
         goalDifference:  { type: integer }
         points:          { type: integer, minimum: 0 }
+        zone:            { $ref: '#/components/schemas/TableZone' }
+
+    TableZone:
+      type: string
+      enum: [NONE, QUALIFICATION, PROMOTION, PLAYOFF, RELEGATION]
+      description: |
+        Faixa da POSIÇÃO na tabela (issue #128), calculada no backend pelas
+        regras de vaga da competição — a UI só pinta. `QUALIFICATION` é vaga em
+        outra competição (a continental no MVP), `PROMOTION` acesso, `PLAYOFF`
+        playoff de acesso/rebaixamento, `RELEGATION` rebaixamento e `NONE` sem
+        faixa. Faixas nominais: o G-6 pinta 1º–6º mesmo quando a cascata (campeão
+        da copa já classificado) leva o 7º. Liga sem regra (as europeias do MVP,
+        fechadas até a issue #146) vem toda `NONE`.
 
     Standings:
       description: |
-        Tabela de UMA divisão em uma temporada. `promotionSpots` /
-        `relegationSpots` dizem quantas posições do topo/fundo trocam de
-        divisão na virada — a UI pinta as zonas a partir deles, sem duplicar
-        a regra de negócio no cliente. São 0 quando não há para onde subir
-        (elite) ou descer (última divisão).
+        Tabela de UMA divisão em uma temporada. A UI pinta as faixas pela
+        `zone` de cada linha (issue #128), sem duplicar a regra de negócio no
+        cliente. `promotionSpots` / `relegationSpots` contam as posições de
+        acesso/rebaixamento das mesmas regras (0 quando não há para onde subir
+        ou descer) e ficam por compatibilidade.
       type: object
       required: [season, division, round, rows, promotionSpots, relegationSpots]
       properties:

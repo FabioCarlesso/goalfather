@@ -16,6 +16,7 @@ import com.carlesso.goalfather.domain.model.SeasonTopScorer
 import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.TableZone
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -52,6 +53,8 @@ data class StandingRowDto(
     val goalsAgainst: Int,
     val goalDifference: Int,
     val points: Int,
+    /** Faixa da posição (issue #128): o enum do domínio vira o nome, como o contrato declara. */
+    val zone: TableZone,
 )
 
 @Serializable
@@ -224,6 +227,7 @@ fun StandingRow.toDto(): StandingRowDto = StandingRowDto(
     goalsAgainst = goalsAgainst,
     goalDifference = goalDifference,
     points = points,
+    zone = zone,
 )
 
 fun Standings.toDto(): StandingsDto = StandingsDto(
