@@ -12,6 +12,7 @@ import com.carlesso.goalfather.domain.engine.kickOff
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Matchday
+import com.carlesso.goalfather.domain.rules.startingLineupIn
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -66,8 +67,11 @@ class PlayMatchService(
         val home = clubRepo.findById(match.homeClubId)
         val away = clubRepo.findById(match.awayClubId)
         val setup = MatchSetup(
-            home = home?.startingLineup() ?: emptyLineup(),
-            away = away?.startingLineup() ?: emptyLineup(),
+            // Mesma escalação da rodada (issue #130): sem os suspensos daquela
+            // competição e dentro do limite de estrangeiros dela. Com a
+            // simulação rápida (#129), divergir aqui mostraria outro placar.
+            home = home?.startingLineupIn(match.competition) ?: emptyLineup(),
+            away = away?.startingLineupIn(match.competition) ?: emptyLineup(),
             homeName = match.homeClubName,
             awayName = match.awayClubName,
             // Mesmo modo da rodada: jogo de copa reproduz a mesma disputa de

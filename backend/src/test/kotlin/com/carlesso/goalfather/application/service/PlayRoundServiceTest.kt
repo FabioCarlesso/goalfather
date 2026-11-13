@@ -662,6 +662,9 @@ class PlayRoundServiceTest {
         val league = SeasonCompetitions.leagueId(Division.FIRST)
         val base = makeClub(id = 1, name = "Home FC", squadSize = 14, overall = 80)
         val suspendedHome = base.copy(
+            // Com dono → engine completa (issue #129): o stream traz os cartões
+            // do jogo, que o laço do fim do teste confere um a um.
+            ownerId = 9,
             lineup = Lineup(players = base.squad.take(11), formation = Formation.F_4_4_2),
             squad = base.squad.mapIndexed { i, p ->
                 when (i) {
@@ -704,9 +707,11 @@ class PlayRoundServiceTest {
         // Só o clube 1: `makeClub` repete os ids 1..N em todos os clubes.
         val persisted = savedClubs.last { it.id == ClubId(1) }.squad.associateBy { it.id }
         assertEquals(emptyList(), persisted.getValue(PlayerId(1)).suspensions, "gancho da liga cumprido")
+        // Filtra pela copa: se o jogador 2 for expulso NESTE jogo, ganha um
+        // gancho de liga a mais — o que importa é o da copa ficar intacto.
         assertEquals(
             listOf(Suspension(SeasonCompetitions.CUP_ID, 1)),
-            persisted.getValue(PlayerId(2)).suspensions,
+            persisted.getValue(PlayerId(2)).suspensions.filter { it.competitionId == SeasonCompetitions.CUP_ID },
             "gancho da copa não anda em jogo de liga",
         )
         // Todo cartão do jogo vira acumulado ou gancho NA LIGA, nunca na copa.
