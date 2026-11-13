@@ -111,9 +111,10 @@ test.describe('Round flow', () => {
     await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
     const rival = await registerRival(page)
     expect(rival, 'precisa de um clube livre para o segundo técnico').not.toBeNull()
-    await page.getByRole('button', { name: 'Estou pronto' }).click()
-    await expect(page.getByRole('button', { name: 'Jogar rodada' })).toBeDisabled()
 
+    // Pronto → play → WS no MESMO evaluate, a milissegundos um do outro: no
+    // profile `e2e` o timeout da prontidão é 5s, e passar dele liberaria o
+    // encaixe de verdade (escape hatch da #45) — o teste mediria outra coisa.
     const outcome = await page.evaluate(async () => {
       const token = localStorage.getItem('gf:token') ?? ''
       const auth = { Authorization: `Bearer ${token}` }
@@ -121,6 +122,7 @@ test.describe('Round flow', () => {
         (await (await fetch('/api/league/round/current', { headers: auth })).json()) as
           { matchday: { key: string }; status: string }
       const before = await current()
+      await fetch('/api/league/round/ready', { method: 'POST', headers: auth })
       const play = await fetch('/api/league/round/play', { method: 'POST', headers: auth })
 
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -128,8 +130,14 @@ test.describe('Round flow', () => {
       const { messages, code } = await new Promise<{ messages: string[]; code: number }>((resolve) => {
         const received: string[] = []
         const socket = new WebSocket(url)
+        // Sem close em 10s = regressão (ex.: o gate sumiu e o stream segue):
+        // falha rápido, com o que chegou até ali, em vez do timeout global.
+        const timer = setTimeout(() => resolve({ messages: received, code: -1 }), 10_000)
         socket.onmessage = (e) => received.push(String(e.data))
-        socket.onclose = (e) => resolve({ messages: received, code: e.code })
+        socket.onclose = (e) => {
+          clearTimeout(timer)
+          resolve({ messages: received, code: e.code })
+        }
       })
       const after = await current()
       return { playStatus: play.status, messages, code, before, after }
