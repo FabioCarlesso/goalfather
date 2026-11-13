@@ -10,7 +10,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.lastOrNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -83,9 +84,11 @@ class RoundWebSocketHandler(
         scope.launch {
             try {
                 var lastMinute = 0
-                // Motivo do close normal: muda se o encaixe não estava liberado.
-                var closeReason = "Rodada encerrada"
-                playRound.stream(matchday).collect { event ->
+                // `onEach` faz o envio de cada evento; `lastOrNull` é o operador
+                // terminal que coleta o Flow e devolve o último — é dele que sai
+                // o motivo do close, sem estado mutável compartilhado com o
+                // cálculo do pacing.
+                val last = playRound.stream(matchday).onEach { event ->
                     val delayMs = when (event) {
                         // Encaixe ainda `Scheduled` (issue #151): o gate de
                         // prontidão barrou. Não é erro do servidor — o cliente
@@ -99,7 +102,6 @@ class RoundWebSocketHandler(
                                 session.id,
                                 matchday.key,
                             )
-                            closeReason = NOT_STARTED_REASON
                             0L
                         }
                         is RoundEvent.MatchUpdate -> {
@@ -119,10 +121,14 @@ class RoundWebSocketHandler(
                         val payload = json.encodeToString(RoundEventDto.serializer(), event.toDto())
                         session.sendMessage(TextMessage(payload))
                     }
-                }
+                }.lastOrNull()
+
                 if (session.isOpen) {
-                    delay(END_SIGNAL_GAP_MS)
-                    session.close(CloseStatus.NORMAL.withReason(closeReason))
+                    val reason = if (last == RoundEvent.RoundNotStarted) NOT_STARTED_REASON else "Rodada encerrada"
+                    // Pelo `pause` injetado, como o resto do pacing: os testes
+                    // enxergam essa espera em vez de dormir de verdade.
+                    pause(END_SIGNAL_GAP_MS)
+                    session.close(CloseStatus.NORMAL.withReason(reason))
                 }
             } catch (e: CancellationException) {
                 // Cancelamento é fluxo normal de coroutine (ex.: shutdown), não

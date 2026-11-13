@@ -71,6 +71,22 @@ export async function registerRival(page: Page): Promise<Rival | null> {
   }, `rival_${Date.now()}_${Math.floor(Math.random() * 1e6)}`)
 }
 
+/**
+ * Joga a rodada a partir da /round já aberta: pronto → jogar, em ritmo lento
+ * para a transmissão ainda estar no ar quando o teste seguir. Desde a issue
+ * #151 o drill-down de partida só transmite encaixe LIBERADO — antes do `play`
+ * ele seria uma prévia do resultado —, então quem abre `/round/match/:id`
+ * passa por aqui. Não navega: `lineup.spec` chega à /round client-side para
+ * não reiniciar o estado do MSW.
+ */
+export async function startRound(page: Page): Promise<void> {
+  await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
+  await page.getByLabel('Velocidade').selectOption('SLOW')
+  await page.getByRole('button', { name: 'Estou pronto' }).click()
+  await page.getByRole('button', { name: 'Jogar rodada' }).click()
+  await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
+}
+
 /** Clube do técnico logado na UI (lido de /me com o token da própria sessão). */
 export async function myClubId(page: Page): Promise<number> {
   return page.evaluate(async () => {

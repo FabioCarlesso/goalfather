@@ -1,14 +1,21 @@
-import { expect, test } from './helpers'
+import { expect, startRound, test } from './helpers'
 
 // Drill-down de partida (issue #9): clicar num card da rodada abre a página
 // da partida, que conecta em /ws/matches/{id} e mostra o feed ao vivo.
 // Funciona contra mocks (MSW matchStream) e contra o backend Spring real
 // (MatchWebSocketHandler) — mesmo teste, dois alvos.
 
+// Desde a issue #151 o drill-down só transmite encaixe LIBERADO, então os
+// testes jogam a rodada antes de abrir a partida (`startRound`). Contra o
+// backend real, sair da /round deixa a rodada terminar no servidor; o
+// drill-down acha a partida no encaixe dela mesmo assim.
+
 test.describe('Match drill-down', () => {
   test('abre o feed de uma partida a partir do card da rodada', async ({ page }) => {
     await page.goto('/round')
-    await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
+    await startRound(page)
+    // O drill-down herda o SLOW da rodada; aqui o ritmo é o padrão.
+    await page.getByLabel('Velocidade').selectOption('NORMAL')
 
     // Abre uma partida que NÃO é a do usuário (sem o selo "SEU JOGO").
     const otherMatch = page
@@ -35,7 +42,7 @@ test.describe('Match drill-down', () => {
   // partida desde o KickOff (o stream é determinístico pelo matchId).
   test('pular para o fim mostra o apito final e o sumário', async ({ page }) => {
     await page.goto('/round')
-    await page.getByLabel('Velocidade').selectOption('SLOW')
+    await startRound(page)
     await page.locator('a[href^="/round/match/"]').first().click()
 
     await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
@@ -44,5 +51,16 @@ test.describe('Match drill-down', () => {
     await expect(page.getByText(/Estatísticas da partida/i)).toBeVisible({ timeout: 5_000 })
     await expect(page.getByText(/Fim de jogo/i)).toHaveCount(1)
     await expect(page.getByText('FIM', { exact: true })).toBeVisible()
+  })
+
+  // Issue #151: antes do `play` o encaixe está `Scheduled` e o servidor recusa
+  // o drill-down (close 4409) — sem lance nenhum na tela.
+  test('partida de rodada ainda não jogada não é transmitida', async ({ page }) => {
+    await page.goto('/round')
+    await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
+    await page.locator('a[href^="/round/match/"]').first().click()
+
+    await expect(page.getByRole('status').filter({ hasText: /ainda não começou/ })).toBeVisible()
+    await expect(page.getByText(/Bola rolando/i)).toHaveCount(0)
   })
 })

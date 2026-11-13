@@ -278,7 +278,11 @@ Quando o backend Kotlin tiver `/ws/matches/{id}` (Spring WebSocket + `Flow` → 
 
 ### Encaixe não liberado (issue #151)
 
-O servidor só simula encaixe liberado pelo `playRound` (`InProgress`). Se o WS abrir num encaixe ainda `Scheduled`, chega um único `RoundNotStarted` e close `1000`. O `useRoundStream` trata o evento no `switch (event.type)` exaustivo: volta a `idle` (o `onclose` não marca `finished`), solta a data jogada, mostra `NOT_STARTED_MESSAGE` e rebusca prontidão e encaixe corrente — a `RoundPage` volta ao "aguardando prontidão". O handler MSW de `/ws/slot/:key` faz o mesmo gate; `round.spec` abre o WS direto com um técnico pendente e confere que nada andou (mock e `e2e:real`).
+O servidor só simula encaixe liberado pelo `playRound`. Valores de protocolo que não cabem no schema das mensagens (close code `4409`, motivo `Encaixe nao liberado`) ficam em `src/api/wsProtocol.ts`, usados pela app, pelos mocks e pelos testes.
+
+- **Rodada (`/ws/slot/{key}`):** encaixe ainda `Scheduled` → um único `RoundNotStarted` e close `1000`. O `useRoundStream` vai para o status próprio `notStarted` (a `RoundPage` o trata como ocioso), solta a data jogada, mostra `NOT_STARTED_MESSAGE` como aviso (âmbar, `role="status"`) e rebusca prontidão e encaixe. Uma flag por socket impede que erro ou close posteriores troquem esse desfecho. O WS abre na chave que o `playRound` devolveu, não na do cache.
+- **Drill-down (`/ws/matches/{id}`):** encaixe `Scheduled` → close `4409` sem mensagens; a `MatchPage` mostra `MATCH_NOT_STARTED_MESSAGE`. Antes do `play` não há mais "prévia" da partida — os E2E que abrem `/round/match/:id` jogam a rodada antes (`startRound` em `e2e/helpers.ts`).
+- Os handlers MSW fazem o mesmo gate; `round.spec` abre o WS da rodada direto com um técnico pendente e `match.spec` abre a partida antes do `play`, nos dois alvos (mock e `e2e:real`).
 
 ---
 

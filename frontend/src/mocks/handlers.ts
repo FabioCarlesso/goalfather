@@ -78,6 +78,7 @@ import type {
   StreamSpeed,
 } from '../domain/types'
 import { isStreamSpeed } from '../domain/streamSpeed'
+import { WS_CLOSE_NOT_STARTED, WS_REASON_NOT_STARTED } from '../api/wsProtocol'
 import type { components } from '../api/generated'
 
 type BuyPlayerRequest      = components['schemas']['BuyPlayerRequest']
@@ -695,6 +696,15 @@ export const handlers = [
   matchStream.addEventListener('connection', ({ client, params }) => {
     const matchId = Number(params.id)
     const msPerMinute = msPerMinuteOf(client.url)
+    // Gate de prontidão (issue #151), como o `PlayMatchService`: partida do
+    // encaixe corrente ainda `Scheduled` não é transmitida — senão o
+    // drill-down seria uma prévia do resultado. Partida fora do encaixe
+    // corrente segue o modo standalone do mock.
+    const inCurrent = state.currentRound.matches.some((m) => m.matchId === matchId)
+    if (inCurrent && state.currentRound.status === 'Scheduled') {
+      client.close(WS_CLOSE_NOT_STARTED, WS_REASON_NOT_STARTED)
+      return
+    }
     const myClub = state.clubs[1]
     if (!myClub) {
       client.close(1011, 'Clube do usuário não encontrado')
@@ -858,7 +868,7 @@ export const handlers = [
       client.send(JSON.stringify(notStarted))
       // Pequeno gap antes do close, como o backend: fechar na mesma volta
       // do event loop descartava a mensagem no cliente.
-      void delay(50).then(() => client.close(1000, 'Encaixe nao liberado'))
+      void delay(50).then(() => client.close(1000, WS_REASON_NOT_STARTED))
       return
     }
 

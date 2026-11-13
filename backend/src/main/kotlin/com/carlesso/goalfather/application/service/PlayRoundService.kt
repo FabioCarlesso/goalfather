@@ -159,7 +159,7 @@ class PlayRoundService(
         // amostra de métrica para um stream que não vai jogar. Sem claim novo:
         // `start` grava `InProgress` antes de responder ao `play`, então o WS
         // que abre depois já lê o status certo.
-        if (round.status == RoundStatus.Scheduled) {
+        if (!round.isReleased) {
             emit(RoundEvent.RoundNotStarted)
             return@flow
         }

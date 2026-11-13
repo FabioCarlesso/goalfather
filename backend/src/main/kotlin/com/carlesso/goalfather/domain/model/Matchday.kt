@@ -116,6 +116,31 @@ data class Matchday(val week: GameWeek, val slot: Slot) : Comparable<Matchday> {
         private val KEY = Regex("""(\d{4})-W(\d{2})-(MIDWEEK|WEEKEND)""")
 
         /**
+         * Faixa de `matchId` de cada encaixe: `matchId = serial * 1000 + n`, na
+         * liga (`RoundFixturesGenerator`) e na copa (`CupRules`). Uma constante
+         * só, para que [ofMatchId] não desande se a fórmula mudar.
+         */
+        const val MATCH_IDS_PER_MATCHDAY: Long = 1000
+
+        /** Inverso de [serial]. `null` antes do primeiro encaixe (serial negativo). */
+        fun fromSerial(serial: Int): Matchday? {
+            if (serial < 0) return null
+            val week = GameWeek.of(EPOCH_MONDAY.plusWeeks(serial / 2L))
+            return Matchday(week, Slot.entries[serial % 2])
+        }
+
+        /**
+         * O encaixe em que a partida [matchId] é jogada (issue #151): o
+         * drill-down acha a rodada da partida sem depender de ela ainda ser a
+         * "última" — depois de encerrada, `findLatest` já aponta a seguinte.
+         * `null` para id que não sai da fórmula (zero ou negativo).
+         */
+        fun ofMatchId(matchId: Long): Matchday? =
+            (matchId / MATCH_IDS_PER_MATCHDAY)
+                .takeIf { matchId > 0 && it <= Int.MAX_VALUE }
+                ?.let { fromSerial(it.toInt()) }
+
+        /**
          * Lê a forma de [key]. `null` para texto malformado ou semana que o
          * ano não tem (W53 num ano de 52) — entrada de URL é dado externo, e
          * ausência no tipo é o idioma do projeto para "não deu", sem exception.

@@ -35,6 +35,22 @@ class MatchdayTest {
     }
 
     @Test
+    fun `fromSerial e ofMatchId desfazem serial e a formula do matchId (issue 151)`() {
+        val first = Matchday.fromSerial(0)
+        assertEquals(Matchday(GameWeek.of(LocalDate.of(1970, 1, 5)), Slot.MIDWEEK), first)
+        for (matchday in Matchday.between(LocalDate.of(2026, 1, 1), LocalDate.of(2027, 2, 1))) {
+            assertEquals(matchday, Matchday.fromSerial(matchday.serial))
+            // Liga (`serial * 1000 + divisão * 100 + i`) e copa (`serial * 1000 + i`).
+            val base = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY
+            assertEquals(matchday, Matchday.ofMatchId(base + 1))
+            assertEquals(matchday, Matchday.ofMatchId(base + 912))
+        }
+        assertNull(Matchday.fromSerial(-1))
+        assertNull(Matchday.ofMatchId(0))
+        assertNull(Matchday.ofMatchId(-5))
+    }
+
+    @Test
     fun `key faz ida e volta e parse recusa lixo`() {
         val matchday = Matchday(GameWeek(2026, 5), Slot.WEEKEND)
         assertEquals("2026-W05-WEEKEND", matchday.key)

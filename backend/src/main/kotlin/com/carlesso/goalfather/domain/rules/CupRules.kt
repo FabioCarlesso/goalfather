@@ -179,7 +179,7 @@ fun cupMatches(matchday: Matchday, cup: Cup, clubs: Collection<Club>): List<Roun
         .filter { it.result == null }
         .map { tie ->
             RoundMatch(
-                matchId = matchday.serial * 1000L + tie.index + 1,
+                matchId = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY + tie.index + 1,
                 homeClubId = tie.home.id,
                 awayClubId = tie.away.id,
                 homeClubName = tie.home.name,

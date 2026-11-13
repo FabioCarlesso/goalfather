@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './helpers'
+import { expect, startRound, test } from './helpers'
 
 // Escalação (issue #12): preencher os 11 titulares, salvar e validar que a
 // escalação persiste no servidor. Roda contra MSW e contra o backend real.
@@ -137,6 +137,8 @@ test.describe('Lineup flow', () => {
     // e a postura salva se perderia.
     await page.getByRole('link', { name: 'Rodada' }).click()
     await expect(page).toHaveURL(/\/round$/)
+    // Drill-down só transmite encaixe liberado (issue #151): joga antes.
+    await startRound(page)
     await page.locator('a[href^="/round/match/"]').filter({ hasText: 'SEU JOGO' }).first().click()
     await expect(page).toHaveURL(/\/round\/match\/\d+$/)
     await expect(page.getByText('Defensiva')).toBeVisible({ timeout: 15_000 })

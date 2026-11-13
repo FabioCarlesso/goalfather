@@ -26,7 +26,10 @@ import type {
 // dele (issue #112). Saiu da `RoundPage` para ser testável isoladamente: a
 // página só desenha o que este hook devolve.
 
-export type RoundStreamStatus = 'idle' | 'connecting' | 'live' | 'finished' | 'error'
+// `notStarted` (issue #151): o servidor recusou o stream porque o encaixe
+// ainda não foi liberado — a rodada não foi jogada e a tela volta a aguardar
+// a prontidão. Status próprio (e não `idle`) para nenhum handler confundi-lo.
+export type RoundStreamStatus = 'idle' | 'connecting' | 'live' | 'notStarted' | 'finished' | 'error'
 
 // Variante do union RoundEvent — fim de temporada (issue #11).
 export type SeasonFinishedEvent = Extract<RoundEvent, { type: 'SeasonFinished' }>
@@ -225,29 +228,26 @@ export function useRoundStream(
 
   const handleEvent = useCallback(
     (event: RoundEvent) => {
+      if (event.type === 'RoundNotStarted') {
+        // Encaixe ainda não liberado (issue #151): o servidor não simulou
+        // nada e vai fechar a conexão em seguida. A data exibida volta a ser
+        // a corrente e a prontidão é rebuscada.
+        setPlayedRound(null)
+        setStatus('notStarted')
+        setError(NOT_STARTED_MESSAGE)
+        qc.invalidateQueries({ queryKey: roundReadinessKey })
+        qc.invalidateQueries({ queryKey: currentRoundKey })
+        return
+      }
+      // Todo o resto entra no feed; só os sinais de fim têm efeito extra.
+      setEvents((prev) => [...prev, event])
       switch (event.type) {
-        case 'RoundNotStarted':
-          // Encaixe ainda não liberado (issue #151): o servidor não simulou
-          // nada e vai fechar a conexão em seguida. Volta ao "aguardando
-          // prontidão" — `idle` faz o `onclose` não marcar `finished`, e a
-          // data exibida volta a ser a corrente.
-          setPlayedRound(null)
-          setStatus('idle')
-          setError(NOT_STARTED_MESSAGE)
-          qc.invalidateQueries({ queryKey: roundReadinessKey })
-          qc.invalidateQueries({ queryKey: currentRoundKey })
-          return
         case 'MatchUpdate':
-          setEvents((prev) => [...prev, event])
           return
         case 'RoundFinished':
-          setEvents((prev) => [...prev, event])
-          onRoundFinished(event)
-          return
+          return onRoundFinished(event)
         case 'SeasonFinished':
-          setEvents((prev) => [...prev, event])
-          onSeasonFinished(event)
-          return
+          return onSeasonFinished(event)
         default: {
           // Exaustividade: variante nova no contrato quebra a compilação aqui.
           const unhandled: never = event
@@ -289,22 +289,29 @@ export function useRoundStream(
       wsRef.current = socket
       if (keepPrevious) handOff(previous, socket)
 
+      // Recusa do servidor NESTE socket (issue #151). Depois dela, nada do
+      // que a conexão fizer — close anormal, erro de rede — muda o desfecho:
+      // o estado e a mensagem de "aguardando prontidão" ficam.
+      let refused = false
+
       socket.onopen = () => setStatus('live')
       socket.onmessage = (e) => {
         try {
-          handleEvent(JSON.parse(e.data as string) as RoundEvent)
+          const event = JSON.parse(e.data as string) as RoundEvent
+          if (event.type === 'RoundNotStarted') refused = true
+          handleEvent(event)
         } catch (err) {
           console.error('Falha ao parsear RoundEvent', err)
         }
       }
       socket.onerror = () => {
+        if (refused) return
         setError('Erro de conexão com o servidor de rodada')
         setStatus('error')
       }
       socket.onclose = (e) => {
-        // `idle` aqui = o servidor recusou com `RoundNotStarted` (issue #151):
-        // a rodada não foi jogada, então nada de `finished`.
-        setStatus((prev) => (prev === 'error' || prev === 'idle' ? prev : 'finished'))
+        if (refused) return
+        setStatus((prev) => (prev === 'error' ? 'error' : 'finished'))
         if (e.code !== 1000 && e.code !== 1005 && e.reason) setError(e.reason)
       }
     },
@@ -319,15 +326,22 @@ export function useRoundStream(
     setPlayedRound(round)
     setStatus('connecting')
 
+    let released: string
     try {
-      await playRound.mutateAsync()
+      released = (await playRound.mutateAsync()).matchday
     } catch (e) {
       setError(`Falha ao iniciar rodada: ${errorMessage(e)}`)
       setStatus('error')
       return
     }
 
-    openStream(round.matchday.key, speed)
+    // O encaixe que o servidor LIBEROU (issue #151), não o do cache: com o
+    // cache atrasado (outro técnico já jogou o anterior), abrir a chave velha
+    // daria replay ou `RoundNotStarted`, e o liberado ficaria sem stream. A
+    // grade não serve para outra data: volta para a corrente, que o
+    // `usePlayRound` já mandou rebuscar.
+    if (released !== round.matchday.key) setPlayedRound(null)
+    openStream(released, speed)
   }, [round, playRound, resetStream, openStream, speed])
 
   const skip = useCallback(() => {

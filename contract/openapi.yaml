@@ -1027,11 +1027,21 @@ paths:
         - **Direção:** servidor → cliente (read-only)
         - **Formato:** uma mensagem JSON por evento, com o schema `MatchEvent`
         - **Encerramento:** servidor fecha após enviar `FullTime`
+        - **Partida de encaixe não liberado (issue #151):** enquanto o encaixe
+          da partida está `Scheduled` (antes do `POST /api/league/round/play`
+          liberar), nada é simulado: a conexão fecha sem mensagens, com close
+          code `4409` e motivo `Encaixe nao liberado`. O stream é determinístico
+          (seed = `matchId`), então transmiti-lo antes seria uma prévia do
+          resultado. Encaixe `InProgress` ou `Finished` transmite normalmente;
+          `Finished` é uma re-simulação com os elencos atuais.
+        - **Localização:** a partida é buscada no encaixe DELA (o `matchId` é
+          `serial do encaixe × 1000 + n`), não no encaixe corrente — o
+          drill-down de um jogo recém-encerrado continua disponível.
       parameters:
         - name: id
           in: path
           required: true
-          description: ID da partida em andamento
+          description: ID da partida (`serial do encaixe × 1000 + n`)
           schema: { type: integer, format: int64 }
         - name: token
           in: query

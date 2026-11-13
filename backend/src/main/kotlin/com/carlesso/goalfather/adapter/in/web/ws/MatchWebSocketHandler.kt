@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web.ws
 
+import com.carlesso.goalfather.application.port.`in`.MatchStream
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.domain.event.MatchEvent
 import kotlinx.coroutines.CancellationException
@@ -28,6 +29,10 @@ import java.util.concurrent.ConcurrentHashMap
  * (`?speed=`, issue #115 — ver [StreamSpeed]); ausente ou inválido → `NORMAL`
  * (80ms/minuto). Aqui "pular para o fim" é só reconectar com `INSTANT`: o
  * drill-down não grava nada, e fechar a conexão cancela o job desta sessão.
+ *
+ * Prontidão (issue #151): partida de encaixe ainda não liberado não é
+ * transmitida. O canal só leva `MatchEvent`, então a recusa vai no close:
+ * [NOT_STARTED_CLOSE_CODE] com motivo [RoundWebSocketHandler.NOT_STARTED_REASON].
  */
 class MatchWebSocketHandler(
     private val streamMatch: StreamMatchUseCase,
@@ -38,6 +43,14 @@ class MatchWebSocketHandler(
 
     private val log = LoggerFactory.getLogger(MatchWebSocketHandler::class.java)
     private val jobs = ConcurrentHashMap<String, Job>()
+
+    companion object {
+        /**
+         * Close de aplicação (faixa 4000–4999 da RFC 6455) para "encaixe não
+         * liberado" (issue #151). 4409 ecoa o HTTP 409 do `ROUND_NOT_READY`.
+         */
+        const val NOT_STARTED_CLOSE_CODE = 4409
+    }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
         val matchId = extractMatchId(session)
@@ -52,19 +65,32 @@ class MatchWebSocketHandler(
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val job = scope.launch {
             try {
-                var lastMinute = 0
-                streamMatch.stream(matchId).collect { event ->
-                    val gap = speed.gapMs(lastMinute, event.minute)
-                    lastMinute = event.minute
-                    if (gap > 0) pause(gap)
-                    if (session.isOpen) {
-                        val payload = json.encodeToString(MatchEvent.serializer(), event)
-                        session.sendMessage(TextMessage(payload))
+                when (val stream = streamMatch.open(matchId)) {
+                    MatchStream.NotStarted -> {
+                        // Mesmo critério de log do WS do encaixe: o frontend só
+                        // linka a partida, então chegar aqui antes do `play` é
+                        // cliente fora do fluxo (ou prévia que deixou de existir).
+                        log.warn("WS match rejeitado, encaixe nao liberado: session={} match={}", session.id, matchId)
+                        session.close(
+                            CloseStatus(NOT_STARTED_CLOSE_CODE, RoundWebSocketHandler.NOT_STARTED_REASON),
+                        )
                     }
-                }
-                if (session.isOpen) {
-                    delay(50)
-                    session.close(CloseStatus.NORMAL.withReason("Partida encerrada"))
+                    is MatchStream.Live -> {
+                        var lastMinute = 0
+                        stream.events.collect { event ->
+                            val gap = speed.gapMs(lastMinute, event.minute)
+                            lastMinute = event.minute
+                            if (gap > 0) pause(gap)
+                            if (session.isOpen) {
+                                val payload = json.encodeToString(MatchEvent.serializer(), event)
+                                session.sendMessage(TextMessage(payload))
+                            }
+                        }
+                        if (session.isOpen) {
+                            delay(50)
+                            session.close(CloseStatus.NORMAL.withReason("Partida encerrada"))
+                        }
+                    }
                 }
             } catch (e: CancellationException) {
                 // Aba fechada → `afterConnectionClosed` cancela o job. É o fim

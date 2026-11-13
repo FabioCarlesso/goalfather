@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, myClubId, registerRival, test } from './helpers'
+import { expect, myClubId, registerRival, startRound, test } from './helpers'
 
 // Navegação responsiva (issue #106): barra horizontal a partir de `lg` (1024px),
 // botão de menu abaixo disso, e nenhuma rolagem horizontal da página.
@@ -164,6 +164,8 @@ for (const width of [360, 768, 1280]) {
 
     test('/round/match/:id', async ({ page }) => {
       await page.goto('/round')
+      // Drill-down só transmite encaixe liberado (issue #151).
+      await startRound(page)
       await page.locator('a[href^="/round/match/"]').first().click()
       await expect(page).toHaveURL(/\/round\/match\/\d+$/)
       await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
