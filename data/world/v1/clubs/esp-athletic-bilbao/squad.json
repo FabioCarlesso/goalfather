@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "esp-athletic-bilbao-gen-01",
+        "name": "Andrés Serrano",
+        "birthDate": "2008-01-17",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-athletic-bilbao-gen-02",
+        "name": "Eduardo Ramírez",
+        "birthDate": "2004-09-22",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "aitor-paredes",
+        "name": "Aitor Paredes",
+        "birthDate": "2000-04-29",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "aymeric-laporte",
+        "name": "Aymeric Laporte",
+        "birthDate": "1994-05-27",
+        "nationality": "ESP",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "daniel-vivian",
+        "name": "Daniel Vivian",
+        "birthDate": "1999-07-05",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "hugo-rincon",
+        "name": "Hugo Rincón",
+        "birthDate": "2003-01-27",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "iker-monreal",
+        "name": "Iker Monreal",
+        "birthDate": "2005-07-03",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "jesus-areso",
+        "name": "Jesús Areso",
+        "birthDate": "1999-07-02",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "johaneko-louis-jean",
+        "name": "Johaneko Louis-Jean",
+        "birthDate": "2004-06-28",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "alejandro-rego",
+        "name": "Alejandro Rego",
+        "birthDate": "2003-06-11",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "benat-gerenabarrena",
+        "name": "Beñat Gerenabarrena",
+        "birthDate": "2003-03-29",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "benat-prados",
+        "name": "Beñat Prados",
+        "birthDate": "2001-02-08",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "oihan-sancet",
+        "name": "Oihan Sancet",
+        "birthDate": "2000-04-25",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "selton-sanchez",
+        "name": "Selton Sánchez",
+        "birthDate": "2007-02-20",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-athletic-bilbao-gen-03",
+        "name": "Carlos Iglesias",
+        "birthDate": "1998-04-07",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "alejandro-berenguer-remiro",
+        "name": "Alejandro Berenguer Remiro",
+        "birthDate": "1995-07-04",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "aritz-conde",
+        "name": "Aritz Conde",
+        "birthDate": "2005-10-14",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "asier-hierro",
+        "name": "Asier Hierro",
+        "birthDate": "2005-05-06",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "christian-imga",
+        "name": "Christian Imga",
+        "birthDate": "2009-02-17",
+        "nationality": "ESP",
+        "secondNationality": "EQG",
+        "position": "FW"
+      },
+      {
+        "id": "maroan-sannadi",
+        "name": "Maroan Sannadi",
+        "birthDate": "2001-02-01",
+        "nationality": "ESP",
+        "secondNationality": "MAR",
+        "position": "FW"
+      },
+      {
+        "id": "nico-williams",
+        "name": "Nico Williams",
+        "birthDate": "2002-07-12",
+        "nationality": "ESP",
+        "secondNationality": "GHA",
+        "position": "FW"
+      },
+      {
+        "id": "robert-navarro",
+        "name": "Robert Navarro",
+        "birthDate": "2002-04-12",
+        "nationality": "ESP",
+        "position": "FW"
+      }
+    ]
+  }
+}

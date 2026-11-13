@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ger-elversberg-gen-02",
+        "name": "Alexander Fischer",
+        "birthDate": "2002-09-17",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-18",
+        "name": "Max Fischer",
+        "birthDate": "1999-01-09",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-01",
+        "name": "Tim Meyer",
+        "birthDate": "1998-08-14",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "oliver-oschkenat",
+        "name": "Oliver Oschkenat",
+        "birthDate": "1993-12-22",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "ger-elversberg-gen-15",
+        "name": "Benedikt Krüger",
+        "birthDate": "1997-01-03",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-06",
+        "name": "Christian Fischer",
+        "birthDate": "2000-11-07",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-09",
+        "name": "Christian Schmidt",
+        "birthDate": "2002-02-26",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-12",
+        "name": "Kevin Ziegler",
+        "birthDate": "2006-01-16",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-19",
+        "name": "Marcel Becker",
+        "birthDate": "2005-07-11",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-04",
+        "name": "Simon Lehmann",
+        "birthDate": "2001-01-20",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-20",
+        "name": "Andreas Schwarz",
+        "birthDate": "1999-10-07",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-05",
+        "name": "Felix Koch",
+        "birthDate": "1993-10-28",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-16",
+        "name": "Jannik Klein",
+        "birthDate": "1997-03-27",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-07",
+        "name": "Marco Becker",
+        "birthDate": "1996-05-22",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-03",
+        "name": "Max Ziegler",
+        "birthDate": "2003-03-09",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-13",
+        "name": "Maximilian Friedrich",
+        "birthDate": "2004-11-10",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-10",
+        "name": "Patrick Weber",
+        "birthDate": "2006-05-26",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-17",
+        "name": "Daniel Lang",
+        "birthDate": "2004-02-09",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-21",
+        "name": "Felix Friedrich",
+        "birthDate": "2000-03-28",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-14",
+        "name": "Marcel Lang",
+        "birthDate": "1999-10-07",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-08",
+        "name": "Niklas Werner",
+        "birthDate": "1997-03-22",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-elversberg-gen-11",
+        "name": "Tim Schwarz",
+        "birthDate": "2007-06-18",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

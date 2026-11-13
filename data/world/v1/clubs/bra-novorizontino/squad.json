@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-novorizontino-gen-01",
+        "name": "Danilo Borges",
+        "birthDate": "2004-09-21",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-18",
+        "name": "Edson Araújo",
+        "birthDate": "1999-03-08",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-02",
+        "name": "Willian Borges",
+        "birthDate": "1997-04-30",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-07",
+        "name": "Breno Correia",
+        "birthDate": "1995-03-25",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-19",
+        "name": "Guilherme Monteiro",
+        "birthDate": "2007-04-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-12",
+        "name": "Marcelo Ribeiro",
+        "birthDate": "2005-04-10",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-03",
+        "name": "Otávio Lopes",
+        "birthDate": "2006-09-17",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-15",
+        "name": "Paulo Macedo",
+        "birthDate": "2008-02-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-09",
+        "name": "Paulo Monteiro",
+        "birthDate": "2003-11-12",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-05",
+        "name": "Thiago Sampaio",
+        "birthDate": "1994-04-27",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-04",
+        "name": "Alexandre Monteiro",
+        "birthDate": "2007-04-23",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-16",
+        "name": "Arthur Xavier",
+        "birthDate": "1997-10-02",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-08",
+        "name": "Bruno Nogueira",
+        "birthDate": "2008-01-11",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-06",
+        "name": "Caio Teixeira",
+        "birthDate": "2002-04-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-10",
+        "name": "José Santana",
+        "birthDate": "1997-12-09",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-13",
+        "name": "Thiago Lima",
+        "birthDate": "1998-04-07",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-20",
+        "name": "Thiago Macedo",
+        "birthDate": "2006-07-27",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "thiago-ribeiro",
+        "name": "Thiago Ribeiro",
+        "birthDate": "1986-02-24",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-novorizontino-gen-11",
+        "name": "Bruno Medeiros",
+        "birthDate": "2003-06-25",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-14",
+        "name": "Fábio Lima",
+        "birthDate": "2007-01-13",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-17",
+        "name": "Rafael Farias",
+        "birthDate": "2004-12-01",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-novorizontino-gen-21",
+        "name": "Wesley Guimarães",
+        "birthDate": "2005-02-26",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

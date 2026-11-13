@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "per-universitario-gen-17",
+        "name": "Brian Giménez",
+        "birthDate": "2007-12-23",
+        "nationality": "PER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-02",
+        "name": "Jonathan Silva",
+        "birthDate": "1999-04-04",
+        "nationality": "PER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-01",
+        "name": "Juan Pablo Espinoza",
+        "birthDate": "1999-10-08",
+        "nationality": "PER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-08",
+        "name": "Damián Castillo",
+        "birthDate": "1997-05-04",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-11",
+        "name": "Damián Ibarra",
+        "birthDate": "2000-10-04",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-14",
+        "name": "Luciano González",
+        "birthDate": "2003-09-20",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-03",
+        "name": "Maximiliano Giménez",
+        "birthDate": "1994-10-30",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-18",
+        "name": "Nahuel Núñez",
+        "birthDate": "2002-03-10",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-04",
+        "name": "Santiago Gómez",
+        "birthDate": "2007-10-23",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-05",
+        "name": "Sebastián Suárez",
+        "birthDate": "1997-12-10",
+        "nationality": "PER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alberto-quintero",
+        "name": "Alberto Quintero",
+        "birthDate": "1987-12-18",
+        "nationality": "PAN",
+        "position": "MF"
+      },
+      {
+        "id": "jose-rivera",
+        "name": "José Rivera",
+        "birthDate": "1997-05-08",
+        "nationality": "PER",
+        "position": "MF"
+      },
+      {
+        "id": "per-universitario-gen-19",
+        "name": "Damián Quintero",
+        "birthDate": "2005-01-06",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-09",
+        "name": "Facundo Sosa",
+        "birthDate": "2000-07-30",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-15",
+        "name": "Franco Torres",
+        "birthDate": "2006-02-20",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-06",
+        "name": "Gastón Cáceres",
+        "birthDate": "1996-03-10",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-12",
+        "name": "Matías Núñez",
+        "birthDate": "2000-03-09",
+        "nationality": "PER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-16",
+        "name": "Facundo Castillo",
+        "birthDate": "1998-11-18",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-07",
+        "name": "Federico Cabrera",
+        "birthDate": "1994-09-07",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-13",
+        "name": "Ignacio Núñez",
+        "birthDate": "2003-06-08",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-20",
+        "name": "Jhon Vargas",
+        "birthDate": "2008-05-30",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "per-universitario-gen-10",
+        "name": "Lucas Suárez",
+        "birthDate": "2002-06-25",
+        "nationality": "PER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

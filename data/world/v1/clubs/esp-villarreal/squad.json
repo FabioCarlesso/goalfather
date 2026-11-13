@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "arnau-francisco-tenas-bazan",
+        "name": "Arnau Francisco Tenas Bazan",
+        "birthDate": "2001-05-30",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "diego-conde",
+        "name": "Diego Conde",
+        "birthDate": "1998-10-28",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "peter-gulacsi",
+        "name": "Péter Gulácsi",
+        "birthDate": "1990-05-06",
+        "nationality": "HUN",
+        "position": "GK"
+      },
+      {
+        "id": "alex-freeman",
+        "name": "Alex Freeman",
+        "birthDate": "2004-08-09",
+        "nationality": "USA",
+        "position": "DF"
+      },
+      {
+        "id": "juan-foyth",
+        "name": "Juan Foyth",
+        "birthDate": "1998-01-12",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "sergi-cardona",
+        "name": "Sergi Cardona",
+        "birthDate": "1999-07-08",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "willy-kambwala",
+        "name": "Willy Kambwala",
+        "birthDate": "2004-08-25",
+        "nationality": "FRA",
+        "secondNationality": "COD",
+        "position": "DF"
+      },
+      {
+        "id": "esp-villarreal-gen-01",
+        "name": "Eduardo Gutiérrez",
+        "birthDate": "2000-11-15",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-villarreal-gen-03",
+        "name": "Francisco Muñoz",
+        "birthDate": "1996-03-30",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-villarreal-gen-05",
+        "name": "Iker Jiménez",
+        "birthDate": "2003-05-29",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "carlo-adriano-garcia-prades",
+        "name": "Carlo Adriano García Prades",
+        "birthDate": "2001-02-12",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "ilias-akhomach",
+        "name": "Ilias Akhomach",
+        "birthDate": "2004-04-16",
+        "nationality": "MAR",
+        "position": "MF"
+      },
+      {
+        "id": "nathan-saliba",
+        "name": "Nathan Saliba",
+        "birthDate": "2004-08-29",
+        "nationality": "CAN",
+        "position": "MF"
+      },
+      {
+        "id": "ruben-pena",
+        "name": "Rubén Peña",
+        "birthDate": "1991-07-18",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-villarreal-gen-04",
+        "name": "Alberto Torres",
+        "birthDate": "2005-04-29",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-villarreal-gen-02",
+        "name": "Alejandro Serrano",
+        "birthDate": "1997-10-20",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-villarreal-gen-06",
+        "name": "Pablo Ramos",
+        "birthDate": "2001-01-09",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ayoze-perez",
+        "name": "Ayoze Pérez",
+        "birthDate": "1993-07-29",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "georges-mikautadze",
+        "name": "Georges Mikautadze",
+        "birthDate": "2000-10-31",
+        "nationality": "GEO",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "tajon-buchanan",
+        "name": "Tajon Buchanan",
+        "birthDate": "1999-02-08",
+        "nationality": "CAN",
+        "position": "FW"
+      },
+      {
+        "id": "tani-oluwaseyi",
+        "name": "Tani Oluwaseyi",
+        "birthDate": "2000-05-15",
+        "nationality": "CAN",
+        "secondNationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "esp-villarreal-gen-07",
+        "name": "Xabier González",
+        "birthDate": "2000-10-30",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

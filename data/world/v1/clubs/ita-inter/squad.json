@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "filip-stankovic",
+        "name": "Filip Stanković",
+        "birthDate": "2002-02-25",
+        "nationality": "SRB",
+        "secondNationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "josep-martinez",
+        "name": "Josep Martínez",
+        "birthDate": "1998-05-27",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "ita-inter-gen-06",
+        "name": "Nicolò Moretti",
+        "birthDate": "2006-09-16",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "carlos-augusto",
+        "name": "Carlos Augusto",
+        "birthDate": "1999-01-07",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "djed-spence",
+        "name": "Djed Spence",
+        "birthDate": "2000-08-09",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "john-stones",
+        "name": "John Stones",
+        "birthDate": "1994-05-28",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "manuel-akanji",
+        "name": "Manuel Akanji",
+        "birthDate": "1995-07-19",
+        "nationality": "SUI",
+        "secondNationality": "NGA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-inter-gen-07",
+        "name": "Antonio Bianchi",
+        "birthDate": "2004-11-05",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-inter-gen-02",
+        "name": "Federico Greco",
+        "birthDate": "1997-05-21",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-inter-gen-04",
+        "name": "Tommaso Rossi",
+        "birthDate": "1994-07-13",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arash-rezavand",
+        "name": "Arash Rezavand",
+        "birthDate": "1993-10-05",
+        "nationality": "IRN",
+        "position": "MF"
+      },
+      {
+        "id": "curtis-jones",
+        "name": "Curtis Jones",
+        "birthDate": "2001-01-30",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "emerson-espinoza",
+        "name": "Emerson Espinoza",
+        "birthDate": "2001-03-11",
+        "nationality": "ECU",
+        "position": "MF"
+      },
+      {
+        "id": "hakan-calhanoglu",
+        "name": "Hakan Çalhanoğlu",
+        "birthDate": "1994-02-08",
+        "nationality": "TUR",
+        "secondNationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "nicolo-barella",
+        "name": "Nicolò Barella",
+        "birthDate": "1997-02-07",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "piotr-zielinski",
+        "name": "Piotr Zieliński",
+        "birthDate": "1994-05-20",
+        "nationality": "POL",
+        "position": "MF"
+      },
+      {
+        "id": "ita-inter-gen-08",
+        "name": "Manuel Bianchi",
+        "birthDate": "1999-09-26",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "marcus-thuram",
+        "name": "Marcus Thuram",
+        "birthDate": "1997-08-06",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "ita-inter-gen-01",
+        "name": "Gabriele Colombo",
+        "birthDate": "2000-09-09",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-inter-gen-03",
+        "name": "Leonardo Martini",
+        "birthDate": "1997-07-18",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-inter-gen-05",
+        "name": "Riccardo Mariani",
+        "birthDate": "1994-03-12",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-inter-gen-09",
+        "name": "Valerio Lombardi",
+        "birthDate": "1999-07-05",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

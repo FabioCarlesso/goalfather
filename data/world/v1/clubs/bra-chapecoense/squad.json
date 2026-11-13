@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "joao-paulo",
+        "name": "João Paulo",
+        "birthDate": "2001-03-08",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "bra-chapecoense-gen-17",
+        "name": "Alexandre Machado",
+        "birthDate": "1997-06-22",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-01",
+        "name": "Cássio Oliveira",
+        "birthDate": "2005-08-06",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-11",
+        "name": "Arthur Fernandes",
+        "birthDate": "2006-03-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-03",
+        "name": "Caio Borges",
+        "birthDate": "2004-10-30",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-02",
+        "name": "Douglas Dias",
+        "birthDate": "1995-01-19",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-18",
+        "name": "Emerson Coelho",
+        "birthDate": "2002-03-23",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-08",
+        "name": "Luiz Coelho",
+        "birthDate": "2004-03-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-14",
+        "name": "Marcelo Oliveira",
+        "birthDate": "2004-03-29",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-05",
+        "name": "Murilo Siqueira",
+        "birthDate": "2007-05-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jp-galvao",
+        "name": "JP Galvão",
+        "birthDate": "2001-05-07",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-chapecoense-gen-06",
+        "name": "Elias Fernandes",
+        "birthDate": "1995-01-27",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-04",
+        "name": "Leonardo Coelho",
+        "birthDate": "2004-08-02",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-12",
+        "name": "Luan Araújo",
+        "birthDate": "1997-05-12",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-15",
+        "name": "Murilo Freitas",
+        "birthDate": "1998-12-28",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-19",
+        "name": "Raul Fernandes",
+        "birthDate": "1994-11-30",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-09",
+        "name": "Thiago Macedo",
+        "birthDate": "1996-04-23",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-16",
+        "name": "Luan Andrade",
+        "birthDate": "1999-05-27",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-13",
+        "name": "Nathan Ferreira",
+        "birthDate": "2000-03-31",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-10",
+        "name": "Nathan Rocha",
+        "birthDate": "2001-02-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-07",
+        "name": "Sérgio Nascimento",
+        "birthDate": "2003-03-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-chapecoense-gen-20",
+        "name": "Valdir Valente",
+        "birthDate": "2006-07-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-criciuma-gen-19",
+        "name": "Guilherme Andrade",
+        "birthDate": "1996-05-15",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-01",
+        "name": "Juliano Rezende",
+        "birthDate": "2004-10-27",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-02",
+        "name": "Otávio Tavares",
+        "birthDate": "2000-11-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-13",
+        "name": "Cássio Ramos",
+        "birthDate": "2007-09-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-07",
+        "name": "Gustavo Guimarães",
+        "birthDate": "1998-10-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-20",
+        "name": "Jefferson Abreu",
+        "birthDate": "2007-02-07",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-16",
+        "name": "Leonardo Brandão",
+        "birthDate": "1999-03-01",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-03",
+        "name": "Murilo Abreu",
+        "birthDate": "2001-06-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-10",
+        "name": "Murilo Queiroz",
+        "birthDate": "1994-09-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-05",
+        "name": "Thiago Abreu",
+        "birthDate": "2007-10-18",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-08",
+        "name": "Cássio Freitas",
+        "birthDate": "2002-02-09",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-06",
+        "name": "Davi Castro",
+        "birthDate": "2002-07-04",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-21",
+        "name": "Davi Duarte",
+        "birthDate": "1993-08-13",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-14",
+        "name": "Guilherme Souza",
+        "birthDate": "2002-05-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-17",
+        "name": "Leandro Farias",
+        "birthDate": "1997-03-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-11",
+        "name": "Otávio Fonseca",
+        "birthDate": "1996-09-27",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-04",
+        "name": "Vinícius Barros",
+        "birthDate": "1993-12-31",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-15",
+        "name": "Anderson Gonçalves",
+        "birthDate": "2001-11-28",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-09",
+        "name": "Douglas Tavares",
+        "birthDate": "2002-04-27",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-18",
+        "name": "Gustavo Lopes",
+        "birthDate": "1993-12-30",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-22",
+        "name": "Leonardo Rezende",
+        "birthDate": "2000-03-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-criciuma-gen-12",
+        "name": "Murilo Santana",
+        "birthDate": "2003-10-31",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

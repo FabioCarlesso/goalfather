@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fra-marseille-gen-07",
+        "name": "Florian Simon",
+        "birthDate": "2002-05-28",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-marseille-gen-01",
+        "name": "Louis Gauthier",
+        "birthDate": "1999-10-15",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-marseille-gen-02",
+        "name": "Louis Mercier",
+        "birthDate": "1994-03-25",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bamo-meite",
+        "name": "Bamo Meïté",
+        "birthDate": "2001-06-20",
+        "nationality": "CIV",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "emerson-palmieri",
+        "name": "Emerson Palmieri",
+        "birthDate": "1994-08-03",
+        "nationality": "ITA",
+        "secondNationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "facundo-medina",
+        "name": "Facundo Medina",
+        "birthDate": "1999-05-28",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "nayef-aguerd",
+        "name": "Nayef Aguerd",
+        "birthDate": "1996-03-30",
+        "nationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "fra-marseille-gen-08",
+        "name": "Benjamin Bertrand",
+        "birthDate": "2008-04-02",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-marseille-gen-04",
+        "name": "Florian Rousseau",
+        "birthDate": "2008-04-25",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-marseille-gen-03",
+        "name": "Hugo Bernard",
+        "birthDate": "2002-05-18",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "franco-tongya",
+        "name": "Franco Tongya",
+        "birthDate": "2002-03-13",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "hamed-junior-traore",
+        "name": "Hamed Junior Traoré",
+        "birthDate": "2000-02-16",
+        "nationality": "CIV",
+        "position": "MF"
+      },
+      {
+        "id": "ismael-kone",
+        "name": "Ismaël Koné",
+        "birthDate": "2002-06-16",
+        "nationality": "CAN",
+        "secondNationality": "CIV",
+        "position": "MF"
+      },
+      {
+        "id": "marley-ake",
+        "name": "Marley Aké",
+        "birthDate": "2001-01-05",
+        "nationality": "FRA",
+        "secondNationality": "CIV",
+        "position": "MF"
+      },
+      {
+        "id": "pierre-emile-hojbjerg",
+        "name": "Pierre-Emile Højbjerg",
+        "birthDate": "1995-08-05",
+        "nationality": "DEN",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-marseille-gen-09",
+        "name": "Clément Durand",
+        "birthDate": "2006-12-16",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-marseille-gen-05",
+        "name": "Noah Moreau",
+        "birthDate": "2006-06-27",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "amine-gouiri",
+        "name": "Amine Gouiri",
+        "birthDate": "2000-02-16",
+        "nationality": "ALG",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "francois-regis-mughe",
+        "name": "François Régis Mughe",
+        "birthDate": "2004-06-16",
+        "nationality": "CMR",
+        "position": "FW"
+      },
+      {
+        "id": "timothy-weah",
+        "name": "Timothy Weah",
+        "birthDate": "2000-02-22",
+        "nationality": "USA",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-marseille-gen-06",
+        "name": "Hugo Blanc",
+        "birthDate": "2004-04-21",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-marseille-gen-10",
+        "name": "Yoann Petit",
+        "birthDate": "2004-01-14",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

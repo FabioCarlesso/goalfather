@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fra-strasbourg-gen-02",
+        "name": "Adrien Dumont",
+        "birthDate": "2005-04-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-11",
+        "name": "Baptiste David",
+        "birthDate": "1994-04-03",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-01",
+        "name": "Corentin Lambert",
+        "birthDate": "2003-08-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "joaquin-martinez-gauna",
+        "name": "Joaquín Martínez Gauna",
+        "birthDate": "2003-07-09",
+        "nationality": "ESP",
+        "secondNationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "karim-coulibaly",
+        "name": "Karim Coulibaly",
+        "birthDate": "2007-05-23",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "fra-strasbourg-gen-03",
+        "name": "Baptiste Rousseau",
+        "birthDate": "2002-08-14",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-08",
+        "name": "Clément Bonnet",
+        "birthDate": "1999-11-09",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-04",
+        "name": "Clément Robert",
+        "birthDate": "2002-02-19",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-06",
+        "name": "Rayan Richard",
+        "birthDate": "2002-01-08",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-12",
+        "name": "Théo Durand",
+        "birthDate": "1993-10-06",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "dario-essugo",
+        "name": "Dário Essugo",
+        "birthDate": "2005-03-14",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "gessime-yassine",
+        "name": "Gessime Yassine",
+        "birthDate": "2005-11-22",
+        "nationality": "SDN",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "jean-ricner-bellegarde",
+        "name": "Jean-Ricner Bellegarde",
+        "birthDate": "1998-06-27",
+        "nationality": "HAI",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "rafael-luis",
+        "name": "Rafael Luís",
+        "birthDate": "2005-02-18",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "samir-el-mourabet",
+        "name": "Samir El Mourabet",
+        "birthDate": "2005-10-06",
+        "nationality": "MAR",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-strasbourg-gen-09",
+        "name": "Mathis Mercier",
+        "birthDate": "1997-11-29",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-13",
+        "name": "Rayan Laurent",
+        "birthDate": "2006-09-30",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "conrad-harder",
+        "name": "Conrad Harder",
+        "birthDate": "2005-04-07",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "fra-strasbourg-gen-10",
+        "name": "Alexandre Durand",
+        "birthDate": "2004-12-29",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-05",
+        "name": "Corentin Garnier",
+        "birthDate": "1998-08-15",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-07",
+        "name": "Louis Roux",
+        "birthDate": "1994-04-08",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-strasbourg-gen-14",
+        "name": "Romain Boyer",
+        "birthDate": "2003-01-30",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "arg-lanus-gen-02",
+        "name": "Bruno Flores",
+        "birthDate": "1997-05-23",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-01",
+        "name": "Julián Cabrera",
+        "birthDate": "2002-05-04",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-16",
+        "name": "Leandro Pereyra",
+        "birthDate": "2008-02-25",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "alexandro-bernabei",
+        "name": "Alexandro Bernabei",
+        "birthDate": "2000-09-24",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "arg-lanus-gen-13",
+        "name": "Cristian Cáceres",
+        "birthDate": "1993-12-15",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-07",
+        "name": "Franco Morales",
+        "birthDate": "2007-12-25",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-10",
+        "name": "Joaquín Acosta",
+        "birthDate": "2001-08-25",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-03",
+        "name": "Joaquín Morales",
+        "birthDate": "2000-03-09",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-17",
+        "name": "Nicolás Cabrera",
+        "birthDate": "2002-11-10",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-04",
+        "name": "Sebastián Valdez",
+        "birthDate": "1994-05-21",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eduardo-salvio",
+        "name": "Eduardo Salvio",
+        "birthDate": "1990-07-13",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "matias-esquivel",
+        "name": "Matías Esquivel",
+        "birthDate": "1999-03-22",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "arg-lanus-gen-14",
+        "name": "Bruno Quintero",
+        "birthDate": "2003-07-12",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-18",
+        "name": "Cristian Vega",
+        "birthDate": "2000-03-25",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-11",
+        "name": "Emiliano Gómez",
+        "birthDate": "1996-09-20",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-08",
+        "name": "Facundo González",
+        "birthDate": "1997-01-10",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-05",
+        "name": "Gastón Duarte",
+        "birthDate": "1997-09-10",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-19",
+        "name": "Cristian Sosa",
+        "birthDate": "2002-11-30",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-12",
+        "name": "Joaquín Medina",
+        "birthDate": "2000-05-08",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-06",
+        "name": "Juan Pablo Méndez",
+        "birthDate": "2002-06-16",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-15",
+        "name": "Maximiliano Silva",
+        "birthDate": "1993-10-20",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-lanus-gen-09",
+        "name": "Walter Medina",
+        "birthDate": "1996-05-05",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

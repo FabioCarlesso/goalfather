@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-red-bull-bragantino-gen-16",
+        "name": "Adriano Vieira",
+        "birthDate": "2007-10-12",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-02",
+        "name": "Hélio Macedo",
+        "birthDate": "1994-07-25",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-01",
+        "name": "José Abreu",
+        "birthDate": "2005-11-13",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "jose-hurtado",
+        "name": "José Hurtado",
+        "birthDate": "2001-12-23",
+        "nationality": "ECU",
+        "position": "DF"
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-03",
+        "name": "Douglas Araújo",
+        "birthDate": "1994-01-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-07",
+        "name": "Fernando Farias",
+        "birthDate": "1994-02-19",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-10",
+        "name": "Fernando Teixeira",
+        "birthDate": "2007-01-07",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-05",
+        "name": "Jonas Sampaio",
+        "birthDate": "2005-08-16",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-13",
+        "name": "Juliano Ferreira",
+        "birthDate": "2001-02-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-17",
+        "name": "Juliano Gonçalves",
+        "birthDate": "1995-09-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eduardo-sasha",
+        "name": "Eduardo Sasha",
+        "birthDate": "1992-02-24",
+        "nationality": "BRA",
+        "secondNationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-14",
+        "name": "Bruno Lima",
+        "birthDate": "2005-01-12",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-06",
+        "name": "Danilo Rezende",
+        "birthDate": "1993-11-21",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-08",
+        "name": "Douglas Farias",
+        "birthDate": "2001-09-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-04",
+        "name": "Gabriel Santana",
+        "birthDate": "2007-04-13",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-11",
+        "name": "Leandro Siqueira",
+        "birthDate": "1997-05-21",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-18",
+        "name": "Wagner Nogueira",
+        "birthDate": "1997-04-27",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "artur",
+        "name": "Artur",
+        "birthDate": "1998-02-15",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-15",
+        "name": "Danilo Batista",
+        "birthDate": "2004-05-09",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-19",
+        "name": "Nathan Cavalcanti",
+        "birthDate": "1998-07-04",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-12",
+        "name": "Sérgio Abreu",
+        "birthDate": "1996-09-06",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-red-bull-bragantino-gen-09",
+        "name": "Valdir Macedo",
+        "birthDate": "2004-11-13",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

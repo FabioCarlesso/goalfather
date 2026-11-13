@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fra-le-mans-gen-02",
+        "name": "Clément Garnier",
+        "birthDate": "2002-04-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-01",
+        "name": "Florian Martin",
+        "birthDate": "1995-08-26",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-13",
+        "name": "Nicolas Bonnet",
+        "birthDate": "1997-03-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "djibril-sidibe",
+        "name": "Djibril Sidibé",
+        "birthDate": "1992-07-29",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-le-mans-gen-03",
+        "name": "Arthur André",
+        "birthDate": "1998-08-05",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-07",
+        "name": "Florian Robert",
+        "birthDate": "1997-01-30",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-04",
+        "name": "Hugo Dumont",
+        "birthDate": "2008-03-18",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-10",
+        "name": "Killian Vincent",
+        "birthDate": "1998-01-14",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-14",
+        "name": "Pierre Thomas",
+        "birthDate": "2002-01-10",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-05",
+        "name": "Théo Fournier",
+        "birthDate": "1996-08-16",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "harrison-manzala",
+        "name": "Harrison Manzala",
+        "birthDate": "1994-03-06",
+        "nationality": "FRA",
+        "secondNationality": "COD",
+        "position": "MF"
+      },
+      {
+        "id": "loic-damour",
+        "name": "Loïc Damour",
+        "birthDate": "1991-01-08",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "lucas-bretelle",
+        "name": "Lucas Bretelle",
+        "birthDate": "2002-04-17",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "lucas-calodat",
+        "name": "Lucas Calodat",
+        "birthDate": "2002-02-06",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-le-mans-gen-15",
+        "name": "Clément Bonnet",
+        "birthDate": "2008-06-28",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-08",
+        "name": "Nicolas Fontaine",
+        "birthDate": "2008-06-10",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-11",
+        "name": "Thomas Dupont",
+        "birthDate": "2001-10-25",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "jeffrey-quarshie",
+        "name": "Jeffrey Quarshie",
+        "birthDate": "1991-11-07",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-le-mans-gen-12",
+        "name": "Alexandre David",
+        "birthDate": "2005-01-01",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-06",
+        "name": "Jérémy Thomas",
+        "birthDate": "2006-03-29",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-16",
+        "name": "Kévin Richard",
+        "birthDate": "1999-09-01",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-le-mans-gen-09",
+        "name": "Yanis Durand",
+        "birthDate": "1996-12-07",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

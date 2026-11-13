@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "zergio-roquet",
+        "name": "Zergio Roquet",
+        "birthDate": "1993-03-23",
+        "nationality": "URU",
+        "position": "GK"
+      },
+      {
+        "id": "bra-internacional-gen-10",
+        "name": "Cláudio Fernandes",
+        "birthDate": "1996-05-25",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-01",
+        "name": "Douglas Siqueira",
+        "birthDate": "1995-03-08",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bruno-fuchs",
+        "name": "Bruno Fuchs",
+        "birthDate": "1999-04-01",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "gabriel-mercado",
+        "name": "Gabriel Mercado",
+        "birthDate": "1987-03-18",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "heitor-rodrigues-da-fonseca",
+        "name": "Heitor Rodrigues da Fonseca",
+        "birthDate": "2000-11-05",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-internacional-gen-05",
+        "name": "Cláudio Coelho",
+        "birthDate": "2007-10-17",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-07",
+        "name": "Leonardo Sampaio",
+        "birthDate": "2008-06-01",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-03",
+        "name": "Márcio Correia",
+        "birthDate": "1999-01-18",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-11",
+        "name": "Wesley Siqueira",
+        "birthDate": "1993-09-28",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fernando-reges",
+        "name": "Fernando Reges",
+        "birthDate": "1987-07-25",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "niclas-eliasson",
+        "name": "Niclas Eliasson",
+        "birthDate": "1995-12-07",
+        "nationality": "SWE",
+        "position": "MF"
+      },
+      {
+        "id": "bra-internacional-gen-04",
+        "name": "Breno Barros",
+        "birthDate": "1995-04-01",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-06",
+        "name": "Gabriel Ramos",
+        "birthDate": "1996-04-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-08",
+        "name": "Gilberto Teixeira",
+        "birthDate": "2001-08-26",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-12",
+        "name": "Marcelo Azevedo",
+        "birthDate": "2005-07-25",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-02",
+        "name": "Samuel Gonçalves",
+        "birthDate": "2005-03-03",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "antonio-sanabria",
+        "name": "Antonio Sanabria",
+        "birthDate": "1996-03-04",
+        "nationality": "PAR",
+        "position": "FW"
+      },
+      {
+        "id": "leandro-miguel-fernandez-bullanguero",
+        "name": "Leandro Miguel Fernández bullanguero",
+        "birthDate": "1991-03-12",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "wesley",
+        "name": "Wesley",
+        "birthDate": "1996-11-26",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-internacional-gen-13",
+        "name": "Fernando Araújo",
+        "birthDate": "1993-12-27",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-internacional-gen-09",
+        "name": "Vinícius Toledo",
+        "birthDate": "2007-12-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

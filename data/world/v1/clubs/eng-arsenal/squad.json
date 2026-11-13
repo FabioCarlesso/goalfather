@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "david-raya",
+        "name": "David Raya",
+        "birthDate": "1995-09-15",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "kepa-arrizabalaga",
+        "name": "Kepa Arrizabalaga",
+        "birthDate": "1994-10-03",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "eng-arsenal-gen-01",
+        "name": "Finley Morris",
+        "birthDate": "1996-11-09",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ben-white",
+        "name": "Ben White",
+        "birthDate": "1997-10-08",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "cristhian-mosquera",
+        "name": "Cristhian Mosquera",
+        "birthDate": "2004-06-27",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "ezri-konsa",
+        "name": "Ezri Konsa",
+        "birthDate": "1997-10-23",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "gabriel-magalhaes",
+        "name": "Gabriel Magalhães",
+        "birthDate": "1997-12-19",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "jurrien-timber",
+        "name": "Jurriën Timber",
+        "birthDate": "2001-06-17",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "piero-hincapie",
+        "name": "Piero Hincapié",
+        "birthDate": "2002-01-09",
+        "nationality": "ECU",
+        "position": "DF"
+      },
+      {
+        "id": "riccardo-calafiori",
+        "name": "Riccardo Calafiori",
+        "birthDate": "2002-05-19",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "bruno-guimaraes",
+        "name": "Bruno Guimarães",
+        "birthDate": "1997-11-16",
+        "nationality": "BRA",
+        "secondNationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "declan-rice",
+        "name": "Declan Rice",
+        "birthDate": "1999-01-14",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "eberechi-eze",
+        "name": "Eberechi Eze",
+        "birthDate": "1998-06-29",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "kai-havertz",
+        "name": "Kai Havertz",
+        "birthDate": "1999-06-11",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "martin-odegaard",
+        "name": "Martin Ødegaard",
+        "birthDate": "1998-12-17",
+        "nationality": "NOR",
+        "position": "MF"
+      },
+      {
+        "id": "martin-zubimendi",
+        "name": "Martín Zubimendi",
+        "birthDate": "1999-02-02",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "max-dowman",
+        "name": "Max Dowman",
+        "birthDate": "2009-12-31",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "mikel-merino",
+        "name": "Mikel Merino",
+        "birthDate": "1996-06-22",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "christos-tzolis",
+        "name": "Christos Tzolis",
+        "birthDate": "2002-01-30",
+        "nationality": "GRE",
+        "position": "FW"
+      },
+      {
+        "id": "marquinhos",
+        "name": "Marquinhos",
+        "birthDate": "2003-04-07",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "noni-madueke",
+        "name": "Noni Madueke",
+        "birthDate": "2002-03-10",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "viktor-gyokeres",
+        "name": "Viktor Gyökeres",
+        "birthDate": "1998-06-04",
+        "nationality": "SWE",
+        "position": "FW"
+      }
+    ]
+  }
+}

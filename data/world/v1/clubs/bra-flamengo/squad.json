@@ -1,22 +1,173 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T00:00:00Z",
-  "source": "exemplo mínimo montado à mão a partir de fatos públicos; elenco parcial, substituído pela importação do Wikidata (issue #127)",
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
   "data": {
     "players": [
       {
-        "id": "agustin-rossi",
-        "name": "Agustín Rossi",
-        "birthDate": "1995-08-21",
-        "nationality": "ARG",
-        "position": "GK"
+        "id": "bra-flamengo-gen-01",
+        "name": "Arthur Moreira",
+        "birthDate": "1995-07-19",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-flamengo-gen-02",
+        "name": "Danilo Pereira",
+        "birthDate": "2007-07-14",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-flamengo-gen-06",
+        "name": "Rafael Gonçalves",
+        "birthDate": "2006-06-30",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "alex-sandro",
+        "name": "Alex Sandro",
+        "birthDate": "1991-01-26",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "ayrton-lucas",
+        "name": "Ayrton Lucas",
+        "birthDate": "1997-06-19",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "danilo",
+        "name": "Danilo",
+        "birthDate": "1991-07-15",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "dede",
+        "name": "Dedé",
+        "birthDate": "1988-07-01",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "emerson-royal",
+        "name": "Emerson Royal",
+        "birthDate": "1999-01-14",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "leonardo-rech-ortiz",
+        "name": "Leonardo Rech Ortiz",
+        "birthDate": "1996-01-03",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-flamengo-gen-07",
+        "name": "Edson Correia",
+        "birthDate": "1994-09-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
       },
       {
         "id": "giorgian-de-arrascaeta",
         "name": "Giorgian de Arrascaeta",
         "birthDate": "1994-06-01",
         "nationality": "URU",
+        "secondNationality": "ITA",
         "position": "MF"
+      },
+      {
+        "id": "jorge-carrascalle",
+        "name": "Jorge Carrascalle",
+        "birthDate": "1998-05-25",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "jorginho",
+        "name": "Jorginho",
+        "birthDate": "1991-12-20",
+        "nationality": "ITA",
+        "secondNationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "lucas-paqueta",
+        "name": "Lucas Paquetá",
+        "birthDate": "1997-08-27",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "nicolas-de-la-cruz",
+        "name": "Nicolás de la Cruz",
+        "birthDate": "1997-06-01",
+        "nationality": "URU",
+        "position": "MF"
+      },
+      {
+        "id": "samuel-lino",
+        "name": "Samuel Lino",
+        "birthDate": "1999-12-23",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "saul-niguez",
+        "name": "Saúl Ñíguez",
+        "birthDate": "1994-11-21",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "olavio-vieira-dos-santos-junior",
+        "name": "Olávio Vieira dos Santos Júnior",
+        "birthDate": "1996-11-21",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-flamengo-gen-05",
+        "name": "Cristiano Medeiros",
+        "birthDate": "1994-01-15",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-flamengo-gen-08",
+        "name": "Fábio Santana",
+        "birthDate": "1998-11-01",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-flamengo-gen-04",
+        "name": "Gilberto Martins",
+        "birthDate": "1997-10-01",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-flamengo-gen-03",
+        "name": "Thiago Gonçalves",
+        "birthDate": "2003-07-26",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
       }
     ]
   }

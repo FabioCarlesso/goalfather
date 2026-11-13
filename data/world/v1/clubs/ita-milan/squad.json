@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "lorenzo-torriani",
+        "name": "Lorenzo Torriani",
+        "birthDate": "2005-01-31",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "mike-maignan",
+        "name": "Mike Maignan",
+        "birthDate": "1995-07-03",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "ita-milan-gen-02",
+        "name": "Gabriele Lombardi",
+        "birthDate": "2007-07-23",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fikayo-tomori",
+        "name": "Fikayo Tomori",
+        "birthDate": "1997-12-19",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "koni-de-winter",
+        "name": "Koni De Winter",
+        "birthDate": "2002-06-12",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "mario-gila",
+        "name": "Mario Gila",
+        "birthDate": "2000-08-29",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "pervis-estupinan",
+        "name": "Pervis Estupiñán",
+        "birthDate": "1998-01-21",
+        "nationality": "ECU",
+        "position": "DF"
+      },
+      {
+        "id": "rodrigo-becao",
+        "name": "Rodrigo Becão",
+        "birthDate": "1996-01-19",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "strahinja-pavlovic",
+        "name": "Strahinja Pavlović",
+        "birthDate": "2001-05-24",
+        "nationality": "SRB",
+        "position": "DF"
+      },
+      {
+        "id": "adrien-rabiot",
+        "name": "Adrien Rabiot",
+        "birthDate": "1995-04-03",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "ardon-jashari",
+        "name": "Ardon Jashari",
+        "birthDate": "2002-07-30",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "christian-pulisic",
+        "name": "Christian Pulisic",
+        "birthDate": "1998-09-18",
+        "nationality": "USA",
+        "secondNationality": "CRO",
+        "position": "MF"
+      },
+      {
+        "id": "daniel-maldini",
+        "name": "Daniel Maldini",
+        "birthDate": "2001-10-11",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "luka-modric",
+        "name": "Luka Modrić",
+        "birthDate": "1985-09-09",
+        "nationality": "CRO",
+        "position": "MF"
+      },
+      {
+        "id": "omari-hutchinson",
+        "name": "Omari Hutchinson",
+        "birthDate": "2003-10-29",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "ruben-loftus-cheek",
+        "name": "Ruben Loftus-Cheek",
+        "birthDate": "1996-01-23",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "samuel-chukwueze",
+        "name": "Samuel Chukwueze",
+        "birthDate": "1999-05-22",
+        "nationality": "NGA",
+        "position": "MF"
+      },
+      {
+        "id": "soualiho-meite",
+        "name": "Soualiho Meïté",
+        "birthDate": "1994-03-17",
+        "nationality": "FRA",
+        "secondNationality": "CIV",
+        "position": "MF"
+      },
+      {
+        "id": "diego-moreira",
+        "name": "Diego Moreira",
+        "birthDate": "2004-08-06",
+        "nationality": "BEL",
+        "secondNationality": "POR",
+        "position": "FW"
+      },
+      {
+        "id": "goncalo-ramos",
+        "name": "Gonçalo Ramos",
+        "birthDate": "2001-06-20",
+        "nationality": "POR",
+        "position": "FW"
+      },
+      {
+        "id": "yunus-musah",
+        "name": "Yunus Musah",
+        "birthDate": "2002-11-29",
+        "nationality": "ENG",
+        "secondNationality": "USA",
+        "position": "FW"
+      },
+      {
+        "id": "ita-milan-gen-01",
+        "name": "Marco Martini",
+        "birthDate": "1998-08-27",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

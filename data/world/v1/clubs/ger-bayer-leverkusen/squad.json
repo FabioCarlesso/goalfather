@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "lennart-grill",
+        "name": "Lennart Grill",
+        "birthDate": "1999-01-25",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "mark-flekken",
+        "name": "Mark Flekken",
+        "birthDate": "1993-06-13",
+        "nationality": "NED",
+        "position": "GK"
+      },
+      {
+        "id": "ger-bayer-leverkusen-gen-05",
+        "name": "Maximilian Schulz",
+        "birthDate": "1994-06-12",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "edmond-tapsoba",
+        "name": "Edmond Tapsoba",
+        "birthDate": "1999-02-02",
+        "nationality": "BFA",
+        "position": "DF"
+      },
+      {
+        "id": "miguel-gutierrez",
+        "name": "Miguel Gutiérrez",
+        "birthDate": "2001-07-27",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "noah-mbamba",
+        "name": "Noah Mbamba",
+        "birthDate": "2005-01-05",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "timothy-fosu-mensah",
+        "name": "Timothy Fosu-Mensah",
+        "birthDate": "1998-01-02",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "ger-bayer-leverkusen-gen-01",
+        "name": "Marcel Zimmermann",
+        "birthDate": "2004-07-17",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-bayer-leverkusen-gen-06",
+        "name": "Sebastian Friedrich",
+        "birthDate": "1998-07-03",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-bayer-leverkusen-gen-03",
+        "name": "Sebastian Meyer",
+        "birthDate": "2003-12-10",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "aleix-garcia",
+        "name": "Aleix García",
+        "birthDate": "1997-06-28",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "amine-adli",
+        "name": "Amine Adli",
+        "birthDate": "2000-05-10",
+        "nationality": "MAR",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "ezequiel-fernandez",
+        "name": "Ezequiel Fernández",
+        "birthDate": "2002-07-25",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "jonas-hofmann",
+        "name": "Jonas Hofmann",
+        "birthDate": "1992-07-14",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "kennet-eichhorn",
+        "name": "Kennet Eichhorn",
+        "birthDate": "2009-07-27",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "lucas-vazquez",
+        "name": "Lucas Vázquez",
+        "birthDate": "1991-07-01",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "moussa-diaby",
+        "name": "Moussa Diaby",
+        "birthDate": "1999-07-07",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "malik-tillman",
+        "name": "Malik Tillman",
+        "birthDate": "2002-05-28",
+        "nationality": "USA",
+        "secondNationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "patrik-schick",
+        "name": "Patrik Schick",
+        "birthDate": "1996-01-24",
+        "nationality": "CZE",
+        "position": "FW"
+      },
+      {
+        "id": "ger-bayer-leverkusen-gen-04",
+        "name": "Dominik Fischer",
+        "birthDate": "2000-04-11",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-bayer-leverkusen-gen-02",
+        "name": "Patrick Meyer",
+        "birthDate": "1999-05-27",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-bayer-leverkusen-gen-07",
+        "name": "Tim Hofmann",
+        "birthDate": "2000-08-09",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

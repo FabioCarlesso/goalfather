@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-sport-gen-18",
+        "name": "Antônio Borges",
+        "birthDate": "1994-09-10",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-01",
+        "name": "Danilo Abreu",
+        "birthDate": "2003-10-27",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-02",
+        "name": "Ricardo Nogueira",
+        "birthDate": "2001-01-12",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-03",
+        "name": "Anderson Moreira",
+        "birthDate": "2001-06-28",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-12",
+        "name": "Breno Tavares",
+        "birthDate": "1996-12-19",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-04",
+        "name": "Juliano Ferreira",
+        "birthDate": "1994-11-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-19",
+        "name": "Juliano Santos",
+        "birthDate": "1995-06-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-09",
+        "name": "Maurício Lopes",
+        "birthDate": "1997-08-23",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-15",
+        "name": "Murilo Cavalcanti",
+        "birthDate": "1994-11-02",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-06",
+        "name": "Paulo Nascimento",
+        "birthDate": "2003-03-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "diego-souza",
+        "name": "Diego Souza",
+        "birthDate": "1985-06-17",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-sport-gen-07",
+        "name": "Arthur Gonçalves",
+        "birthDate": "2007-04-28",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-05",
+        "name": "Davi Carvalho",
+        "birthDate": "2005-07-04",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-10",
+        "name": "Edson Monteiro",
+        "birthDate": "1996-07-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-20",
+        "name": "Emerson Guimarães",
+        "birthDate": "2004-09-22",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-16",
+        "name": "Fernando Pinheiro",
+        "birthDate": "1997-06-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-13",
+        "name": "Gabriel Correia",
+        "birthDate": "2008-05-05",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-21",
+        "name": "Caio Borges",
+        "birthDate": "1994-08-09",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-08",
+        "name": "Gustavo Carvalho",
+        "birthDate": "2002-06-13",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-14",
+        "name": "Jorge Moraes",
+        "birthDate": "2001-06-08",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-17",
+        "name": "Mateus Farias",
+        "birthDate": "2004-04-14",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-sport-gen-11",
+        "name": "Valdir Xavier",
+        "birthDate": "1999-01-05",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

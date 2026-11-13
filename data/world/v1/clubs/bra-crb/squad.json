@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-crb-gen-02",
+        "name": "Hélio Sampaio",
+        "birthDate": "2001-03-27",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-01",
+        "name": "Leandro Fernandes",
+        "birthDate": "1997-02-02",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-19",
+        "name": "Ricardo Melo",
+        "birthDate": "1996-08-30",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-20",
+        "name": "Elias Nascimento",
+        "birthDate": "1999-02-28",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-13",
+        "name": "Guilherme Gonçalves",
+        "birthDate": "1994-04-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-07",
+        "name": "Luiz Soares",
+        "birthDate": "2004-03-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-03",
+        "name": "Murilo Soares",
+        "birthDate": "2002-01-02",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-10",
+        "name": "Ricardo Borges",
+        "birthDate": "2006-01-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-16",
+        "name": "Valdir Xavier",
+        "birthDate": "2003-01-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-05",
+        "name": "Wagner Ramos",
+        "birthDate": "1997-09-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-21",
+        "name": "Antônio Correia",
+        "birthDate": "1997-09-19",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-04",
+        "name": "Cláudio Ferreira",
+        "birthDate": "2004-03-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-17",
+        "name": "Jorge Machado",
+        "birthDate": "2003-04-30",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-06",
+        "name": "José Moraes",
+        "birthDate": "2002-11-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-08",
+        "name": "Luan Barbosa",
+        "birthDate": "1999-06-21",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-11",
+        "name": "Rogério Gonçalves",
+        "birthDate": "1999-07-30",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-14",
+        "name": "Sérgio Gomes",
+        "birthDate": "2008-02-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-15",
+        "name": "Daniel Dias",
+        "birthDate": "1997-02-12",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-12",
+        "name": "Elias Oliveira",
+        "birthDate": "1998-04-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-09",
+        "name": "Jorge Lima",
+        "birthDate": "2006-11-25",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-18",
+        "name": "Luan Correia",
+        "birthDate": "2008-03-26",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-crb-gen-22",
+        "name": "Thiago Carvalho",
+        "birthDate": "2005-01-28",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

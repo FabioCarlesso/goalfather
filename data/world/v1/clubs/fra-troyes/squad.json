@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fra-troyes-gen-16",
+        "name": "Enzo Garnier",
+        "birthDate": "2005-12-19",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-02",
+        "name": "Julien Gauthier",
+        "birthDate": "2002-09-03",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-01",
+        "name": "Samuel Boyer",
+        "birthDate": "2003-10-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "oualid-el-hajjam",
+        "name": "Oualid El Hajjam",
+        "birthDate": "1991-02-19",
+        "nationality": "MAR",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "yoann-salmier",
+        "name": "Yoann Salmier",
+        "birthDate": "1992-11-21",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-troyes-gen-17",
+        "name": "Antoine Leroy",
+        "birthDate": "1997-12-30",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-13",
+        "name": "Florian Thomas",
+        "birthDate": "1996-01-06",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-07",
+        "name": "Nicolas Lambert",
+        "birthDate": "2003-08-23",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-04",
+        "name": "Quentin Rousseau",
+        "birthDate": "1994-06-09",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-10",
+        "name": "Yanis Laurent",
+        "birthDate": "1997-09-28",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "florian-tardieu",
+        "name": "Florian Tardieu",
+        "birthDate": "1992-04-22",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-troyes-gen-03",
+        "name": "Adrien Boyer",
+        "birthDate": "2005-07-23",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-14",
+        "name": "Arthur Morel",
+        "birthDate": "1997-01-04",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-18",
+        "name": "Julien André",
+        "birthDate": "2007-08-12",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-08",
+        "name": "Samuel Fontaine",
+        "birthDate": "1995-04-12",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-11",
+        "name": "Thomas Bernard",
+        "birthDate": "2000-01-06",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-05",
+        "name": "Théo Mercier",
+        "birthDate": "2007-07-08",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-19",
+        "name": "Killian Dubois",
+        "birthDate": "1998-02-11",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-09",
+        "name": "Louis Blanc",
+        "birthDate": "1994-01-20",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-06",
+        "name": "Lucas Morel",
+        "birthDate": "2003-10-29",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-15",
+        "name": "Samuel Vincent",
+        "birthDate": "2006-07-26",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-troyes-gen-12",
+        "name": "Thomas Girard",
+        "birthDate": "1999-02-10",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "juan-musso",
+        "name": "Juan Musso",
+        "birthDate": "1994-05-06",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "esp-atletico-madrid-gen-01",
+        "name": "Gonzalo Muñoz",
+        "birthDate": "2006-11-26",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-atletico-madrid-gen-04",
+        "name": "José Martínez",
+        "birthDate": "2007-05-19",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "cristian-romero",
+        "name": "Cristian Romero",
+        "birthDate": "1998-04-27",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "david-hancko",
+        "name": "Dávid Hancko",
+        "birthDate": "1997-12-13",
+        "nationality": "SVK",
+        "position": "DF"
+      },
+      {
+        "id": "marc-pubill",
+        "name": "Marc Pubill",
+        "birthDate": "2003-06-20",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "robin-le-normand",
+        "name": "Robin Le Normand",
+        "birthDate": "1996-11-11",
+        "nationality": "ESP",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "alex-grimaldo",
+        "name": "Álex Grimaldo",
+        "birthDate": "1995-09-20",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "esp-atletico-madrid-gen-02",
+        "name": "Juan Ortega",
+        "birthDate": "2002-06-14",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-atletico-madrid-gen-05",
+        "name": "Xabier Gutiérrez",
+        "birthDate": "2007-01-01",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "javi-serrano",
+        "name": "Javi Serrano",
+        "birthDate": "2003-01-16",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "lee-kang-in",
+        "name": "Lee Kang-in",
+        "birthDate": "2001-02-19",
+        "nationality": "KOR",
+        "position": "MF"
+      },
+      {
+        "id": "marcos-llorente",
+        "name": "Marcos Llorente",
+        "birthDate": "1995-01-30",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "morten-hjulmand",
+        "name": "Morten Hjulmand",
+        "birthDate": "1999-06-25",
+        "nationality": "DEN",
+        "position": "MF"
+      },
+      {
+        "id": "pablo-barrios",
+        "name": "Pablo Barrios",
+        "birthDate": "2003-06-15",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-atletico-madrid-gen-03",
+        "name": "Javier Ramírez",
+        "birthDate": "1995-07-22",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ademola-lookman",
+        "name": "Ademola Lookman",
+        "birthDate": "1997-10-20",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "alexander-sorloth",
+        "name": "Alexander Sørloth",
+        "birthDate": "1995-12-05",
+        "nationality": "NOR",
+        "position": "FW"
+      },
+      {
+        "id": "johnny-cardoso",
+        "name": "Johnny Cardoso",
+        "birthDate": "2001-09-20",
+        "nationality": "USA",
+        "secondNationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "jonathan-david",
+        "name": "Jonathan David",
+        "birthDate": "2000-01-14",
+        "nationality": "CAN",
+        "secondNationality": "USA",
+        "position": "FW"
+      },
+      {
+        "id": "julian-alvarez",
+        "name": "Julián Álvarez",
+        "birthDate": "2000-01-31",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "nicolas-ibanez",
+        "name": "Nicolás Ibáñez",
+        "birthDate": "1994-08-23",
+        "nationality": "ARG",
+        "secondNationality": "MEX",
+        "position": "FW"
+      }
+    ]
+  }
+}

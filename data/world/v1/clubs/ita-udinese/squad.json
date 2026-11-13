@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ita-udinese-gen-12",
+        "name": "Gianluca Conti",
+        "birthDate": "2004-05-06",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-01",
+        "name": "Leonardo Ferrari",
+        "birthDate": "1997-05-23",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-02",
+        "name": "Matteo Romano",
+        "birthDate": "2001-07-14",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "adam-masina",
+        "name": "Adam Masina",
+        "birthDate": "1994-01-02",
+        "nationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "christian-kabasele",
+        "name": "Christian Kabasele",
+        "birthDate": "1991-02-24",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "david-alaba",
+        "name": "David Alaba",
+        "birthDate": "1992-06-24",
+        "nationality": "AUT",
+        "position": "DF"
+      },
+      {
+        "id": "mergim-vojvoda",
+        "name": "Mërgim Vojvoda",
+        "birthDate": "1995-02-01",
+        "nationality": "BEL",
+        "secondNationality": "ALB",
+        "position": "DF"
+      },
+      {
+        "id": "ita-udinese-gen-13",
+        "name": "Matteo Colombo",
+        "birthDate": "2000-12-08",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-09",
+        "name": "Matteo Serra",
+        "birthDate": "1995-12-13",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-06",
+        "name": "Pietro Lombardi",
+        "birthDate": "1997-03-21",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jakub-piotrowski",
+        "name": "Jakub Piotrowski",
+        "birthDate": "1997-10-04",
+        "nationality": "POL",
+        "position": "MF"
+      },
+      {
+        "id": "jurgen-ekkelenkamp",
+        "name": "Jurgen Ekkelenkamp",
+        "birthDate": "2000-04-05",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "ita-udinese-gen-07",
+        "name": "Federico Caruso",
+        "birthDate": "1994-10-27",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-04",
+        "name": "Federico Villa",
+        "birthDate": "1997-09-12",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-14",
+        "name": "Giuseppe Gallo",
+        "birthDate": "2004-02-05",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-03",
+        "name": "Matteo Russo",
+        "birthDate": "1999-10-30",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-10",
+        "name": "Simone Romano",
+        "birthDate": "2000-02-04",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "unai-gomez",
+        "name": "Unai Gómez",
+        "birthDate": "2003-05-25",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "ita-udinese-gen-11",
+        "name": "Christian Martini",
+        "birthDate": "2001-08-17",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-05",
+        "name": "Gianluca Caruso",
+        "birthDate": "1994-11-19",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-08",
+        "name": "Luca Rinaldi",
+        "birthDate": "1996-07-02",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-udinese-gen-15",
+        "name": "Tommaso Moretti",
+        "birthDate": "2004-07-29",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

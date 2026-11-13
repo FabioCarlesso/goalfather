@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "bra-corinthians"
+    },
+    {
+      "id": "bra-cruzeiro"
+    },
+    {
+      "id": "bra-flamengo"
+    },
+    {
+      "id": "bra-fluminense"
+    },
+    {
+      "id": "bra-mirassol"
+    },
+    {
+      "id": "bra-palmeiras"
+    },
+    {
+      "id": "arg-boca-juniors",
+      "name": "Boca Juniors",
+      "country": "ARG",
+      "reputation": 94,
+      "stadium": {
+        "name": "La Bombonera",
+        "capacity": 58840
+      }
+    },
+    {
+      "id": "arg-estudiantes",
+      "name": "Estudiantes",
+      "country": "ARG",
+      "reputation": 74,
+      "stadium": {
+        "name": "Estadio Jorge Luis Hirschi",
+        "capacity": 30018
+      }
+    },
+    {
+      "id": "arg-independiente-rivadavia",
+      "name": "Independiente Rivadavia",
+      "country": "ARG",
+      "reputation": 50,
+      "stadium": {
+        "name": "Estadio Bautista Gargantini",
+        "capacity": 14000
+      }
+    },
+    {
+      "id": "arg-lanus",
+      "name": "Lanús",
+      "country": "ARG",
+      "reputation": 70,
+      "stadium": {
+        "name": "Estadio Ciudad de Lanús Néstor Díaz Pérez",
+        "capacity": 49584
+      }
+    },
+    {
+      "id": "arg-platense",
+      "name": "Platense",
+      "country": "ARG",
+      "reputation": 50,
+      "stadium": {
+        "name": "Estadio Ciudad de Vicente López",
+        "capacity": 28530
+      }
+    },
+    {
+      "id": "arg-rosario-central",
+      "name": "Rosario Central",
+      "country": "ARG",
+      "reputation": 72,
+      "stadium": {
+        "name": "Estadio Gigante de Arroyito",
+        "capacity": 46000
+      }
+    },
+    {
+      "id": "bol-always-ready",
+      "name": "Always Ready",
+      "country": "BOL",
+      "reputation": 62,
+      "stadium": {
+        "name": "Estadio Municipal de El Alto",
+        "capacity": 23000
+      }
+    },
+    {
+      "id": "bol-bolivar",
+      "name": "Bolívar",
+      "country": "BOL",
+      "reputation": 82,
+      "stadium": {
+        "name": "Estadio Libertador Simón Bolívar",
+        "capacity": 25000
+      }
+    },
+    {
+      "id": "chi-coquimbo-unido",
+      "name": "Coquimbo Unido",
+      "country": "CHI",
+      "reputation": 58,
+      "stadium": {
+        "name": "Estadio Francisco Sánchez Rumoroso",
+        "capacity": 17750
+      }
+    },
+    {
+      "id": "chi-universidad-catolica",
+      "name": "Universidad Católica",
+      "country": "CHI",
+      "reputation": 76,
+      "stadium": {
+        "name": "Claro Arena",
+        "capacity": 20000
+      }
+    },
+    {
+      "id": "col-deportes-tolima",
+      "name": "Deportes Tolima",
+      "country": "COL",
+      "reputation": 70,
+      "stadium": {
+        "name": "Estadio Manuel Murillo Toro",
+        "capacity": 30279
+      }
+    },
+    {
+      "id": "col-independiente-medellin",
+      "name": "Independiente Medellín",
+      "country": "COL",
+      "reputation": 72,
+      "stadium": {
+        "name": "Unidad Deportiva Atanasio Girardot",
+        "capacity": 46000
+      }
+    },
+    {
+      "id": "col-junior",
+      "name": "Junior",
+      "country": "COL",
+      "reputation": 76,
+      "stadium": {
+        "name": "Estadio Metropolitano Roberto Meléndez",
+        "capacity": 46692
+      }
+    },
+    {
+      "id": "col-santa-fe",
+      "name": "Santa Fe",
+      "country": "COL",
+      "reputation": 74,
+      "stadium": {
+        "name": "Estadio Nemesio Camacho El Campín",
+        "capacity": 36343
+      }
+    },
+    {
+      "id": "ecu-barcelona",
+      "name": "Barcelona de Guayaquil",
+      "country": "ECU",
+      "reputation": 80,
+      "stadium": {
+        "name": "Estadio Monumental Isidro Romero Carbo",
+        "capacity": 57267
+      }
+    },
+    {
+      "id": "ecu-independiente-del-valle",
+      "name": "Independiente del Valle",
+      "country": "ECU",
+      "reputation": 82,
+      "stadium": {
+        "name": "Estadio Rumiñahui",
+        "capacity": 8000
+      }
+    },
+    {
+      "id": "ecu-ldu-quito",
+      "name": "LDU Quito",
+      "country": "ECU",
+      "reputation": 84,
+      "stadium": {
+        "name": "Estadio de Liga Deportiva Universitaria",
+        "capacity": 41596
+      }
+    },
+    {
+      "id": "par-cerro-porteno",
+      "name": "Cerro Porteño",
+      "country": "PAR",
+      "reputation": 82,
+      "stadium": {
+        "name": "Estadio General Pablo Rojas",
+        "capacity": 43050
+      }
+    },
+    {
+      "id": "par-libertad",
+      "name": "Libertad",
+      "country": "PAR",
+      "reputation": 78,
+      "stadium": {
+        "name": "Estadio Dr. Nicolás Leoz",
+        "capacity": 10000
+      }
+    },
+    {
+      "id": "per-cusco",
+      "name": "Cusco",
+      "country": "PER",
+      "reputation": 52,
+      "stadium": {
+        "name": "Estadio Inca Garcilaso de la Vega",
+        "capacity": 34500
+      }
+    },
+    {
+      "id": "per-sporting-cristal",
+      "name": "Sporting Cristal",
+      "country": "PER",
+      "reputation": 80,
+      "stadium": {
+        "name": "Estadio Alberto Gallardo",
+        "capacity": 13000
+      }
+    },
+    {
+      "id": "per-universitario",
+      "name": "Universitario",
+      "country": "PER",
+      "reputation": 82,
+      "stadium": {
+        "name": "Estadio Monumental U",
+        "capacity": 80093
+      }
+    },
+    {
+      "id": "uru-nacional",
+      "name": "Nacional",
+      "country": "URU",
+      "reputation": 88,
+      "stadium": {
+        "name": "Estadio Gran Parque Central",
+        "capacity": 37000
+      }
+    },
+    {
+      "id": "uru-penarol",
+      "name": "Peñarol",
+      "country": "URU",
+      "reputation": 88,
+      "stadium": {
+        "name": "Estadio Campeón del Siglo",
+        "capacity": 45000
+      }
+    },
+    {
+      "id": "ven-deportivo-la-guaira",
+      "name": "Deportivo La Guaira",
+      "country": "VEN",
+      "reputation": 58,
+      "stadium": {
+        "name": "Estadio Olímpico de la Universidad Central de Venezuela",
+        "capacity": 24900
+      }
+    },
+    {
+      "id": "ven-universidad-central",
+      "name": "Universidad Central",
+      "country": "VEN",
+      "reputation": 52,
+      "stadium": {
+        "name": "Estadio Olímpico de la Universidad Central de Venezuela",
+        "capacity": 24900
+      }
+    }
+  ]
+}

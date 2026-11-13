@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-nautico-gen-02",
+        "name": "Alexandre Araújo",
+        "birthDate": "2007-10-02",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-01",
+        "name": "Rafael Toledo",
+        "birthDate": "1994-04-16",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-19",
+        "name": "Valdir Rocha",
+        "birthDate": "2002-04-13",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-10",
+        "name": "Arthur Freitas",
+        "birthDate": "1999-11-12",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-07",
+        "name": "Arthur Medeiros",
+        "birthDate": "2005-10-01",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-13",
+        "name": "Fábio Nogueira",
+        "birthDate": "1997-12-26",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-20",
+        "name": "Nathan Macedo",
+        "birthDate": "2001-09-25",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-03",
+        "name": "Paulo Abreu",
+        "birthDate": "2001-03-27",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-05",
+        "name": "Raul Queiroz",
+        "birthDate": "1995-08-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-16",
+        "name": "Samuel Lopes",
+        "birthDate": "1997-01-30",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-17",
+        "name": "Caio Ferreira",
+        "birthDate": "1994-10-16",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-08",
+        "name": "Daniel Ferreira",
+        "birthDate": "1996-02-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-14",
+        "name": "Everton Martins",
+        "birthDate": "1999-12-19",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-06",
+        "name": "Jefferson Siqueira",
+        "birthDate": "2001-06-09",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-11",
+        "name": "Jonas Machado",
+        "birthDate": "1996-12-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-21",
+        "name": "José Cardoso",
+        "birthDate": "1999-10-03",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-04",
+        "name": "Leonardo Castro",
+        "birthDate": "2000-11-20",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-15",
+        "name": "Arthur Rocha",
+        "birthDate": "2006-04-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-22",
+        "name": "Daniel Dias",
+        "birthDate": "1995-01-24",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-12",
+        "name": "Leandro Nascimento",
+        "birthDate": "2001-04-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-09",
+        "name": "Valdir Teixeira",
+        "birthDate": "2004-04-08",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-nautico-gen-18",
+        "name": "Wesley Araújo",
+        "birthDate": "1998-11-02",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "dominik-greif",
+        "name": "Dominik Greif",
+        "birthDate": "1997-04-06",
+        "nationality": "SVK",
+        "position": "GK"
+      },
+      {
+        "id": "justin-bengui-joao",
+        "name": "Justin Bengui Joao",
+        "birthDate": "2005-07-09",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "fra-lyon-gen-06",
+        "name": "Arthur Fournier",
+        "birthDate": "1996-04-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "castello-lukeba",
+        "name": "Castello Lukeba",
+        "birthDate": "2002-12-17",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "gwendal-degorce",
+        "name": "Gwendal Degorce",
+        "birthDate": "2004-08-10",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "heritier-deyonge",
+        "name": "Héritier Deyonge",
+        "birthDate": "2002-01-09",
+        "nationality": "BEL",
+        "secondNationality": "COD",
+        "position": "DF"
+      },
+      {
+        "id": "jake-o-brien",
+        "name": "Jake O'Brien",
+        "birthDate": "2001-05-15",
+        "nationality": "IRL",
+        "position": "DF"
+      },
+      {
+        "id": "moussa-niakhate",
+        "name": "Moussa Niakhaté",
+        "birthDate": "1996-03-08",
+        "nationality": "SEN",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "nicolas-tagliafico",
+        "name": "Nicolás Tagliafico",
+        "birthDate": "1992-08-31",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "noham-kamara",
+        "name": "Noham Kamara",
+        "birthDate": "2007-01-22",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "sinaly-diomande",
+        "name": "Sinaly Diomandé",
+        "birthDate": "2001-04-09",
+        "nationality": "CIV",
+        "position": "DF"
+      },
+      {
+        "id": "corentin-tolisso",
+        "name": "Corentin Tolisso",
+        "birthDate": "1994-08-03",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "pavel-sulc",
+        "name": "Pavel Sulc",
+        "birthDate": "2000-12-29",
+        "nationality": "CZE",
+        "position": "MF"
+      },
+      {
+        "id": "tanner-tessmann",
+        "name": "Tanner Tessmann",
+        "birthDate": "2001-09-24",
+        "nationality": "USA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-lyon-gen-04",
+        "name": "Adrien Mercier",
+        "birthDate": "1993-10-04",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lyon-gen-02",
+        "name": "Jordan Laurent",
+        "birthDate": "2003-03-26",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lyon-gen-07",
+        "name": "Nicolas Dupont",
+        "birthDate": "1998-02-17",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-lyon-gen-01",
+        "name": "Samuel Vincent",
+        "birthDate": "2005-12-30",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "keito-nakamura",
+        "name": "Keito Nakamura",
+        "birthDate": "2000-07-28",
+        "nationality": "JPN",
+        "position": "FW"
+      },
+      {
+        "id": "lois-openda",
+        "name": "Loïs Openda",
+        "birthDate": "2000-02-16",
+        "nationality": "BEL",
+        "secondNationality": "COD",
+        "position": "FW"
+      },
+      {
+        "id": "fra-lyon-gen-03",
+        "name": "Jérémy Durand",
+        "birthDate": "2005-01-05",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-lyon-gen-05",
+        "name": "Killian Vincent",
+        "birthDate": "1997-01-04",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

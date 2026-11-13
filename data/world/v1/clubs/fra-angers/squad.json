@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "anthony-lopes",
+        "name": "Anthony Lopes",
+        "birthDate": "1990-10-01",
+        "nationality": "POR",
+        "position": "GK"
+      },
+      {
+        "id": "fra-angers-gen-12",
+        "name": "Arthur Roux",
+        "birthDate": "1995-06-12",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-01",
+        "name": "Benjamin Durand",
+        "birthDate": "1999-01-27",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "souleyman-doumbia",
+        "name": "Souleyman Doumbia",
+        "birthDate": "1996-09-24",
+        "nationality": "CIV",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-angers-gen-13",
+        "name": "Julien Girard",
+        "birthDate": "2007-10-24",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-07",
+        "name": "Kévin Boyer",
+        "birthDate": "1997-12-05",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-03",
+        "name": "Mathieu Morel",
+        "birthDate": "2006-01-19",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-05",
+        "name": "Mathieu Thomas",
+        "birthDate": "1999-04-02",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-09",
+        "name": "Quentin Blanc",
+        "birthDate": "2003-05-10",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-02",
+        "name": "Romain Lambert",
+        "birthDate": "1997-11-30",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "amine-sbai",
+        "name": "Amine Sbaï",
+        "birthDate": "2000-11-05",
+        "nationality": "MAR",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "branco-van-den-boomen",
+        "name": "Branco van den Boomen",
+        "birthDate": "1995-07-21",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "fra-angers-gen-14",
+        "name": "Clément Richard",
+        "birthDate": "2000-03-30",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-04",
+        "name": "Corentin André",
+        "birthDate": "1995-04-08",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-06",
+        "name": "Hugo Laurent",
+        "birthDate": "2002-03-19",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-10",
+        "name": "Maxime Martin",
+        "birthDate": "2005-06-08",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-08",
+        "name": "Yanis Roux",
+        "birthDate": "1996-03-04",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "amine-el-ouazzani",
+        "name": "Amine El Ouazzani",
+        "birthDate": "2001-07-15",
+        "nationality": "MAR",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "casimir-ninga",
+        "name": "Casimir Ninga",
+        "birthDate": "1993-05-17",
+        "nationality": "CHA",
+        "position": "FW"
+      },
+      {
+        "id": "jimmy-cabot",
+        "name": "Jimmy Cabot",
+        "birthDate": "1994-04-18",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-angers-gen-11",
+        "name": "Jérémy Girard",
+        "birthDate": "2000-07-14",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-angers-gen-15",
+        "name": "Noah Bonnet",
+        "birthDate": "2002-06-25",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

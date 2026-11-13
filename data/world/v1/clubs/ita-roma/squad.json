@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "pierluigi-gollini",
+        "name": "Pierluigi Gollini",
+        "birthDate": "1995-03-18",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "ita-roma-gen-06",
+        "name": "Paolo Romano",
+        "birthDate": "1998-08-05",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-roma-gen-01",
+        "name": "Riccardo Villa",
+        "birthDate": "2006-07-04",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "anass-salah-eddine",
+        "name": "Anass Salah-Eddine",
+        "birthDate": "2002-01-18",
+        "nationality": "NED",
+        "secondNationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "devyne-rensch",
+        "name": "Devyne Rensch",
+        "birthDate": "2003-01-18",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "gianluca-mancini",
+        "name": "Gianluca Mancini",
+        "birthDate": "1996-04-17",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "leonardo-balerdi",
+        "name": "Leonardo Balerdi",
+        "birthDate": "1999-01-26",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "mario-hermoso-canseco",
+        "name": "Mario Hermoso Canseco",
+        "birthDate": "1995-06-18",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "mert-cetin",
+        "name": "Mert Çetin",
+        "birthDate": "1997-01-01",
+        "nationality": "TUR",
+        "position": "DF"
+      },
+      {
+        "id": "nahuel-molina",
+        "name": "Nahuel Molina",
+        "birthDate": "1998-04-06",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "manu-kone",
+        "name": "Manu Koné",
+        "birthDate": "2001-05-17",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "marten-de-roon",
+        "name": "Marten de Roon",
+        "birthDate": "1991-03-29",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "rodrigo-mora",
+        "name": "Rodrigo Mora",
+        "birthDate": "2007-05-05",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "ita-roma-gen-07",
+        "name": "Francesco Mariani",
+        "birthDate": "2002-10-22",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-roma-gen-04",
+        "name": "Giovanni Ferrari",
+        "birthDate": "1995-02-18",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-roma-gen-02",
+        "name": "Riccardo D'Amico",
+        "birthDate": "2008-04-12",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-roma-gen-03",
+        "name": "Roberto Pellegrini",
+        "birthDate": "2004-08-27",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "donyell-malen",
+        "name": "Donyell Malen",
+        "birthDate": "1999-01-19",
+        "nationality": "NED",
+        "position": "FW"
+      },
+      {
+        "id": "paulo-dybala",
+        "name": "Paulo Dybala",
+        "birthDate": "1993-11-15",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "santiago-castro",
+        "name": "Santiago Castro",
+        "birthDate": "2004-09-18",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "ita-roma-gen-05",
+        "name": "Gabriele Moretti",
+        "birthDate": "2006-03-11",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-roma-gen-08",
+        "name": "Leonardo Ferrari",
+        "birthDate": "1994-07-01",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

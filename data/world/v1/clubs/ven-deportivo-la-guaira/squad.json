@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ven-deportivo-la-guaira-gen-19",
+        "name": "Agustín Giménez",
+        "birthDate": "2000-06-23",
+        "nationality": "VEN",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-02",
+        "name": "Ezequiel Ríos",
+        "birthDate": "2003-02-08",
+        "nationality": "VEN",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-01",
+        "name": "Luciano Medina",
+        "birthDate": "1997-07-29",
+        "nationality": "VEN",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-16",
+        "name": "Alexis Sosa",
+        "birthDate": "2004-07-19",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-05",
+        "name": "Brian Sosa",
+        "birthDate": "2002-12-09",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-07",
+        "name": "Federico Flores",
+        "birthDate": "2003-05-09",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-10",
+        "name": "Jonathan Ríos",
+        "birthDate": "2007-01-18",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-20",
+        "name": "Julián Espinoza",
+        "birthDate": "1994-12-06",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-13",
+        "name": "Kevin Silva",
+        "birthDate": "1995-11-28",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-03",
+        "name": "Walter Méndez",
+        "birthDate": "1994-12-20",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-08",
+        "name": "Agustín Morales",
+        "birthDate": "1999-03-19",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-21",
+        "name": "Brian Ríos",
+        "birthDate": "2007-05-13",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-04",
+        "name": "Gonzalo Flores",
+        "birthDate": "2006-03-30",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-17",
+        "name": "Ignacio Sosa",
+        "birthDate": "2006-07-29",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-06",
+        "name": "Leandro Ibarra",
+        "birthDate": "2000-07-17",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-14",
+        "name": "Lucas Ríos",
+        "birthDate": "2003-10-13",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-11",
+        "name": "Nicolás Acosta",
+        "birthDate": "1998-12-02",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-22",
+        "name": "Joaquín González",
+        "birthDate": "2007-06-13",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-18",
+        "name": "Jonathan Medina",
+        "birthDate": "2003-05-13",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-15",
+        "name": "Jonathan Valdez",
+        "birthDate": "2003-03-17",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-09",
+        "name": "Juan Pablo Ríos",
+        "birthDate": "1994-02-03",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-deportivo-la-guaira-gen-12",
+        "name": "Nahuel Vargas",
+        "birthDate": "1994-01-27",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

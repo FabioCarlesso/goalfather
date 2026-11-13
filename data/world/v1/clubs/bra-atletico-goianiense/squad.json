@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-atletico-goianiense-gen-02",
+        "name": "Breno Soares",
+        "birthDate": "1999-11-26",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-01",
+        "name": "Jonas Queiroz",
+        "birthDate": "2005-02-13",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-18",
+        "name": "Nathan Rezende",
+        "birthDate": "2000-05-31",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-04",
+        "name": "Danilo Soares",
+        "birthDate": "2000-05-04",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-03",
+        "name": "Jefferson Correia",
+        "birthDate": "2008-03-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-19",
+        "name": "Leandro Cardoso",
+        "birthDate": "2003-08-31",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-06",
+        "name": "Marcelo Cardoso",
+        "birthDate": "2004-12-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-09",
+        "name": "Ricardo Freitas",
+        "birthDate": "2002-12-21",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-12",
+        "name": "Rogério Soares",
+        "birthDate": "2000-02-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-15",
+        "name": "Samuel Teixeira",
+        "birthDate": "1994-08-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "yony-gonzalez",
+        "name": "Yony González",
+        "birthDate": "1994-07-11",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-10",
+        "name": "Adriano Farias",
+        "birthDate": "1995-09-05",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-16",
+        "name": "Daniel Teixeira",
+        "birthDate": "1996-05-26",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-20",
+        "name": "Mateus Pereira",
+        "birthDate": "2000-03-11",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-05",
+        "name": "Maurício Martins",
+        "birthDate": "1995-02-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-13",
+        "name": "Maurício Pereira",
+        "birthDate": "2004-05-22",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-07",
+        "name": "Paulo Macedo",
+        "birthDate": "2006-07-31",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-17",
+        "name": "Adriano Soares",
+        "birthDate": "2000-09-30",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-21",
+        "name": "Breno Pereira",
+        "birthDate": "2006-07-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-08",
+        "name": "Hélio Moreira",
+        "birthDate": "2005-11-14",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-11",
+        "name": "Jonas Oliveira",
+        "birthDate": "2006-10-05",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-atletico-goianiense-gen-14",
+        "name": "Nathan Ribeiro",
+        "birthDate": "1995-10-05",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

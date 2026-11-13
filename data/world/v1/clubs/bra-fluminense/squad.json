@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-fluminense-gen-02",
+        "name": "Cristiano Nogueira",
+        "birthDate": "1994-03-08",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-01",
+        "name": "Gustavo Borges",
+        "birthDate": "2004-09-26",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-15",
+        "name": "Murilo Duarte",
+        "birthDate": "1998-10-10",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "thiago-silva",
+        "name": "Thiago Silva",
+        "birthDate": "1984-09-22",
+        "nationality": "BRA",
+        "secondNationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-fluminense-gen-03",
+        "name": "Cristiano Moraes",
+        "birthDate": "1997-06-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-04",
+        "name": "Douglas Farias",
+        "birthDate": "2003-06-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-09",
+        "name": "Flávio Martins",
+        "birthDate": "1999-05-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-06",
+        "name": "Hélio Andrade",
+        "birthDate": "1998-02-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-12",
+        "name": "Márcio Fernandes",
+        "birthDate": "2002-02-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-16",
+        "name": "Sérgio Guimarães",
+        "birthDate": "2001-03-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "hulk",
+        "name": "Hulk",
+        "birthDate": "1986-07-25",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "jefferson-savarino",
+        "name": "Jefferson Savarino",
+        "birthDate": "1996-11-11",
+        "nationality": "VEN",
+        "position": "MF"
+      },
+      {
+        "id": "luciano-acosta",
+        "name": "Luciano Acosta",
+        "birthDate": "1994-05-31",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "bra-fluminense-gen-10",
+        "name": "Bruno Moraes",
+        "birthDate": "2007-08-06",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-17",
+        "name": "Danilo Coelho",
+        "birthDate": "2000-04-28",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-07",
+        "name": "Gabriel Freitas",
+        "birthDate": "1996-10-24",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-13",
+        "name": "Paulo Carvalho",
+        "birthDate": "2007-05-06",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-14",
+        "name": "Edson Pereira",
+        "birthDate": "1999-05-18",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-08",
+        "name": "Emerson Macedo",
+        "birthDate": "2008-03-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-18",
+        "name": "Hugo Carvalho",
+        "birthDate": "1994-02-22",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-11",
+        "name": "Leandro Lopes",
+        "birthDate": "1994-02-05",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fluminense-gen-05",
+        "name": "Willian Fernandes",
+        "birthDate": "1996-12-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

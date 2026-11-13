@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "marco-bizot",
+        "name": "Marco Bizot",
+        "birthDate": "1991-03-10",
+        "nationality": "NED",
+        "position": "GK"
+      },
+      {
+        "id": "zion-suzuki",
+        "name": "Zion Suzuki",
+        "birthDate": "2002-08-21",
+        "nationality": "JPN",
+        "secondNationality": "USA",
+        "position": "GK"
+      },
+      {
+        "id": "eng-aston-villa-gen-03",
+        "name": "Josh Evans",
+        "birthDate": "2001-05-10",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "aaron-wan-bissaka",
+        "name": "Aaron Wan-Bissaka",
+        "birthDate": "1997-11-26",
+        "nationality": "ENG",
+        "secondNationality": "COD",
+        "position": "DF"
+      },
+      {
+        "id": "ian-maatsen",
+        "name": "Ian Maatsen",
+        "birthDate": "2002-03-10",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "matteo-ruggeri",
+        "name": "Matteo Ruggeri",
+        "birthDate": "2002-07-11",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "matty-cash",
+        "name": "Matty Cash",
+        "birthDate": "1997-08-07",
+        "nationality": "POL",
+        "position": "DF"
+      },
+      {
+        "id": "pau-torres",
+        "name": "Pau Torres",
+        "birthDate": "1997-01-16",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "victor-lindelof",
+        "name": "Victor Lindelöf",
+        "birthDate": "1994-07-17",
+        "nationality": "SWE",
+        "position": "DF"
+      },
+      {
+        "id": "eng-aston-villa-gen-04",
+        "name": "Joe Ward",
+        "birthDate": "2002-01-27",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alejandro-garnacho",
+        "name": "Alejandro Garnacho",
+        "birthDate": "2004-07-01",
+        "nationality": "ARG",
+        "secondNationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "amadou-onana",
+        "name": "Amadou Onana",
+        "birthDate": "2001-08-16",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "leon-goretzka",
+        "name": "Leon Goretzka",
+        "birthDate": "1995-02-06",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "ross-barkley",
+        "name": "Ross Barkley",
+        "birthDate": "1993-12-05",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "eng-aston-villa-gen-05",
+        "name": "Alfie Fletcher",
+        "birthDate": "2000-09-15",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-aston-villa-gen-01",
+        "name": "Ben Taylor",
+        "birthDate": "2008-03-22",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-aston-villa-gen-02",
+        "name": "Dominic Bailey",
+        "birthDate": "1993-12-18",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bertrand-traore",
+        "name": "Bertrand Traoré",
+        "birthDate": "1995-09-06",
+        "nationality": "BFA",
+        "position": "FW"
+      },
+      {
+        "id": "evann-guessand",
+        "name": "Evann Guessand",
+        "birthDate": "2001-07-01",
+        "nationality": "FRA",
+        "secondNationality": "CIV",
+        "position": "FW"
+      },
+      {
+        "id": "ibrahim-mbaye",
+        "name": "Ibrahim Mbaye",
+        "birthDate": "2008-01-24",
+        "nationality": "FRA",
+        "secondNationality": "SEN",
+        "position": "FW"
+      },
+      {
+        "id": "johan-manzambi",
+        "name": "Johan Manzambi",
+        "birthDate": "2005-10-14",
+        "nationality": "SUI",
+        "position": "FW"
+      },
+      {
+        "id": "tammy-abraham",
+        "name": "Tammy Abraham",
+        "birthDate": "1997-10-02",
+        "nationality": "ENG",
+        "position": "FW"
+      }
+    ]
+  }
+}

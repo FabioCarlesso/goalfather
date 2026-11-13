@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-vila-nova-gen-02",
+        "name": "Cristiano Melo",
+        "birthDate": "1999-02-05",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-01",
+        "name": "Edson Rezende",
+        "birthDate": "2003-04-19",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-19",
+        "name": "Leandro Correia",
+        "birthDate": "1996-07-24",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-16",
+        "name": "Anderson Toledo",
+        "birthDate": "1998-07-10",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-20",
+        "name": "Arthur Tavares",
+        "birthDate": "1998-08-21",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-10",
+        "name": "Elias Lopes",
+        "birthDate": "2006-02-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-03",
+        "name": "Jorge Santos",
+        "birthDate": "2003-12-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-13",
+        "name": "Roberto Gomes",
+        "birthDate": "2002-08-29",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-07",
+        "name": "Thiago Martins",
+        "birthDate": "2001-12-29",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-05",
+        "name": "Valdir Cardoso",
+        "birthDate": "2000-02-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-14",
+        "name": "Adriano Borges",
+        "birthDate": "2007-02-02",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-04",
+        "name": "Arthur Machado",
+        "birthDate": "2007-07-16",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-08",
+        "name": "Caio Santos",
+        "birthDate": "2005-08-25",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-06",
+        "name": "Cássio Santana",
+        "birthDate": "2006-03-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-11",
+        "name": "Jefferson Valente",
+        "birthDate": "1999-07-12",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-21",
+        "name": "Maurício Sampaio",
+        "birthDate": "2004-05-29",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-17",
+        "name": "Sérgio Nascimento",
+        "birthDate": "1995-05-23",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-18",
+        "name": "Douglas Batista",
+        "birthDate": "2006-07-04",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-22",
+        "name": "José Gonçalves",
+        "birthDate": "2003-09-08",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-15",
+        "name": "Luiz Rezende",
+        "birthDate": "1994-07-29",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-12",
+        "name": "Maurício Tavares",
+        "birthDate": "1998-10-14",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-vila-nova-gen-09",
+        "name": "Márcio Coelho",
+        "birthDate": "1999-12-12",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

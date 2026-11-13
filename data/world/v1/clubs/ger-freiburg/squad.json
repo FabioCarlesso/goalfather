@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ger-freiburg-gen-13",
+        "name": "Jan Becker",
+        "birthDate": "1994-10-17",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-02",
+        "name": "Jan Meyer",
+        "birthDate": "2000-02-23",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-01",
+        "name": "Leon Bauer",
+        "birthDate": "2007-09-11",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "jan-niklas-beste",
+        "name": "Jan-Niklas Beste",
+        "birthDate": "1999-01-04",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "matthias-ginter",
+        "name": "Matthias Ginter",
+        "birthDate": "1994-01-19",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "ger-freiburg-gen-07",
+        "name": "Daniel Walter",
+        "birthDate": "1996-05-09",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-03",
+        "name": "Jannik Schmidt",
+        "birthDate": "2002-08-25",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-04",
+        "name": "Jonas Weber",
+        "birthDate": "2000-03-07",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-14",
+        "name": "Lars Keller",
+        "birthDate": "2006-09-27",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-10",
+        "name": "Robin Frank",
+        "birthDate": "1999-09-17",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jeong-woo-yeong",
+        "name": "Jeong Woo-yeong",
+        "birthDate": "1999-09-20",
+        "nationality": "KOR",
+        "position": "MF"
+      },
+      {
+        "id": "maximilian-eggestein",
+        "name": "Maximilian Eggestein",
+        "birthDate": "1996-12-08",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "vincenzo-grifo",
+        "name": "Vincenzo Grifo",
+        "birthDate": "1993-04-07",
+        "nationality": "GER",
+        "secondNationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "ger-freiburg-gen-15",
+        "name": "Christian Hofmann",
+        "birthDate": "2004-04-21",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-08",
+        "name": "Jannik Fuchs",
+        "birthDate": "2004-12-16",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-11",
+        "name": "Julian Werner",
+        "birthDate": "2007-08-25",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-05",
+        "name": "Tobias Schmid",
+        "birthDate": "2000-03-14",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "igor-matanovic",
+        "name": "Igor Matanović",
+        "birthDate": "2003-03-31",
+        "nationality": "CRO",
+        "secondNationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "ger-freiburg-gen-09",
+        "name": "Benedikt Klein",
+        "birthDate": "1996-07-06",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-16",
+        "name": "Jonas Walter",
+        "birthDate": "2006-10-06",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-12",
+        "name": "Lukas Schmidt",
+        "birthDate": "1997-10-20",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-freiburg-gen-06",
+        "name": "Nico Zimmermann",
+        "birthDate": "1994-02-14",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

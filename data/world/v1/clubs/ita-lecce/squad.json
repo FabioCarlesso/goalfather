@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "alexandru-borbei",
+        "name": "Alexandru Borbei",
+        "birthDate": "2003-06-27",
+        "nationality": "ROU",
+        "position": "GK"
+      },
+      {
+        "id": "ita-lecce-gen-12",
+        "name": "Emanuele Testa",
+        "birthDate": "2007-11-19",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-01",
+        "name": "Leonardo Esposito",
+        "birthDate": "1995-04-17",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "biagio-meccariello",
+        "name": "Biagio Meccariello",
+        "birthDate": "1991-03-27",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-lecce-gen-13",
+        "name": "Giuseppe Giordano",
+        "birthDate": "2005-05-04",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-05",
+        "name": "Leonardo Rinaldi",
+        "birthDate": "2007-11-26",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-09",
+        "name": "Lorenzo Lombardi",
+        "birthDate": "2000-09-30",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-03",
+        "name": "Nicola Caruso",
+        "birthDate": "1998-04-12",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-02",
+        "name": "Nicolò Serra",
+        "birthDate": "1996-10-11",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-07",
+        "name": "Simone Rossi",
+        "birthDate": "1998-01-08",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alexis-blin",
+        "name": "Alexis Blin",
+        "birthDate": "1996-09-16",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "medon-berisha",
+        "name": "Medon Berisha",
+        "birthDate": "2003-10-21",
+        "nationality": "ALB",
+        "secondNationality": "KVX",
+        "position": "MF"
+      },
+      {
+        "id": "ita-lecce-gen-08",
+        "name": "Davide Santoro",
+        "birthDate": "2002-04-13",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-14",
+        "name": "Luca Barbieri",
+        "birthDate": "2006-07-06",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-04",
+        "name": "Matteo Santoro",
+        "birthDate": "2003-08-22",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-06",
+        "name": "Matteo Villa",
+        "birthDate": "1996-08-31",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-10",
+        "name": "Riccardo Esposito",
+        "birthDate": "1997-03-07",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "joel-voelkerling-persson",
+        "name": "Joel Voelkerling Persson",
+        "birthDate": "2003-01-15",
+        "nationality": "SWE",
+        "position": "FW"
+      },
+      {
+        "id": "omri-gandelman",
+        "name": "Omri Gandelman",
+        "birthDate": "2000-05-16",
+        "nationality": "ISR",
+        "position": "FW"
+      },
+      {
+        "id": "raul-stanciu",
+        "name": "Raul Stanciu",
+        "birthDate": "2007-03-26",
+        "nationality": "ROU",
+        "position": "FW"
+      },
+      {
+        "id": "ita-lecce-gen-15",
+        "name": "Gianluca Marchetti",
+        "birthDate": "2005-01-07",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-lecce-gen-11",
+        "name": "Pietro Ferrara",
+        "birthDate": "2003-10-15",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

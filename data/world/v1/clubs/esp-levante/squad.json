@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "mathew-ryan",
+        "name": "Mathew Ryan",
+        "birthDate": "1992-04-08",
+        "nationality": "AUS",
+        "position": "GK"
+      },
+      {
+        "id": "esp-levante-gen-12",
+        "name": "Javier Ramos",
+        "birthDate": "2005-03-11",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-01",
+        "name": "Álvaro Ruiz",
+        "birthDate": "2001-06-29",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "aissa-mandi",
+        "name": "Aïssa Mandi",
+        "birthDate": "1991-10-22",
+        "nationality": "ALG",
+        "position": "DF"
+      },
+      {
+        "id": "enric-franquesa",
+        "name": "Enric Franquesa",
+        "birthDate": "1997-02-26",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "jeremy-toljan",
+        "name": "Jeremy Toljan",
+        "birthDate": "1994-08-08",
+        "nationality": "GER",
+        "secondNationality": "USA",
+        "position": "DF"
+      },
+      {
+        "id": "esp-levante-gen-13",
+        "name": "Antonio Torres",
+        "birthDate": "1997-03-06",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-09",
+        "name": "Borja González",
+        "birthDate": "2001-04-11",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-06",
+        "name": "Sergio García",
+        "birthDate": "1998-10-17",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-04",
+        "name": "Víctor Delgado",
+        "birthDate": "2006-02-16",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jon-ander-olasagasti",
+        "name": "Jon Ander Olasagasti",
+        "birthDate": "2000-08-16",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-levante-gen-02",
+        "name": "Adrián Hernández",
+        "birthDate": "2000-05-26",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-10",
+        "name": "Andrés Moreno",
+        "birthDate": "1999-10-08",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-05",
+        "name": "David Serrano",
+        "birthDate": "2006-08-04",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-07",
+        "name": "Diego Muñoz",
+        "birthDate": "2006-08-22",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-03",
+        "name": "Javier Romero",
+        "birthDate": "2002-07-28",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-14",
+        "name": "Raúl Rubio",
+        "birthDate": "2004-09-21",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "petar-ratkov",
+        "name": "Petar Ratkov",
+        "birthDate": "2003-08-18",
+        "nationality": "SRB",
+        "position": "FW"
+      },
+      {
+        "id": "sergio-leon",
+        "name": "Sergio León",
+        "birthDate": "1989-01-06",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "esp-levante-gen-15",
+        "name": "Borja Ortega",
+        "birthDate": "2001-01-05",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-08",
+        "name": "Javier Díaz",
+        "birthDate": "1994-12-09",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-levante-gen-11",
+        "name": "Víctor Martínez",
+        "birthDate": "2003-08-09",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

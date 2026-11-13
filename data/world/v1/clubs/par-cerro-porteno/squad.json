@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "par-cerro-porteno-gen-17",
+        "name": "Federico Espinoza",
+        "birthDate": "2005-02-26",
+        "nationality": "PAR",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-01",
+        "name": "Ignacio Medina",
+        "birthDate": "1998-07-19",
+        "nationality": "PAR",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-02",
+        "name": "Juan Pablo Castillo",
+        "birthDate": "2005-08-29",
+        "nationality": "PAR",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ronaldo-de-jesus",
+        "name": "Ronaldo De Jesús",
+        "birthDate": "2001-04-21",
+        "nationality": "PAR",
+        "secondNationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "par-cerro-porteno-gen-14",
+        "name": "Gonzalo Gómez",
+        "birthDate": "2002-12-22",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-05",
+        "name": "Kevin Rojas",
+        "birthDate": "2007-05-22",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-11",
+        "name": "Leandro Fernández",
+        "birthDate": "1993-09-26",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-03",
+        "name": "Nicolás Núñez",
+        "birthDate": "2000-01-04",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-18",
+        "name": "Santiago Medina",
+        "birthDate": "1996-07-16",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-08",
+        "name": "Yeferson Ortiz",
+        "birthDate": "2004-01-01",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "gabriel-aguayo-diaz",
+        "name": "Gabriel Aguayo Díaz",
+        "birthDate": "2005-02-10",
+        "nationality": "PAR",
+        "position": "MF"
+      },
+      {
+        "id": "par-cerro-porteno-gen-04",
+        "name": "Alexis Flores",
+        "birthDate": "1995-03-05",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-09",
+        "name": "Brian Torres",
+        "birthDate": "2001-02-20",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-06",
+        "name": "Juan Pablo Medina",
+        "birthDate": "2003-02-22",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-15",
+        "name": "Lautaro Suárez",
+        "birthDate": "2001-11-29",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-19",
+        "name": "Nahuel Cáceres",
+        "birthDate": "2000-11-27",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-12",
+        "name": "Sebastián Villalba",
+        "birthDate": "2002-04-20",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-07",
+        "name": "Gonzalo Villalba",
+        "birthDate": "2008-04-03",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-16",
+        "name": "Jhon Núñez",
+        "birthDate": "2000-06-09",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-20",
+        "name": "Lucas Vargas",
+        "birthDate": "1995-10-13",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-10",
+        "name": "Nicolás Flores",
+        "birthDate": "2003-08-09",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-cerro-porteno-gen-13",
+        "name": "Santiago Romero",
+        "birthDate": "2007-06-26",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

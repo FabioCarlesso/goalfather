@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "esp-elche-gen-02",
+        "name": "José Hernández",
+        "birthDate": "2003-11-21",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-14",
+        "name": "Rubén Muñoz",
+        "birthDate": "1999-10-23",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-01",
+        "name": "Sergio Castro",
+        "birthDate": "1995-03-29",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "roy-revivo",
+        "name": "Roy Revivo",
+        "birthDate": "2003-05-22",
+        "nationality": "ISR",
+        "position": "DF"
+      },
+      {
+        "id": "esp-elche-gen-08",
+        "name": "Adrián Álvarez",
+        "birthDate": "2000-08-02",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-03",
+        "name": "Alejandro Gil",
+        "birthDate": "1993-09-18",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-04",
+        "name": "Eduardo Ortega",
+        "birthDate": "1998-04-08",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-15",
+        "name": "Mario Iglesias",
+        "birthDate": "2007-05-03",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-05",
+        "name": "Raúl Blanco",
+        "birthDate": "2008-04-23",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-11",
+        "name": "Rubén Fernández",
+        "birthDate": "2000-07-17",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "federico-redondo",
+        "name": "Federico Redondo",
+        "birthDate": "2003-01-18",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "ramon-folch-frigola",
+        "name": "Ramón Folch Frigola",
+        "birthDate": "1989-10-04",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "thomas-lemar",
+        "name": "Thomas Lemar",
+        "birthDate": "1995-11-12",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "esp-elche-gen-09",
+        "name": "Enrique Jiménez",
+        "birthDate": "2005-10-19",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-16",
+        "name": "Gonzalo Torres",
+        "birthDate": "1998-01-10",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-06",
+        "name": "Hugo Díaz",
+        "birthDate": "2001-09-25",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-12",
+        "name": "Marcos Moreno",
+        "birthDate": "2000-07-10",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ezequiel-ponce",
+        "name": "Ezequiel Ponce",
+        "birthDate": "1997-03-29",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "esp-elche-gen-07",
+        "name": "Andrés Hernández",
+        "birthDate": "1996-02-17",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-10",
+        "name": "Diego Delgado",
+        "birthDate": "1996-12-21",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-17",
+        "name": "Jorge García",
+        "birthDate": "2004-01-23",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-elche-gen-13",
+        "name": "Mario Ramírez",
+        "birthDate": "1996-04-12",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

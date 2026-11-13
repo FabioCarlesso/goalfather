@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-corinthians-gen-02",
+        "name": "Elias Pinheiro",
+        "birthDate": "1994-12-24",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-11",
+        "name": "Hélio Xavier",
+        "birthDate": "2003-05-17",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-01",
+        "name": "Jorge Carvalho",
+        "birthDate": "1993-10-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "gustavo-henrique",
+        "name": "Gustavo Henrique",
+        "birthDate": "1993-03-24",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "gabriel-putita-del-leon",
+        "name": "gabriel putita del leon",
+        "birthDate": "1990-11-26",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-corinthians-gen-09",
+        "name": "Adriano Macedo",
+        "birthDate": "1994-01-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-05",
+        "name": "Edson Carvalho",
+        "birthDate": "1994-07-31",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-07",
+        "name": "Rafael Barbosa",
+        "birthDate": "2007-08-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-03",
+        "name": "Vinícius Macedo",
+        "birthDate": "2005-07-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-12",
+        "name": "Vinícius Teixeira",
+        "birthDate": "2006-07-12",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "andre-carrillo",
+        "name": "André Carrillo",
+        "birthDate": "1991-06-14",
+        "nationality": "PER",
+        "position": "MF"
+      },
+      {
+        "id": "janderson-santos-de-souza",
+        "name": "Janderson Santos de Souza",
+        "birthDate": "1999-02-26",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "jarlan-barrera",
+        "name": "Jarlan Barrera",
+        "birthDate": "1999-09-16",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "jesse-lingard",
+        "name": "Jesse Lingard",
+        "birthDate": "1992-12-15",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "matheus-jesus",
+        "name": "Matheus Jesus",
+        "birthDate": "1997-04-10",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "zakaria-labyad",
+        "name": "Zakaria Labyad",
+        "birthDate": "1993-03-09",
+        "nationality": "MAR",
+        "position": "MF"
+      },
+      {
+        "id": "bra-corinthians-gen-13",
+        "name": "Fernando Rocha",
+        "birthDate": "1996-03-31",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-10",
+        "name": "Antônio Toledo",
+        "birthDate": "1997-01-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-14",
+        "name": "Arthur Tavares",
+        "birthDate": "2004-02-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-04",
+        "name": "Caio Martins",
+        "birthDate": "2006-07-28",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-06",
+        "name": "Cristiano Lopes",
+        "birthDate": "2003-05-24",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-corinthians-gen-08",
+        "name": "Douglas Carvalho",
+        "birthDate": "1996-10-25",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

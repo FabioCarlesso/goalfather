@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "alessandro-longoni",
+        "name": "Alessandro Longoni",
+        "birthDate": "2008-01-31",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "lucas-chevalier",
+        "name": "Lucas Chevalier",
+        "birthDate": "2001-11-06",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "matvey-safonov",
+        "name": "Matvey Safonov",
+        "birthDate": "1999-02-25",
+        "nationality": "RUS",
+        "position": "GK"
+      },
+      {
+        "id": "achraf-hakimi",
+        "name": "Achraf Hakimi",
+        "birthDate": "1998-11-04",
+        "nationality": "ESP",
+        "secondNationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "illya-zabarnyi",
+        "name": "Illya Zabarnyi",
+        "birthDate": "2002-09-01",
+        "nationality": "UKR",
+        "position": "DF"
+      },
+      {
+        "id": "lucas-beraldo",
+        "name": "Lucas Beraldo",
+        "birthDate": "2003-11-24",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "lucas-digne",
+        "name": "Lucas Digne",
+        "birthDate": "1993-07-20",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "lucas-hernandez",
+        "name": "Lucas Hernandez",
+        "birthDate": "1996-02-14",
+        "nationality": "FRA",
+        "secondNationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "nuno-mendes",
+        "name": "Nuno Mendes",
+        "birthDate": "2002-06-19",
+        "nationality": "POR",
+        "position": "DF"
+      },
+      {
+        "id": "willian-pacho",
+        "name": "Willian Pacho",
+        "birthDate": "2001-10-16",
+        "nationality": "ECU",
+        "position": "DF"
+      },
+      {
+        "id": "ethan-mbappe",
+        "name": "Ethan Mbappé",
+        "birthDate": "2006-12-29",
+        "nationality": "FRA",
+        "secondNationality": "CMR",
+        "position": "MF"
+      },
+      {
+        "id": "fabian-ruiz",
+        "name": "Fabián Ruiz",
+        "birthDate": "1996-04-03",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "joao-neves",
+        "name": "João Neves",
+        "birthDate": "2004-09-27",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "khvicha-kvaratskhelia",
+        "name": "Khvicha Kvaratskhelia",
+        "birthDate": "2001-02-12",
+        "nationality": "GEO",
+        "position": "MF"
+      },
+      {
+        "id": "maghnes-akliouche",
+        "name": "Maghnès Akliouche",
+        "birthDate": "2002-02-25",
+        "nationality": "FRA",
+        "secondNationality": "ALG",
+        "position": "MF"
+      },
+      {
+        "id": "pedro-fernandez-sarmiento",
+        "name": "Pedro Fernández Sarmiento",
+        "birthDate": "2008-01-12",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "senny-mayulu",
+        "name": "Senny Mayulu",
+        "birthDate": "2006-05-17",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "vitinha",
+        "name": "Vitinha",
+        "birthDate": "2000-02-13",
+        "nationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "warren-zaire-emery",
+        "name": "Warren Zaïre-Emery",
+        "birthDate": "2006-03-08",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "djeidi-gassama",
+        "name": "Djeidi Gassama",
+        "birthDate": "2003-09-10",
+        "nationality": "MTN",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "desire-doue",
+        "name": "Désiré Doué",
+        "birthDate": "2005-06-03",
+        "nationality": "FRA",
+        "secondNationality": "CIV",
+        "position": "FW"
+      },
+      {
+        "id": "ferran-torres",
+        "name": "Ferran Torres",
+        "birthDate": "2000-02-29",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "mika-godts",
+        "name": "Mika Godts",
+        "birthDate": "2005-06-07",
+        "nationality": "BEL",
+        "position": "FW"
+      },
+      {
+        "id": "ousmane-dembele",
+        "name": "Ousmane Dembélé",
+        "birthDate": "1997-05-15",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "quentin-ndjantou",
+        "name": "Quentin Ndjantou",
+        "birthDate": "2007-07-23",
+        "nationality": "FRA",
+        "position": "FW"
+      }
+    ]
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fabian-bredlow",
+        "name": "Fabian Bredlow",
+        "birthDate": "1995-03-02",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "ger-stuttgart-gen-01",
+        "name": "Maximilian Weber",
+        "birthDate": "1994-11-09",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-stuttgart-gen-07",
+        "name": "Tobias Hoffmann",
+        "birthDate": "2007-03-07",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ameen-al-dakhil",
+        "name": "Ameen Al-Dakhil",
+        "birthDate": "2002-03-06",
+        "nationality": "BEL",
+        "secondNationality": "IRQ",
+        "position": "DF"
+      },
+      {
+        "id": "jeff-chabot",
+        "name": "Jeff Chabot",
+        "birthDate": "1998-02-12",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "maximilian-mittelstadt",
+        "name": "Maximilian Mittelstädt",
+        "birthDate": "1997-03-18",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "ger-stuttgart-gen-03",
+        "name": "Marcel Frank",
+        "birthDate": "2005-03-25",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-stuttgart-gen-05",
+        "name": "Max Zimmermann",
+        "birthDate": "2002-10-18",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-stuttgart-gen-02",
+        "name": "Pascal Werner",
+        "birthDate": "2005-11-26",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-stuttgart-gen-08",
+        "name": "Simon Krüger",
+        "birthDate": "2001-10-12",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "angelo-stiller",
+        "name": "Angelo Stiller",
+        "birthDate": "2001-04-04",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "bilal-el-khannouss",
+        "name": "Bilal El Khannouss",
+        "birthDate": "2004-05-10",
+        "nationality": "MAR",
+        "secondNationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "chris-fuhrich",
+        "name": "Chris Führich",
+        "birthDate": "1998-01-09",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "grischa-promel",
+        "name": "Grischa Prömel",
+        "birthDate": "1995-01-09",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "mateo-klimowicz",
+        "name": "Mateo Klimowicz",
+        "birthDate": "2000-07-06",
+        "nationality": "GER",
+        "secondNationality": "POL",
+        "position": "MF"
+      },
+      {
+        "id": "pascal-stenzel",
+        "name": "Pascal Stenzel",
+        "birthDate": "1996-03-20",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "samuele-di-benedetto",
+        "name": "Samuele Di Benedetto",
+        "birthDate": "2005-07-16",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "tanguy-coulibaly",
+        "name": "Tanguy Coulibaly",
+        "birthDate": "2001-02-18",
+        "nationality": "FRA",
+        "secondNationality": "MLI",
+        "position": "MF"
+      },
+      {
+        "id": "deniz-undav",
+        "name": "Deniz Undav",
+        "birthDate": "1996-07-19",
+        "nationality": "GER",
+        "secondNationality": "TUR",
+        "position": "FW"
+      },
+      {
+        "id": "ermedin-demirovic",
+        "name": "Ermedin Demirović",
+        "birthDate": "1998-03-25",
+        "nationality": "BIH",
+        "secondNationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "ger-stuttgart-gen-06",
+        "name": "Benedikt Schwarz",
+        "birthDate": "2005-09-09",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-stuttgart-gen-04",
+        "name": "Felix Richter",
+        "birthDate": "2002-04-22",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

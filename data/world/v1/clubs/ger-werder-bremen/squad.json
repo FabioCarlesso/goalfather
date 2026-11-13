@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ger-werder-bremen-gen-10",
+        "name": "Andreas Werner",
+        "birthDate": "2001-02-01",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-01",
+        "name": "Nico Scholz",
+        "birthDate": "2006-12-06",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-02",
+        "name": "Robin Schwarz",
+        "birthDate": "1994-09-19",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "felix-agu",
+        "name": "Felix Agu",
+        "birthDate": "1999-09-27",
+        "nationality": "GER",
+        "secondNationality": "NGA",
+        "position": "DF"
+      },
+      {
+        "id": "issa-kabore",
+        "name": "Issa Kaboré",
+        "birthDate": "2001-05-12",
+        "nationality": "BFA",
+        "position": "DF"
+      },
+      {
+        "id": "marco-friedl",
+        "name": "Marco Friedl",
+        "birthDate": "1998-03-16",
+        "nationality": "AUT",
+        "position": "DF"
+      },
+      {
+        "id": "mitchell-weiser",
+        "name": "Mitchell Weiser",
+        "birthDate": "1994-04-21",
+        "nationality": "GER",
+        "secondNationality": "ALG",
+        "position": "DF"
+      },
+      {
+        "id": "niklas-stark",
+        "name": "Niklas Stark",
+        "birthDate": "1995-04-14",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "ger-werder-bremen-gen-11",
+        "name": "Benedikt Klein",
+        "birthDate": "2005-03-31",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-07",
+        "name": "Tim Schneider",
+        "birthDate": "2004-03-10",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "cedric-itten",
+        "name": "Cedric Itten",
+        "birthDate": "1996-12-27",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "senne-lynen",
+        "name": "Senne Lynen",
+        "birthDate": "1999-02-19",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "ger-werder-bremen-gen-05",
+        "name": "Marcel Weber",
+        "birthDate": "1999-09-08",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-03",
+        "name": "Nico Weber",
+        "birthDate": "2004-12-22",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-08",
+        "name": "Niklas Hofmann",
+        "birthDate": "1997-04-21",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-04",
+        "name": "Philipp Wolf",
+        "birthDate": "1996-04-25",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-12",
+        "name": "Sebastian Werner",
+        "birthDate": "1994-02-05",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "niclas-fullkrug",
+        "name": "Niclas Füllkrug",
+        "birthDate": "1993-02-09",
+        "nationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "victor-boniface",
+        "name": "Victor Boniface",
+        "birthDate": "2000-12-23",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "ger-werder-bremen-gen-06",
+        "name": "Felix Lehmann",
+        "birthDate": "2007-01-23",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-09",
+        "name": "Lars Braun",
+        "birthDate": "2004-06-14",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-werder-bremen-gen-13",
+        "name": "Niklas Walter",
+        "birthDate": "1993-11-17",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

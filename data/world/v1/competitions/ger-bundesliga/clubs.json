@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "ger-augsburg",
+      "name": "Augsburg",
+      "country": "GER",
+      "reputation": 52,
+      "stadium": {
+        "name": "WWK ARENA",
+        "capacity": 30660
+      }
+    },
+    {
+      "id": "ger-bayer-leverkusen",
+      "name": "Bayer Leverkusen",
+      "country": "GER",
+      "reputation": 84,
+      "stadium": {
+        "name": "BayArena",
+        "capacity": 30210
+      }
+    },
+    {
+      "id": "ger-bayern-munchen",
+      "name": "Bayern München",
+      "country": "GER",
+      "reputation": 96,
+      "stadium": {
+        "name": "Allianz-Arena",
+        "capacity": 75024
+      }
+    },
+    {
+      "id": "ger-borussia-dortmund",
+      "name": "Borussia Dortmund",
+      "country": "GER",
+      "reputation": 86,
+      "stadium": {
+        "name": "Signal Iduna Park",
+        "capacity": 81359
+      }
+    },
+    {
+      "id": "ger-borussia-monchengladbach",
+      "name": "Borussia Mönchengladbach",
+      "country": "GER",
+      "reputation": 68,
+      "stadium": {
+        "name": "ista-Borussia-Park",
+        "capacity": 59749
+      }
+    },
+    {
+      "id": "ger-eintracht-frankfurt",
+      "name": "Eintracht Frankfurt",
+      "country": "GER",
+      "reputation": 74,
+      "stadium": {
+        "name": "Deutsche Bank Park",
+        "capacity": 51500
+      }
+    },
+    {
+      "id": "ger-elversberg",
+      "name": "Elversberg",
+      "country": "GER",
+      "reputation": 40,
+      "stadium": {
+        "name": "Waldstadion Kaiserlinde",
+        "capacity": 10000
+      }
+    },
+    {
+      "id": "ger-freiburg",
+      "name": "Freiburg",
+      "country": "GER",
+      "reputation": 66,
+      "stadium": {
+        "name": "Dreisamstadion",
+        "capacity": 24000
+      }
+    },
+    {
+      "id": "ger-hamburger-sv",
+      "name": "Hamburger SV",
+      "country": "GER",
+      "reputation": 62,
+      "stadium": {
+        "name": "Volksparkstadion",
+        "capacity": 57000
+      }
+    },
+    {
+      "id": "ger-hoffenheim",
+      "name": "Hoffenheim",
+      "country": "GER",
+      "reputation": 62,
+      "stadium": {
+        "name": "SNP Arena",
+        "capacity": 30150
+      }
+    },
+    {
+      "id": "ger-koln",
+      "name": "Köln",
+      "country": "GER",
+      "reputation": 56,
+      "stadium": {
+        "name": "RheinEnergieStadion",
+        "capacity": 46195
+      }
+    },
+    {
+      "id": "ger-mainz",
+      "name": "Mainz 05",
+      "country": "GER",
+      "reputation": 56,
+      "stadium": {
+        "name": "Mewa Arena",
+        "capacity": 34034
+      }
+    },
+    {
+      "id": "ger-paderborn",
+      "name": "Paderborn",
+      "country": "GER",
+      "reputation": 42,
+      "stadium": {
+        "name": "Home-Deluxe-Arena",
+        "capacity": 15000
+      }
+    },
+    {
+      "id": "ger-rb-leipzig",
+      "name": "RB Leipzig",
+      "country": "GER",
+      "reputation": 80,
+      "stadium": {
+        "name": "Red Bull Arena",
+        "capacity": 42000
+      }
+    },
+    {
+      "id": "ger-schalke-04",
+      "name": "Schalke 04",
+      "country": "GER",
+      "reputation": 62,
+      "stadium": {
+        "name": "Veltins-Arena",
+        "capacity": 62271
+      }
+    },
+    {
+      "id": "ger-stuttgart",
+      "name": "Stuttgart",
+      "country": "GER",
+      "reputation": 72,
+      "stadium": {
+        "name": "MHPArena",
+        "capacity": 60058
+      }
+    },
+    {
+      "id": "ger-union-berlin",
+      "name": "Union Berlin",
+      "country": "GER",
+      "reputation": 58,
+      "stadium": {
+        "name": "Stadion An der Alten Försterei",
+        "capacity": 21704
+      }
+    },
+    {
+      "id": "ger-werder-bremen",
+      "name": "Werder Bremen",
+      "country": "GER",
+      "reputation": 62,
+      "stadium": {
+        "name": "Weserstadion",
+        "capacity": 42500
+      }
+    }
+  ]
+}

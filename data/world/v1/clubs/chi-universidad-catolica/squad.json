@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "chi-universidad-catolica-gen-17",
+        "name": "Gastón Vargas",
+        "birthDate": "1996-12-23",
+        "nationality": "CHI",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-01",
+        "name": "Matías Sosa",
+        "birthDate": "2004-08-19",
+        "nationality": "CHI",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-02",
+        "name": "Yeferson Ibarra",
+        "birthDate": "1995-02-04",
+        "nationality": "CHI",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eugenio-mena",
+        "name": "Eugenio Mena",
+        "birthDate": "1988-07-18",
+        "nationality": "CHI",
+        "position": "DF"
+      },
+      {
+        "id": "chi-universidad-catolica-gen-18",
+        "name": "Brian González",
+        "birthDate": "1996-08-13",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-11",
+        "name": "Brian Méndez",
+        "birthDate": "1997-05-05",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-05",
+        "name": "Ezequiel Núñez",
+        "birthDate": "2002-08-22",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-03",
+        "name": "Ignacio Cabrera",
+        "birthDate": "1997-11-03",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-08",
+        "name": "Luciano Espinoza",
+        "birthDate": "1997-02-08",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-14",
+        "name": "Nicolás Ibarra",
+        "birthDate": "1999-10-05",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "gary-medel",
+        "name": "Gary Medel",
+        "birthDate": "1987-08-03",
+        "nationality": "CHI",
+        "position": "MF"
+      },
+      {
+        "id": "chi-universidad-catolica-gen-12",
+        "name": "Brian Rojas",
+        "birthDate": "2005-11-20",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-19",
+        "name": "Franco Ríos",
+        "birthDate": "2002-02-01",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-15",
+        "name": "Gonzalo Villalba",
+        "birthDate": "2006-03-26",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-04",
+        "name": "Nicolás Castillo",
+        "birthDate": "2006-09-17",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-06",
+        "name": "Rodrigo Vega",
+        "birthDate": "2006-12-22",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-09",
+        "name": "Tomás Ríos",
+        "birthDate": "2001-09-30",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-20",
+        "name": "Alexis Rojas",
+        "birthDate": "1995-01-21",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-13",
+        "name": "Bruno Giménez",
+        "birthDate": "1995-06-15",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-07",
+        "name": "Cristian Cáceres",
+        "birthDate": "2005-09-19",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-16",
+        "name": "Matías Vega",
+        "birthDate": "2001-05-04",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-universidad-catolica-gen-10",
+        "name": "Maximiliano Giménez",
+        "birthDate": "1994-10-17",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

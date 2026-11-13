@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fra-brest-gen-15",
+        "name": "Olivier Moreau",
+        "birthDate": "1995-04-26",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-01",
+        "name": "Quentin Petit",
+        "birthDate": "2006-12-15",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-02",
+        "name": "Romain Michel",
+        "birthDate": "2003-03-20",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "kenny-lala",
+        "name": "Kenny Lala",
+        "birthDate": "1991-10-03",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-brest-gen-12",
+        "name": "Alexandre Michel",
+        "birthDate": "2001-10-14",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-16",
+        "name": "Enzo Bertrand",
+        "birthDate": "1999-06-24",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-06",
+        "name": "Maxime Lambert",
+        "birthDate": "1995-12-29",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-04",
+        "name": "Maxime Thomas",
+        "birthDate": "2005-01-30",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-09",
+        "name": "Nicolas Dumont",
+        "birthDate": "1997-06-09",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-03",
+        "name": "Noah Petit",
+        "birthDate": "1995-11-22",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "romain-philippoteaux",
+        "name": "Romain Philippoteaux",
+        "birthDate": "1988-03-02",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "samuel-grandsir",
+        "name": "Samuel Grandsir",
+        "birthDate": "1996-08-14",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-brest-gen-07",
+        "name": "Florian Bernard",
+        "birthDate": "1998-02-06",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-13",
+        "name": "Mathis André",
+        "birthDate": "2002-07-16",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-10",
+        "name": "Quentin Lefebvre",
+        "birthDate": "2006-03-22",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-05",
+        "name": "Samuel Mercier",
+        "birthDate": "2000-08-15",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-17",
+        "name": "Samuel Michel",
+        "birthDate": "1995-12-29",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ibrahim-salah",
+        "name": "Ibrahim Salah",
+        "birthDate": "2001-08-30",
+        "nationality": "MAR",
+        "secondNationality": "BEL",
+        "position": "FW"
+      },
+      {
+        "id": "fra-brest-gen-08",
+        "name": "Alexandre Robert",
+        "birthDate": "1998-07-26",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-11",
+        "name": "Jordan Bonnet",
+        "birthDate": "1999-11-25",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-18",
+        "name": "Jordan Michel",
+        "birthDate": "1994-09-01",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-brest-gen-14",
+        "name": "Thomas Lefebvre",
+        "birthDate": "2002-08-14",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

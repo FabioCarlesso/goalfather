@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "arijanet-muric",
+        "name": "Arijanet Muric",
+        "birthDate": "1998-11-07",
+        "nationality": "KVX",
+        "secondNationality": "SUI",
+        "position": "GK"
+      },
+      {
+        "id": "ita-sassuolo-gen-14",
+        "name": "Pietro Mariani",
+        "birthDate": "2001-08-01",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-01",
+        "name": "Simone Mariani",
+        "birthDate": "2005-12-09",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "duje-caleta-car",
+        "name": "Duje Ćaleta-Car",
+        "birthDate": "1996-09-17",
+        "nationality": "CRO",
+        "position": "DF"
+      },
+      {
+        "id": "marco-sala",
+        "name": "Marco Sala",
+        "birthDate": "1999-06-04",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "mert-muldur",
+        "name": "Mert Müldür",
+        "birthDate": "1999-04-03",
+        "nationality": "TUR",
+        "secondNationality": "AUT",
+        "position": "DF"
+      },
+      {
+        "id": "ita-sassuolo-gen-11",
+        "name": "Christian Fabbri",
+        "birthDate": "1997-06-17",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-05",
+        "name": "Luca Fontana",
+        "birthDate": "1997-03-10",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-08",
+        "name": "Manuel Costa",
+        "birthDate": "2005-09-09",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-15",
+        "name": "Roberto Ferrara",
+        "birthDate": "2003-11-21",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "nemanja-matic",
+        "name": "Nemanja Matić",
+        "birthDate": "1988-08-01",
+        "nationality": "SRB",
+        "position": "MF"
+      },
+      {
+        "id": "ita-sassuolo-gen-09",
+        "name": "Andrea Ferrara",
+        "birthDate": "2002-06-19",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-06",
+        "name": "Christian Mariani",
+        "birthDate": "1997-10-17",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-16",
+        "name": "Federico Gallo",
+        "birthDate": "2008-05-21",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-02",
+        "name": "Filippo Mariani",
+        "birthDate": "1998-06-18",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-12",
+        "name": "Lorenzo Ricci",
+        "birthDate": "2007-06-04",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-03",
+        "name": "Lorenzo Testa",
+        "birthDate": "1999-06-19",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-04",
+        "name": "Alessandro Greco",
+        "birthDate": "1998-08-22",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-13",
+        "name": "Antonio Santoro",
+        "birthDate": "2001-02-19",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-10",
+        "name": "Christian Villa",
+        "birthDate": "1993-12-30",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-07",
+        "name": "Lorenzo Mancini",
+        "birthDate": "1993-10-28",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-sassuolo-gen-17",
+        "name": "Paolo Gallo",
+        "birthDate": "1994-11-10",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

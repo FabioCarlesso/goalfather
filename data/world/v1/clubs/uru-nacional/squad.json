@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "uru-nacional-gen-01",
+        "name": "Brian Fernández",
+        "birthDate": "2000-05-27",
+        "nationality": "URU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-02",
+        "name": "Luciano Cáceres",
+        "birthDate": "2001-03-20",
+        "nationality": "URU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-13",
+        "name": "Santiago Aguirre",
+        "birthDate": "1994-12-15",
+        "nationality": "URU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "sebastian-coates",
+        "name": "Sebastián Coates",
+        "birthDate": "1990-10-07",
+        "nationality": "URU",
+        "secondNationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "uru-nacional-gen-05",
+        "name": "Brian Suárez",
+        "birthDate": "2003-11-02",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-10",
+        "name": "Facundo Aguirre",
+        "birthDate": "2003-07-08",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-14",
+        "name": "Kevin Ríos",
+        "birthDate": "1995-09-08",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-07",
+        "name": "Maximiliano Suárez",
+        "birthDate": "1995-02-16",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-03",
+        "name": "Valentín Herrera",
+        "birthDate": "2001-09-21",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-04",
+        "name": "Yeferson Vargas",
+        "birthDate": "2004-06-29",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bruno-zuculini",
+        "name": "Bruno Zuculini",
+        "birthDate": "1993-04-02",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "gustavo-lorenzetti",
+        "name": "Gustavo Lorenzetti",
+        "birthDate": "1985-05-10",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "mauricio-pereyra",
+        "name": "Mauricio Pereyra",
+        "birthDate": "1990-03-15",
+        "nationality": "URU",
+        "secondNationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "uru-nacional-gen-08",
+        "name": "Jonathan Ibarra",
+        "birthDate": "2003-10-09",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-11",
+        "name": "Nahuel Quintero",
+        "birthDate": "2001-10-07",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-15",
+        "name": "Nahuel Torres",
+        "birthDate": "2005-12-23",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-06",
+        "name": "Valentín Gómez",
+        "birthDate": "2006-10-13",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "federico-santander",
+        "name": "Federico Santander",
+        "birthDate": "1991-06-04",
+        "nationality": "PAR",
+        "position": "FW"
+      },
+      {
+        "id": "maxi-gomez",
+        "name": "Maxi Gómez",
+        "birthDate": "1996-08-14",
+        "nationality": "URU",
+        "position": "FW"
+      },
+      {
+        "id": "uru-nacional-gen-12",
+        "name": "Emiliano Giménez",
+        "birthDate": "1997-03-04",
+        "nationality": "URU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-09",
+        "name": "Sebastián Espinoza",
+        "birthDate": "2000-04-23",
+        "nationality": "URU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "uru-nacional-gen-16",
+        "name": "Walter Acosta",
+        "birthDate": "2002-01-04",
+        "nationality": "URU",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

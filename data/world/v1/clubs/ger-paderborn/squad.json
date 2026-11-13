@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ger-paderborn-gen-18",
+        "name": "Leon Friedrich",
+        "birthDate": "1997-01-26",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-02",
+        "name": "Simon Schmidt",
+        "birthDate": "1998-01-17",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-01",
+        "name": "Tobias Bauer",
+        "birthDate": "2001-04-29",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-15",
+        "name": "Andreas Meyer",
+        "birthDate": "2003-08-25",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-19",
+        "name": "Andreas Walter",
+        "birthDate": "1998-03-06",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-06",
+        "name": "Jannik Walter",
+        "birthDate": "2004-02-11",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-09",
+        "name": "Leon Weber",
+        "birthDate": "1996-04-14",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-04",
+        "name": "Max Bauer",
+        "birthDate": "2003-03-06",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-12",
+        "name": "Patrick Fischer",
+        "birthDate": "2005-07-09",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-03",
+        "name": "Tobias Klein",
+        "birthDate": "2000-09-02",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "kai-klefisch",
+        "name": "Kai Klefisch",
+        "birthDate": "1999-12-03",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "ger-paderborn-gen-10",
+        "name": "Luca Hofmann",
+        "birthDate": "2005-09-01",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-07",
+        "name": "Luca Schwarz",
+        "birthDate": "2004-10-25",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-13",
+        "name": "Nico Hartmann",
+        "birthDate": "2000-02-27",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-20",
+        "name": "Robin Werner",
+        "birthDate": "1998-11-24",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-16",
+        "name": "Sebastian Schwarz",
+        "birthDate": "1998-01-16",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-05",
+        "name": "Tim Fischer",
+        "birthDate": "2006-07-28",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-14",
+        "name": "Lukas Walter",
+        "birthDate": "1998-01-12",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-21",
+        "name": "Moritz Müller",
+        "birthDate": "1999-12-01",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-08",
+        "name": "Niklas Koch",
+        "birthDate": "1998-07-02",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-17",
+        "name": "Patrick Schmid",
+        "birthDate": "2006-11-06",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-paderborn-gen-11",
+        "name": "Philipp Lang",
+        "birthDate": "2005-07-28",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

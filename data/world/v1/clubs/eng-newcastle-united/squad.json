@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "aaron-ramsdale",
+        "name": "Aaron Ramsdale",
+        "birthDate": "1998-05-14",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "ewen-jaouen",
+        "name": "Ewen Jaouen",
+        "birthDate": "2005-12-29",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "lukas-hornicek",
+        "name": "Lukáš Horníček",
+        "birthDate": "2002-07-13",
+        "nationality": "CZE",
+        "position": "GK"
+      },
+      {
+        "id": "mark-gillespie",
+        "name": "Mark Gillespie",
+        "birthDate": "1992-03-27",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "nick-pope",
+        "name": "Nick Pope",
+        "birthDate": "1992-04-19",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "amar-dedic",
+        "name": "Amar Dedić",
+        "birthDate": "2002-08-18",
+        "nationality": "BIH",
+        "position": "DF"
+      },
+      {
+        "id": "dan-burn",
+        "name": "Dan Burn",
+        "birthDate": "1992-05-09",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "lewis-hall",
+        "name": "Lewis Hall",
+        "birthDate": "2004-09-08",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "malick-thiaw",
+        "name": "Malick Thiaw",
+        "birthDate": "2001-08-08",
+        "nationality": "GER",
+        "secondNationality": "FIN",
+        "position": "DF"
+      },
+      {
+        "id": "sven-norman-botman",
+        "name": "Sven Norman Botman",
+        "birthDate": "2000-01-12",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "tino-livramento",
+        "name": "Tino Livramento",
+        "birthDate": "2002-11-12",
+        "nationality": "ENG",
+        "secondNationality": "POR",
+        "position": "DF"
+      },
+      {
+        "id": "aladji-bamba",
+        "name": "Aladji Bamba",
+        "birthDate": "2006-07-14",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "bazoumana-toure",
+        "name": "Bazoumana Touré",
+        "birthDate": "2006-03-02",
+        "nationality": "CIV",
+        "position": "MF"
+      },
+      {
+        "id": "jacob-ramsey",
+        "name": "Jacob Ramsey",
+        "birthDate": "2001-05-28",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "joe-willock",
+        "name": "Joe Willock",
+        "birthDate": "1999-08-20",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "lewis-miley",
+        "name": "Lewis Miley",
+        "birthDate": "2006-05-01",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "matty-longstaff",
+        "name": "Matty Longstaff",
+        "birthDate": "2000-03-21",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "nicolas-gonzalez-iglesias",
+        "name": "Nicolás González Iglesias",
+        "birthDate": "2002-01-03",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "sean-steur",
+        "name": "Sean Steur",
+        "birthDate": "2008-01-11",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "anthony-elanga",
+        "name": "Anthony Elanga",
+        "birthDate": "2002-04-27",
+        "nationality": "SWE",
+        "position": "FW"
+      },
+      {
+        "id": "harvey-barnes",
+        "name": "Harvey Barnes",
+        "birthDate": "1997-12-09",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "joelinton",
+        "name": "Joelinton",
+        "birthDate": "1996-08-14",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "matias-fernandez-pardo",
+        "name": "Matias Fernandez-Pardo",
+        "birthDate": "2005-02-03",
+        "nationality": "ESP",
+        "secondNationality": "BEL",
+        "position": "FW"
+      },
+      {
+        "id": "william-osula",
+        "name": "William Osula",
+        "birthDate": "2003-08-04",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "yoane-wissa",
+        "name": "Yoane Wissa",
+        "birthDate": "1996-09-03",
+        "nationality": "COD",
+        "secondNationality": "FRA",
+        "position": "FW"
+      }
+    ]
+  }
+}

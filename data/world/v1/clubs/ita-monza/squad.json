@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ita-monza-gen-15",
+        "name": "Gianluca Marino",
+        "birthDate": "1993-07-14",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-01",
+        "name": "Lorenzo Russo",
+        "birthDate": "1994-12-12",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-02",
+        "name": "Valerio Serra",
+        "birthDate": "2004-01-05",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "armando-izzo",
+        "name": "Armando Izzo",
+        "birthDate": "1992-03-02",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-monza-gen-12",
+        "name": "Daniele Rossi",
+        "birthDate": "1996-01-12",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-03",
+        "name": "Mattia De Luca",
+        "birthDate": "1997-03-18",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-16",
+        "name": "Nicola Bruno",
+        "birthDate": "2001-02-11",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-06",
+        "name": "Pietro Bruno",
+        "birthDate": "1998-08-15",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-09",
+        "name": "Roberto Lombardi",
+        "birthDate": "1993-08-25",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-04",
+        "name": "Valerio De Luca",
+        "birthDate": "2003-09-28",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "andrea-colpani",
+        "name": "Andrea Colpani",
+        "birthDate": "1999-05-11",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "matteo-pessina",
+        "name": "Matteo Pessina",
+        "birthDate": "1997-04-21",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "ita-monza-gen-07",
+        "name": "Fabio Fontana",
+        "birthDate": "2001-04-25",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-17",
+        "name": "Gabriele Mancini",
+        "birthDate": "2004-09-14",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-05",
+        "name": "Giovanni Testa",
+        "birthDate": "2007-03-17",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-13",
+        "name": "Marco Romano",
+        "birthDate": "2004-06-02",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-10",
+        "name": "Stefano Ricci",
+        "birthDate": "1997-03-31",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "keita-balde",
+        "name": "Keita Balde",
+        "birthDate": "1995-03-08",
+        "nationality": "SEN",
+        "secondNationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "ita-monza-gen-18",
+        "name": "Giorgio Rossi",
+        "birthDate": "2003-08-02",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-11",
+        "name": "Leonardo Bruno",
+        "birthDate": "2000-11-22",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-08",
+        "name": "Nicolò Colombo",
+        "birthDate": "1997-09-26",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-monza-gen-14",
+        "name": "Tommaso Colombo",
+        "birthDate": "2000-12-19",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

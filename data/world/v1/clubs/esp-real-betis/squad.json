@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "daniel-martin-fernandez",
+        "name": "Daniel Martín Fernández",
+        "birthDate": "1998-07-08",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "esp-real-betis-gen-01",
+        "name": "Andrés Hernández",
+        "birthDate": "2002-10-07",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-real-betis-gen-03",
+        "name": "Iván Fernández",
+        "birthDate": "1999-02-15",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "chadi-riad",
+        "name": "Chadi Riad",
+        "birthDate": "2003-06-17",
+        "nationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "diego-llorente",
+        "name": "Diego Llorente",
+        "birthDate": "1993-08-16",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "fran-garcia",
+        "name": "Fran García",
+        "birthDate": "1999-08-14",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "hector-bellerin",
+        "name": "Héctor Bellerín",
+        "birthDate": "1995-03-19",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "marc-bartra",
+        "name": "Marc Bartra",
+        "birthDate": "1991-01-15",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "natan-bernardo-de-souza",
+        "name": "Natan Bernardo de Souza",
+        "birthDate": "2001-02-06",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "esp-real-betis-gen-04",
+        "name": "Raúl Torres",
+        "birthDate": "2000-12-23",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "abde-ezzalzouli",
+        "name": "Abde Ezzalzouli",
+        "birthDate": "2001-12-17",
+        "nationality": "MAR",
+        "secondNationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "cucho-hernandez",
+        "name": "Cucho Hernández",
+        "birthDate": "1999-04-22",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "dani-ceballos",
+        "name": "Dani Ceballos",
+        "birthDate": "1996-08-07",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "giovani-lo-celso",
+        "name": "Giovani Lo Celso",
+        "birthDate": "1996-04-09",
+        "nationality": "ITA",
+        "secondNationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "isco",
+        "name": "Isco",
+        "birthDate": "1992-04-21",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-real-betis-gen-05",
+        "name": "Adrián Ruiz",
+        "birthDate": "2007-09-24",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-real-betis-gen-02",
+        "name": "Carlos Díaz",
+        "birthDate": "2006-03-01",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "antony-dos-santos",
+        "name": "Antony dos Santos",
+        "birthDate": "2000-02-24",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "iker-losada",
+        "name": "Iker Losada",
+        "birthDate": "2001-08-01",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "juanmi-jimenez",
+        "name": "Juanmi Jiménez",
+        "birthDate": "1993-05-20",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "troy-parrott",
+        "name": "Troy Parrott",
+        "birthDate": "2002-02-04",
+        "nationality": "IRL",
+        "position": "FW"
+      },
+      {
+        "id": "esp-real-betis-gen-06",
+        "name": "Rubén Martínez",
+        "birthDate": "2006-05-14",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

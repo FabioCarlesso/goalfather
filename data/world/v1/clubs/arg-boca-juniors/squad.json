@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "leandro-brey",
+        "name": "Leandro Brey",
+        "birthDate": "2002-09-21",
+        "nationality": "ARG",
+        "position": "GK"
+      },
+      {
+        "id": "arg-boca-juniors-gen-10",
+        "name": "Emiliano Flores",
+        "birthDate": "1997-11-16",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-01",
+        "name": "Jonathan Aguirre",
+        "birthDate": "2000-06-27",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "cristian-lema",
+        "name": "Cristian Lema",
+        "birthDate": "1990-09-12",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "facundo-roncaglia",
+        "name": "Facundo Roncaglia",
+        "birthDate": "1987-02-10",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "lautaro-di-lollo-vacilo",
+        "name": "Lautaro Di Lollo Vacilo",
+        "birthDate": "2004-03-10",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "nicolas-figal",
+        "name": "Nicolás Figal",
+        "birthDate": "1994-04-03",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "walter-molas",
+        "name": "Walter Molas",
+        "birthDate": "2004-06-23",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "arg-boca-juniors-gen-11",
+        "name": "Sebastián Sosa",
+        "birthDate": "1996-12-28",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-07",
+        "name": "Sebastián Villalba",
+        "birthDate": "2001-09-13",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "leandro-paredes",
+        "name": "Leandro Paredes",
+        "birthDate": "1994-06-29",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "marcos-acuna",
+        "name": "Marcos Acuña",
+        "birthDate": "1991-10-28",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "arg-boca-juniors-gen-12",
+        "name": "Ezequiel Ríos",
+        "birthDate": "1999-01-25",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-08",
+        "name": "Juan Pablo Aguirre",
+        "birthDate": "2003-02-27",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-02",
+        "name": "Santiago González",
+        "birthDate": "1996-06-21",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-03",
+        "name": "Sebastián Romero",
+        "birthDate": "1998-02-03",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-05",
+        "name": "Walter Duarte",
+        "birthDate": "1995-05-28",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "enner-valencia",
+        "name": "Enner Valencia",
+        "birthDate": "1989-11-04",
+        "nationality": "ECU",
+        "position": "FW"
+      },
+      {
+        "id": "arg-boca-juniors-gen-04",
+        "name": "Bruno Quintero",
+        "birthDate": "2007-01-01",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-13",
+        "name": "Gastón Sosa",
+        "birthDate": "1995-08-01",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-09",
+        "name": "Kevin Benítez",
+        "birthDate": "1999-02-05",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-boca-juniors-gen-06",
+        "name": "Nahuel Vargas",
+        "birthDate": "1999-04-10",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "ita-atalanta",
+      "name": "Atalanta",
+      "country": "ITA",
+      "reputation": 80,
+      "stadium": {
+        "name": "stadio di Bergamo",
+        "capacity": 24950
+      }
+    },
+    {
+      "id": "ita-bologna",
+      "name": "Bologna",
+      "country": "ITA",
+      "reputation": 70,
+      "stadium": {
+        "name": "stadio Renato Dall'Ara",
+        "capacity": 36462
+      }
+    },
+    {
+      "id": "ita-cagliari",
+      "name": "Cagliari",
+      "country": "ITA",
+      "reputation": 52,
+      "stadium": {
+        "name": "Unipol Domus",
+        "capacity": 16416
+      }
+    },
+    {
+      "id": "ita-como",
+      "name": "Como",
+      "country": "ITA",
+      "reputation": 60,
+      "stadium": {
+        "name": "stadio Giuseppe Sinigaglia",
+        "capacity": 13602
+      }
+    },
+    {
+      "id": "ita-fiorentina",
+      "name": "Fiorentina",
+      "country": "ITA",
+      "reputation": 72,
+      "stadium": {
+        "name": "stadio Artemio Franchi",
+        "capacity": 43325
+      }
+    },
+    {
+      "id": "ita-frosinone",
+      "name": "Frosinone",
+      "country": "ITA",
+      "reputation": 44,
+      "stadium": {
+        "name": "Stadio Benito Stirpe",
+        "capacity": 16227
+      }
+    },
+    {
+      "id": "ita-genoa",
+      "name": "Genoa",
+      "country": "ITA",
+      "reputation": 58,
+      "stadium": {
+        "name": "stadio Luigi Ferraris",
+        "capacity": 33205
+      }
+    },
+    {
+      "id": "ita-inter",
+      "name": "Inter",
+      "country": "ITA",
+      "reputation": 92,
+      "stadium": {
+        "name": "stadio Giuseppe Meazza",
+        "capacity": 75817
+      }
+    },
+    {
+      "id": "ita-juventus",
+      "name": "Juventus",
+      "country": "ITA",
+      "reputation": 90,
+      "stadium": {
+        "name": "Juventus Stadium",
+        "capacity": 41700
+      }
+    },
+    {
+      "id": "ita-lazio",
+      "name": "Lazio",
+      "country": "ITA",
+      "reputation": 76,
+      "stadium": {
+        "name": "Stadio Olimpico",
+        "capacity": 70634
+      }
+    },
+    {
+      "id": "ita-lecce",
+      "name": "Lecce",
+      "country": "ITA",
+      "reputation": 48,
+      "stadium": {
+        "name": "stadio Via del Mare",
+        "capacity": 31461
+      }
+    },
+    {
+      "id": "ita-milan",
+      "name": "Milan",
+      "country": "ITA",
+      "reputation": 90,
+      "stadium": {
+        "name": "stadio Giuseppe Meazza",
+        "capacity": 75817
+      }
+    },
+    {
+      "id": "ita-monza",
+      "name": "Monza",
+      "country": "ITA",
+      "reputation": 46,
+      "stadium": {
+        "name": "stadio Brianteo",
+        "capacity": 17102
+      }
+    },
+    {
+      "id": "ita-napoli",
+      "name": "Napoli",
+      "country": "ITA",
+      "reputation": 86,
+      "stadium": {
+        "name": "Stadio Diego Armando Maradona",
+        "capacity": 54726
+      }
+    },
+    {
+      "id": "ita-parma",
+      "name": "Parma",
+      "country": "ITA",
+      "reputation": 54,
+      "stadium": {
+        "name": "stadio Ennio Tardini",
+        "capacity": 22352
+      }
+    },
+    {
+      "id": "ita-roma",
+      "name": "Roma",
+      "country": "ITA",
+      "reputation": 80,
+      "stadium": {
+        "name": "Stadio Olimpico",
+        "capacity": 70634
+      }
+    },
+    {
+      "id": "ita-sassuolo",
+      "name": "Sassuolo",
+      "country": "ITA",
+      "reputation": 50,
+      "stadium": {
+        "name": "Mapei Stadium - Città del Tricolore",
+        "capacity": 21525
+      }
+    },
+    {
+      "id": "ita-torino",
+      "name": "Torino",
+      "country": "ITA",
+      "reputation": 62,
+      "stadium": {
+        "name": "Stadio Olimpico Grande Torino",
+        "capacity": 28177
+      }
+    },
+    {
+      "id": "ita-udinese",
+      "name": "Udinese",
+      "country": "ITA",
+      "reputation": 56,
+      "stadium": {
+        "name": "stadio Friuli",
+        "capacity": 25312
+      }
+    },
+    {
+      "id": "ita-venezia",
+      "name": "Venezia",
+      "country": "ITA",
+      "reputation": 44,
+      "stadium": {
+        "name": "stadio Pier Luigi Penzo",
+        "capacity": 10500
+      }
+    }
+  ]
+}

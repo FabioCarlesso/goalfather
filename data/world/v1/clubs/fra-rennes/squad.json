@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "brice-samba",
+        "name": "Brice Samba",
+        "birthDate": "1994-04-25",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "geoffrey-lembet",
+        "name": "Geoffrey Lembet",
+        "birthDate": "1988-09-23",
+        "nationality": "CTA",
+        "secondNationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "fra-rennes-gen-09",
+        "name": "Théo Fournier",
+        "birthDate": "2000-06-02",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "brandon-soppy",
+        "name": "Brandon Soppy",
+        "birthDate": "2002-02-02",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "lorenz-assignon",
+        "name": "Lorenz Assignon",
+        "birthDate": "2000-06-22",
+        "nationality": "FRA",
+        "secondNationality": "TOG",
+        "position": "DF"
+      },
+      {
+        "id": "loic-bade",
+        "name": "Loïc Bade",
+        "birthDate": "2000-04-11",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-rennes-gen-01",
+        "name": "Florian Fontaine",
+        "birthDate": "2001-02-11",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-10",
+        "name": "Mathieu Blanc",
+        "birthDate": "2005-01-01",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-06",
+        "name": "Maxime Fontaine",
+        "birthDate": "2003-12-01",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-03",
+        "name": "Romain Roux",
+        "birthDate": "2003-12-11",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ludovic-blas",
+        "name": "Ludovic Blas",
+        "birthDate": "1997-12-31",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "musa-al-taamari",
+        "name": "Musa Al-Taamari",
+        "birthDate": "1997-06-10",
+        "nationality": "JOR",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "przemyslaw-frankowski",
+        "name": "Przemysław Frankowski",
+        "birthDate": "1995-04-12",
+        "nationality": "POL",
+        "position": "MF"
+      },
+      {
+        "id": "valentin-rongier",
+        "name": "Valentin Rongier",
+        "birthDate": "1994-12-07",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "fra-rennes-gen-11",
+        "name": "Florian Fournier",
+        "birthDate": "1996-07-05",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-04",
+        "name": "Lucas Boyer",
+        "birthDate": "1995-07-21",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-07",
+        "name": "Pierre Vincent",
+        "birthDate": "1999-06-13",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "boulaye-dia",
+        "name": "Boulaye Dia",
+        "birthDate": "1996-11-16",
+        "nationality": "SEN",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-rennes-gen-08",
+        "name": "Damien André",
+        "birthDate": "2007-09-15",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-02",
+        "name": "Jordan Mercier",
+        "birthDate": "1997-04-17",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-12",
+        "name": "Jordan Roux",
+        "birthDate": "2003-11-07",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-rennes-gen-05",
+        "name": "Théo Leroy",
+        "birthDate": "2001-07-08",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

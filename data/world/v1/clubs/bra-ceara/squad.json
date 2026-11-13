@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-ceara-gen-01",
+        "name": "Bruno Pinheiro",
+        "birthDate": "2006-04-19",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-19",
+        "name": "Cristiano Abreu",
+        "birthDate": "2002-11-23",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-02",
+        "name": "Vinícius Araújo",
+        "birthDate": "1997-01-21",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-16",
+        "name": "Arthur Tavares",
+        "birthDate": "1996-05-17",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-03",
+        "name": "Caio Moreira",
+        "birthDate": "2000-09-10",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-20",
+        "name": "Danilo Fernandes",
+        "birthDate": "1995-03-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-05",
+        "name": "Fábio Farias",
+        "birthDate": "2001-06-16",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-13",
+        "name": "Jorge Ribeiro",
+        "birthDate": "1997-02-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-07",
+        "name": "Paulo Cunha",
+        "birthDate": "2002-10-12",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-10",
+        "name": "Vinícius Monteiro",
+        "birthDate": "1998-01-24",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-14",
+        "name": "Breno Freitas",
+        "birthDate": "1993-12-17",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-06",
+        "name": "Cássio Barbosa",
+        "birthDate": "2007-05-03",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-04",
+        "name": "Hélio Souza",
+        "birthDate": "2006-07-26",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-08",
+        "name": "Leandro Fernandes",
+        "birthDate": "2006-06-01",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-11",
+        "name": "Leonardo Moraes",
+        "birthDate": "2004-11-15",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-17",
+        "name": "Paulo Dias",
+        "birthDate": "2000-08-03",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-21",
+        "name": "Valdir Gomes",
+        "birthDate": "1997-03-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-22",
+        "name": "Arthur Santana",
+        "birthDate": "1996-11-04",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-18",
+        "name": "Rafael Cavalcanti",
+        "birthDate": "2003-08-11",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-15",
+        "name": "Rogério Santana",
+        "birthDate": "1998-08-15",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-09",
+        "name": "Sérgio Moraes",
+        "birthDate": "2000-06-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-ceara-gen-12",
+        "name": "Thiago Valente",
+        "birthDate": "1996-10-22",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

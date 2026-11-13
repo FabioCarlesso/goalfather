@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-bahia-gen-02",
+        "name": "Emerson Fonseca",
+        "birthDate": "2000-10-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-15",
+        "name": "Márcio Sampaio",
+        "birthDate": "2008-06-28",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-01",
+        "name": "Thiago Siqueira",
+        "birthDate": "1994-12-02",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-16",
+        "name": "Anderson Ferreira",
+        "birthDate": "2001-11-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-03",
+        "name": "Breno Valente",
+        "birthDate": "2004-06-19",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-04",
+        "name": "Juliano Martins",
+        "birthDate": "1996-01-28",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-09",
+        "name": "Juliano Moreira",
+        "birthDate": "2004-10-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-07",
+        "name": "Nathan Toledo",
+        "birthDate": "2003-10-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-12",
+        "name": "Paulo Coelho",
+        "birthDate": "2002-09-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-05",
+        "name": "Samuel Souza",
+        "birthDate": "1998-07-31",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "elias",
+        "name": "Elias",
+        "birthDate": "1985-05-16",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "everton-ribeiro",
+        "name": "Everton Ribeiro",
+        "birthDate": "1989-04-10",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-bahia-gen-06",
+        "name": "Juliano Nascimento",
+        "birthDate": "2004-01-20",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-13",
+        "name": "Ricardo Gonçalves",
+        "birthDate": "1994-03-04",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-08",
+        "name": "Roberto Santos",
+        "birthDate": "2005-06-07",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-17",
+        "name": "Valdir Barbosa",
+        "birthDate": "1999-01-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-10",
+        "name": "Willian Abreu",
+        "birthDate": "1996-07-21",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "alejo-veliz",
+        "name": "Alejo Véliz",
+        "birthDate": "2003-09-19",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "willian-jose",
+        "name": "Willian José",
+        "birthDate": "1991-11-23",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-bahia-gen-14",
+        "name": "Antônio Gonçalves",
+        "birthDate": "2005-06-26",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-11",
+        "name": "Danilo Oliveira",
+        "birthDate": "1995-04-25",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-bahia-gen-18",
+        "name": "Hélio Macedo",
+        "birthDate": "2005-08-22",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

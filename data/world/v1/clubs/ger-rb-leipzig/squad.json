@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "orjan-nyland",
+        "name": "Ørjan Nyland",
+        "birthDate": "1990-09-10",
+        "nationality": "NOR",
+        "position": "GK"
+      },
+      {
+        "id": "ger-rb-leipzig-gen-01",
+        "name": "Jannik Müller",
+        "birthDate": "1996-12-11",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-rb-leipzig-gen-06",
+        "name": "Tobias Koch",
+        "birthDate": "2001-10-01",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "christopher-lenz",
+        "name": "Christopher Lenz",
+        "birthDate": "1994-09-22",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "luan-candido",
+        "name": "Luan Cândido",
+        "birthDate": "2001-02-02",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "ger-rb-leipzig-gen-03",
+        "name": "Andreas Bauer",
+        "birthDate": "1994-12-14",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-rb-leipzig-gen-05",
+        "name": "Florian Wolf",
+        "birthDate": "2002-02-02",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-rb-leipzig-gen-02",
+        "name": "Nico Koch",
+        "birthDate": "1994-12-25",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-rb-leipzig-gen-07",
+        "name": "Nico Zimmermann",
+        "birthDate": "2003-02-07",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-rb-leipzig-gen-04",
+        "name": "Sebastian Ziegler",
+        "birthDate": "2004-10-18",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "benjamin-henrichs",
+        "name": "Benjamin Henrichs",
+        "birthDate": "1997-02-23",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "christoph-baumgartner",
+        "name": "Christoph Baumgartner",
+        "birthDate": "1999-08-01",
+        "nationality": "AUT",
+        "position": "MF"
+      },
+      {
+        "id": "christopher-nkunku",
+        "name": "Christopher Nkunku",
+        "birthDate": "1997-11-14",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "david-raum",
+        "name": "David Raum",
+        "birthDate": "1998-04-22",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "hannes-wolf",
+        "name": "Hannes Wolf",
+        "birthDate": "1999-04-16",
+        "nationality": "AUT",
+        "position": "MF"
+      },
+      {
+        "id": "neil-el-aynaoui",
+        "name": "Neil El Aynaoui",
+        "birthDate": "2001-07-02",
+        "nationality": "MAR",
+        "secondNationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "nicolas-seiwald",
+        "name": "Nicolas Seiwald",
+        "birthDate": "2001-05-04",
+        "nationality": "AUT",
+        "position": "MF"
+      },
+      {
+        "id": "antonio-nusa",
+        "name": "Antonio Nusa",
+        "birthDate": "2005-04-17",
+        "nationality": "NOR",
+        "position": "FW"
+      },
+      {
+        "id": "marc-guiu-paz",
+        "name": "Marc Guiu Paz",
+        "birthDate": "2006-01-04",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "patrik-torset-johnsen",
+        "name": "Patrik Tørset Johnsen",
+        "birthDate": "2009-05-20",
+        "nationality": "NOR",
+        "position": "FW"
+      },
+      {
+        "id": "romulo-jose-cardoso-da-cruz",
+        "name": "Rômulo José Cardoso da Cruz",
+        "birthDate": "2002-02-08",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "ger-rb-leipzig-gen-08",
+        "name": "Alexander Frank",
+        "birthDate": "2008-05-27",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}
