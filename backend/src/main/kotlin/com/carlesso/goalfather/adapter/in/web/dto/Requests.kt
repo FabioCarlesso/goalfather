@@ -63,4 +63,5 @@ data class ErrorResponse(
 )
 
 @Serializable
-data class PlayRoundResponse(val roundNumber: Int)
+/** Encaixe liberado (issue #125): a `key` que o cliente usa em `/ws/slot/{key}`. */
+data class PlayRoundResponse(val matchday: String)

@@ -9,6 +9,7 @@ import { makeQueryClient } from '../../test/render'
 import { server } from '../../test/setup'
 import { FakeWebSocket as FakeSocket } from '../../test/fakeWebSocket'
 import type { MatchEvent, Round, RoundEvent, RoundMatch, Standings } from '../../domain/types'
+import { matchCompetition, testMatchday } from '../../test/fixtures'
 
 const MY_CLUB = 1
 
@@ -23,15 +24,15 @@ function match(overrides: Partial<RoundMatch> & Pick<RoundMatch, 'matchId'>): Ro
     awayGoals: 0,
     minute: 0,
     division: 1,
+    ...matchCompetition({ type: 'League', matchday: 3 }),
     ...overrides,
   }
 }
 
 const round: Round = {
-  number: 3,
+  matchday: testMatchday(3),
   season: 2026,
   status: 'Scheduled',
-  stage: { type: 'League', matchday: 3 },
   matches: [match({ matchId: 10 }), match({ matchId: 11, homeClubId: 3, awayClubId: 4 })],
 }
 
@@ -116,7 +117,7 @@ describe('useRoundStream (issue #112)', () => {
   beforeEach(() => {
     FakeSocket.instances = []
     vi.stubGlobal('WebSocket', FakeSocket)
-    server.use(http.post('/api/league/round/play', () => HttpResponse.json({ roundNumber: 3 })))
+    server.use(http.post('/api/league/round/play', () => HttpResponse.json({ matchday: '2026-W03-WEEKEND' })))
   })
   afterEach(() => vi.unstubAllGlobals())
 
@@ -128,11 +129,11 @@ describe('useRoundStream (issue #112)', () => {
     expect(result.current.outcome).toBeNull()
   })
 
-  it('abre /ws/round/{n}, acompanha o placar e fecha com o desfecho do clube', async () => {
+  it('abre /ws/slot/{key}, acompanha o placar e fecha com o desfecho do clube', async () => {
     const { result, queryClient } = renderStream()
     const socket = await startAndOpen(result)
 
-    expect(new URL(socket.url).pathname).toBe('/ws/round/3')
+    expect(new URL(socket.url).pathname).toBe('/ws/slot/2026-W03-WEEKEND')
     expect(result.current.status).toBe('live')
 
     socket.emit(update(10, { type: 'KickOff', minute: 0 }))
@@ -171,7 +172,11 @@ describe('useRoundStream (issue #112)', () => {
     const { result, rerender } = renderStream()
     await startAndOpen(result)
 
-    const next: Round = { ...round, number: 4, stage: { type: 'Cup', phase: 'ROUND_OF_16' }, matches: [match({ matchId: 20 })] }
+    const next: Round = {
+      ...round,
+      matchday: testMatchday(4, 'MIDWEEK'),
+      matches: [match({ matchId: 20, ...matchCompetition({ type: 'Cup', phase: 'ROUND_OF_16' }) })],
+    }
     rerender({ r: next })
 
     expect(result.current.shownRound).toBe(round)
@@ -219,7 +224,7 @@ describe('useRoundStream (issue #112)', () => {
   it('abre o stream na velocidade escolhida (issue #115)', async () => {
     const { result } = renderStream()
     const socket = await startAndOpen(result)
-    expect(socket.url).toContain('/ws/round/3')
+    expect(socket.url).toContain('/ws/slot/2026-W03-WEEKEND')
     expect(socket.url).toContain('speed=NORMAL')
     expect(result.current.liveSpeed).toBe('NORMAL')
   })
@@ -253,7 +258,7 @@ describe('useRoundStream (issue #112)', () => {
     second.serverClose()
     expect(first.closed).toBe(true)
     expect(result.current.status).toBe('finished')
-    expect(result.current.outcome?.played.number).toBe(3)
+    expect(result.current.outcome?.played.matchday.key).toBe('2026-W03-WEEKEND')
     expect(playCalls).toHaveBeenCalledTimes(1) // só o do start
     server.events.removeListener('request:start', countPlay)
   })

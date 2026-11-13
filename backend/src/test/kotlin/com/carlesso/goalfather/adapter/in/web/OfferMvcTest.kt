@@ -106,7 +106,7 @@ class OfferMvcTest {
         assertEquals("Success", body.type())
         val offer = body.getValue("offer").jsonObject
         assertEquals("Pending", offer.getValue("status").jsonObject.type())
-        assertEquals(3, offer.getValue("roundsLeft").jsonPrimitive.int)
+        assertEquals(3, offer.getValue("slotsLeft").jsonPrimitive.int)
         assertEquals("Mvc FC 971001", offer.getValue("sellerClubName").jsonPrimitive.content)
         val offerId = offer.getValue("id").jsonPrimitive.long
 

@@ -4,6 +4,7 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.RoundEventDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.domain.event.RoundEvent
+import com.carlesso.goalfather.domain.model.Matchday
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,8 @@ import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
 
 /**
- * Handler do WebSocket `/ws/round/{number}`. Sobe quando o cliente abre
+ * Handler do WebSocket `/ws/slot/{key}` (issue #125; antes `/ws/round/{n}`),
+ * em que `key` é o encaixe (`2026-W05-WEEKEND`). Sobe quando o cliente abre
  * a conexao, dispara o stream do `PlayRoundUseCase` e envia cada
  * `RoundEvent` como JSON — sempre via `RoundEventDto` (issue #72): o domínio
  * não cruza a fronteira web, nem por REST nem por WebSocket.
@@ -61,20 +63,20 @@ class RoundWebSocketHandler(
     }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
-        val number = extractRoundNumber(session)
-        if (number == null) {
-            session.close(CloseStatus.BAD_DATA.withReason("Rodada invalida na URL"))
+        val matchday = extractMatchday(session)
+        if (matchday == null) {
+            session.close(CloseStatus.BAD_DATA.withReason("Encaixe invalido na URL"))
             return
         }
 
         val speed = session.streamSpeed()
-        log.info("WS round connected: session={} round={} speed={}", session.id, number, speed)
+        log.info("WS slot connected: session={} matchday={} speed={}", session.id, matchday.key, speed)
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch {
             try {
                 var lastMinute = 0
-                playRound.stream(number).collect { event ->
+                playRound.stream(matchday).collect { event ->
                     val delayMs = when (event) {
                         is RoundEvent.MatchUpdate -> {
                             val gap = speed.gapMs(lastMinute, event.event.minute)
@@ -118,11 +120,14 @@ class RoundWebSocketHandler(
         log.info("WS round closed: session={} status={}", session.id, status)
     }
 
-    private fun extractRoundNumber(session: WebSocketSession): Int? {
-        // URI no formato /ws/round/{n}
+    /**
+     * URI no formato `/ws/slot/{key}`. O `parse` do domínio devolve `null`
+     * para chave malformada ou semana que o ano não tem — URL é entrada
+     * externa, e a ausência vira `BAD_DATA` no chamador.
+     */
+    private fun extractMatchday(session: WebSocketSession): Matchday? {
         val path = session.uri?.path ?: return null
-        val regex = Regex("/ws/round/(\\d+)")
-        val match = regex.find(path) ?: return null
-        return match.groupValues[1].toIntOrNull()
+        val key = path.substringAfter("/ws/slot/", missingDelimiterValue = "")
+        return Matchday.parse(key)
     }
 }

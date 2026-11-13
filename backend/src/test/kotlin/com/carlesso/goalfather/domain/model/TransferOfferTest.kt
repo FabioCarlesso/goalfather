@@ -9,7 +9,7 @@ import com.carlesso.goalfather.domain.model.cents
 /** Máquina de estados da proposta (issue #63) — sem Spring. */
 class TransferOfferTest {
 
-    private fun offer(roundsLeft: Int = 3, status: OfferStatus = OfferStatus.Pending) = TransferOffer(
+    private fun offer(slotsLeft: Int = 3, status: OfferStatus = OfferStatus.Pending) = TransferOffer(
         id = OfferId(1),
         buyerClubId = ClubId(1),
         buyerClubName = "Comprador",
@@ -18,7 +18,7 @@ class TransferOfferTest {
         playerId = PlayerId(10),
         playerName = "Craque",
         amount = 500_000_00.cents,
-        roundsLeft = roundsLeft,
+        slotsLeft = slotsLeft,
         status = status,
     )
 
@@ -53,35 +53,35 @@ class TransferOfferTest {
 
     @Test
     fun `cada rodada consome uma rodada do prazo`() {
-        val after = offer(roundsLeft = 3).afterRound()
+        val after = offer(slotsLeft = 3).afterSlot()
 
-        assertEquals(2, after.roundsLeft)
+        assertEquals(2, after.slotsLeft)
         assertEquals(OfferStatus.Pending, after.status)
     }
 
     @Test
     fun `a ultima rodada do prazo expira a proposta por DEADLINE`() {
-        val expired = offer(roundsLeft = 3).afterRound().afterRound().afterRound()
+        val expired = offer(slotsLeft = 3).afterSlot().afterSlot().afterSlot()
 
-        assertEquals(0, expired.roundsLeft)
+        assertEquals(0, expired.slotsLeft)
         assertEquals(OfferStatus.Expired(ExpiryReason.DEADLINE), expired.status)
     }
 
     @Test
     fun `proposta resolvida nao anda no relogio`() {
         for (status in terminals) {
-            val closed = offer(roundsLeft = 2, status = status)
-            assertEquals(closed, closed.afterRound(), "afterRound a partir de $status")
+            val closed = offer(slotsLeft = 2, status = status)
+            assertEquals(closed, closed.afterSlot(), "afterRound a partir de $status")
         }
     }
 
     @Test
     fun `virada expira a proposta cujo jogador saiu do vendedor (revisao PR 94)`() {
-        val gone = offer(roundsLeft = 3).advance(playerStillWithSeller = false)
+        val gone = offer(slotsLeft = 3).advance(playerStillWithSeller = false)
         assertEquals(OfferStatus.Expired(ExpiryReason.PLAYER_TRANSFERRED), gone.status)
 
         // Com o jogador no elenco, é só o relógio andando.
-        assertEquals(offer(roundsLeft = 3).afterRound(), offer(roundsLeft = 3).advance(playerStillWithSeller = true))
+        assertEquals(offer(slotsLeft = 3).afterSlot(), offer(slotsLeft = 3).advance(playerStillWithSeller = true))
         // Resolvida não muda, saia o jogador ou não.
         val accepted = offer(status = OfferStatus.Accepted)
         assertEquals(accepted, accepted.advance(playerStillWithSeller = false))

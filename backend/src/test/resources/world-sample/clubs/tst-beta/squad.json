@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "fixture de teste (dados fictícios)",
+  "data": {
+    "players": [
+      {
+        "id": "tst-p-101",
+        "name": "Goleiro Beta",
+        "birthDate": "1990-07-20",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "tst-p-102",
+        "name": "Meia Beta",
+        "birthDate": "2004-03-03",
+        "nationality": "BRA",
+        "position": "MF"
+      }
+    ]
+  }
+}

@@ -23,11 +23,13 @@ import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.Player
@@ -38,7 +40,6 @@ import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.domain.model.teamStrength
@@ -57,16 +58,13 @@ import com.carlesso.goalfather.domain.rules.cupDrawSeed
 import com.carlesso.goalfather.domain.rules.drawCup
 import com.carlesso.goalfather.domain.rules.fitnessSeed
 import com.carlesso.goalfather.domain.rules.gate
-import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.isSalaryDate
 import com.carlesso.goalfather.domain.rules.marketAgingSeed
-import com.carlesso.goalfather.domain.rules.promotionSpotsFor
 import com.carlesso.goalfather.domain.rules.recordRound
-import com.carlesso.goalfather.domain.rules.relegationSpotsFor
-import com.carlesso.goalfather.domain.rules.scheduleRound
-import com.carlesso.goalfather.domain.rules.seasonCalendar
 import com.carlesso.goalfather.domain.rules.seasonBoardReviews
+import com.carlesso.goalfather.domain.rules.seasonPlan
 import com.carlesso.goalfather.domain.rules.seasonRecordOf
+import com.carlesso.goalfather.domain.rules.seasonStandings
 import com.carlesso.goalfather.domain.rules.train
 import com.carlesso.goalfather.domain.rules.trainingSeed
 import com.carlesso.goalfather.domain.rules.toDismissal
@@ -105,8 +103,16 @@ import kotlin.random.Random
  * demais efeitos. Na virada, a diretoria dá o veredito — bônus, permanência ou
  * demissão — e fixa a meta da temporada nova. A engine de partida não muda.
  *
- * **Propostas entre técnicos (issue #63).** Cada rodada encerrada anda uma
- * rodada no prazo das propostas pendentes; quem chega a zero expira.
+ * **Propostas entre técnicos (issue #63).** Cada encaixe encerrado anda um
+ * encaixe no prazo das propostas pendentes; quem chega a zero expira.
+ *
+ * **Calendário semanal (issue #125).** O que se joga é um ENCAIXE (semana +
+ * meio ou fim de semana), não mais uma "rodada" global: todos os jogos de todas
+ * as competições marcados para ele. Liga e copa podem dividir o encaixe, então
+ * tudo que dependia do tipo da rodada passou a olhar a PARTIDA — pênaltis,
+ * tabela, folha, diretoria, chave da copa. Lesões andam só para quem jogou
+ * (contam jogos do clube). O próximo encaixe sai do plano da temporada
+ * (`seasonPlan`), recalculado a cada fim de encaixe.
  */
 class PlayRoundService(
     private val clubRepo: ClubRepository,
@@ -138,9 +144,9 @@ class PlayRoundService(
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
 
-    override fun stream(roundNumber: Int): Flow<RoundEvent> = flow {
-        val round = leagueRepo.findRound(roundNumber)
-            ?: throw IllegalArgumentException("Rodada $roundNumber não encontrada")
+    override fun stream(matchday: Matchday): Flow<RoundEvent> = flow {
+        val round = leagueRepo.findRound(matchday)
+            ?: throw IllegalArgumentException("Encaixe ${matchday.key} não encontrado")
 
         // Pré-computa todos os eventos de todas as partidas.
         // (Em uma versão futura podemos intercalar geração + emissão para
@@ -168,8 +174,10 @@ class PlayRoundService(
                 away = away?.startingLineup() ?: emptyLineup(),
                 homeName = match.homeClubName,
                 awayName = match.awayClubName,
-                // Data de copa = mata-mata: empate decide nos pênaltis (issue #61).
-                knockout = round.isKnockout,
+                // Jogo de copa = mata-mata: empate decide nos pênaltis (issue #61).
+                // Por PARTIDA desde o calendário semanal (issue #125): o mesmo
+                // encaixe pode ter liga e copa.
+                knockout = match.isKnockout,
             )
         }
 
@@ -274,10 +282,7 @@ class PlayRoundService(
         // decide quem leva o prêmio da fase, e o prêmio entra no caixa na mesma
         // gravação da bilheteria.
         val seasonCup = cupRepo.findBySeason(round.season)
-        val cupOutcome = when (round.stage) {
-            is RoundStage.League -> null
-            is RoundStage.Cup -> seasonCup?.recordRound(finishedRound)
-        }
+        val cupOutcome = seasonCup?.takeIf { round.matches.any { it.isKnockout } }?.recordRound(finishedRound)
         cupOutcome?.let { cupRepo.save(it.cup) }
         val cup = cupOutcome?.cup ?: seasonCup
 
@@ -311,32 +316,35 @@ class PlayRoundService(
             .map { applyRoundToStandings(finishedRound, it) }
         val boardAfterRound = boardEvaluator(finishedRound, newStandings, clubs)
 
-        val training = persistRoundEffects(round.number, events, clubs, involvedClubs, finances, boardAfterRound)
+        val training = persistRoundEffects(round.matchday, events, clubs, involvedClubs, finances, boardAfterRound)
         newStandings.forEach { leagueRepo.saveStandings(it) }
 
-        // Rodada consumida: zera a prontidão para a próxima começar limpa
-        // (issue #20). Os técnicos sinalizam de novo na rodada seguinte.
-        readinessRepo.reset(round.number)
+        // Encaixe consumido: zera a prontidão para o próximo começar limpo
+        // (issue #20). Os técnicos sinalizam de novo no encaixe seguinte.
+        readinessRepo.reset(round.matchday)
 
-        // Avança o calendário. Num turno único (Berger), a liga dura o turno
-        // da MAIOR divisão (N-1 rodadas para N clubes), e as fases da copa são
-        // intercaladas entre elas (issue #61) — `seasonCalendar` diz o que cada
-        // data disputa. Enquanto não chega à última data, gera a próxima da
-        // MESMA temporada. Ao encerrar a última, vira a temporada (issue #11)
-        // com promoção/rebaixamento entre divisões (issue #47).
+        // Avança o relógio (issue #125). O plano da temporada (liga de cada
+        // divisão + copa, encaixados na semana pelo agendador) é recalculado —
+        // é função pura dos clubes e da copa — e diz qual é o PRÓXIMO encaixe
+        // com jogo. Semanas sem jogo no mundo são puladas direto: não há o que
+        // simular nelas. Sem próximo encaixe, as competições da temporada
+        // terminaram e ela vira (issue #11), com promoção/rebaixamento (#47).
+        //
+        // O mundo atual é um país só, então "a temporada acabou" é "as
+        // competições do Brasil acabaram". A virada POR COMPETIÇÃO (a europeia
+        // em maio, a brasileira em dezembro) está no agendador
+        // (`Schedule.endingAt`/`rollOver`) e entra aqui com o mundo do MVP (#131).
         val canSchedule = canScheduleSeason(clubs)
-        val calendar = if (canSchedule) seasonCalendar(clubs, cup) else emptyList()
-        val seasonEnded = canSchedule && round.number >= calendar.size
+        val plan = if (canSchedule) seasonPlan(round.season, clubs, cup) else null
+        val nextMatchday = plan?.nextAfter(round.matchday)
 
         val tail = mutableListOf<RoundEvent>()
-        if (seasonEnded) {
+        if (plan != null && nextMatchday == null) {
             tail += startNextSeason(round.season, newStandings, cup?.champion)
-        } else if (canSchedule) {
-            // Gera a próxima data antes de sinalizar RoundFinished, para que
-            // `getCurrentRound` já encontre uma rodada Scheduled. `number` é
-            // 1-based e a lista 0-based: `calendar[number]` é a data seguinte.
-            val next = calendar[round.number]
-            leagueRepo.saveRound(scheduleRound(round.number + 1, round.season, next, clubs, cup))
+        } else if (plan != null && nextMatchday != null) {
+            // Gera o próximo encaixe antes de sinalizar RoundFinished, para que
+            // `getCurrentRound` já encontre uma rodada Scheduled.
+            leagueRepo.saveRound(plan.roundAt(nextMatchday, clubs, cup))
         }
 
         // Prazo das propostas entre técnicos (issue #63): uma rodada a menos
@@ -393,11 +401,14 @@ class PlayRoundService(
         val (clubs, boardReviews) = applyBoardTurnover(endedSeason, nextSeason, finalStandings, agedClubs)
         ageMarket(nextSeason)
         // Sorteio da copa da temporada nova (issue #61), com os clubes JÁ nas
-        // divisões novas. Vem antes da rodada 1 só por legibilidade: o
-        // calendário garante que a data 1 é sempre de liga.
-        drawSeasonCup(nextSeason, clubs)
-        leagueRepo.saveRound(generateRound(1, nextSeason, clubs))
-        freshStandings(nextSeason, clubs).forEach { leagueRepo.saveStandings(it) }
+        // divisões novas — o calendário da temporada reserva os encaixes dela.
+        val cup = drawSeasonCup(nextSeason, clubs)
+        // Primeiro encaixe da temporada nova (issue #125), tirado do plano dela.
+        if (canScheduleSeason(clubs)) {
+            val plan = seasonPlan(nextSeason, clubs, cup)
+            plan.first?.let { leagueRepo.saveRound(plan.roundAt(it, clubs, cup)) }
+        }
+        seasonStandings(nextSeason, clubs).forEach { leagueRepo.saveStandings(it) }
 
         return RoundEvent.SeasonFinished(
             season = endedSeason,
@@ -503,11 +514,17 @@ class PlayRoundService(
         standings: List<Standings>,
         clubs: Collection<Club>,
     ): (Club) -> BoardExpectation? {
-        when (round.stage) {
-            is RoundStage.Cup -> return Club::board
-            is RoundStage.League -> Unit
+        // Divisões que jogaram rodada de LIGA neste encaixe (issue #125: o
+        // encaixe pode ter só copa, ou liga e copa juntas). `when` exaustivo
+        // sobre o `sealed`: um terceiro tipo de jogo obriga a decidir aqui se
+        // ele mexe na diretoria.
+        val playedDivisions = round.matches.mapNotNullTo(HashSet()) { match ->
+            when (match.stage) {
+                is RoundStage.League -> match.division
+                is RoundStage.Cup -> null
+            }
         }
-        val playedDivisions = round.matches.mapTo(HashSet()) { it.division }
+        if (playedDivisions.isEmpty()) return Club::board
         val positions = standings
             .filter { it.division in playedDivisions }
             .flatMap { it.rows }
@@ -550,9 +567,9 @@ class PlayRoundService(
      * [canHoldCup] joga só o campeonato — e o calendário, sem copa, volta a
      * ser só de liga. Seed por temporada: reprocessar a virada sorteia igual.
      */
-    private suspend fun drawSeasonCup(season: Int, clubs: List<Club>) {
-        if (!canHoldCup(clubs)) return
-        cupRepo.save(drawCup(season, clubs, Random(cupDrawSeed(season))))
+    private suspend fun drawSeasonCup(season: Int, clubs: List<Club>): Cup? {
+        if (!canHoldCup(clubs)) return null
+        return drawCup(season, clubs, Random(cupDrawSeed(season))).also { cupRepo.save(it) }
     }
 
     /**
@@ -657,22 +674,6 @@ class PlayRoundService(
         playerRepo.deleteAll(retired)
     }
 
-    private fun freshStandings(season: Int, clubs: List<Club>): List<Standings> {
-        val byDivision = clubs.groupBy { it.division }.toSortedMap()
-        return byDivision.map { (division, divisionClubs) ->
-            Standings(
-                season = season,
-                round = 0,
-                rows = divisionClubs.sortedBy { it.id.value }.mapIndexed { i, club ->
-                    StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
-                },
-                division = division,
-                promotionSpots = promotionSpotsFor(division),
-                relegationSpots = relegationSpotsFor(division, byDivision.size),
-            )
-        }
-    }
-
     /**
      * Calcula o balanço financeiro de cada clube na rodada: bilheteria (só o
      * mandante, em função da capacidade, da força do time e do preço que o
@@ -695,8 +696,12 @@ class PlayRoundService(
         cupPrizes: Map<ClubId, Money>,
     ): List<RoundFinance> {
         val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
-        // Folha segue as rodadas de LIGA; data de copa não cobra (issue #61).
-        val salaryRound = isSalaryDate(round.stage)
+        // Folha segue as rodadas de LIGA; jogo de copa não cobra (issue #61).
+        // Por clube desde o calendário semanal (issue #125): paga quem joga,
+        // neste encaixe, uma rodada de liga que é "mês" de salário.
+        val payroll: Set<ClubId> = round.matches
+            .filter { isSalaryDate(it.stage) }
+            .flatMapTo(HashSet()) { listOf(it.homeClubId, it.awayClubId) }
         return clubs.map { club ->
             val homeGate =
                 if (club.id.value in homeClubIds) {
@@ -710,7 +715,7 @@ class PlayRoundService(
                 }
             val crowd = homeGate?.attendance ?: 0
             val revenue = homeGate?.revenue ?: Money.ZERO
-            val salaries = if (salaryRound) club.squad.sumOfMoney { it.salary } else Money.ZERO
+            val salaries = if (club.id in payroll) club.squad.sumOfMoney { it.salary } else Money.ZERO
             val prize = cupPrizes[club.id] ?: Money.ZERO
             // Rombo = quanto da folha o caixa+bilheteria+prêmio não cobriram.
             // Espelha o truncamento em zero de [persistRoundEffects] (issue #23).
@@ -747,9 +752,9 @@ class PlayRoundService(
      * mandante e visitante. O caixa nunca fica negativo (`coerceAtLeast(0)`).
      * Clubes sem nenhuma mudança não são salvos.
      *
-     * O RNG da fadiga é semeado por `rodada + clube` — determinístico como o
-     * resto do fluxo (a partida usa `matchId`), então reprocessar a mesma
-     * rodada com o mesmo elenco dá exatamente o mesmo desgaste.
+     * O RNG da fadiga é semeado por `encaixe + clube` — determinístico como o
+     * resto do fluxo (a partida usa `matchId`), então reprocessar o mesmo
+     * encaixe com o mesmo elenco dá exatamente o mesmo desgaste.
      *
      * @param clubs todos os clubes da liga — quem folgou também recupera.
      * @param playedClubs só os que entraram em campo; para os demais o conjunto
@@ -758,7 +763,7 @@ class PlayRoundService(
      *   #62) — ver [boardEvaluator].
      */
     private suspend fun persistRoundEffects(
-        roundNumber: Int,
+        matchday: Matchday,
         events: List<MatchEvent>,
         clubs: Collection<Club>,
         playedClubs: Collection<Club>,
@@ -813,8 +818,11 @@ class PlayRoundService(
                 val rested = applyRoundFitness(
                     squad = current.squad,
                     starterIds = starterIds,
-                    rng = Random(fitnessSeed(roundNumber, club.id)),
+                    rng = Random(fitnessSeed(matchday.serial, club.id)),
                     newInjuries = injuries,
+                    // Lesão conta jogos do CLUBE (issue #125): quem não jogou
+                    // neste encaixe descansa, mas a lesão não anda.
+                    clubPlayed = club.id in playedIds,
                 )
 
                 val updatedSquad = rested.map { p ->
@@ -841,7 +849,7 @@ class PlayRoundService(
                 val trained = train(
                     squad = updatedSquad,
                     focus = current.trainingFocus,
-                    rng = Random(trainingSeed(roundNumber, current.id)),
+                    rng = Random(trainingSeed(matchday.serial, current.id)),
                 )
                 report = TrainingReport(current.id, current.trainingFocus, trained.events)
 

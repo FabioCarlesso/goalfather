@@ -220,7 +220,7 @@ describe('DashboardPage', () => {
       playerId: 10,
       playerName: 'Renato Silva',
       amount: 900_000_00,
-      roundsLeft: 3,
+      slotsLeft: 3,
       status: { type: 'Pending' },
     }
     let current = offer

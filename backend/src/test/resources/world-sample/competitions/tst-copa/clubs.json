@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "fixture de teste (dados fictícios)",
+  "data": [
+    { "id": "tst-alfa" },
+    { "id": "tst-beta" }
+  ]
+}

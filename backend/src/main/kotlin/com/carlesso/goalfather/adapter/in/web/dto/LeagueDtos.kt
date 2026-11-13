@@ -2,7 +2,9 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 
 import com.carlesso.goalfather.domain.model.CareerCampaign
 import com.carlesso.goalfather.domain.model.ClubCareer
+import com.carlesso.goalfather.domain.model.CalendarView
 import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.ReadinessStatus
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -11,6 +13,7 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.SeasonRecord
 import com.carlesso.goalfather.domain.model.SeasonStanding
 import com.carlesso.goalfather.domain.model.SeasonTopScorer
+import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import kotlinx.serialization.SerialName
@@ -130,6 +133,21 @@ sealed interface RoundStageDto {
     data class Cup(val phase: KnockoutPhase) : RoundStageDto
 }
 
+/**
+ * Um encaixe do calendário semanal (issue #125). `key` é a identidade estável
+ * (rota do WebSocket, prontidão); o resto é a mesma informação já decomposta
+ * para a UI não precisar interpretar a string.
+ */
+@Serializable
+data class MatchdayDto(
+    val key: String,
+    val year: Int,
+    val week: Int,
+    val slot: Slot,
+    /** ISO-8601 (`2026-02-01`): a quarta ou o domingo do encaixe. */
+    val date: String,
+)
+
 @Serializable
 data class RoundMatchDto(
     val matchId: Long,
@@ -144,20 +162,42 @@ data class RoundMatchDto(
     val division: Int,
     /** Só em jogo de copa encerrado empatado; ausente nos demais. */
     val penalties: PenaltyScoreDto? = null,
+    /** O que a partida disputa — por partida desde o encaixe misto (issue #125). */
+    val stage: RoundStageDto,
+    val competitionId: String,
+    val competitionName: String,
 )
 
 @Serializable
 data class RoundDto(
-    val number: Int,
+    val matchday: MatchdayDto,
     val season: Int,
     val status: RoundStatus,
-    val stage: RoundStageDto,
     val matches: List<RoundMatchDto>,
+)
+
+/**
+ * `GET /api/league/calendar` (issue #125): a data corrente do jogo e o próximo
+ * jogo do clube, com a competição dele. Os dois somem quando não há o que
+ * mostrar (liga sem calendário, clube sem jogo marcado na temporada).
+ */
+@Serializable
+data class CalendarDto(
+    val current: MatchdayDto? = null,
+    val season: Int? = null,
+    val nextMatch: NextMatchDto? = null,
+)
+
+@Serializable
+data class NextMatchDto(
+    val matchday: MatchdayDto,
+    val match: RoundMatchDto,
 )
 
 @Serializable
 data class ReadinessStatusDto(
-    val roundNumber: Int,
+    /** Chave do encaixe (issue #125); ausente sem rodada no calendário. */
+    val matchday: String? = null,
     val readyCount: Int,
     val totalCount: Int,
     val pendingUsernames: List<String>,
@@ -232,7 +272,7 @@ private fun RoundStage.toDto(): RoundStageDto = when (this) {
     is RoundStage.Cup -> RoundStageDto.Cup(phase = phase)
 }
 
-private fun RoundMatch.toDto(): RoundMatchDto = RoundMatchDto(
+fun RoundMatch.toDto(): RoundMatchDto = RoundMatchDto(
     matchId = matchId,
     homeClubId = homeClubId.value,
     awayClubId = awayClubId.value,
@@ -244,18 +284,34 @@ private fun RoundMatch.toDto(): RoundMatchDto = RoundMatchDto(
     minute = minute,
     division = division.value,
     penalties = penalties?.toDto(),
+    stage = stage.toDto(),
+    competitionId = competition.value,
+    competitionName = competitionName,
+)
+
+fun Matchday.toDto(): MatchdayDto = MatchdayDto(
+    key = key,
+    year = week.year,
+    week = week.week,
+    slot = slot,
+    date = date.toString(),
 )
 
 fun Round.toDto(): RoundDto = RoundDto(
-    number = number,
+    matchday = matchday.toDto(),
     season = season,
     status = status,
-    stage = stage.toDto(),
     matches = matches.map { it.toDto() },
 )
 
+fun CalendarView.toDto(): CalendarDto = CalendarDto(
+    current = current?.toDto(),
+    season = season,
+    nextMatch = nextMatch?.let { NextMatchDto(matchday = it.matchday.toDto(), match = it.match.toDto()) },
+)
+
 fun ReadinessStatus.toDto(): ReadinessStatusDto = ReadinessStatusDto(
-    roundNumber = roundNumber,
+    matchday = matchday?.key,
     readyCount = readyCount,
     totalCount = totalCount,
     pendingUsernames = pendingUsernames,

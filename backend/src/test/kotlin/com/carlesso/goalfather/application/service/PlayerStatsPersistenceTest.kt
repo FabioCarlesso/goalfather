@@ -15,6 +15,7 @@ import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
+import com.carlesso.goalfather.test.md
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.just
@@ -53,7 +54,7 @@ class PlayerStatsPersistenceTest {
         .copy(squad = (101L..111L).map { makePlayer(it, overall = 70) })
 
     private val round = Round(
-        number = 1,
+        matchday = md(1),
         season = 2026,
         matches = listOf(
             RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC"),
@@ -71,7 +72,7 @@ class PlayerStatsPersistenceTest {
 
     @Test
     fun `gols e cartoes dos eventos sao acumulados no elenco e persistidos`() = runTest {
-        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.findRound(md(1)) } returns round
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(ClubId(1)) } returns home
         coEvery { clubRepo.findById(ClubId(2)) } returns away
@@ -82,7 +83,7 @@ class PlayerStatsPersistenceTest {
         val savedClubs = mutableListOf<Club>()
         coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
 
-        val events = service.stream(1).toList()
+        val events = service.stream(md(1)).toList()
         val matchEvents = events.filterIsInstance<RoundEvent.MatchUpdate>().map { it.event }
         val goalEvents = matchEvents.count { it is MatchEvent.Goal }
         val yellowEvents = matchEvents.count { it is MatchEvent.Card && !it.red }

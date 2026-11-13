@@ -4,7 +4,7 @@
 
 import type { Player, TransferOffer, TransferOfferResult } from '../domain/types'
 
-export const OFFER_DEADLINE_ROUNDS = 3
+export const OFFER_DEADLINE_SLOTS = 3
 export const MIN_OFFER_CENTS = 200_00
 export const MIN_SQUAD_SIZE = 11
 export const MAX_SQUAD_SIZE = 25
@@ -46,9 +46,9 @@ export function offerBlocker(buyer: OfferClub, seller: OfferClub, playerId: numb
 /** Espelha `TransferOffer.afterRound`: uma rodada a menos; a última expira. */
 export function afterRound(offer: TransferOffer): TransferOffer {
   if (offer.status.type !== 'Pending') return offer
-  return offer.roundsLeft <= 1
-    ? { ...offer, roundsLeft: 0, status: { type: 'Expired', reason: 'DEADLINE' } }
-    : { ...offer, roundsLeft: offer.roundsLeft - 1 }
+  return offer.slotsLeft <= 1
+    ? { ...offer, slotsLeft: 0, status: { type: 'Expired', reason: 'DEADLINE' } }
+    : { ...offer, slotsLeft: offer.slotsLeft - 1 }
 }
 
 /**

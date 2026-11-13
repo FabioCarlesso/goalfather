@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
@@ -20,20 +21,26 @@ import com.carlesso.goalfather.domain.model.Standings
  * - Partidas de clubes que não estão em `current.rows` são ignoradas —
  *   com múltiplas divisões (issue #47), a MESMA rodada pode ser aplicada
  *   a cada tabela e só os jogos daquela divisão contam.
- * - Rodada de COPA não mexe na tabela (issue #61): mata-mata não vale ponto.
- *   O `when` sobre o `sealed` [RoundStage] força a decisão aqui, em vez de
- *   confiar que o chamador lembre de filtrar. A tabela também conta a rodada
- *   pela `matchday` da liga — com a copa no meio, a data 5 pode ser a 3ª
- *   rodada do campeonato, e é esta que o técnico lê.
+ * - Jogo de COPA não mexe na tabela (issue #61): mata-mata não vale ponto.
+ *   Desde o calendário semanal (issue #125) o encaixe pode juntar liga e copa,
+ *   então o filtro é POR PARTIDA, com o `when` sobre o `sealed` [RoundStage]
+ *   forçando a decisão aqui em vez de confiar que o chamador filtre.
+ * - A tabela conta a rodada pela `matchday` da LIGA — com a copa no meio, o
+ *   encaixe da 3ª rodada do campeonato é outro, e é a rodada que o técnico lê.
+ *   Encaixe sem jogo desta tabela devolve a tabela intacta.
  */
 fun applyRoundToStandings(round: Round, current: Standings): Standings {
-    val matchday = when (val stage = round.stage) {
-        is RoundStage.League -> stage.matchday
-        is RoundStage.Cup -> return current
-    }
     val byId = current.rows.associateBy { it.clubId }.toMutableMap()
+    val leagueMatches = round.matches.mapNotNull { match ->
+        when (val stage = match.stage) {
+            is RoundStage.League -> (match to stage.matchday).takeIf { match.homeClubId in byId && match.awayClubId in byId }
+            is RoundStage.Cup -> null
+        }
+    }
+    // `maxOfOrNull` + elvis: nenhum jogo de liga desta tabela → nada muda.
+    val matchday = leagueMatches.maxOfOrNull { it.second } ?: return current
 
-    for (match in round.matches) {
+    for ((match, _) in leagueMatches) {
         if (match.status != RoundStatus.Finished) continue
         val home = byId[match.homeClubId] ?: continue
         val away = byId[match.awayClubId] ?: continue
@@ -77,4 +84,25 @@ private fun StandingRow.updatedForMatch(ownGoals: Int, againstGoals: Int): Stand
         losses = losses + (if (ownGoals < againstGoals) 1 else 0),
         points = points + pointsAdded,
     )
+}
+
+/**
+ * Tabelas zeradas da temporada [season], uma por divisão, clubes em ordem de
+ * id — o ponto de partida de toda temporada nova. Saiu do `PlayRoundService`
+ * (issue #125) porque o boot também reinicia temporada (ver `DataInitializer`).
+ */
+fun seasonStandings(season: Int, clubs: List<Club>): List<Standings> {
+    val byDivision = clubs.groupBy { it.division }.toSortedMap()
+    return byDivision.map { (division, divisionClubs) ->
+        Standings(
+            season = season,
+            round = 0,
+            rows = divisionClubs.sortedBy { it.id.value }.mapIndexed { i, club ->
+                StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
+            },
+            division = division,
+            promotionSpots = promotionSpotsFor(division),
+            relegationSpots = relegationSpotsFor(division, byDivision.size),
+        )
+    }
 }

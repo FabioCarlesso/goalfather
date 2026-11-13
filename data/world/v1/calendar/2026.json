@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "exemplo mínimo montado à mão; datas FIFA e janelas completas virão na issue #127",
+  "data": {
+    "year": 2026,
+    "fifaWindows": [
+      { "start": "2026-03-23", "end": "2026-03-31" }
+    ],
+    "transferWindows": []
+  }
+}

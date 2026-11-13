@@ -3,6 +3,7 @@ package com.carlesso.goalfather.adapter.out.persistence.repository
 import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.CupEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.MatchdayKey
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
@@ -138,29 +139,34 @@ interface CupJpaRepository : JpaRepository<CupEntity, Int> {
     fun findTopByOrderBySeasonDesc(): CupEntity?
 }
 
-interface RoundJpaRepository : JpaRepository<RoundEntity, Int> {
+interface RoundJpaRepository : JpaRepository<RoundEntity, MatchdayKey> {
     /**
-     * Data corrente do calendário: a maior `number` da temporada MAIS RECENTE.
-     * Ordenar só por `number` estava errado (review do PR #78): a PK é só
-     * `number` e a virada reescreve apenas a linha 1, então as datas 2..N da
-     * temporada encerrada continuam na tabela — e a "atual" virava a última
-     * delas, já `Finished`, travando a liga depois da 1ª temporada.
+     * Encaixe corrente do calendário: o mais adiante no tempo (issue #125). A
+     * PK é o encaixe, que nunca se repete entre temporadas, e o serviço só
+     * grava o próximo depois de encerrar o atual — o último é o que está em
+     * aberto. `slot` desempata dentro da semana pela ordem alfabética, que é a
+     * do tempo (`MIDWEEK` < `WEEKEND`).
      */
-    fun findTopByOrderBySeasonDescNumberDesc(): RoundEntity?
+    fun findTopByOrderByIdIsoYearDescIdIsoWeekDescIdSlotDesc(): RoundEntity?
 }
 
 interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, RoundReadinessId> {
-    fun findAllByIdRoundNumber(roundNumber: Int): List<RoundReadinessEntity>
+    fun findAllByIdIsoYearAndIdIsoWeekAndIdSlot(isoYear: Int, isoWeek: Int, slot: String): List<RoundReadinessEntity>
 
     /**
-     * Menor `ready_at` da rodada = instante do primeiro "pronto" (issue #45).
+     * Menor `ready_at` do encaixe = instante do primeiro "pronto" (issue #45).
      * `MIN` no banco evita carregar todas as linhas só para achar o mínimo;
      * devolve `null` quando não há nenhuma marcação.
      */
     @Query(
-        "select min(r.readyAt) from RoundReadinessEntity r where r.id.roundNumber = :roundNumber",
+        "select min(r.readyAt) from RoundReadinessEntity r " +
+            "where r.id.isoYear = :isoYear and r.id.isoWeek = :isoWeek and r.id.slot = :slot",
     )
-    fun findFirstReadyAt(@Param("roundNumber") roundNumber: Int): Instant?
+    fun findFirstReadyAt(
+        @Param("isoYear") isoYear: Int,
+        @Param("isoWeek") isoWeek: Int,
+        @Param("slot") slot: String,
+    ): Instant?
 }
 
 /**
@@ -210,14 +216,14 @@ interface TransferOfferJpaRepository : JpaRepository<TransferOfferEntity, Long> 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(
         "update TransferOfferEntity o " +
-            "set o.status = :status, o.expiryReason = :expiryReason, o.roundsLeft = :roundsLeft " +
+            "set o.status = :status, o.expiryReason = :expiryReason, o.slotsLeft = :slotsLeft " +
             "where o.id = :id and o.status = '${TransferOfferEntity.PENDING}'",
     )
     fun saveIfPending(
         @Param("id") id: Long,
         @Param("status") status: String,
         @Param("expiryReason") expiryReason: String?,
-        @Param("roundsLeft") roundsLeft: Int,
+        @Param("slotsLeft") slotsLeft: Int,
     ): Int
 }
 

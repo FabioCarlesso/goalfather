@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.test.md
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -52,7 +53,7 @@ class StandingsRulesTest {
     @Test
     fun `vitoria mandante da 3 pontos para home e 0 para away`() {
         val round = Round(
-            number = 1,
+            matchday = md(1),
             season = 2026,
             matches = listOf(match(1001, homeId = 1, awayId = 2, homeGoals = 2, awayGoals = 1)),
         )
@@ -71,7 +72,7 @@ class StandingsRulesTest {
     @Test
     fun `empate da 1 ponto para cada lado`() {
         val round = Round(
-            number = 1,
+            matchday = md(1),
             season = 2026,
             matches = listOf(match(1001, homeId = 1, awayId = 2, homeGoals = 1, awayGoals = 1)),
         )
@@ -85,7 +86,7 @@ class StandingsRulesTest {
     @Test
     fun `partidas nao-finalizadas sao ignoradas`() {
         val round = Round(
-            number = 1,
+            matchday = md(1),
             season = 2026,
             matches = listOf(
                 match(1001, homeId = 1, awayId = 2, homeGoals = 3, awayGoals = 0, status = RoundStatus.InProgress),
@@ -109,7 +110,7 @@ class StandingsRulesTest {
             ),
         )
         val round = Round(
-            number = 1,
+            matchday = md(1),
             season = 2026,
             matches = listOf(
                 match(1001, homeId = 1, awayId = 2, homeGoals = 3, awayGoals = 0), // 1 vence (3p, SG+3)
@@ -135,9 +136,9 @@ class StandingsRulesTest {
     @Test
     fun `round refletido no campo round da Standings retornada`() {
         val round = Round(
-            number = 5,
+            matchday = md(5),
             season = 2026,
-            matches = listOf(match(5001, homeId = 1, awayId = 2, homeGoals = 1, awayGoals = 0)),
+            matches = listOf(match(5001, homeId = 1, awayId = 2, homeGoals = 1, awayGoals = 0).copy(stage = RoundStage.League(5))),
         )
         val result = applyRoundToStandings(round, initialStandings)
         assertEquals(5, result.round)
@@ -160,10 +161,9 @@ class StandingsRulesTest {
     @Test
     fun `rodada de copa nao mexe na tabela`() {
         val cupRound = Round(
-            number = 2,
+            matchday = md(2),
             season = 2026,
-            matches = listOf(finishedMatch(1, 2, 3, 0)),
-            stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS),
+            matches = listOf(finishedMatch(1, 2, 3, 0).copy(stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS))),
         )
         assertEquals(initialStandings, applyRoundToStandings(cupRound, initialStandings))
     }
@@ -172,10 +172,9 @@ class StandingsRulesTest {
     fun `tabela registra a rodada da liga e nao a data do calendario`() {
         // Data 3 do calendário, 2ª rodada de liga (a data 2 foi de copa).
         val leagueRound = Round(
-            number = 3,
+            matchday = md(3),
             season = 2026,
-            matches = listOf(finishedMatch(1, 2, 1, 0)),
-            stage = RoundStage.League(2),
+            matches = listOf(finishedMatch(1, 2, 1, 0).copy(stage = RoundStage.League(2))),
         )
         val updated = applyRoundToStandings(leagueRound, initialStandings)
         assertEquals(2, updated.round)

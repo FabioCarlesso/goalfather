@@ -1,6 +1,8 @@
 import { useBoard } from '../../api/queries/useBoard'
+import { useCalendar } from '../../api/queries/useCalendar'
 import { useClubOffers, useOfferAction } from '../../api/queries/useOffers'
 import { BoardPanel } from '../../components/BoardPanel'
+import { CalendarPanel } from '../../components/CalendarPanel'
 import { OffersPanel } from '../../components/OffersPanel'
 import { Stat } from '../../components/ui/Stat'
 import { formatMoney, formatSeats } from '../../domain/formatters'
@@ -15,6 +17,8 @@ export function OverviewTab() {
   // Propostas entre técnicos (issue #63): também à parte, pelo mesmo motivo.
   const { data: offers } = useClubOffers(club.id)
   const offerAction = useOfferAction(club.id)
+  // Data corrente e próximo jogo (issue #125): também à parte.
+  const { data: calendar } = useCalendar(club.id)
 
   return (
     <div className="space-y-6">
@@ -24,6 +28,8 @@ export function OverviewTab() {
         <Stat label="Ingresso"           value={formatMoney(club.ticketPriceCents)} />
         <Stat label="Elenco"             value={`${club.squad.length} jogadores`} />
       </div>
+
+      {calendar && <CalendarPanel calendar={calendar} clubId={club.id} />}
 
       {board && <BoardPanel status={board} />}
 

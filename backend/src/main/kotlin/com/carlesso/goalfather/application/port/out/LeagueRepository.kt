@@ -1,16 +1,18 @@
 package com.carlesso.goalfather.application.port.out
 
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.Standings
 
 interface LeagueRepository {
-    suspend fun findRound(number: Int): Round?
+    /** Os jogos do encaixe [matchday] (issue #125), se ele já foi gerado. */
+    suspend fun findRound(matchday: Matchday): Round?
 
     /**
-     * A "atual" do calendário: a data de maior número da temporada MAIS
-     * RECENTE. `null` se não há rodadas. Datas de temporadas encerradas
-     * continuam na tabela (a PK é só o número), então a temporada entra na
-     * ordenação antes do número.
+     * O "atual" do calendário: o encaixe MAIS ADIANTE no tempo. `null` se não há
+     * rodadas. Encaixes já jogados continuam na tabela (a PK é o encaixe, que não
+     * se repete entre temporadas — issue #125), e o serviço só grava o próximo
+     * depois de encerrar o corrente, então o mais adiante é o que está em aberto.
      */
     suspend fun findLatest(): Round?
 
@@ -37,7 +39,7 @@ interface LeagueRepository {
      * chamador trata `false` como sucesso idempotente: o efeito desejado
      * (rodada liberada) já vale.
      */
-    suspend fun startRound(roundNumber: Int): Boolean
+    suspend fun startRound(matchday: Matchday): Boolean
 
     /**
      * Transição atômica `→ Finished`, gravando os placares de [round] (issue

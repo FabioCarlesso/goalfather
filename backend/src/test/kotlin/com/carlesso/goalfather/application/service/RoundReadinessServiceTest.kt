@@ -9,6 +9,7 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.StartRoundResult
+import com.carlesso.goalfather.test.md
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -52,7 +53,7 @@ class RoundReadinessServiceTest {
 
     private val service = RoundReadinessService(leagueRepo, userRepo, readinessRepo, timeout, clock)
 
-    private val scheduled = Round(number = 5, season = 2026, matches = emptyList())
+    private val scheduled = Round(matchday = md(5), season = 2026, matches = emptyList())
 
     private fun manager(id: Long, name: String) = User(UserId(id), name, "hash", ClubId(id))
 
@@ -69,11 +70,11 @@ class RoundReadinessServiceTest {
     fun `status conta prontos e lista os pendentes pelo username`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
 
         val status = service.status()
 
-        assertEquals(5, status.roundNumber)
+        assertEquals(md(5), status.matchday)
         assertEquals(1, status.readyCount)
         assertEquals(2, status.totalCount)
         assertEquals(listOf("bruno"), status.pendingUsernames)
@@ -84,11 +85,11 @@ class RoundReadinessServiceTest {
     fun `markReady sinaliza pronto e devolve status atualizado`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1), UserId(2))
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1), UserId(2))
 
         val status = service.markReady(UserId(2))
 
-        coVerify(exactly = 1) { readinessRepo.markReady(5, UserId(2)) }
+        coVerify(exactly = 1) { readinessRepo.markReady(md(5), UserId(2)) }
         assertEquals(2, status.readyCount)
         assertTrue(status.allReady)
         assertTrue(status.pendingUsernames.isEmpty())
@@ -98,7 +99,7 @@ class RoundReadinessServiceTest {
     fun `start retorna NotReady com pendentes quando nem todos sinalizaram`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
 
         val result = service.start()
 
@@ -112,24 +113,24 @@ class RoundReadinessServiceTest {
     fun `start destrava e marca InProgress quando todos prontos`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1), UserId(2))
-        coEvery { leagueRepo.startRound(5) } returns true
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1), UserId(2))
+        coEvery { leagueRepo.startRound(md(5)) } returns true
 
         val result = service.start()
 
-        assertEquals(StartRoundResult.Started(5), result)
-        coVerify(exactly = 1) { leagueRepo.startRound(5) }
+        assertEquals(StartRoundResult.Started(md(5)), result)
+        coVerify(exactly = 1) { leagueRepo.startRound(md(5)) }
     }
 
     @Test
     fun `start e idempotente quando a rodada ja esta InProgress`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled.copy(status = RoundStatus.InProgress)
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
 
         val result = service.start()
 
-        assertEquals(StartRoundResult.Started(5), result)
+        assertEquals(StartRoundResult.Started(md(5)), result)
         // Já estava InProgress: não regrava.
         coVerify(exactly = 0) { leagueRepo.startRound(any()) }
     }
@@ -140,7 +141,7 @@ class RoundReadinessServiceTest {
 
         val result = service.start()
 
-        assertEquals(StartRoundResult.AlreadyFinished(5), result)
+        assertEquals(StartRoundResult.AlreadyFinished(md(5)), result)
         coVerify(exactly = 0) { leagueRepo.startRound(any()) }
     }
 
@@ -155,7 +156,7 @@ class RoundReadinessServiceTest {
     fun `sem tecnicos a liga nao destrava (totalCount zero)`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns emptyList()
-        coEvery { readinessRepo.readyUserIds(5) } returns emptySet()
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns emptySet()
 
         val result = service.start()
 
@@ -166,7 +167,7 @@ class RoundReadinessServiceTest {
     fun `markReady ignora quem nao e tecnico (sem clube) - ponto 6`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns emptySet()
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns emptySet()
 
         // UserId(99) não está entre os técnicos: não deve gerar linha de prontidão.
         service.markReady(UserId(99))
@@ -185,8 +186,8 @@ class RoundReadinessServiceTest {
         val transitions = AtomicInteger()
         coEvery { leagueRepo.findLatest() } answers { current }
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1), UserId(2))
-        coEvery { leagueRepo.startRound(5) } answers {
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1), UserId(2))
+        coEvery { leagueRepo.startRound(md(5)) } answers {
             if (current.status != RoundStatus.Scheduled) return@answers false
             current = current.copy(status = RoundStatus.InProgress)
             transitions.incrementAndGet()
@@ -212,16 +213,16 @@ class RoundReadinessServiceTest {
         // encerramento e devolveria `Started(5)` de uma rodada já encerrada
         // (achado 2 da review). O stub de `findLatest` devolve a 6 justamente
         // para o teste falhar caso a detecção regrida para ele.
-        val roundReadThenNext = listOf(scheduled, Round(number = 6, season = 2026, matches = emptyList()))
+        val roundReadThenNext = listOf(scheduled, Round(matchday = md(6), season = 2026, matches = emptyList()))
         coEvery { leagueRepo.findLatest() } returnsMany roundReadThenNext
-        coEvery { leagueRepo.findRound(5) } returns scheduled.copy(status = RoundStatus.Finished)
+        coEvery { leagueRepo.findRound(md(5)) } returns scheduled.copy(status = RoundStatus.Finished)
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
-        coEvery { leagueRepo.startRound(5) } returns false
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
+        coEvery { leagueRepo.startRound(md(5)) } returns false
 
         val result = service.start()
 
-        assertEquals(StartRoundResult.AlreadyFinished(5), result)
+        assertEquals(StartRoundResult.AlreadyFinished(md(5)), result)
     }
 
     // ─── Escape hatch por timeout (issue #45) ─────────────────────────────
@@ -230,8 +231,8 @@ class RoundReadinessServiceTest {
     fun `status expoe secondsRemaining enquanto o timeout corre - issue 45`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
-        coEvery { readinessRepo.firstReadyAt(5) } returns base
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
+        coEvery { readinessRepo.firstReadyAt(md(5)) } returns base
         now = base.plusSeconds(90) // faltam 30s dos 120s
 
         val status = service.status()
@@ -245,7 +246,7 @@ class RoundReadinessServiceTest {
     fun `sem ninguem pronto o cronometro nao corre - issue 45`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns emptySet()
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns emptySet()
 
         val status = service.status()
 
@@ -260,23 +261,23 @@ class RoundReadinessServiceTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
         // bruno nunca sinaliza; só ana está pronta.
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
-        coEvery { readinessRepo.firstReadyAt(5) } returns base
-        coEvery { leagueRepo.startRound(5) } returns true
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
+        coEvery { readinessRepo.firstReadyAt(md(5)) } returns base
+        coEvery { leagueRepo.startRound(md(5)) } returns true
         now = base.plus(timeout).plusSeconds(1) // ultrapassa o timeout
 
         val result = service.start()
 
-        assertEquals(StartRoundResult.Started(5), result)
-        coVerify(exactly = 1) { leagueRepo.startRound(5) }
+        assertEquals(StartRoundResult.Started(md(5)), result)
+        coVerify(exactly = 1) { leagueRepo.startRound(md(5)) }
     }
 
     @Test
     fun `start segue NotReady antes de o timeout expirar - issue 45`() = runTest {
         coEvery { leagueRepo.findLatest() } returns scheduled
         coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
-        coEvery { readinessRepo.readyUserIds(5) } returns setOf(UserId(1))
-        coEvery { readinessRepo.firstReadyAt(5) } returns base
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
+        coEvery { readinessRepo.firstReadyAt(md(5)) } returns base
         now = base.plusSeconds(60) // ainda dentro dos 120s
 
         val result = service.start()

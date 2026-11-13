@@ -13,6 +13,7 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
+import com.carlesso.goalfather.test.md
 import io.micrometer.core.instrument.MockClock
 import io.micrometer.core.instrument.simple.SimpleConfig
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -59,7 +60,7 @@ class SimulationMetricsTest {
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
 
     private val round = Round(
-        number = 1,
+        matchday = md(1),
         season = 2026,
         matches = listOf(
             RoundMatch(
@@ -90,7 +91,7 @@ class SimulationMetricsTest {
     )
 
     private fun stubRepos() {
-        coEvery { leagueRepo.findRound(1) } returns round
+        coEvery { leagueRepo.findRound(md(1)) } returns round
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
         coEvery { clubRepo.findById(ClubId(1)) } returns homeClub
         coEvery { clubRepo.findById(ClubId(2)) } returns awayClub
@@ -105,7 +106,7 @@ class SimulationMetricsTest {
     fun `simular uma rodada registra o timer goalfather_round_simulation`() = runTest {
         stubRepos()
 
-        service.stream(1).toList()
+        service.stream(md(1)).toList()
 
         val timer = registry.find(GoalfatherMetrics.ROUND_SIMULATION).timer()
         assertNotNull(timer, "Timer da simulação de rodada deve existir no registry")
@@ -151,7 +152,7 @@ class SimulationMetricsTest {
         coEvery { clubRepo.findById(ClubId(1)) } answers { clock.add(DB_COST_MS, TimeUnit.MILLISECONDS); homeClub }
         coEvery { clubRepo.findById(ClubId(2)) } answers { clock.add(DB_COST_MS, TimeUnit.MILLISECONDS); awayClub }
 
-        clockedService.stream(1).toList()
+        clockedService.stream(md(1)).toList()
 
         val timer = assertNotNull(clockedRegistry.find(GoalfatherMetrics.ROUND_SIMULATION).timer())
         assertEquals(1, timer.count())

@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.application.port.`in`.BoardUseCase
+import com.carlesso.goalfather.application.port.`in`.CalendarUseCase
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
@@ -29,6 +30,7 @@ import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BoardService
 import com.carlesso.goalfather.application.service.BuyPlayerService
+import com.carlesso.goalfather.application.service.CalendarService
 import com.carlesso.goalfather.application.service.ClaimClubService
 import com.carlesso.goalfather.application.service.ExpandStadiumService
 import com.carlesso.goalfather.application.service.LoginService
@@ -178,6 +180,14 @@ class BeanConfig {
         clock: Clock,
     ): RoundReadinessUseCase =
         RoundReadinessService(leagueRepo, userRepo, readinessRepo, readinessProps.timeout, clock)
+
+    /** Relógio do jogo: encaixe corrente e próximo jogo do clube (issue #125). */
+    @Bean
+    fun calendarUseCase(
+        leagueRepo: LeagueRepository,
+        clubRepo: ClubRepository,
+        cupRepo: CupRepository,
+    ): CalendarUseCase = CalendarService(leagueRepo, clubRepo, cupRepo)
 
     @Bean
     fun streamMatchUseCase(

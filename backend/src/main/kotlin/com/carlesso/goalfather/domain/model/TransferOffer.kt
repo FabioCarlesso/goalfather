@@ -15,7 +15,7 @@ value class OfferId(val value: Long)
  */
 @Serializable
 enum class ExpiryReason {
-    /** Passaram as rodadas do prazo sem o vendedor responder. */
+    /** Passaram os encaixes do prazo sem o vendedor responder. */
     DEADLINE,
 
     /** O jogador deixou o elenco do vendedor (outra proposta aceita, venda ao mercado, aposentadoria). */
@@ -79,9 +79,12 @@ sealed interface OfferStatus {
  * nomes de clube da `RoundMatch`: o histórico de propostas continua legível
  * mesmo depois que o jogador muda de clube, se aposenta ou sai do banco.
  *
- * [roundsLeft] é o prazo em rodadas, contado para baixo a cada rodada encerrada
- * ([afterRound]). Contador em vez de "rodada de vencimento" porque o número da
- * rodada recomeça a cada temporada — "rodada 3" não diz se é desta ou da próxima.
+ * [slotsLeft] é o prazo em ENCAIXES jogados (issue #125; antes, rodadas),
+ * contado para baixo a cada encaixe encerrado ([afterSlot]). Encaixe vazio —
+ * semana sem jogo nenhum no mundo — não existe para o relógio: o jogo pula
+ * direto ao próximo encaixe com jogo, então "3 encaixes" são 3 cliques de
+ * "jogar". Contador em vez de "encaixe de vencimento" porque a proposta não
+ * precisa saber do calendário para expirar.
  *
  * Valores em centavos, como todo dinheiro do contrato. Sem `@Serializable`: a
  * API fala por um DTO (`TransferOfferDto`); só o [OfferStatus] cruza a
@@ -96,12 +99,12 @@ data class TransferOffer(
     val playerId: PlayerId,
     val playerName: String,
     val amount: Money,
-    val roundsLeft: Int,
+    val slotsLeft: Int,
     val status: OfferStatus = OfferStatus.Pending,
 ) {
     init {
         require(amount.isPositive) { "amount deve ser positivo: $amount" }
-        require(roundsLeft >= 0) { "roundsLeft não pode ser negativo: $roundsLeft" }
+        require(slotsLeft >= 0) { "slotsLeft não pode ser negativo: $slotsLeft" }
         require(buyerClubId != sellerClubId) { "Clube não faz proposta a si mesmo: ${buyerClubId.value}" }
     }
 
@@ -124,14 +127,14 @@ data class TransferOffer(
     fun expire(reason: ExpiryReason): TransferOffer? = resolve(OfferStatus.Expired(reason))
 
     /**
-     * Uma rodada a menos no prazo; a última rodada expira a proposta por
+     * Um encaixe a menos no prazo; o último encaixe expira a proposta por
      * [ExpiryReason.DEADLINE]. Proposta já resolvida não muda — o relógio só
      * corre para quem ainda espera resposta.
      */
-    fun afterRound(): TransferOffer = when (status) {
+    fun afterSlot(): TransferOffer = when (status) {
         OfferStatus.Pending ->
-            if (roundsLeft <= 1) copy(roundsLeft = 0, status = OfferStatus.Expired(ExpiryReason.DEADLINE))
-            else copy(roundsLeft = roundsLeft - 1)
+            if (slotsLeft <= 1) copy(slotsLeft = 0, status = OfferStatus.Expired(ExpiryReason.DEADLINE))
+            else copy(slotsLeft = slotsLeft - 1)
         OfferStatus.Accepted, OfferStatus.Rejected, OfferStatus.Withdrawn, is OfferStatus.Expired -> this
     }
 
@@ -140,10 +143,10 @@ data class TransferOffer(
      * elenco do vendedor (vendido ao mercado, a outro clube, aposentado), ela
      * morre agora por [ExpiryReason.PLAYER_TRANSFERRED] — nenhum aceite poderia
      * mais dar certo, e mantê-la pendente só ofereceria ao vendedor um botão
-     * fadado a falhar. Senão, o prazo anda uma rodada ([afterRound]).
+     * fadado a falhar. Senão, o prazo anda um encaixe ([afterSlot]).
      */
     fun advance(playerStillWithSeller: Boolean): TransferOffer =
-        if (playerStillWithSeller) afterRound()
+        if (playerStillWithSeller) afterSlot()
         else expire(ExpiryReason.PLAYER_TRANSFERRED) ?: this
 
     /**

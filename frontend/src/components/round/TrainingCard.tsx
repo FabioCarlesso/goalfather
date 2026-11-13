@@ -34,7 +34,7 @@ export function TrainingCard({ report }: { report: TrainingReport }) {
                   <span className="text-orange-300">🚑</span>{' '}
                   <span className="text-slate-100">{event.player.name}</span>
                   <span className="text-slate-400">
-                    {' '}se machucou no treino · fora por {event.roundsOut} rodada
+                    {' '}se machucou no treino · fora por {event.roundsOut} jogo
                     {event.roundsOut === 1 ? '' : 's'}
                   </span>
                 </>

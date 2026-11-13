@@ -570,7 +570,7 @@ paths:
       description: |
         Proposta em dinheiro por um jogador do elenco de outro clube com dono
         humano (issue #63). Nada muda de mãos aqui: a proposta fica pendente
-        por `roundsLeft` rodadas, até o vendedor aceitar ou recusar, o
+        por `slotsLeft` encaixes jogados, até o vendedor aceitar ou recusar, o
         comprador retirar ou o prazo vencer.
 
         As mesmas regras do aceite já valem na criação — valor mínimo, caixa do
@@ -832,19 +832,42 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /api/league/calendar:
+    get:
+      tags: [League]
+      operationId: getCalendar
+      summary: Data corrente do jogo e próximo jogo do clube
+      description: |
+        Relógio do jogo (issue #125): o encaixe corrente (semana ISO + meio ou
+        fim de semana) e, com `clubId`, o próximo jogo do clube e a competição
+        dele. Encaixes em que o clube não joga (copa de quem já caiu, por
+        exemplo) são pulados. Sem calendário, os campos vêm ausentes.
+      parameters:
+        - name: clubId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Calendar' }
+
   /api/league/round/current:
     get:
       tags: [League]
       operationId: getCurrentRound
-      summary: Estado atual da rodada
+      summary: Jogos do encaixe corrente
       description: |
-        Retorna os pareamentos da rodada corrente. Cada partida tem seu
-        próprio `matchId`. Para acompanhar ao vivo, conecte-se em
-        `/ws/round/{number}` após chamar `playRound`.
+        Retorna os jogos do ENCAIXE corrente do calendário semanal (issue
+        #125): todas as partidas de todas as competições marcadas para aquela
+        quarta ou domingo. Cada partida tem seu próprio `matchId` e diz o que
+        disputa (`stage`) e de qual competição. Para acompanhar ao vivo,
+        conecte-se em `/ws/slot/{key}` (com a `matchday.key`) após chamar
+        `playRound`.
 
-        Desde a issue #61 a "rodada" é uma DATA do calendário: `stage` diz se
-        ela é rodada de liga ou fase da copa. As duas passam pelo mesmo fluxo
-        de prontidão, início e WebSocket.
+        Semanas sem jogo nenhum não existem para o relógio: o encaixe seguinte
+        ao jogado é o próximo COM jogo.
       responses:
         '200':
           content:
@@ -874,8 +897,8 @@ paths:
       operationId: markRoundReady
       summary: Sinalizar que o técnico está pronto
       description: |
-        O técnico autenticado declara estar pronto para a rodada corrente
-        (issue #20). Idempotente. Devolve o estado de prontidão atualizado.
+        O técnico autenticado declara estar pronto para o encaixe corrente
+        (issues #20 e #125). Idempotente. Devolve o estado de prontidão atualizado.
       responses:
         '200':
           content:
@@ -890,8 +913,8 @@ paths:
       operationId: playRound
       summary: Iniciar simulação da rodada
       description: |
-        Marca a rodada corrente como `InProgress` e devolve o número
-        para o cliente conectar no WebSocket. Em liga compartilhada só
+        Marca o encaixe corrente como `InProgress` e devolve a chave dele
+        (`matchday`) para o cliente conectar em `/ws/slot/{key}`. Em liga compartilhada só
         destrava quando TODOS os técnicos humanos sinalizaram prontos
         (issue #20); caso contrário retorna 409 `ROUND_NOT_READY`.
         Idempotente enquanto a rodada não termina.
@@ -901,9 +924,12 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [roundNumber]
+                required: [matchday]
                 properties:
-                  roundNumber: { type: integer, minimum: 1 }
+                  matchday:
+                    type: string
+                    description: 'Chave do encaixe liberado (`2026-W05-WEEKEND`), issue #125'
+                    example: 2026-W05-WEEKEND
         '409':
           description: |
             Rodada já encerrada (`ROUND_ALREADY_FINISHED`) ou ainda
@@ -915,16 +941,17 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /ws/round/{number}:
+  /ws/slot/{key}:
     get:
       tags: [League]
       operationId: streamRound
-      summary: '[WebSocket] Stream de eventos da rodada'
+      summary: '[WebSocket] Stream de eventos do encaixe'
       # O JWT vai no query param `token` (ver parâmetro abaixo), não no header.
       security: []
       description: |
         **ATENÇÃO: endpoint WebSocket.** Multiplexa eventos de TODAS as
-        partidas da rodada em um único canal. Cada mensagem é um
+        partidas do encaixe (issue #125; antes `/ws/round/{number}`), de todas
+        as competições, em um único canal. Cada mensagem é um
         `RoundEvent` (`MatchUpdate` carregando um `MatchEvent` + matchId,
         ou `RoundFinished` no encerramento com a tabela atualizada).
 
@@ -945,11 +972,11 @@ paths:
         antiga antes faria o stream órfão (que segue sem pacing no servidor)
         vencer essa corrida.
       parameters:
-        - name: number
+        - name: key
           in: path
           required: true
-          description: Número da rodada
-          schema: { type: integer, minimum: 1 }
+          description: Chave do encaixe (`Matchday.key`), ex. `2026-W05-WEEKEND`
+          schema: { type: string, pattern: '^\d{4}-W\d{2}-(MIDWEEK|WEEKEND)$' }
         - name: token
           in: query
           required: true
@@ -1216,7 +1243,7 @@ components:
     StreamSpeed:
       type: string
       description: |
-        Velocidade da transmissão ao vivo nos WebSockets `/ws/round/{number}`
+        Velocidade da transmissão ao vivo nos WebSockets `/ws/slot/{key}`
         e `/ws/matches/{id}` (issue #115). Só muda o intervalo entre as
         mensagens — os eventos e o resultado são idênticos em qualquer
         velocidade, para o mesmo `matchId`.
@@ -1378,7 +1405,10 @@ components:
         roundsOut:
           type: integer
           minimum: 1
-          description: Rodadas restantes de afastamento; chega a zero e o jogador volta.
+          description: |
+            JOGOS DO CLUBE restantes de afastamento (issue #125): a lesão só
+            anda quando o clube entra em campo, quantas semanas passarem.
+            Chega a zero e o jogador volta.
 
     Lineup:
       type: object
@@ -1637,7 +1667,7 @@ components:
         - playerId
         - playerName
         - amount
-        - roundsLeft
+        - slotsLeft
         - status
       properties:
         id:             { type: integer, format: int64 }
@@ -1648,10 +1678,12 @@ components:
         playerId:       { type: integer, format: int64 }
         playerName:     { type: string }
         amount:         { type: integer, format: int64, description: Valor em centavos de USD }
-        roundsLeft:
+        slotsLeft:
           type: integer
           minimum: 0
-          description: Rodadas até a proposta expirar sem resposta (anda a cada rodada encerrada).
+          description: |
+            Encaixes jogados até a proposta expirar sem resposta (issue #125;
+            anda a cada encaixe encerrado — semanas sem jogo não contam).
         status: { $ref: '#/components/schemas/OfferStatus' }
       # Exemplo explícito: o Swagger UI não monta um a partir do `oneOf` do
       # `status` e mostrava `"status": {}` (revisão do PR #94).
@@ -1664,7 +1696,7 @@ components:
         playerId: 2004
         playerName: Daniel Valente
         amount: 50000000
-        roundsLeft: 3
+        slotsLeft: 3
         status: { type: Pending }
 
     OfferStatus:
@@ -1848,10 +1880,12 @@ components:
     RoundInProgress:
       description: Aceite bloqueado enquanto a rodada é simulada — o jogador não troca de clube no meio dela.
       type: object
-      required: [type, roundNumber]
+      required: [type, matchday]
       properties:
-        type:        { type: string, enum: [RoundInProgress] }
-        roundNumber: { type: integer }
+        type:     { type: string, enum: [RoundInProgress] }
+        matchday:
+          type: string
+          description: 'Chave do encaixe em simulação (issue #125)'
 
     # ─── Match (sealed MatchEvent + summary) ─────────────────────────────
     MatchEvent:
@@ -1975,8 +2009,8 @@ components:
               type: integer
               minimum: 1
               description: |
-                Rodadas de afastamento sorteadas com o RNG da própria partida
-                (issue #54). Viaja no evento para que o replay do stream
+                Jogos do clube de afastamento sorteados com o RNG da própria
+                partida (issue #54; contados em jogos desde a #125). Viaja no evento para que o replay do stream
                 reproduza exatamente a mesma lesão.
 
     SaveEvent:
@@ -2238,9 +2272,11 @@ components:
 
     RoundMatch:
       description: |
-        Estado de uma partida individual dentro de uma rodada. A rodada é
-        global: cada divisão contribui com as próprias partidas, e `division`
-        permite à UI agrupá-las.
+        Estado de uma partida individual dentro de um encaixe. Desde o
+        calendário semanal (issue #125) um encaixe pode juntar jogos de várias
+        competições, então o que a partida disputa (`stage`) e de qual
+        competição ela é vêm em CADA partida. `division` permite à UI agrupar
+        os jogos de liga.
       type: object
       required:
         - matchId
@@ -2253,6 +2289,9 @@ components:
         - awayGoals
         - minute
         - division
+        - stage
+        - competitionId
+        - competitionName
       properties:
         matchId:       { type: integer, format: int64 }
         homeClubId:    { type: integer, format: int64 }
@@ -2274,26 +2313,88 @@ components:
           description: |
             Disputa de pênaltis (issue #61) — só em jogo de copa encerrado
             empatado. Omitido nos demais.
+        stage:
+          $ref: '#/components/schemas/RoundStage'
+        competitionId:
+          type: string
+          description: 'Competição da partida (`liga-d1`, `copa`…), issue #125'
+        competitionName:
+          type: string
+          description: Nome da competição, foto do momento como os nomes dos clubes
 
     Round:
       description: |
-        Uma DATA do calendário da temporada (issue #61). `number` é a posição
-        global da data (rota do WS e chave da prontidão) e `stage` diz o que se
-        disputa nela: rodada de liga ou fase da copa.
+        Os jogos de UM encaixe do calendário semanal (issue #125): todas as
+        partidas de todas as competições marcadas para aquela quarta ou
+        domingo. `matchday` identifica o encaixe (rota do WS e chave da
+        prontidão) e nunca se repete entre temporadas.
       type: object
-      required: [number, season, status, matches, stage]
+      required: [matchday, season, status, matches]
       properties:
-        number:  { type: integer, minimum: 1 }
-        season:  { type: integer }
+        matchday: { $ref: '#/components/schemas/Matchday' }
+        season:
+          type: integer
+          description: Ano da temporada que o encaixe disputa (ano civil no Brasil)
         status:  { $ref: '#/components/schemas/RoundStatus' }
-        stage:   { $ref: '#/components/schemas/RoundStage' }
         matches:
           type: array
           items: { $ref: '#/components/schemas/RoundMatch' }
 
+    Slot:
+      type: string
+      description: |
+        Os dois encaixes de jogo da semana (issue #125): meio de semana
+        (quarta) e fim de semana (domingo). Ligas preferem o fim de semana;
+        copas e continentais, o meio.
+      enum: [MIDWEEK, WEEKEND]
+
+    Matchday:
+      description: |
+        Um encaixe do calendário (issue #125): semana ISO + slot. `key` é a
+        identidade estável; os demais campos são a mesma informação já
+        decomposta para a UI.
+      type: object
+      required: [key, year, week, slot, date]
+      properties:
+        key:
+          type: string
+          description: Identidade do encaixe, usada no WebSocket e na prontidão
+          example: 2026-W05-WEEKEND
+        year:
+          type: integer
+          description: Ano da SEMANA ISO (pode diferir do ano civil na virada)
+        week: { type: integer, minimum: 1, maximum: 53 }
+        slot: { $ref: '#/components/schemas/Slot' }
+        date:
+          type: string
+          format: date
+          description: O dia do jogo (quarta ou domingo)
+
+    Calendar:
+      description: 'Relógio do jogo e próximo jogo do clube (issue #125).'
+      type: object
+      properties:
+        current:
+          $ref: '#/components/schemas/Matchday'
+          description: Encaixe corrente; ausente sem calendário
+        season:
+          type: integer
+          description: Temporada do encaixe corrente
+        nextMatch:
+          $ref: '#/components/schemas/NextMatch'
+          description: Próximo jogo do clube pedido em `clubId`; ausente sem jogo marcado
+
+    NextMatch:
+      type: object
+      required: [matchday, match]
+      properties:
+        matchday: { $ref: '#/components/schemas/Matchday' }
+        match:    { $ref: '#/components/schemas/RoundMatch' }
+
     RoundStage:
       description: |
-        Mapeia o `sealed interface RoundStage` do domínio Kotlin. Discriminado
+        Mapeia o `sealed interface RoundStage` do domínio Kotlin — o que UMA
+        partida disputa (issue #125: por partida, não por rodada). Discriminado
         por `type` — a UI usa `switch (stage.type)` exaustivo para decidir o
         que mostrar (tabela × chave, rodada × fase).
       oneOf:
@@ -2313,7 +2414,7 @@ components:
         matchday:
           type: integer
           minimum: 1
-          description: Rodada DA LIGA (1..N-1 do turno) disputada nesta data
+          description: Rodada DA LIGA (1..N-1 do turno) disputada neste jogo
 
     CupRoundStage:
       type: object
@@ -2324,8 +2425,8 @@ components:
 
     RoundEvent:
       description: |
-        Mensagem do WebSocket `/ws/round/{number}`. Multiplexa eventos
-        de várias partidas + sinal de fim de rodada.
+        Mensagem do WebSocket `/ws/slot/{key}`. Multiplexa eventos
+        de várias partidas + sinal de fim do encaixe.
 
         Discriminado por `type` — TS exige `switch` exaustivo sobre
         ambas as variantes (espelha o `when` exaustivo do `sealed
@@ -2414,7 +2515,7 @@ components:
         roundsOut:
           type: integer
           minimum: 1
-          description: Rodadas de afastamento da lesão de treino.
+          description: Jogos do clube de afastamento da lesão de treino.
 
     SeasonFinishedEvent:
       description: |
@@ -2730,9 +2831,11 @@ components:
         timeout; ao chegar a zero (`timedOut`), a rodada pode iniciar mesmo com
         pendentes — os ausentes entram com a última escalação salva.
       type: object
-      required: [roundNumber, readyCount, totalCount, pendingUsernames, timedOut, allReady, canStart]
+      required: [readyCount, totalCount, pendingUsernames, timedOut, allReady, canStart]
       properties:
-        roundNumber:      { type: integer, minimum: 0, description: Rodada à qual a prontidão se refere }
+        matchday:
+          type: string
+          description: 'Chave do encaixe ao qual a prontidão se refere (issue #125); ausente sem rodada no calendário'
         readyCount:       { type: integer, minimum: 0, description: Técnicos que já sinalizaram pronto }
         totalCount:       { type: integer, minimum: 0, description: Total de técnicos humanos (donos de clube) }
         pendingUsernames:

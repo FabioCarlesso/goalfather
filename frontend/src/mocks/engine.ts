@@ -472,12 +472,16 @@ const advanceInjury = (a: Availability, rounds = 1): Availability =>
  * Aplica UMA rodada de desgaste: titulares cansam, reservas recuperam,
  * lesões em curso andam uma rodada e as novas entram em vigor. Mesma ordem
  * do backend — decrementa antes de aplicar as lesões da própria rodada.
+ *
+ * Lesão conta JOGOS DO CLUBE (issue #125): no encaixe em que o clube não
+ * joga, o elenco descansa mas a lesão fica parada (`clubPlayed = false`).
  */
 export function applyRoundFitness<T extends FitPlayer>(
   squad: T[],
   starterIds: Set<number>,
   rng: MulberryRng,
   newInjuries: Map<number, number> = new Map(),
+  clubPlayed = true,
 ): T[] {
   return squad.map((p) => {
     const stamina = starterIds.has(p.id)
@@ -488,7 +492,7 @@ export function applyRoundFitness<T extends FitPlayer>(
         )
       : Math.min(100, p.stamina + BENCH_STAMINA_RECOVERY)
 
-    const advanced = advanceInjury(p.availability)
+    const advanced = clubPlayed ? advanceInjury(p.availability) : p.availability
     const fresh = newInjuries.get(p.id)
     const availability: Availability =
       fresh == null

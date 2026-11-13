@@ -1,9 +1,14 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.domain.model.GameWeek
+import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.Slot
+import com.carlesso.goalfather.test.md
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -30,25 +35,43 @@ class CurrentRoundIntegrationTest {
     @Autowired private lateinit var leagueRepo: LeagueRepository
     @Autowired private lateinit var roundJpa: RoundJpaRepository
 
-    private val dates = 9701..9705
-
     @Test
-    fun `depois da virada a rodada atual e a data 1 da temporada nova, nao a ultima da anterior`() = runBlocking {
+    fun `a rodada atual e o encaixe mais adiante no tempo, atravessando temporadas`() = runBlocking {
+        // Encaixes de uma temporada que acabou + o 1º da seguinte (issue #125):
+        // a PK é o encaixe, então nada é reescrito na virada.
+        val old = (1..5).map { Matchday(GameWeek(3970, it * 8), Slot.WEEKEND) }
+        val nextSeason = Matchday(GameWeek(3971, 2), Slot.WEEKEND)
+        val all = old + nextSeason + nextSeason.next()
         try {
-            for (n in dates) leagueRepo.saveRound(Round(n, season = 9700, status = RoundStatus.Finished, matches = emptyList()))
-            // Virada: a temporada nova reescreve só a PRIMEIRA data.
-            leagueRepo.saveRound(Round(dates.first, season = 9701, matches = emptyList()))
+            for (m in old) leagueRepo.saveRound(Round(m, season = 3970, status = RoundStatus.Finished, matches = emptyList()))
+            leagueRepo.saveRound(Round(nextSeason, season = 3971, matches = emptyList()))
 
             val current = leagueRepo.findLatest()
-            assertEquals(9701, current?.season)
-            assertEquals(dates.first, current?.number)
+            assertEquals(3971, current?.season)
+            assertEquals(nextSeason, current?.matchday)
             assertEquals(RoundStatus.Scheduled, current?.status)
+            // As datas da temporada encerrada continuam lá — são história.
+            assertEquals(RoundStatus.Finished, leagueRepo.findRound(old.last())?.status)
 
-            // Dentro da mesma temporada continua valendo a maior data.
-            leagueRepo.saveRound(Round(dates.first + 1, season = 9701, matches = emptyList()))
-            assertEquals(dates.first + 1, leagueRepo.findLatest()?.number)
+            // O encaixe seguinte ao domingo é a quarta da semana SEGUINTE.
+            leagueRepo.saveRound(Round(nextSeason.next(), season = 3971, matches = emptyList()))
+            assertEquals(nextSeason.next(), leagueRepo.findLatest()?.matchday)
         } finally {
-            dates.forEach { if (roundJpa.existsById(it)) roundJpa.deleteById(it) }
+            all.forEach { if (roundJpa.existsById(it.toKey())) roundJpa.deleteById(it.toKey()) }
+        }
+    }
+
+    @Test
+    fun `dentro da semana o fim de semana vem depois do meio`() = runBlocking {
+        val week = GameWeek(3972, 10)
+        val mid = Matchday(week, Slot.MIDWEEK)
+        val end = Matchday(week, Slot.WEEKEND)
+        try {
+            leagueRepo.saveRound(Round(end, season = 3972, matches = emptyList()))
+            leagueRepo.saveRound(Round(mid, season = 3972, matches = emptyList()))
+            assertEquals(end, leagueRepo.findLatest()?.matchday)
+        } finally {
+            listOf(mid, end).forEach { if (roundJpa.existsById(it.toKey())) roundJpa.deleteById(it.toKey()) }
         }
     }
 }

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "fixture de teste (dados fictícios)",
+  "data": [
+    {
+      "id": "tst-liga",
+      "name": "Liga Teste",
+      "country": "BRA",
+      "tier": 1,
+      "strength": 70,
+      "format": { "type": "roundRobin", "legs": 2 },
+      "tiebreakers": ["POINTS", "WINS", "GOAL_DIFFERENCE", "GOALS_FOR"]
+    },
+    {
+      "id": "tst-copa",
+      "name": "Copa Teste",
+      "country": "BRA",
+      "format": {
+        "type": "knockout",
+        "stages": [{ "name": "Final", "teams": 2, "legs": 2, "newEntrants": 2 }]
+      },
+      "sponsor": "campo desconhecido, ignorado"
+    }
+  ]
+}

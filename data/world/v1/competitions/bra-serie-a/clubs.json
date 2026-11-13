@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "source": "exemplo mínimo montado à mão a partir de fatos públicos; substituído pela importação do Wikidata (issue #127)",
+  "data": [
+    {
+      "id": "bra-flamengo",
+      "name": "Flamengo",
+      "country": "BRA",
+      "reputation": 90,
+      "stadium": { "name": "Maracanã", "capacity": 78838 }
+    },
+    {
+      "id": "bra-palmeiras",
+      "name": "Palmeiras",
+      "country": "BRA",
+      "reputation": 88,
+      "stadium": { "name": "Allianz Parque", "capacity": 43713 }
+    }
+  ]
+}

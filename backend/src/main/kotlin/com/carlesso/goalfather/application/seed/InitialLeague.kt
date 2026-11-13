@@ -67,17 +67,6 @@ fun initialLeague(): League {
             }
             player(104, "Eduardo Ramires", price = 36_000_00) { position = Position.GK; overall = 76; salary = 4_200_00; age = 28; nationality = Countries.URUGUAY }
         }
-
-        // Rodada 1 — Berger com 6 times por divisão:
-        // divisão 1: (1×6), (2×5), (3×4); divisão 2: (7×12), (8×11), (9×10).
-        round(1) {
-            match(homeId = 1, awayId = 6)
-            match(homeId = 2, awayId = 5)
-            match(homeId = 3, awayId = 4)
-            match(homeId = 7, awayId = 12)
-            match(homeId = 8, awayId = 11)
-            match(homeId = 9, awayId = 10)
-        }
     }
 }
 

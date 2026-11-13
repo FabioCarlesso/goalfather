@@ -15,7 +15,7 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurer
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 
 /**
- * Registra o handler do WS de rodada em `/ws/round/{number}`.
+ * Registra o handler do WS do encaixe em `/ws/slot/{key}` (issue #125).
  *
  * `setAllowedOrigins("*")` permite o frontend Vite dev conectar; em
  * produção, restringir aos hosts reais (paralelo ao CorsConfig REST).
@@ -42,7 +42,7 @@ class WebSocketConfig(
     fun matchHandler(): MatchWebSocketHandler = MatchWebSocketHandler(streamMatch, json)
 
     override fun registerWebSocketHandlers(registry: WebSocketHandlerRegistry) {
-        registry.addHandler(roundHandler(), "/ws/round/**")
+        registry.addHandler(roundHandler(), "/ws/slot/**")
             .addInterceptors(JwtHandshakeInterceptor(jwt))
             .setHandshakeHandler(UserIdHandshakeHandler())
             .setAllowedOriginPatterns("*")
