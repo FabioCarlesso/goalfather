@@ -1318,6 +1318,69 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   calendário entra com a primeira liga que tiver playoff (a Bundesliga, na #146);
   a vaga ganha só é consumida pela Libertadores da #132.
 
+- [x] **Competições do mundo no calendário, tabelas por liga e virada por país** — issue #131
+
+  O "uma liga por divisão + uma copa + uma temporada global" virou o mundo do
+  **catálogo do save** (`GameCompetition`, lido pelo port
+  `CompetitionCatalogRepository`): uma liga por (país, tier) com o formato, os
+  desempates, a disciplina e o limite de estrangeiros do catálogo, e a copa
+  nacional de cada país. O interino `SeasonCompetitions` saiu (resta só o id da
+  copa que o motor atual da copa grava, até o motor da Copa do Brasil entrar).
+
+  **Uma temporada por país** (`WorldSeasons = Map<CountryCode, Int>`, lida das
+  tabelas correntes): o Brasil de 2027 convive com a Europa de 2026/27. O plano
+  do mundo (`worldPlan`) é a **união dos planos de cada país** (`countryPlan`):
+  como os clubes de dois países nunca se cruzam nas competições domésticas, o
+  encaixe de um não depende do outro — recalcular o plano a cada encaixe (ele
+  nunca é persistido) não mexe no calendário europeu quando o Brasil vira, e a
+  edição nova "por cima do calendário corrente" sai de graça. As janelas de duas
+  edições seguidas do mesmo país não se sobrepõem; o serviço confere que a nova
+  não cai no passado. Ligas com turno e returno do formato (`RoundRobin(legs =
+  2)`), no fim de semana; a copa no meio da semana, reservando todos os clubes
+  das ligas do país. Datas FIFA: ainda as interinas (`interimFifaWindows`) do
+  ano de início e do seguinte — o pack só traz `calendar/2026.json`. **Medido:**
+  o plano do mundo inteiro (136 clubes, 258 rodadas de liga) sai em ~5 ms, sem
+  memoização (índice por encaixe no `Schedule`).
+
+  **`Round.season`** passou a ser o **ano civil** do encaixe: com várias
+  temporadas no mesmo domingo, a temporada é de cada competição, não da rodada.
+  `GET /api/league/calendar` devolve em `season`/`seasonLabel` a temporada da
+  LIGA do clube pedido (sem clube, o ano civil e nenhum rótulo).
+
+  **`matchId`** = `encaixe × 1000 + slot × 100 + índice`, com o slot (1..9) =
+  posição da liga no catálogo — a Série A e a Premier League são ambas divisão 1.
+  A copa segue com `encaixe × 1000 + índice` (< 100). Mais de 9 ligas exige
+  alargar a faixa (`Matchday.MATCH_IDS_PER_MATCHDAY`).
+
+  **Tabelas por competição** (migration V20: PK `competition_id + season`, com
+  nome, país, rótulo e tier como foto, e `results_json` com os placares — o
+  insumo do confronto direto; os cartões de cada clube na competição moram na
+  linha). `applyRoundToStandings` aplica os desempates da liga (Brasileirão:
+  vitórias, saldo, gols, confronto direto, vermelhos, amarelos, sorteio
+  semeado). Zonas pelas `WorldQualificationRules` ajustadas ao mundo
+  (`worldQualificationRules`): só entram regras cujas tabelas existem, e cada
+  faixa cabe em um terço da tabela (G-6/Z-4 com 20 clubes; G-2/Z-2 no pack de
+  E2E com 6), com acesso igual ao rebaixamento.
+
+  **Virada por país:** quando a última rodada de TODAS as competições de um
+  país é a do encaixe, aquele país vira — história (um `SeasonRecord` por
+  temporada + país, PK nova na V20), acesso/rebaixamento (só Brasil),
+  envelhecimento/aposentadoria/zerar estatísticas e diretoria dos clubes DELE,
+  copa e tabelas novas. Um `SeasonFinished` por país, antes do `RoundFinished`.
+  O resto do mundo segue jogando. **Mercado** (global): envelhece uma vez por
+  ano, quando o primeiro país abre a temporada daquele ano (o Brasil em
+  janeiro; a Europa abre a mesma safra em agosto e não envelhece de novo).
+  **Histórico:** `/api/league/history` lista os records de todos os países
+  (mais recente primeiro; Brasil primeiro na mesma temporada) e
+  `/history/{season}` ganhou `?country=` (sem ele, o primeiro na mesma ordem);
+  `SeasonRecord` ganhou `country`/`seasonLabel` opcionais. **Diretoria:** metas
+  por liga (país + divisão), no tamanho dela.
+
+  **Prontidão multiplayer:** só os técnicos cujo clube joga no encaixe contam;
+  encaixe sem nenhum técnico em campo volta à regra antiga (todos). Alguém
+  ainda precisa clicar "jogar" nos encaixes só de outro país — andar o relógio
+  sozinho é trabalho futuro.
+
 ---
 
 ## 9. Stack consolidada
