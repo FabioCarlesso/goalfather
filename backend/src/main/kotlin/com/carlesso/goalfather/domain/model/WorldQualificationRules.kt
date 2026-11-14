@@ -8,7 +8,7 @@ import com.carlesso.goalfather.domain.model.QualificationRule.TopN
 /**
  * As regras de vaga do mundo do MVP (issue #128), com os ids do pack do mundo.
  *
- * **Interino**, como [SeasonCompetitions]: quando o mundo do MVP sair do pack
+ * **Interino**: quando o mundo do MVP sair do pack
  * (issue #131), estas regras passam a ser dados do pack lidos pelo
  * `WorldDataProvider`, e este objeto deixa de existir. Ficam aqui para que a
  * regra seja testada com as competições reais antes de o mundo estar no ar.

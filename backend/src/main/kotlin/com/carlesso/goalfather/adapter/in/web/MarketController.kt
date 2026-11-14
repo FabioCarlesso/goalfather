@@ -8,6 +8,7 @@ import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -32,6 +33,8 @@ class MarketController(
     private val buyUseCase: BuyPlayerUseCase,
     private val sellUseCase: SellPlayerUseCase,
     private val meterRegistry: MeterRegistry,
+    // Catálogo do save (issue #131): o clube da compra sai com a liga dele.
+    private val catalog: CompetitionCatalogRepository,
     // `TransferResultDto` é sealed: sai pelo kotlinx (`okJson`) para levar o
     // `type` do contrato — com `ResponseEntity<Any>` o Spring usaria o Jackson.
     private val json: Json,
@@ -54,7 +57,7 @@ class MarketController(
         // o `PlayerNotAvailable` — na prática, a perda do lock otimista do mercado
         // (#21) quando dois donos disputam o mesmo jogador.
         countTransfer(result)
-        return json.okJson(result.toDto())
+        return json.okJson(result.toDto(catalog.findAll()))
     }
 
     private fun countTransfer(result: TransferResult) {

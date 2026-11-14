@@ -2,20 +2,15 @@ package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.seed.initialLeague
 import com.carlesso.goalfather.domain.rules.boardExpectations
-import com.carlesso.goalfather.domain.rules.canHoldCup
-import com.carlesso.goalfather.domain.rules.canScheduleSeason
-import com.carlesso.goalfather.domain.rules.cupDrawSeed
-import com.carlesso.goalfather.domain.rules.drawCup
-import com.carlesso.goalfather.domain.rules.seasonPlan
-import com.carlesso.goalfather.domain.rules.seasonStandings
+import com.carlesso.goalfather.domain.rules.startWorld
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Configuration
-import kotlin.random.Random
 
 /**
  * Seed inicial — espelha `frontend/src/mocks/seed.ts`.
@@ -44,6 +39,7 @@ class DataInitializer(
     private val clubs: ClubRepository,
     private val league: LeagueRepository,
     private val cups: CupRepository,
+    private val catalog: CompetitionCatalogRepository,
 ) : CommandLineRunner {
 
     override fun run(vararg args: String?) {
@@ -71,11 +67,12 @@ class DataInitializer(
         if (league.findLatest() != null) return@runBlocking
         val season = league.currentStandings().firstOrNull()?.season ?: return@runBlocking
         val all = clubs.findAll()
-        if (!canScheduleSeason(all)) return@runBlocking
-        val cup = if (canHoldCup(all)) drawCup(season, all, Random(cupDrawSeed(season))).also { cups.save(it) } else null
-        seasonStandings(season, all).forEach { league.saveStandings(it) }
-        val plan = seasonPlan(season, all, cup)
-        plan.first?.let { league.saveRound(plan.roundAt(it, all, cup)) }
+        // #131 integrador (frente B): ponte mínima sobre `startWorld`; a frente A
+        // reescreve este runner (seed pelo pack + catálogo gravado).
+        val world = startWorld(season, all, catalog.findAll())
+        world.cups.forEach { cups.save(it) }
+        world.standings.forEach { league.saveStandings(it) }
+        world.firstRound?.let { league.saveRound(it) }
     }
 
     /**

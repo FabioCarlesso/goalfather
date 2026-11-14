@@ -2,15 +2,17 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.CompetitionKind
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Pairing
 import com.carlesso.goalfather.domain.model.QualificationRule
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TableZone
 import com.carlesso.goalfather.domain.model.TieResult
 import com.carlesso.goalfather.domain.model.TwoLeggedTieResult
+import com.carlesso.goalfather.domain.model.WorldQualificationRules
 
 /**
  * Aplicação das [QualificationRule] na virada (issue #128). Funções PURAS em
@@ -19,11 +21,9 @@ import com.carlesso.goalfather.domain.model.TwoLeggedTieResult
  *
  * Substitui o antigo `PromotionRelegationRules.kt` (issue #47): a troca entre
  * divisões adjacentes virou um caso particular — um par [QualificationRule.Relegation]
- * + [QualificationRule.Promotion] por degrau da pirâmide ([pyramidRules]).
+ * + [QualificationRule.Promotion] (Série A ↔ Série B), dado de
+ * [WorldQualificationRules] ajustado ao mundo por [worldQualificationRules].
  */
-
-/** Nº padrão de vagas trocadas entre divisões adjacentes da liga do jogo. */
-const val PROMOTION_RELEGATION_SPOTS = 2
 
 /** Uma vaga ganha: quem, para onde, em que fase entra e por qual regra. */
 data class Qualification(
@@ -246,68 +246,105 @@ fun Standings.withZones(competition: CompetitionId, rules: List<QualificationRul
     )
 }
 
-// ─── A pirâmide de divisões do mundo atual ────────────────────────────────
+// ─── As regras do mundo do save ───────────────────────────────────────────
 
 /**
- * As regras da liga do jogo (issue #47) no modelo novo: em cada par de
- * divisões adjacentes, os últimos N da de cima descem e os primeiros N da de
- * baixo sobem. O N efetivo é limitado pelo tamanho das duas tabelas, o que
- * mantém as divisões com o MESMO número de clubes após a troca.
+ * As regras de vaga ([WorldQualificationRules]) que valem para o mundo do save
+ * (issue #131), ajustadas às tabelas que ele tem de fato:
  *
- * `zipWithNext` percorre os pares adjacentes (1ª↔2ª, 2ª↔3ª…) sem indexação
- * manual. Os tiers devem ser CONTÍGUOS: um buraco na pirâmide (divisões 1 e 3)
- * é erro de seed, não algo para a regra "pontear" em silêncio.
+ * - só entram regras cuja tabela de ORIGEM está no mundo ([tableSizes]); as de
+ *   movimentação (acesso, rebaixamento, playoff) também precisam do DESTINO —
+ *   não há para onde rebaixar sem a Série B. Vaga em competição que o mundo
+ *   ainda não tem (a Libertadores, #132) fica: ela só pinta a faixa;
+ * - cada faixa cabe na tabela: o topo e o fundo de uma tabela comportam no
+ *   máximo um terço dela cada ([zoneBudget]). Com 20 clubes nada muda (G-6 e
+ *   Z-4 do Brasileirão); com as tabelas de 6 do pack de E2E viram G-2 e Z-2 —
+ *   e o acesso fica igual ao rebaixamento, para as ligas manterem o tamanho.
+ *
+ * Função pura dos tamanhos: o mesmo mundo dá sempre as mesmas regras, na
+ * virada e na leitura.
  */
-fun pyramidRules(tables: List<Standings>, spots: Int = PROMOTION_RELEGATION_SPOTS): List<QualificationRule> {
-    require(spots >= 0) { "spots não pode ser negativo: $spots" }
-    val ordered = tables.sortedBy { it.division }
-    require(ordered.map { it.division }.toSet().size == ordered.size) {
-        "Tabelas com divisão duplicada: ${ordered.map { it.division.value }}"
+fun worldQualificationRules(
+    competitions: List<GameCompetition>,
+    tableSizes: Map<CompetitionId, Int>,
+    rules: List<QualificationRule> = WorldQualificationRules.ALL,
+): List<QualificationRule> {
+    val known = competitions.mapTo(HashSet()) { it.id }
+    fun budget(id: CompetitionId) = zoneBudget(tableSizes.getValue(id))
+    val topUsed = mutableMapOf<CompetitionId, Int>()
+    fun takeTop(id: CompetitionId, wanted: Int): Int {
+        val granted = minOf(wanted, budget(id) - (topUsed[id] ?: 0)).coerceAtLeast(0)
+        topUsed.merge(id, granted, Int::plus)
+        return granted
     }
-    return ordered.zipWithNext().flatMap { (upper, lower) ->
-        require(lower.division.value == upper.division.value + 1) {
-            "Divisões não contíguas na pirâmide: ${upper.division.value} → ${lower.division.value}"
-        }
-        val exchanged = minOf(spots, upper.rows.size, lower.rows.size)
-        val upperId = SeasonCompetitions.leagueId(upper.division)
-        val lowerId = SeasonCompetitions.leagueId(lower.division)
-        if (exchanged == 0) {
-            emptyList()
-        } else {
-            listOf(
-                QualificationRule.Relegation(from = upperId, bottomN = exchanged, to = lowerId),
-                QualificationRule.Promotion(from = lowerId, topN = exchanged, to = upperId),
-            )
+
+    // `when` exaustivo sem `else`: uma regra nova obriga a decidir aqui como
+    // ela se ajusta às tabelas do mundo.
+    return rules.mapNotNull { rule ->
+        when (rule) {
+            is QualificationRule.TopN ->
+                if (rule.from !in tableSizes) null
+                else takeTop(rule.from, rule.n).takeIf { it > 0 }?.let { rule.copy(n = it) }
+            is QualificationRule.Champion -> rule.takeIf { it.from in known }
+            is QualificationRule.Relegation ->
+                if (rule.from !in tableSizes || rule.to !in tableSizes) null
+                else minOf(rule.bottomN, budget(rule.from), budget(rule.to)).takeIf { it > 0 }
+                    ?.let { rule.copy(bottomN = it) }
+            is QualificationRule.Promotion ->
+                if (rule.from !in tableSizes || rule.to !in tableSizes) null
+                else minOf(takeTop(rule.from, rule.topN), budget(rule.to)).takeIf { it > 0 }
+                    ?.let { rule.copy(topN = it) }
+            is QualificationRule.Playoff ->
+                rule.takeIf {
+                    val upper = tableSizes[it.upper]
+                    val lower = tableSizes[it.lower]
+                    upper != null && lower != null && it.upperPosition <= upper && it.lowerPosition <= lower
+                }
         }
     }
 }
 
-/** As tabelas da pirâmide com as faixas de acesso/rebaixamento de [pyramidRules]. */
-fun List<Standings>.withPyramidZones(spots: Int = PROMOTION_RELEGATION_SPOTS): List<Standings> {
-    val rules = pyramidRules(this, spots)
-    return map { it.withZones(SeasonCompetitions.leagueId(it.division), rules) }
-}
+/** Quantas posições do topo (ou do fundo) de uma tabela de [tableSize] clubes podem ter faixa. */
+fun zoneBudget(tableSize: Int): Int = tableSize / 3
+
+/** As tabelas com a faixa de cada linha pelas [rules] (issue #128). */
+fun List<Standings>.withWorldZones(rules: List<QualificationRule>): List<Standings> =
+    map { it.withZones(it.competitionId, rules) }
 
 /**
- * A virada da pirâmide do jogo: divisão da PRÓXIMA temporada de cada clube
- * (inclusive dos que não se movem). Mesmo nome e contrato da regra antiga da
- * issue #47 — quem chama (`PlayRoundService.startNextSeason`) não muda —, agora
- * por [pyramidRules] + [applyQualificationRules].
+ * A virada de um país: o tier da PRÓXIMA temporada de cada clube das
+ * [tables] finais (inclusive dos que não se movem), pelas regras de
+ * movimentação de [rules] — acesso e rebaixamento entre Série A e Série B no
+ * MVP; as europeias são fechadas (#146).
  *
- * Determinística por construção: as tabelas chegam ordenadas por `position`, e
- * a ordem de entrada das tabelas não importa.
+ * Só as regras de movimentação entram: as vagas continentais (`TopN`,
+ * `Champion`) são da Libertadores (#132) e não mudam a liga de ninguém.
+ * Determinística por construção: as tabelas chegam ordenadas por `position`.
  */
 fun applyPromotionRelegation(
     tables: List<Standings>,
-    spots: Int = PROMOTION_RELEGATION_SPOTS,
+    rules: List<QualificationRule>,
+    competitions: List<GameCompetition>,
 ): Map<ClubId, Division> {
-    val rules = pyramidRules(tables, spots)
-    val divisionOf = tables.associate { SeasonCompetitions.leagueId(it.division) to it.division }
-    val byCompetition = tables.associateBy { SeasonCompetitions.leagueId(it.division) }
-    // `when` exaustivo sobre o `sealed`: a pirâmide do jogo não declara playoff,
-    // então o pendente é inalcançável — `error` documenta a invariante.
-    return when (val transition = applyQualificationRules(rules, byCompetition)) {
-        is SeasonTransition.Resolved -> transition.memberships.mapValues { (_, league) -> divisionOf.getValue(league) }
-        is SeasonTransition.PlayoffsPending -> error("A pirâmide do jogo não tem playoff: ${transition.ties}")
+    val byCompetition = tables.associateBy { it.competitionId }
+    val movement = rules.filter { rule ->
+        when (rule) {
+            is QualificationRule.Relegation -> rule.from in byCompetition && rule.to in byCompetition
+            is QualificationRule.Promotion -> rule.from in byCompetition && rule.to in byCompetition
+            is QualificationRule.Playoff -> rule.upper in byCompetition && rule.lower in byCompetition
+            is QualificationRule.TopN, is QualificationRule.Champion -> false
+        }
+    }
+    val tierOf = competitions.mapNotNull { game ->
+        (game.kind as? CompetitionKind.League)?.let { game.id to it.tier }
+    }.toMap()
+    // `when` exaustivo sobre o `sealed`: o MVP não declara playoff (a
+    // Bundesliga entra com a 2. Bundesliga, #146), então o pendente é
+    // inalcançável — `error` documenta a invariante.
+    return when (val transition = applyQualificationRules(movement, byCompetition)) {
+        is SeasonTransition.Resolved -> transition.memberships.mapValues { (_, league) ->
+            requireNotNull(tierOf[league]) { "Liga ${league.value} fora do catálogo" }
+        }
+        is SeasonTransition.PlayoffsPending -> error("Playoff de acesso ainda não é jogado no MVP: ${transition.ties}")
     }
 }

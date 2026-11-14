@@ -11,15 +11,10 @@ import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Round
-import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.cents
-import com.carlesso.goalfather.domain.rules.canHoldCup
-import com.carlesso.goalfather.domain.rules.canScheduleSeason
-import com.carlesso.goalfather.domain.rules.cupDrawSeed
-import com.carlesso.goalfather.domain.rules.drawCup
-import com.carlesso.goalfather.domain.rules.seasonPlan
-import com.carlesso.goalfather.domain.rules.withPyramidZones
+import com.carlesso.goalfather.domain.rules.startWorld
+import com.carlesso.goalfather.application.seed.interimBrazilCatalog
 import kotlin.random.Random
 
 /**
@@ -78,45 +73,19 @@ data class League(
     val clubs: List<Club>,
     val market: List<MarketEntry>,
 ) {
-    /**
-     * Tabelas zeradas — uma por divisão (issue #47), na ordem de declaração
-     * dos clubes dentro de cada divisão. As vagas de promoção/rebaixamento
-     * vêm das regras de domínio (0 quando não há para onde subir/descer).
-     */
-    fun initialStandings(): List<Standings> {
-        val byDivision = clubs.groupBy { it.division }.toSortedMap()
-        return byDivision.map { (division, divisionClubs) ->
-            Standings(
-                season = season,
-                round = 0,
-                rows = divisionClubs.mapIndexed { i, club ->
-                    StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
-                },
-                division = division,
-            )
-        }.withPyramidZones()
-    }
+    // #131 integrador: ponte da frente B para o seed antigo continuar de pé
+    // enquanto a frente A (seed pelo pack + catálogo gravado) não entra — o
+    // mundo do seed vira o do `startWorld` sobre o catálogo interino do Brasil.
+    private val world by lazy { startWorld(season, clubs, interimBrazilCatalog()) }
 
-    /**
-     * Copa da temporada inicial (issue #61), sorteada pela MESMA regra e seed
-     * que a virada de temporada usa — o seed não tem um sorteio "especial".
-     * `null` quando a liga não comporta copa (ver `canHoldCup`).
-     */
-    fun initialCup(): Cup? =
-        if (canHoldCup(clubs)) drawCup(season, clubs, Random(cupDrawSeed(season))) else null
+    /** Tabelas zeradas — uma por liga do catálogo, com as faixas das regras de vaga. */
+    fun initialStandings(): List<Standings> = world.standings
 
-    /**
-     * O primeiro encaixe da temporada inicial (issue #125), tirado do MESMO
-     * calendário que o jogo usa depois ([seasonPlan]) — o seed não descreve
-     * rodada à mão: com o calendário semanal, em que semana ela cai é decisão
-     * do agendador. `null` só para liga sem calendário possível.
-     */
-    fun firstRound(): Round? {
-        if (!canScheduleSeason(clubs)) return null
-        val cup = initialCup()
-        val plan = seasonPlan(season, clubs, cup)
-        return plan.first?.let { plan.roundAt(it, clubs, cup) }
-    }
+    /** Copa da temporada inicial, sorteada pela MESMA regra e seed da virada. */
+    fun initialCup(): Cup? = world.cups.firstOrNull()
+
+    /** O primeiro encaixe da temporada inicial, tirado do MESMO plano que o jogo usa depois. */
+    fun firstRound(): Round? = world.firstRound
 }
 
 @SeedDsl

@@ -3,13 +3,14 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
+import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.result.LineupResult
-import com.carlesso.goalfather.domain.rules.foreignPlayerLimit
+import com.carlesso.goalfather.domain.rules.foreignPlayerLimitIn
 import com.carlesso.goalfather.domain.rules.foreignersAmong
 
 /**
@@ -41,6 +42,8 @@ import com.carlesso.goalfather.domain.rules.foreignersAmong
  */
 class SaveLineupService(
     private val clubRepo: ClubRepository,
+    // O limite de estrangeiros é o da liga do clube no catálogo (issue #131).
+    private val catalogRepo: CompetitionCatalogRepository,
 ) : SaveLineupUseCase {
 
     override suspend fun execute(
@@ -103,7 +106,7 @@ class SaveLineupService(
 
         // Limite de estrangeiros (issue #130): recusa como VALOR, com o limite e
         // os estrangeiros escalados. `let` só roda quando há limite (`?.`).
-        club.foreignPlayerLimit()?.let { limit ->
+        club.foreignPlayerLimitIn(catalogRepo.findAll())?.let { limit ->
             val foreigners = club.foreignersAmong(orderedPlayers)
             if (foreigners.size > limit) {
                 return LineupResult.TooManyForeignPlayers(limit = limit, playerIds = foreigners.map { it.id.value })

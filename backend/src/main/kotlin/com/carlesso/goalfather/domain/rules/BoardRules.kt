@@ -88,15 +88,16 @@ fun BoardObjective.targetPosition(divisionSize: Int): Int = when (this) {
 }.coerceIn(1, maxOf(1, divisionSize))
 
 /**
- * Metas da temporada [season] para TODOS os clubes da liga, divisão por
- * divisão: cada clube é ranqueado pela [squadRating] contra os da própria
- * divisão e recebe o objetivo do seu ranking, com a confiança inicial.
+ * Metas da temporada [season] para os [clubs], liga por liga: cada clube é
+ * ranqueado pela [squadRating] contra os da própria LIGA — país + divisão
+ * (issue #131: a Série A e a Premier League são ambas divisão 1) — e recebe o
+ * objetivo do seu ranking no tamanho daquela liga, com a confiança inicial.
  *
  * Determinística dada a composição da liga — critério de aceite da issue.
  * Empate de força desempata pelo menor id: arbitrário, mas estável.
  */
 fun boardExpectations(season: Int, clubs: Collection<Club>): Map<ClubId, BoardExpectation> =
-    clubs.groupBy { it.division }.values.flatMap { divisionClubs ->
+    clubs.groupBy { it.country.code to it.division }.values.flatMap { divisionClubs ->
         val ranked = divisionClubs.sortedWith(
             compareByDescending<Club> { it.squadRating() }.thenBy { it.id.value },
         )

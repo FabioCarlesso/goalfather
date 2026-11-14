@@ -22,24 +22,49 @@ data class StandingRow(
     val goalDifference: Int = 0,
     val points: Int = 0,
     val zone: TableZone = TableZone.NONE,
+    /**
+     * Cartões do clube NESTA competição (issue #131) — insumo dos critérios
+     * `FEWER_RED_CARDS`/`FEWER_YELLOW_CARDS` do Brasileirão. Moram na linha
+     * (e no snapshot `rows_json`) porque são a "disciplina" da tabela; o
+     * contrato não os expõe.
+     */
+    val yellowCards: Int = 0,
+    val redCards: Int = 0,
 )
 
 /**
- * Tabela de UMA divisão em uma temporada (issue #47). Uma liga com N
- * divisões tem N `Standings` por temporada.
+ * Tabela de UMA liga do mundo em uma temporada (issue #131): Série A, Série B,
+ * Premier League… — cada uma com a sua, na SUA temporada ([season] é o ano de
+ * início; [seasonLabel] é `2026` ou `2026/27`).
+ *
+ * [competitionName] e [country] são FOTO, como o nome do clube na linha: a
+ * tabela histórica continua legível mesmo que o catálogo mude. [division] é o
+ * tier da liga no país (a Série B é 2; a Premier League é 1 — a divisão só faz
+ * sentido junto do país).
+ *
+ * [results] guarda os placares já disputados na liga: é o insumo do confronto
+ * direto (`HEAD_TO_HEAD`), que não sai das linhas — depende de QUEM está
+ * empatado. Persistido junto do snapshot.
  *
  * `promotionSpots`/`relegationSpots` dizem quantas posições do topo/fundo
- * trocam de divisão na virada. São 0 quando não há para onde subir (elite) ou
- * descer (última divisão). Desde a issue #128 a UI pinta pela [StandingRow.zone]
- * de cada linha (que também cobre vaga continental e playoff); os contadores
- * ficam por compatibilidade do contrato e saem das mesmas regras.
+ * trocam de divisão na virada. Desde a issue #128 a UI pinta pela
+ * [StandingRow.zone] de cada linha (que também cobre vaga continental e
+ * playoff); os contadores ficam por compatibilidade do contrato e saem das
+ * mesmas regras.
+ *
+ * Não é `@Serializable`: a persistência grava só as linhas e os resultados
+ * (`rows_json`/`results_json`) e a API tem o próprio DTO.
  */
-@Serializable
 data class Standings(
+    val competitionId: CompetitionId,
+    val competitionName: String,
+    val country: Country,
     val season: Int,
+    val seasonLabel: String,
     val round: Int,
     val rows: List<StandingRow>,
     val division: Division = Division.FIRST,
     val promotionSpots: Int = 0,
     val relegationSpots: Int = 0,
+    val results: List<PlayedMatch> = emptyList(),
 )

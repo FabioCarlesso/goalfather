@@ -4,9 +4,10 @@ import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
-import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.ReadinessStatus
+import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
+import com.carlesso.goalfather.domain.model.User
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.StartRoundResult
 import java.time.Clock
@@ -45,7 +46,7 @@ class RoundReadinessService(
 ) : RoundReadinessUseCase {
 
     override suspend fun status(): ReadinessStatus =
-        buildStatus(leagueRepo.findLatest()?.matchday)
+        buildStatus(leagueRepo.findLatest())
 
     override suspend fun markReady(userId: UserId): ReadinessStatus {
         val round = leagueRepo.findLatest() ?: return buildStatus(null)
@@ -55,7 +56,7 @@ class RoundReadinessService(
         if (userRepo.findManagers().any { it.id == userId }) {
             readinessRepo.markReady(round.matchday, userId)
         }
-        return buildStatus(round.matchday)
+        return buildStatus(round)
     }
 
     override suspend fun start(): StartRoundResult {
@@ -64,7 +65,7 @@ class RoundReadinessService(
             return StartRoundResult.AlreadyFinished(round.matchday)
         }
 
-        val status = buildStatus(round.matchday)
+        val status = buildStatus(round)
         // Gate agora é "todos prontos OU timeout estourado" (issue #45): um
         // ausente não segura mais a liga indefinidamente.
         if (!status.canStart) return StartRoundResult.NotReady(status)
@@ -87,6 +88,18 @@ class RoundReadinessService(
     }
 
     /**
+     * Quem precisa estar pronto para o encaixe (issue #131): só os técnicos
+     * cujo clube JOGA nele. Com o mundo do MVP a maioria dos encaixes é de um
+     * país só — o técnico da Premier League não segura o encaixe da Série B.
+     * Encaixe sem nenhum técnico em campo volta à regra de antes (todos): alguém
+     * precisa andar o relógio, e o timeout do primeiro pronto continua valendo.
+     */
+    private fun managersInAction(managers: List<User>, round: Round?): List<User> {
+        val inAction = round?.clubsInAction ?: return managers
+        return managers.filter { it.clubId in inAction }.ifEmpty { managers }
+    }
+
+    /**
      * Monta o status comparando técnicos (donos de clube) com quem já marcou
      * pronto. `pending` preserva a ordem de [UserRepository.findManagers] para
      * uma listagem estável no 409/UI.
@@ -96,8 +109,9 @@ class RoundReadinessService(
      * nunca destrava uma liga sem nenhum pronto (o primeiro "pronto" arma o
      * relógio). `secondsRemaining` fica `null` fora dessa janela.
      */
-    private suspend fun buildStatus(matchday: Matchday?): ReadinessStatus {
-        val managers = userRepo.findManagers()
+    private suspend fun buildStatus(round: Round?): ReadinessStatus {
+        val matchday = round?.matchday
+        val managers = managersInAction(userRepo.findManagers(), round)
         // Sem encaixe no calendário ninguém está pronto para nada.
         val ready = matchday?.let { readinessRepo.readyUserIds(it) }.orEmpty()
         val pending = managers.filter { it.id !in ready }

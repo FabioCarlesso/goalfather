@@ -59,7 +59,14 @@ data class StandingRowDto(
 
 @Serializable
 data class StandingsDto(
+    /** Liga desta tabela (issue #131): `bra-serie-a`, `eng-premier-league`… */
+    val competitionId: String,
+    val competitionName: String,
+    val country: CountryDto,
+    /** Ano de INÍCIO da temporada da liga. */
     val season: Int,
+    /** `2026` ou `2026/27`. */
+    val seasonLabel: String,
     /** `Int` cru: o contrato declara `division` como `integer`, sem o value class. */
     val division: Int,
     val round: Int,
@@ -95,6 +102,10 @@ data class SeasonRecordDto(
     val topScorer: SeasonTopScorerDto? = null,
     /** Ausente quando não houve copa ou ela não chegou à final. */
     val cupChampion: CupClubDto? = null,
+    /** País da temporada (issue #131); ausente nos records anteriores ao mundo do MVP. */
+    val country: CountryDto? = null,
+    /** `2026` ou `2026/27` (issue #131); ausente nos records antigos. */
+    val seasonLabel: String? = null,
 )
 
 @Serializable
@@ -188,6 +199,8 @@ data class RoundDto(
 data class CalendarDto(
     val current: MatchdayDto? = null,
     val season: Int? = null,
+    /** Rótulo da temporada da liga do clube (issue #131); ausente sem `clubId`. */
+    val seasonLabel: String? = null,
     val nextMatch: NextMatchDto? = null,
 )
 
@@ -231,7 +244,11 @@ fun StandingRow.toDto(): StandingRowDto = StandingRowDto(
 )
 
 fun Standings.toDto(): StandingsDto = StandingsDto(
+    competitionId = competitionId.value,
+    competitionName = competitionName,
+    country = country.toDto(),
     season = season,
+    seasonLabel = seasonLabel,
     division = division.value,
     round = round,
     promotionSpots = promotionSpots,
@@ -256,6 +273,8 @@ fun SeasonRecord.toDto(): SeasonRecordDto = SeasonRecordDto(
     finalStandings = finalStandings.map { it.toDto() },
     topScorer = topScorer?.toDto(),
     cupChampion = cupChampion?.toDto(),
+    country = country?.toDto(),
+    seasonLabel = seasonLabel,
 )
 
 private fun CareerCampaign.toDto(): CareerCampaignDto =
@@ -311,6 +330,7 @@ fun Round.toDto(): RoundDto = RoundDto(
 fun CalendarView.toDto(): CalendarDto = CalendarDto(
     current = current?.toDto(),
     season = season,
+    seasonLabel = seasonLabel,
     nextMatch = nextMatch?.let { NextMatchDto(matchday = it.matchday.toDto(), match = it.match.toDto()) },
 )
 
