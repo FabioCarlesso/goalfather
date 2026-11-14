@@ -26,12 +26,11 @@ async function resetBackend(page: Page): Promise<void> {
   expect(res.status(), 'reset do backend e2e').toBe(204)
 }
 
-/**
- * Cadastra um usuário único e reivindica o primeiro clube (Goal Father FC).
- * No modo real, reseta o backend antes — por isso fica aqui, e não na fixture:
- * `welcome.spec` usa o `test` base e chama `authenticate` direto.
- */
-export async function authenticate(page: Page): Promise<void> {
+/** Texto literal dentro de uma RegExp (nomes de clube e jogador vêm da tela). */
+export const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** Cadastra um usuário único pela UI e para na escolha de clube (onboarding). */
+export async function register(page: Page): Promise<void> {
   if (REAL_BACKEND) await resetBackend(page)
   await page.goto('/login')
   await page.getByRole('button', { name: 'Cadastre-se' }).click()
@@ -39,10 +38,41 @@ export async function authenticate(page: Page): Promise<void> {
   await page.getByLabel('Usuário').fill(username)
   await page.getByLabel('Senha').fill('secret123')
   await page.getByRole('button', { name: 'Cadastrar' }).click()
-
   await expect(page.getByRole('heading', { name: 'Escolha seu clube' })).toBeVisible()
-  await page.getByRole('button', { name: 'Treinar este clube' }).first().click()
+}
+
+/** Liga em que o técnico da UI entra por padrão — onde `registerRival` também procura clube. */
+export const DEFAULT_COUNTRY = 'Brasil'
+export const DEFAULT_LEAGUE = 'Campeonato Brasileiro Série A'
+export const DEFAULT_LEAGUE_ID = 'bra-serie-a'
+
+/**
+ * Onboarding (issue #131): país → liga → o PRIMEIRO clube livre da liga (o
+ * mais forte, pela ordem do servidor). Devolve o nome do clube escolhido —
+ * lido da tela, porque mock e backend real não têm os mesmos dados.
+ */
+export async function chooseClub(
+  page: Page,
+  { country = DEFAULT_COUNTRY, league = DEFAULT_LEAGUE }: { country?: string; league?: string } = {},
+): Promise<string> {
+  await page.getByRole('list', { name: 'Países' }).getByRole('button', { name: new RegExp(escapeRegExp(country)) }).click()
+  await page.getByRole('list', { name: 'Ligas' }).getByRole('button', { name: new RegExp(escapeRegExp(league)) }).click()
+  const card = page.getByRole('list', { name: /Clubes livres/ }).getByRole('article').first()
+  const clubName = (await card.getAttribute('aria-label')) ?? ''
+  expect(clubName, 'nome do clube no card').not.toBe('')
+  await card.getByRole('button', { name: 'Treinar este clube' }).click()
   await expect(page).toHaveURL(/\/dashboard\/visao-geral$/)
+  return clubName
+}
+
+/**
+ * Cadastra um usuário único e escolhe o primeiro clube livre da Série A.
+ * No modo real, reseta o backend antes — por isso fica aqui, e não na fixture:
+ * `welcome.spec` usa o `test` base e chama `authenticate` direto.
+ */
+export async function authenticate(page: Page): Promise<string> {
+  await register(page)
+  return chooseClub(page)
 }
 
 export interface Rival {
@@ -51,9 +81,13 @@ export interface Rival {
   clubName: string
 }
 
-/** Cadastra um segundo técnico e reivindica o primeiro clube livre. `null` se não houver clube. */
-export async function registerRival(page: Page): Promise<Rival | null> {
-  return page.evaluate(async (username) => {
+/**
+ * Cadastra um segundo técnico e reivindica o primeiro clube livre da liga
+ * (default: a do técnico da UI, para o rival aparecer na tabela dele). `null`
+ * se não houver clube.
+ */
+export async function registerRival(page: Page, competitionId = DEFAULT_LEAGUE_ID): Promise<Rival | null> {
+  return page.evaluate(async ({ username, competitionId }) => {
     const json = { 'Content-Type': 'application/json' }
     const reg = await fetch('/api/auth/register', {
       method: 'POST',
@@ -62,13 +96,13 @@ export async function registerRival(page: Page): Promise<Rival | null> {
     })
     const { token } = (await reg.json()) as { token: string }
     const auth = { Authorization: `Bearer ${token}` }
-    const available = (await (await fetch('/api/clubs/available', { headers: auth })).json()) as
+    const available = (await (await fetch(`/api/clubs/available?competitionId=${competitionId}`, { headers: auth })).json()) as
       { id: number; name: string }[]
     const club = available[0]
     if (!club) return null
     await fetch(`/api/clubs/${club.id}/claim`, { method: 'POST', headers: auth })
     return { token, clubId: club.id, clubName: club.name }
-  }, `rival_${Date.now()}_${Math.floor(Math.random() * 1e6)}`)
+  }, { username: `rival_${Date.now()}_${Math.floor(Math.random() * 1e6)}`, competitionId })
 }
 
 /**

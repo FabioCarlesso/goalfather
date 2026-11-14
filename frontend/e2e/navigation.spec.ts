@@ -147,7 +147,22 @@ for (const width of [1024, 1366]) {
 }
 
 // Rotas autenticadas sem parâmetro + as de detalhe, abertas por deep-link.
-const ROUTES = ['/welcome', '/dashboard', '/dashboard/elenco', '/dashboard/financas', '/dashboard/departamento', '/lineup', '/round', '/market', '/standings', '/cup', '/history', '/clubs/2']
+// `RIVAL_CLUB` vira o id de um rival na hora: os ids do mock e do backend real
+// não coincidem (issue #131).
+const RIVAL_CLUB = '/clubs/:rival'
+const ROUTES = ['/welcome', '/dashboard', '/dashboard/elenco', '/dashboard/financas', '/dashboard/departamento', '/lineup', '/round', '/market', '/standings', '/cup', '/history', RIVAL_CLUB]
+
+/** `/clubs/{id}` de um clube que não é o do técnico, lido da tabela da API. */
+async function rivalClubPath(page: Page): Promise<string> {
+  const mine = await myClubId(page)
+  const id = await page.evaluate(async (mine) => {
+    const res = await fetch('/api/league/standings', { headers: { Authorization: `Bearer ${localStorage.getItem('gf:token')}` } })
+    const tables = (await res.json()) as { rows: { clubId: number }[] }[]
+    return tables.flatMap((t) => t.rows).find((r) => r.clubId !== mine)?.clubId
+  }, mine)
+  expect(id, 'um rival na tabela').toBeDefined()
+  return `/clubs/${id}`
+}
 
 for (const width of [360, 768, 1280]) {
   test.describe(`Sem rolagem horizontal em ${width}px`, () => {
@@ -155,7 +170,7 @@ for (const width of [360, 768, 1280]) {
 
     for (const route of ROUTES) {
       test(route, async ({ page }) => {
-        await page.goto(route)
+        await page.goto(route === RIVAL_CLUB ? await rivalClubPath(page) : route)
         await expect(page.locator('main h1').first()).toBeVisible()
         await page.waitForLoadState('networkidle')
         await expectNoHorizontalScroll(page, `${route} em ${width}px`)
