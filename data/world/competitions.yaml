@@ -1,0 +1,303 @@
+# Competições do pack e os clubes de cada uma (issue #127).
+#
+# Arquivo CURADO, lido pelo importador (`./gradlew worldImport`, ver
+# docs/WORLD_DATA.md). Os fatos de cada clube (nome, estádio, capacidade) e
+# os elencos vêm do Wikidata; o que fica aqui é o que o Wikidata não responde
+# bem:
+#
+# - QUAIS clubes disputam cada competição na temporada. As temporadas do
+#   Wikidata quase nunca têm a lista de participantes (`P1923`) preenchida, e o
+#   `P118` (liga) dos clubes mistura temporadas antigas. A lista abaixo foi
+#   conferida no artigo da temporada na Wikipédia em inglês (campo `reference`)
+#   e cada clube é amarrado ao seu item do Wikidata (`wikidata`).
+# - Os ids do pack (`bra-flamengo`): estáveis entre importações, nunca
+#   derivados do nome (que pode mudar).
+# - O nome de EXIBIÇÃO (`name`, "Flamengo"): o rótulo do Wikidata é o nome
+#   oficial ("Clube de Regatas do Flamengo") e o nome curto (`P1813`) costuma
+#   ser sigla ("ECB", "OL"). Sem `name`, vale o rótulo do Wikidata.
+# - Formato, desempate, divisão e força da liga: regras do JOGO, decisão nossa.
+#   `competition` tem exatamente o formato de um item de competitions.json.
+#
+# Um clube SEM `wikidata` é uma referência a um clube definido em outra
+# competição (os brasileiros na Libertadores). Clube de outro país que não o da
+# competição informa `country` (trigrama FIFA).
+
+import:
+  # Data de referência do mundo: idade dos jogadores gerados e corte de vínculos.
+  referenceDate: 2026-07-01
+  # Vínculo (P54) só conta como atual se começou a partir daqui (ver docs).
+  minMembershipStart: 2019-01-01
+  # Jogadores nascidos antes disso são tratados como aposentados.
+  minBirthDate: 1984-01-01
+  minSquadSize: 22
+  minGoalkeepers: 2
+  # Seed do preenchimento de elencos: muda só se quisermos outros gerados.
+  seed: 127
+
+competitions:
+  - competition:
+      id: bra-serie-a
+      name: Campeonato Brasileiro Série A
+      country: BRA
+      tier: 1
+      strength: 70
+      format: { type: roundRobin, legs: 2 }
+      tiebreakers: [POINTS, WINS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, FEWER_RED_CARDS, FEWER_YELLOW_CARDS, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026_Campeonato_Brasileiro_S%C3%A9rie_A
+    clubs:
+      - { id: bra-athletico-paranaense, name: Athletico Paranaense, wikidata: Q506832 }
+      - { id: bra-atletico-mineiro, name: Atlético Mineiro, wikidata: Q270995 }
+      - { id: bra-bahia, name: Bahia, wikidata: Q198032 }
+      - { id: bra-botafogo, name: Botafogo, wikidata: Q80958 }
+      - { id: bra-chapecoense, name: Chapecoense, wikidata: Q2536715 }
+      - { id: bra-corinthians, name: Corinthians, wikidata: Q35933 }
+      - { id: bra-coritiba, name: Coritiba, wikidata: Q478317 }
+      - { id: bra-cruzeiro, name: Cruzeiro, wikidata: Q188277 }
+      - { id: bra-flamengo, name: Flamengo, wikidata: Q17479 }
+      - { id: bra-fluminense, name: Fluminense, wikidata: Q80987 }
+      - { id: bra-gremio, name: Grêmio, wikidata: Q221695 }
+      - { id: bra-internacional, name: Internacional, wikidata: Q80845 }
+      - { id: bra-mirassol, name: Mirassol, wikidata: Q2622870 }
+      - { id: bra-palmeiras, name: Palmeiras, wikidata: Q80964 }
+      - { id: bra-red-bull-bragantino, name: Red Bull Bragantino, wikidata: Q541744 }
+      - { id: bra-remo, name: Remo, wikidata: Q2552872 }
+      - { id: bra-santos, name: Santos, wikidata: Q80955 }
+      - { id: bra-sao-paulo, name: São Paulo, wikidata: Q38568 }
+      - { id: bra-vasco-da-gama, name: Vasco da Gama, wikidata: Q5014111 }
+      - { id: bra-vitoria, name: Vitória, wikidata: Q274465 }
+
+  - competition:
+      id: bra-serie-b
+      name: Campeonato Brasileiro Série B
+      country: BRA
+      tier: 2
+      strength: 62
+      format: { type: roundRobin, legs: 2 }
+      tiebreakers: [POINTS, WINS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, FEWER_RED_CARDS, FEWER_YELLOW_CARDS, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026_Campeonato_Brasileiro_S%C3%A9rie_B
+    clubs:
+      - { id: bra-america-mg, name: América Mineiro, wikidata: Q338285 }
+      - { id: bra-athletic-club, name: Athletic Club, wikidata: Q9636189 }
+      - { id: bra-atletico-goianiense, name: Atlético Goianiense, wikidata: Q198034 }
+      - { id: bra-avai, name: Avaí, wikidata: Q374069 }
+      - { id: bra-botafogo-sp, name: Botafogo-SP, wikidata: Q2332493 }
+      - { id: bra-ceara, name: Ceará, wikidata: Q1052219 }
+      - { id: bra-crb, name: CRB, wikidata: Q1024264 }
+      - { id: bra-criciuma, name: Criciúma, wikidata: Q598834 }
+      - { id: bra-cuiaba, name: Cuiabá, wikidata: Q2945011 }
+      - { id: bra-fortaleza, name: Fortaleza, wikidata: Q188841 }
+      - { id: bra-goias, name: Goiás, wikidata: Q816779 }
+      - { id: bra-juventude, name: Juventude, wikidata: Q910453 }
+      - { id: bra-londrina, name: Londrina, wikidata: Q1633430 }
+      - { id: bra-nautico, name: Náutico, wikidata: Q73971 }
+      - { id: bra-novorizontino, name: Novorizontino, wikidata: Q10292312 }
+      - { id: bra-operario-ferroviario, name: Operário Ferroviário, wikidata: Q2580083 }
+      - { id: bra-ponte-preta, name: Ponte Preta, wikidata: Q219120 }
+      - { id: bra-sao-bernardo, name: São Bernardo, wikidata: Q557103 }
+      - { id: bra-sport, name: Sport, wikidata: Q219098 }
+      - { id: bra-vila-nova, name: Vila Nova, wikidata: Q1513287 }
+
+  - competition:
+      id: eng-premier-league
+      name: Premier League
+      country: ENG
+      tier: 1
+      strength: 78
+      format: { type: roundRobin, legs: 2 }
+      tiebreakers: [POINTS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026%E2%80%9327_Premier_League
+    clubs:
+      - { id: eng-arsenal, name: Arsenal, wikidata: Q9617 }
+      - { id: eng-aston-villa, name: Aston Villa, wikidata: Q18711 }
+      - { id: eng-bournemouth, name: Bournemouth, wikidata: Q19568 }
+      - { id: eng-brentford, name: Brentford, wikidata: Q19571 }
+      - { id: eng-brighton, name: Brighton & Hove Albion, wikidata: Q19453 }
+      - { id: eng-chelsea, name: Chelsea, wikidata: Q9616 }
+      - { id: eng-coventry-city, name: Coventry City, wikidata: Q19580 }
+      - { id: eng-crystal-palace, name: Crystal Palace, wikidata: Q19467 }
+      - { id: eng-everton, name: Everton, wikidata: Q5794 }
+      - { id: eng-fulham, name: Fulham, wikidata: Q18708 }
+      - { id: eng-hull-city, name: Hull City, wikidata: Q19477 }
+      - { id: eng-ipswich-town, name: Ipswich Town, wikidata: Q9653 }
+      - { id: eng-leeds-united, name: Leeds United, wikidata: Q1128631 }
+      - { id: eng-liverpool, name: Liverpool, wikidata: Q1130849 }
+      - { id: eng-manchester-city, name: Manchester City, wikidata: Q50602 }
+      - { id: eng-manchester-united, name: Manchester United, wikidata: Q18656 }
+      - { id: eng-newcastle-united, name: Newcastle United, wikidata: Q18716 }
+      - { id: eng-nottingham-forest, name: Nottingham Forest, wikidata: Q19490 }
+      - { id: eng-sunderland, name: Sunderland, wikidata: Q18739 }
+      - { id: eng-tottenham-hotspur, name: Tottenham Hotspur, wikidata: Q18741 }
+
+  - competition:
+      id: esp-la-liga
+      name: La Liga
+      country: ESP
+      tier: 1
+      strength: 76
+      format: { type: roundRobin, legs: 2 }
+      tiebreakers: [POINTS, HEAD_TO_HEAD, HEAD_TO_HEAD_GOAL_DIFFERENCE, GOAL_DIFFERENCE, GOALS_FOR, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026%E2%80%9327_La_Liga
+    clubs:
+      - { id: esp-alaves, name: Alavés, wikidata: Q223620 }
+      - { id: esp-athletic-bilbao, name: Athletic Bilbao, wikidata: Q8687 }
+      - { id: esp-atletico-madrid, name: Atlético de Madrid, wikidata: Q8701 }
+      - { id: esp-barcelona, name: Barcelona, wikidata: Q7156 }
+      - { id: esp-celta-vigo, name: Celta de Vigo, wikidata: Q8749 }
+      - { id: esp-deportivo-la-coruna, name: Deportivo La Coruña, wikidata: Q8760 }
+      - { id: esp-elche, name: Elche, wikidata: Q10512 }
+      - { id: esp-espanyol, name: Espanyol, wikidata: Q8780 }
+      - { id: esp-getafe, name: Getafe, wikidata: Q8806 }
+      - { id: esp-levante, name: Levante, wikidata: Q8823 }
+      - { id: esp-malaga, name: Málaga, wikidata: Q8857 }
+      - { id: esp-osasuna, name: Osasuna, wikidata: Q10286 }
+      - { id: esp-racing-santander, name: Racing Santander, wikidata: Q12236 }
+      - { id: esp-rayo-vallecano, name: Rayo Vallecano, wikidata: Q10300 }
+      - { id: esp-real-betis, name: Real Betis, wikidata: Q8723 }
+      - { id: esp-real-madrid, name: Real Madrid, wikidata: Q8682 }
+      - { id: esp-real-sociedad, name: Real Sociedad, wikidata: Q10315 }
+      - { id: esp-sevilla, name: Sevilla, wikidata: Q10329 }
+      - { id: esp-valencia, name: Valencia, wikidata: Q10333 }
+      - { id: esp-villarreal, name: Villarreal, wikidata: Q12297 }
+
+  - competition:
+      id: ita-serie-a
+      name: Serie A
+      country: ITA
+      tier: 1
+      strength: 75
+      format: { type: roundRobin, legs: 2 }
+      tiebreakers: [POINTS, HEAD_TO_HEAD, HEAD_TO_HEAD_GOAL_DIFFERENCE, GOAL_DIFFERENCE, GOALS_FOR, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026%E2%80%9327_Serie_A
+    clubs:
+      - { id: ita-atalanta, name: Atalanta, wikidata: Q1886 }
+      - { id: ita-bologna, name: Bologna, wikidata: Q1893 }
+      - { id: ita-cagliari, name: Cagliari, wikidata: Q1900 }
+      - { id: ita-como, name: Como, wikidata: Q1120838 }
+      - { id: ita-fiorentina, name: Fiorentina, wikidata: Q2052 }
+      - { id: ita-frosinone, name: Frosinone, wikidata: Q845043 }
+      - { id: ita-genoa, name: Genoa, wikidata: Q2074 }
+      - { id: ita-inter, name: Inter, wikidata: Q631 }
+      - { id: ita-juventus, name: Juventus, wikidata: Q1422 }
+      - { id: ita-lazio, name: Lazio, wikidata: Q2609 }
+      - { id: ita-lecce, name: Lecce, wikidata: Q13391 }
+      - { id: ita-milan, name: Milan, wikidata: Q1543 }
+      - { id: ita-monza, name: Monza, wikidata: Q289482 }
+      - { id: ita-napoli, name: Napoli, wikidata: Q2641 }
+      - { id: ita-parma, name: Parma, wikidata: Q2693 }
+      - { id: ita-roma, name: Roma, wikidata: Q2739 }
+      - { id: ita-sassuolo, name: Sassuolo, wikidata: Q8603 }
+      - { id: ita-torino, name: Torino, wikidata: Q2768 }
+      - { id: ita-udinese, name: Udinese, wikidata: Q2798 }
+      - { id: ita-venezia, name: Venezia, wikidata: Q501245 }
+
+  - competition:
+      id: ger-bundesliga
+      name: Bundesliga
+      country: GER
+      tier: 1
+      strength: 75
+      format: { type: roundRobin, legs: 2 }
+      tiebreakers: [POINTS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026%E2%80%9327_Bundesliga
+    clubs:
+      - { id: ger-augsburg, name: Augsburg, wikidata: Q15755 }
+      - { id: ger-bayer-leverkusen, name: Bayer Leverkusen, wikidata: Q104761 }
+      - { id: ger-bayern-munchen, name: Bayern München, wikidata: Q15789 }
+      - { id: ger-borussia-dortmund, name: Borussia Dortmund, wikidata: Q41420 }
+      - { id: ger-borussia-monchengladbach, name: Borussia Mönchengladbach, wikidata: Q101959 }
+      - { id: ger-eintracht-frankfurt, name: Eintracht Frankfurt, wikidata: Q38245 }
+      - { id: ger-elversberg, name: Elversberg, wikidata: Q692691 }
+      - { id: ger-freiburg, name: Freiburg, wikidata: Q106394 }
+      - { id: ger-hamburger-sv, name: Hamburger SV, wikidata: Q51974 }
+      - { id: ger-hoffenheim, name: Hoffenheim, wikidata: Q22707 }
+      - { id: ger-koln, name: Köln, wikidata: Q104770 }
+      - { id: ger-mainz, name: Mainz 05, wikidata: Q105254 }
+      - { id: ger-paderborn, name: Paderborn, wikidata: Q160532 }
+      - { id: ger-rb-leipzig, name: RB Leipzig, wikidata: Q702455 }
+      - { id: ger-schalke-04, name: Schalke 04, wikidata: Q32494 }
+      - { id: ger-stuttgart, name: Stuttgart, wikidata: Q4512 }
+      - { id: ger-union-berlin, name: Union Berlin, wikidata: Q141971 }
+      - { id: ger-werder-bremen, name: Werder Bremen, wikidata: Q51976 }
+
+  - competition:
+      id: fra-ligue-1
+      name: Ligue 1
+      country: FRA
+      tier: 1
+      strength: 72
+      format: { type: roundRobin, legs: 2 }
+      tiebreakers: [POINTS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026%E2%80%9327_Ligue_1
+    clubs:
+      - { id: fra-angers, name: Angers, wikidata: Q845137 }
+      - { id: fra-auxerre, name: Auxerre, wikidata: Q182876 }
+      - { id: fra-brest, name: Brest, wikidata: Q218372 }
+      - { id: fra-le-havre, name: Le Havre, wikidata: Q328658 }
+      - { id: fra-le-mans, name: Le Mans, wikidata: Q210864 }
+      - { id: fra-lens, name: Lens, wikidata: Q191843 }
+      - { id: fra-lille, name: Lille, wikidata: Q19516 }
+      - { id: fra-lorient, name: Lorient, wikidata: Q48911 }
+      - { id: fra-lyon, name: Lyon, wikidata: Q704 }
+      - { id: fra-marseille, name: Olympique de Marseille, wikidata: Q132885 }
+      # O Monaco joga o campeonato francês e é filiado à FFF: para o jogo, FRA.
+      - { id: fra-monaco, name: Monaco, wikidata: Q180305 }
+      - { id: fra-nice, name: Nice, wikidata: Q185163 }
+      - { id: fra-paris-fc, name: Paris FC, wikidata: Q1051013 }
+      - { id: fra-psg, name: Paris Saint-Germain, wikidata: Q483020 }
+      - { id: fra-rennes, name: Rennes, wikidata: Q19509 }
+      - { id: fra-strasbourg, name: Strasbourg, wikidata: Q126334 }
+      - { id: fra-toulouse, name: Toulouse, wikidata: Q19518 }
+      - { id: fra-troyes, name: Troyes, wikidata: Q501693 }
+
+  # Só a FASE DE GRUPOS de 2026 (32 clubes: 28 diretos + 4 da fase 3 da
+  # qualificação). A distribuição nos grupos fica para a #132.
+  - competition:
+      id: conmebol-libertadores
+      name: Copa Libertadores
+      confederation: CONMEBOL
+      format:
+        type: groupsThenKnockout
+        groups: 8
+        perGroup: 4
+        qualifiersPerGroup: 2
+        groupLegs: 2
+        knockout:
+          - { name: Oitavas de final, teams: 16, legs: 2, newEntrants: 16 }
+          - { name: Quartas de final, teams: 8, legs: 2 }
+          - { name: Semifinal, teams: 4, legs: 2 }
+          - { name: Final, teams: 2, legs: 1 }
+      tiebreakers: [POINTS, HEAD_TO_HEAD, HEAD_TO_HEAD_GOAL_DIFFERENCE, GOAL_DIFFERENCE, GOALS_FOR, FEWER_RED_CARDS, FEWER_YELLOW_CARDS, DRAWING_OF_LOTS]
+    reference: https://en.wikipedia.org/wiki/2026_Copa_Libertadores_group_stage
+    clubs:
+      - { id: bra-corinthians }
+      - { id: bra-cruzeiro }
+      - { id: bra-flamengo }
+      - { id: bra-fluminense }
+      - { id: bra-mirassol }
+      - { id: bra-palmeiras }
+      - { id: arg-boca-juniors, name: Boca Juniors, wikidata: Q170703, country: ARG }
+      - { id: arg-estudiantes, name: Estudiantes, wikidata: Q214940, country: ARG }
+      - { id: arg-independiente-rivadavia, name: Independiente Rivadavia, wikidata: Q2454482, country: ARG }
+      - { id: arg-lanus, name: Lanús, wikidata: Q324589, country: ARG }
+      - { id: arg-platense, name: Platense, wikidata: Q151907, country: ARG }
+      - { id: arg-rosario-central, name: Rosario Central, wikidata: Q318307, country: ARG }
+      - { id: bol-always-ready, name: Always Ready, wikidata: Q1102942, country: BOL }
+      - { id: bol-bolivar, name: Bolívar, wikidata: Q128024, country: BOL }
+      - { id: chi-coquimbo-unido, name: Coquimbo Unido, wikidata: Q2407595, country: CHI }
+      - { id: chi-universidad-catolica, name: Universidad Católica, wikidata: Q427446, country: CHI }
+      - { id: col-deportes-tolima, name: Deportes Tolima, wikidata: Q332532, country: COL }
+      - { id: col-independiente-medellin, name: Independiente Medellín, wikidata: Q332527, country: COL }
+      - { id: col-junior, name: Junior, wikidata: Q332524, country: COL }
+      - { id: col-santa-fe, name: Santa Fe, wikidata: Q1424072, country: COL }
+      - { id: ecu-barcelona, name: Barcelona de Guayaquil, wikidata: Q248782, country: ECU }
+      - { id: ecu-independiente-del-valle, name: Independiente del Valle, wikidata: Q249648, country: ECU }
+      - { id: ecu-ldu-quito, name: LDU Quito, wikidata: Q249643, country: ECU }
+      - { id: par-cerro-porteno, name: Cerro Porteño, wikidata: Q914086, country: PAR }
+      - { id: par-libertad, name: Libertad, wikidata: Q848642, country: PAR }
+      - { id: per-cusco, name: Cusco, wikidata: Q602397, country: PER }
+      - { id: per-sporting-cristal, name: Sporting Cristal, wikidata: Q604581, country: PER }
+      - { id: per-universitario, name: Universitario, wikidata: Q19066, country: PER }
+      - { id: uru-nacional, name: Nacional, wikidata: Q499616, country: URU }
+      - { id: uru-penarol, name: Peñarol, wikidata: Q16320, country: URU }
+      - { id: ven-deportivo-la-guaira, name: Deportivo La Guaira, wikidata: Q628860, country: VEN }
+      - { id: ven-universidad-central, name: Universidad Central, wikidata: Q3076549, country: VEN }

@@ -13,6 +13,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate   # Flyway controla o schema
+    # Mesmo batch JDBC do application.yml principal (issue #129), para os
+    # testes de integração exercitarem a gravação em lote de verdade.
+    properties:
+      hibernate.jdbc.batch_size: 50
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
     open-in-view: false
 
   flyway:

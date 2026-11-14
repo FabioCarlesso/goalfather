@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "giorgi-mamardashvili",
+        "name": "Giorgi Mamardashvili",
+        "birthDate": "2000-09-29",
+        "nationality": "GEO",
+        "position": "GK"
+      },
+      {
+        "id": "marcelo-pitaluga",
+        "name": "Marcelo Pitaluga",
+        "birthDate": "2002-12-20",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "eng-liverpool-gen-02",
+        "name": "Connor Lewis",
+        "birthDate": "1997-01-30",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "adam-lewis",
+        "name": "Adam Lewis",
+        "birthDate": "1999-11-08",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "jeremie-frimpong",
+        "name": "Jeremie Frimpong",
+        "birthDate": "2000-12-10",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "jeremy-jacquet",
+        "name": "Jérémy Jacquet",
+        "birthDate": "2005-07-13",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "milos-kerkez",
+        "name": "Milos Kerkez",
+        "birthDate": "2003-11-07",
+        "nationality": "HUN",
+        "secondNationality": "SRB",
+        "position": "DF"
+      },
+      {
+        "id": "ronald-araujo",
+        "name": "Ronald Araújo",
+        "birthDate": "1999-03-07",
+        "nationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "eng-liverpool-gen-03",
+        "name": "Ben Harris",
+        "birthDate": "1994-04-20",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-liverpool-gen-01",
+        "name": "Josh Shaw",
+        "birthDate": "1998-10-28",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alexis-mac-allister",
+        "name": "Alexis Mac Allister",
+        "birthDate": "1998-12-24",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "bobby-clark",
+        "name": "Bobby Clark",
+        "birthDate": "2005-02-07",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "dominik-szoboszlai",
+        "name": "Dominik Szoboszlai",
+        "birthDate": "2000-10-25",
+        "nationality": "HUN",
+        "position": "MF"
+      },
+      {
+        "id": "florian-wirtz",
+        "name": "Florian Wirtz",
+        "birthDate": "2003-05-03",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "ryan-gravenberch",
+        "name": "Ryan Gravenberch",
+        "birthDate": "2002-05-16",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "victor-munoz",
+        "name": "Víctor Muñoz",
+        "birthDate": "2003-07-13",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "alexander-isak",
+        "name": "Alexander Isak",
+        "birthDate": "1999-09-21",
+        "nationality": "SWE",
+        "position": "FW"
+      },
+      {
+        "id": "bradley-barcola",
+        "name": "Bradley Barcola",
+        "birthDate": "2002-09-02",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "cody-gakpo",
+        "name": "Cody Gakpo",
+        "birthDate": "1999-05-07",
+        "nationality": "NED",
+        "position": "FW"
+      },
+      {
+        "id": "hugo-ekitike",
+        "name": "Hugo Ekitiké",
+        "birthDate": "2002-06-20",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "jayden-danns",
+        "name": "Jayden Danns",
+        "birthDate": "2006-01-16",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "rio-ngumoha",
+        "name": "Rio Ngumoha",
+        "birthDate": "2008-08-29",
+        "nationality": "ENG",
+        "position": "FW"
+      }
+    ]
+  }
+}

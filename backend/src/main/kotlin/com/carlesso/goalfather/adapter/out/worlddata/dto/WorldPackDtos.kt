@@ -36,6 +36,11 @@ data class EnvelopeDto<T>(
     val schemaVersion: Int,
     val generatedAt: String,
     val source: String,
+    /**
+     * Quem gerou o arquivo e em que versão (`world-import 1.0.0`, issue #127).
+     * Proveniência, como [source]; opcional para o pack montado à mão.
+     */
+    val generator: String? = null,
     val data: T,
 )
 
@@ -144,6 +149,11 @@ data class PlayerDto(
     val nationality: String,
     val secondNationality: String? = null,
     val position: String,
+    /**
+     * `true` quando o jogador NÃO é real: foi gerado pelo importador (issue
+     * #127) para completar um elenco curto. Proveniência: o domínio não lê.
+     */
+    val generated: Boolean? = null,
 )
 
 /** `calendar/{year}.json`. */

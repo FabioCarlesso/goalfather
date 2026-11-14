@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ger-hoffenheim-gen-02",
+        "name": "Julian Lehmann",
+        "birthDate": "2004-05-21",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-11",
+        "name": "Lars Meyer",
+        "birthDate": "1997-09-25",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-01",
+        "name": "Patrick Schmid",
+        "birthDate": "1998-11-03",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "koki-machida",
+        "name": "Kōki Machida",
+        "birthDate": "1997-08-25",
+        "nationality": "JPN",
+        "position": "DF"
+      },
+      {
+        "id": "ozan-kabak",
+        "name": "Ozan Kabak",
+        "birthDate": "2000-03-25",
+        "nationality": "TUR",
+        "position": "DF"
+      },
+      {
+        "id": "sean-dulic",
+        "name": "Sean Dulic",
+        "birthDate": "2005-06-05",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "valentin-gendrey",
+        "name": "Valentin Gendrey",
+        "birthDate": "2000-06-21",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "vladimir-coufal",
+        "name": "Vladimír Coufal",
+        "birthDate": "1992-08-22",
+        "nationality": "CZE",
+        "position": "DF"
+      },
+      {
+        "id": "ger-hoffenheim-gen-12",
+        "name": "Christian Werner",
+        "birthDate": "1997-02-18",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-08",
+        "name": "Maximilian Hartmann",
+        "birthDate": "1994-01-07",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-05",
+        "name": "Benedikt Schröder",
+        "birthDate": "1994-07-07",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-03",
+        "name": "Jonas Scholz",
+        "birthDate": "1997-07-30",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-06",
+        "name": "Julian Hoffmann",
+        "birthDate": "2000-06-01",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-09",
+        "name": "Kevin Wagner",
+        "birthDate": "2005-05-15",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-13",
+        "name": "Marcel Richter",
+        "birthDate": "2004-03-10",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-04",
+        "name": "Maximilian Wagner",
+        "birthDate": "2005-01-06",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-07",
+        "name": "Patrick Braun",
+        "birthDate": "2000-10-11",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "adam-hlozek",
+        "name": "Adam Hložek",
+        "birthDate": "2002-07-25",
+        "nationality": "CZE",
+        "position": "FW"
+      },
+      {
+        "id": "patrick-wimmer",
+        "name": "Patrick Wimmer",
+        "birthDate": "2001-05-30",
+        "nationality": "AUT",
+        "position": "FW"
+      },
+      {
+        "id": "sargis-adamyan",
+        "name": "Sargis Adamyan",
+        "birthDate": "1993-05-23",
+        "nationality": "ARM",
+        "position": "FW"
+      },
+      {
+        "id": "ger-hoffenheim-gen-10",
+        "name": "Leon Schulz",
+        "birthDate": "2000-06-19",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-hoffenheim-gen-14",
+        "name": "Moritz Becker",
+        "birthDate": "1993-11-05",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

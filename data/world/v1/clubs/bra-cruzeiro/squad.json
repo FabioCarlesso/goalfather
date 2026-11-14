@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "cassio-bramitos",
+        "name": "Cássio Bramitos",
+        "birthDate": "1987-06-06",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "matheus-cunha",
+        "name": "Matheus Cunha",
+        "birthDate": "2001-05-24",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "bra-cruzeiro-gen-10",
+        "name": "Vinícius Abreu",
+        "birthDate": "1996-10-11",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fagner",
+        "name": "Fagner",
+        "birthDate": "1989-06-11",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "lucas-villalba",
+        "name": "Lucas Villalba",
+        "birthDate": "1994-08-18",
+        "nationality": "URU",
+        "secondNationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "matias-vina",
+        "name": "Matías Viña",
+        "birthDate": "1997-11-09",
+        "nationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "bra-cruzeiro-gen-11",
+        "name": "Fernando Toledo",
+        "birthDate": "2008-04-16",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-04",
+        "name": "Hugo Azevedo",
+        "birthDate": "1995-08-30",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-07",
+        "name": "Otávio Duarte",
+        "birthDate": "2004-07-01",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-02",
+        "name": "Roberto Moreira",
+        "birthDate": "2005-03-25",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "dudu",
+        "name": "Dudu",
+        "birthDate": "1992-01-07",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "matheus-pereira",
+        "name": "Matheus Pereira",
+        "birthDate": "1996-05-05",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-cruzeiro-gen-03",
+        "name": "Adriano Souza",
+        "birthDate": "1995-03-28",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-05",
+        "name": "Anderson Ferreira",
+        "birthDate": "2003-11-15",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-12",
+        "name": "Cláudio Barros",
+        "birthDate": "2004-08-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-08",
+        "name": "Gustavo Freitas",
+        "birthDate": "2000-08-22",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-01",
+        "name": "Maurício Gomes",
+        "birthDate": "2004-05-06",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "neiser-villarreal",
+        "name": "Néiser Villarreal",
+        "birthDate": "2005-04-24",
+        "nationality": "COL",
+        "position": "FW"
+      },
+      {
+        "id": "wesley-gassova",
+        "name": "Wesley Gassova",
+        "birthDate": "2005-03-05",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-cruzeiro-gen-09",
+        "name": "Douglas Vieira",
+        "birthDate": "1997-07-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-06",
+        "name": "Leandro Sampaio",
+        "birthDate": "1999-05-23",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-cruzeiro-gen-13",
+        "name": "Rafael Macedo",
+        "birthDate": "2003-09-12",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-fortaleza-gen-19",
+        "name": "Elias Gonçalves",
+        "birthDate": "2000-09-05",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-01",
+        "name": "Hugo Siqueira",
+        "birthDate": "1995-07-01",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-02",
+        "name": "Jefferson Ramos",
+        "birthDate": "1994-10-19",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-16",
+        "name": "Alexandre Borges",
+        "birthDate": "1999-10-01",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-20",
+        "name": "Bruno Medeiros",
+        "birthDate": "1993-10-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-07",
+        "name": "Douglas Dias",
+        "birthDate": "2006-03-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-05",
+        "name": "Everton Martins",
+        "birthDate": "2008-04-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-13",
+        "name": "Paulo Gonçalves",
+        "birthDate": "2005-11-11",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-10",
+        "name": "Ricardo Sampaio",
+        "birthDate": "2008-04-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-03",
+        "name": "Wesley Barbosa",
+        "birthDate": "1998-09-02",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-14",
+        "name": "Emerson Cunha",
+        "birthDate": "2003-01-01",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-06",
+        "name": "Jorge Coelho",
+        "birthDate": "1996-06-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-08",
+        "name": "José Freitas",
+        "birthDate": "2000-04-03",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-17",
+        "name": "Marcelo Correia",
+        "birthDate": "1994-01-11",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-21",
+        "name": "Raul Santos",
+        "birthDate": "1994-04-20",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-04",
+        "name": "Roberto Lopes",
+        "birthDate": "1997-08-20",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-11",
+        "name": "Rogério Fonseca",
+        "birthDate": "1999-01-19",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-18",
+        "name": "Daniel Moreira",
+        "birthDate": "2006-01-07",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-22",
+        "name": "Gabriel Nascimento",
+        "birthDate": "1995-03-21",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-12",
+        "name": "Jorge Moraes",
+        "birthDate": "1999-01-28",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-15",
+        "name": "José Cunha",
+        "birthDate": "2003-11-27",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-fortaleza-gen-09",
+        "name": "Raul Moreira",
+        "birthDate": "2002-09-20",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

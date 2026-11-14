@@ -2,10 +2,9 @@ package com.carlesso.goalfather.domain.engine
 
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.matchStats
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.PlayerId
-import com.carlesso.goalfather.domain.model.attackFactor
-import com.carlesso.goalfather.domain.model.defenseFactor
 import com.carlesso.goalfather.domain.model.teamStrength
 import com.carlesso.goalfather.domain.rules.drawInjuryDuration
 import com.carlesso.goalfather.domain.rules.drawShooter
@@ -36,6 +35,10 @@ data class MatchSetup(
     val homeName: String,
     val awayName: String,
     val knockout: Boolean = false,
+    // Só repassados ao `KickOff` (o drill-down resolve nomes por eles); a
+    // simulação não os usa. Default `null` mantém os construtores existentes.
+    val homeClubId: ClubId? = null,
+    val awayClubId: ClubId? = null,
 )
 
 /**
@@ -82,32 +85,18 @@ class MatchSimulator {
                 awayStrength = awayStrength,
                 homePosture = setup.home.tactics.posture,
                 awayPosture = setup.away.tactics.posture,
+                homeClubId = setup.homeClubId,
+                awayClubId = setup.awayClubId,
             ),
         )
 
         var homeGoals = 0
         var awayGoals = 0
 
-        // Peso de gol de cada lado = quanto ELE ataca × quanto o adversário
-        // DEIXA atacar (issue #56). É o produto que faz a postura do rival
-        // pesar: atacar contra um time fechado rende menos que contra um time
-        // aberto — sem isso a escolha seria isolada e não um confronto.
-        val homeGoalWeight = setup.home.attackFactor() * setup.away.defenseFactor()
-        val awayGoalWeight = setup.away.attackFactor() * setup.home.defenseFactor()
-
-        // A chance de UM lance virar gol acompanha a média dos dois pesos: dois
-        // times abertos produzem um jogo de muitos gols, dois fechados um 0x0
-        // arrastado. O que sai do gol volta para a defesa (`P_SAVE`) em vez de
-        // sumir — assim cartão e lesão mantêm a mesma frequência de sempre, e
-        // 1.0/1.0 reproduz EXATAMENTE a engine anterior à tática.
-        val goalP = (P_GOAL * (homeGoalWeight + awayGoalWeight) / 2)
-            .coerceIn(0.0, P_GOAL + P_SAVE)
-        val saveP = P_GOAL + P_SAVE - goalP
-
-        // O mesmo peso reparte os gols entre os times: força × tática.
-        val homeShare = homeStrength * homeGoalWeight
-        val awayShare = awayStrength * awayGoalWeight
-        val homeRatio = if (homeShare + awayShare > 0) homeShare / (homeShare + awayShare) else 0.5
+        // Probabilidades do lance (força × tática): a MESMA conta da
+        // simulação rápida, num lugar só (`MatchOdds`). Desestruturação de
+        // `data class` (`val (a, b, c) = …`) dá nome local a cada componente.
+        val (goalP, saveP, homeRatio) = MatchOdds.of(setup)
 
         // Quem se lesiona ou leva vermelho deixa o campo: não marca, não chuta,
         // não defende nem leva outro cartão no resto da partida. A força do

@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "loris-karius",
+        "name": "Loris Karius",
+        "birthDate": "1993-06-22",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "markus-schubert",
+        "name": "Markus Schubert",
+        "birthDate": "1998-06-12",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "ger-schalke-04-gen-09",
+        "name": "Robin Hoffmann",
+        "birthDate": "2006-05-08",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "derry-murkin",
+        "name": "Derry Murkin",
+        "birthDate": "1999-07-27",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "nikola-katic",
+        "name": "Nikola Katić",
+        "birthDate": "1996-10-10",
+        "nationality": "CRO",
+        "secondNationality": "BIH",
+        "position": "DF"
+      },
+      {
+        "id": "robin-gosens",
+        "name": "Robin Gosens",
+        "birthDate": "1994-07-05",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "ger-schalke-04-gen-03",
+        "name": "Alexander Walter",
+        "birthDate": "2004-10-10",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-10",
+        "name": "Dennis Wagner",
+        "birthDate": "1996-03-03",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-06",
+        "name": "Fabian Neumann",
+        "birthDate": "1996-01-13",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-01",
+        "name": "Maximilian Lehmann",
+        "birthDate": "1999-05-15",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "assan-ouedraogo",
+        "name": "Assan Ouédraogo",
+        "birthDate": "2006-05-09",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "nassim-boujellab",
+        "name": "Nassim Boujellab",
+        "birthDate": "1999-06-20",
+        "nationality": "MAR",
+        "secondNationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "rabbi-matondo",
+        "name": "Rabbi Matondo",
+        "birthDate": "2000-09-09",
+        "nationality": "WAL",
+        "position": "MF"
+      },
+      {
+        "id": "ger-schalke-04-gen-04",
+        "name": "Christian Schwarz",
+        "birthDate": "2002-01-18",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-11",
+        "name": "Dennis Wolf",
+        "birthDate": "2004-03-05",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-02",
+        "name": "Simon Koch",
+        "birthDate": "2005-11-29",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-07",
+        "name": "Simon Meyer",
+        "birthDate": "2005-12-11",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "edin-dzeko",
+        "name": "Edin Džeko",
+        "birthDate": "1986-03-17",
+        "nationality": "BIH",
+        "position": "FW"
+      },
+      {
+        "id": "hwang-hee-chan",
+        "name": "Hwang Hee-chan",
+        "birthDate": "1996-01-26",
+        "nationality": "KOR",
+        "position": "FW"
+      },
+      {
+        "id": "ger-schalke-04-gen-12",
+        "name": "Felix Schulz",
+        "birthDate": "1996-07-20",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-05",
+        "name": "Lars Braun",
+        "birthDate": "1995-12-06",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-schalke-04-gen-08",
+        "name": "Leon Walter",
+        "birthDate": "2000-12-25",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

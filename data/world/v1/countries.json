@@ -1,10 +1,590 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T00:00:00Z",
-  "source": "exemplo mínimo montado à mão a partir de fatos públicos; substituído pela importação do Wikidata (issue #127)",
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
   "data": [
-    { "code": "BRA", "name": "Brasil", "confederation": "CONMEBOL", "isoAlpha2": "BR" },
-    { "code": "ARG", "name": "Argentina", "confederation": "CONMEBOL", "isoAlpha2": "AR" },
-    { "code": "URU", "name": "Uruguai", "confederation": "CONMEBOL", "isoAlpha2": "UY" }
+    {
+      "code": "ALB",
+      "name": "Albânia",
+      "confederation": "UEFA",
+      "isoAlpha2": "AL"
+    },
+    {
+      "code": "ALG",
+      "name": "Argélia",
+      "confederation": "CAF",
+      "isoAlpha2": "DZ"
+    },
+    {
+      "code": "ANG",
+      "name": "Angola",
+      "confederation": "CAF",
+      "isoAlpha2": "AO"
+    },
+    {
+      "code": "ARG",
+      "name": "Argentina",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "AR"
+    },
+    {
+      "code": "ARM",
+      "name": "Arménia",
+      "confederation": "UEFA",
+      "isoAlpha2": "AM"
+    },
+    {
+      "code": "AUS",
+      "name": "Austrália",
+      "confederation": "AFC",
+      "isoAlpha2": "AU"
+    },
+    {
+      "code": "AUT",
+      "name": "Áustria",
+      "confederation": "UEFA",
+      "isoAlpha2": "AT"
+    },
+    {
+      "code": "BEL",
+      "name": "Bélgica",
+      "confederation": "UEFA",
+      "isoAlpha2": "BE"
+    },
+    {
+      "code": "BFA",
+      "name": "Burquina Fasso",
+      "confederation": "CAF",
+      "isoAlpha2": "BF"
+    },
+    {
+      "code": "BIH",
+      "name": "Bósnia e Herzegovina",
+      "confederation": "UEFA",
+      "isoAlpha2": "BA"
+    },
+    {
+      "code": "BOL",
+      "name": "Bolívia",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "BO"
+    },
+    {
+      "code": "BRA",
+      "name": "Brasil",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "BR"
+    },
+    {
+      "code": "CAN",
+      "name": "Canadá",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "CA"
+    },
+    {
+      "code": "CHA",
+      "name": "Chade",
+      "confederation": "CAF",
+      "isoAlpha2": "TD"
+    },
+    {
+      "code": "CHI",
+      "name": "Chile",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "CL"
+    },
+    {
+      "code": "CHN",
+      "name": "China",
+      "confederation": "AFC",
+      "isoAlpha2": "CN"
+    },
+    {
+      "code": "CIV",
+      "name": "Costa do Marfim",
+      "confederation": "CAF",
+      "isoAlpha2": "CI"
+    },
+    {
+      "code": "CMR",
+      "name": "Camarões",
+      "confederation": "CAF",
+      "isoAlpha2": "CM"
+    },
+    {
+      "code": "COD",
+      "name": "República Democrática do Congo",
+      "confederation": "CAF",
+      "isoAlpha2": "CD"
+    },
+    {
+      "code": "COL",
+      "name": "Colômbia",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "CO"
+    },
+    {
+      "code": "CRC",
+      "name": "Costa Rica",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "CR"
+    },
+    {
+      "code": "CRO",
+      "name": "Croácia",
+      "confederation": "UEFA",
+      "isoAlpha2": "HR"
+    },
+    {
+      "code": "CTA",
+      "name": "República Centro-Africana",
+      "confederation": "CAF",
+      "isoAlpha2": "CF"
+    },
+    {
+      "code": "CZE",
+      "name": "Chéquia",
+      "confederation": "UEFA",
+      "isoAlpha2": "CZ"
+    },
+    {
+      "code": "DEN",
+      "name": "Dinamarca",
+      "confederation": "UEFA",
+      "isoAlpha2": "DK"
+    },
+    {
+      "code": "DOM",
+      "name": "República Dominicana",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "DO"
+    },
+    {
+      "code": "ECU",
+      "name": "Equador",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "EC"
+    },
+    {
+      "code": "EGY",
+      "name": "Egito",
+      "confederation": "CAF",
+      "isoAlpha2": "EG"
+    },
+    {
+      "code": "ENG",
+      "name": "Inglaterra",
+      "confederation": "UEFA",
+      "isoAlpha2": "GB-ENG"
+    },
+    {
+      "code": "EQG",
+      "name": "Guiné Equatorial",
+      "confederation": "CAF",
+      "isoAlpha2": "GQ"
+    },
+    {
+      "code": "ESP",
+      "name": "Espanha",
+      "confederation": "UEFA",
+      "isoAlpha2": "ES"
+    },
+    {
+      "code": "FIN",
+      "name": "Finlândia",
+      "confederation": "UEFA",
+      "isoAlpha2": "FI"
+    },
+    {
+      "code": "FRA",
+      "name": "França",
+      "confederation": "UEFA",
+      "isoAlpha2": "FR"
+    },
+    {
+      "code": "GAB",
+      "name": "Gabão",
+      "confederation": "CAF",
+      "isoAlpha2": "GA"
+    },
+    {
+      "code": "GAM",
+      "name": "Gâmbia",
+      "confederation": "CAF",
+      "isoAlpha2": "GM"
+    },
+    {
+      "code": "GEO",
+      "name": "Geórgia",
+      "confederation": "UEFA",
+      "isoAlpha2": "GE"
+    },
+    {
+      "code": "GER",
+      "name": "Alemanha",
+      "confederation": "UEFA",
+      "isoAlpha2": "DE"
+    },
+    {
+      "code": "GHA",
+      "name": "Gana",
+      "confederation": "CAF",
+      "isoAlpha2": "GH"
+    },
+    {
+      "code": "GNB",
+      "name": "Guiné-Bissau",
+      "confederation": "CAF",
+      "isoAlpha2": "GW"
+    },
+    {
+      "code": "GPE",
+      "name": "Guadalupe",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "GP"
+    },
+    {
+      "code": "GRE",
+      "name": "Grécia",
+      "confederation": "UEFA",
+      "isoAlpha2": "GR"
+    },
+    {
+      "code": "GUI",
+      "name": "Guiné",
+      "confederation": "CAF",
+      "isoAlpha2": "GN"
+    },
+    {
+      "code": "HAI",
+      "name": "Haiti",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "HT"
+    },
+    {
+      "code": "HON",
+      "name": "Honduras",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "HN"
+    },
+    {
+      "code": "HUN",
+      "name": "Hungria",
+      "confederation": "UEFA",
+      "isoAlpha2": "HU"
+    },
+    {
+      "code": "IDN",
+      "name": "Indonésia",
+      "confederation": "AFC",
+      "isoAlpha2": "ID"
+    },
+    {
+      "code": "IRL",
+      "name": "Irlanda",
+      "confederation": "UEFA",
+      "isoAlpha2": "IE"
+    },
+    {
+      "code": "IRN",
+      "name": "Irão",
+      "confederation": "AFC",
+      "isoAlpha2": "IR"
+    },
+    {
+      "code": "IRQ",
+      "name": "Iraque",
+      "confederation": "AFC",
+      "isoAlpha2": "IQ"
+    },
+    {
+      "code": "ISL",
+      "name": "Islândia",
+      "confederation": "UEFA",
+      "isoAlpha2": "IS"
+    },
+    {
+      "code": "ISR",
+      "name": "Israel",
+      "confederation": "UEFA",
+      "isoAlpha2": "IL"
+    },
+    {
+      "code": "ITA",
+      "name": "Itália",
+      "confederation": "UEFA",
+      "isoAlpha2": "IT"
+    },
+    {
+      "code": "JOR",
+      "name": "Jordânia",
+      "confederation": "AFC",
+      "isoAlpha2": "JO"
+    },
+    {
+      "code": "JPN",
+      "name": "Japão",
+      "confederation": "AFC",
+      "isoAlpha2": "JP"
+    },
+    {
+      "code": "KOR",
+      "name": "Coreia do Sul",
+      "confederation": "AFC",
+      "isoAlpha2": "KR"
+    },
+    {
+      "code": "KSA",
+      "name": "Arábia Saudita",
+      "confederation": "AFC",
+      "isoAlpha2": "SA"
+    },
+    {
+      "code": "KUW",
+      "name": "Kuwait",
+      "confederation": "AFC",
+      "isoAlpha2": "KW"
+    },
+    {
+      "code": "KVX",
+      "name": "Kosovo",
+      "confederation": "UEFA",
+      "isoAlpha2": "XK"
+    },
+    {
+      "code": "LBR",
+      "name": "Libéria",
+      "confederation": "CAF",
+      "isoAlpha2": "LR"
+    },
+    {
+      "code": "LBY",
+      "name": "Líbia",
+      "confederation": "CAF",
+      "isoAlpha2": "LY"
+    },
+    {
+      "code": "MAR",
+      "name": "Marrocos",
+      "confederation": "CAF",
+      "isoAlpha2": "MA"
+    },
+    {
+      "code": "MEX",
+      "name": "México",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "MX"
+    },
+    {
+      "code": "MKD",
+      "name": "Macedónia do Norte",
+      "confederation": "UEFA",
+      "isoAlpha2": "MK"
+    },
+    {
+      "code": "MLI",
+      "name": "Mali",
+      "confederation": "CAF",
+      "isoAlpha2": "ML"
+    },
+    {
+      "code": "MNE",
+      "name": "Montenegro",
+      "confederation": "UEFA",
+      "isoAlpha2": "ME"
+    },
+    {
+      "code": "MTN",
+      "name": "Mauritânia",
+      "confederation": "CAF",
+      "isoAlpha2": "MR"
+    },
+    {
+      "code": "NED",
+      "name": "Países Baixos",
+      "confederation": "UEFA",
+      "isoAlpha2": ""
+    },
+    {
+      "code": "NGA",
+      "name": "Nigéria",
+      "confederation": "CAF",
+      "isoAlpha2": "NG"
+    },
+    {
+      "code": "NIR",
+      "name": "Irlanda do Norte",
+      "confederation": "UEFA",
+      "isoAlpha2": "GB-NIR"
+    },
+    {
+      "code": "NOR",
+      "name": "Noruega",
+      "confederation": "UEFA",
+      "isoAlpha2": "NO"
+    },
+    {
+      "code": "NZL",
+      "name": "Nova Zelândia",
+      "confederation": "OFC",
+      "isoAlpha2": "NZ"
+    },
+    {
+      "code": "PAN",
+      "name": "Panamá",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "PA"
+    },
+    {
+      "code": "PAR",
+      "name": "Paraguai",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "PY"
+    },
+    {
+      "code": "PER",
+      "name": "Peru",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "PE"
+    },
+    {
+      "code": "POL",
+      "name": "Polónia",
+      "confederation": "UEFA",
+      "isoAlpha2": "PL"
+    },
+    {
+      "code": "POR",
+      "name": "Portugal",
+      "confederation": "UEFA",
+      "isoAlpha2": "PT"
+    },
+    {
+      "code": "ROU",
+      "name": "Roménia",
+      "confederation": "UEFA",
+      "isoAlpha2": "RO"
+    },
+    {
+      "code": "RUS",
+      "name": "Império Russo",
+      "confederation": "UEFA",
+      "isoAlpha2": "RU"
+    },
+    {
+      "code": "SCO",
+      "name": "Escócia",
+      "confederation": "UEFA",
+      "isoAlpha2": "GB-SCT"
+    },
+    {
+      "code": "SDN",
+      "name": "Sudão",
+      "confederation": "CAF",
+      "isoAlpha2": "SD"
+    },
+    {
+      "code": "SEN",
+      "name": "Senegal",
+      "confederation": "CAF",
+      "isoAlpha2": "SN"
+    },
+    {
+      "code": "SRB",
+      "name": "Sérvia",
+      "confederation": "UEFA",
+      "isoAlpha2": "RS"
+    },
+    {
+      "code": "SUI",
+      "name": "Suíça",
+      "confederation": "UEFA",
+      "isoAlpha2": "CH"
+    },
+    {
+      "code": "SUR",
+      "name": "Suriname",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "SR"
+    },
+    {
+      "code": "SVK",
+      "name": "Eslováquia",
+      "confederation": "UEFA",
+      "isoAlpha2": "SK"
+    },
+    {
+      "code": "SVN",
+      "name": "Eslovénia",
+      "confederation": "UEFA",
+      "isoAlpha2": "SI"
+    },
+    {
+      "code": "SWE",
+      "name": "Suécia",
+      "confederation": "UEFA",
+      "isoAlpha2": "SE"
+    },
+    {
+      "code": "TAN",
+      "name": "Tanzânia",
+      "confederation": "CAF",
+      "isoAlpha2": "TZ"
+    },
+    {
+      "code": "TOG",
+      "name": "Togo",
+      "confederation": "CAF",
+      "isoAlpha2": "TG"
+    },
+    {
+      "code": "TUN",
+      "name": "Tunísia",
+      "confederation": "CAF",
+      "isoAlpha2": "TN"
+    },
+    {
+      "code": "TUR",
+      "name": "Turquia",
+      "confederation": "UEFA",
+      "isoAlpha2": "TR"
+    },
+    {
+      "code": "UKR",
+      "name": "Ucrânia",
+      "confederation": "UEFA",
+      "isoAlpha2": "UA"
+    },
+    {
+      "code": "URU",
+      "name": "Uruguai",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "UY"
+    },
+    {
+      "code": "USA",
+      "name": "Estados Unidos",
+      "confederation": "CONCACAF",
+      "isoAlpha2": "US"
+    },
+    {
+      "code": "UZB",
+      "name": "Usbequistão",
+      "confederation": "AFC",
+      "isoAlpha2": "UZ"
+    },
+    {
+      "code": "VEN",
+      "name": "Venezuela",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "VE"
+    },
+    {
+      "code": "WAL",
+      "name": "País de Gales",
+      "confederation": "UEFA",
+      "isoAlpha2": "GB-WLS"
+    }
   ]
 }

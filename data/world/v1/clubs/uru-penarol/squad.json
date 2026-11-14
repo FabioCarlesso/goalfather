@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "sebastian-britos",
+        "name": "Sebastián Britos",
+        "birthDate": "1988-01-02",
+        "nationality": "URU",
+        "position": "GK"
+      },
+      {
+        "id": "uru-penarol-gen-01",
+        "name": "Santiago Ríos",
+        "birthDate": "1998-02-02",
+        "nationality": "URU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-14",
+        "name": "Walter Méndez",
+        "birthDate": "2006-12-12",
+        "nationality": "URU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "diego-walter",
+        "name": "Diego Walter",
+        "birthDate": "1993-02-07",
+        "nationality": "ITA",
+        "secondNationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "uru-penarol-gen-15",
+        "name": "Damián Ramírez",
+        "birthDate": "1997-01-11",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-04",
+        "name": "Gastón Giménez",
+        "birthDate": "2004-04-17",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-08",
+        "name": "Kevin Medina",
+        "birthDate": "2005-09-09",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-02",
+        "name": "Lautaro Vargas",
+        "birthDate": "2001-12-31",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-11",
+        "name": "Luciano Pereyra",
+        "birthDate": "1999-08-10",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-06",
+        "name": "Rodrigo Duarte",
+        "birthDate": "2002-04-19",
+        "nationality": "URU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "damian-garcia-grana",
+        "name": "Damián García Graña",
+        "birthDate": "2003-07-15",
+        "nationality": "URU",
+        "position": "MF"
+      },
+      {
+        "id": "uru-penarol-gen-16",
+        "name": "Alexis Cabrera",
+        "birthDate": "2008-01-02",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-03",
+        "name": "Alexis Cáceres",
+        "birthDate": "1998-04-06",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-05",
+        "name": "Emiliano Suárez",
+        "birthDate": "1994-12-21",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-07",
+        "name": "Leandro Silva",
+        "birthDate": "2005-08-08",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-12",
+        "name": "Sebastián Pereyra",
+        "birthDate": "1997-10-19",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-09",
+        "name": "Valentín Cabrera",
+        "birthDate": "2004-03-04",
+        "nationality": "URU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "abel-hernandez",
+        "name": "Abel Hernández",
+        "birthDate": "1990-08-08",
+        "nationality": "URU",
+        "position": "FW"
+      },
+      {
+        "id": "luis-acevedo",
+        "name": "Luis Acevedo",
+        "birthDate": "1996-10-05",
+        "nationality": "URU",
+        "position": "FW"
+      },
+      {
+        "id": "uru-penarol-gen-13",
+        "name": "Ezequiel Medina",
+        "birthDate": "1996-05-15",
+        "nationality": "URU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-10",
+        "name": "Jhon Villalba",
+        "birthDate": "1994-03-27",
+        "nationality": "URU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "uru-penarol-gen-17",
+        "name": "Joaquín Aguirre",
+        "birthDate": "1999-07-31",
+        "nationality": "URU",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

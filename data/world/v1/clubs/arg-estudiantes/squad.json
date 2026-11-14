@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fernando-muslera",
+        "name": "Fernando Muslera",
+        "birthDate": "1986-06-16",
+        "nationality": "URU",
+        "position": "GK"
+      },
+      {
+        "id": "juan-pablo-zozaya",
+        "name": "Juan Pablo Zozaya",
+        "birthDate": "2001-08-13",
+        "nationality": "ARG",
+        "position": "GK"
+      },
+      {
+        "id": "arg-estudiantes-gen-03",
+        "name": "Damián Gómez",
+        "birthDate": "2001-10-03",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "gaston-benedetti",
+        "name": "Gastón Benedetti",
+        "birthDate": "2001-03-29",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "nicolas-andres-fernandez",
+        "name": "Nicolás Andrés Fernández",
+        "birthDate": "2002-02-11",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "ramiro-funes-mori",
+        "name": "Ramiro Funes Mori",
+        "birthDate": "1991-03-05",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "roman-agustin-gomez",
+        "name": "Román Agustín Gómez",
+        "birthDate": "2004-07-14",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "arg-estudiantes-gen-01",
+        "name": "Tomás Núñez",
+        "birthDate": "1999-09-23",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-estudiantes-gen-02",
+        "name": "Yeferson Silva",
+        "birthDate": "2005-05-05",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alexis-castro",
+        "name": "Alexis Castro",
+        "birthDate": "1994-10-18",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "alexis-manyoma",
+        "name": "Alexis Manyoma",
+        "birthDate": "2003-01-30",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "axel-atum",
+        "name": "Axel Atum",
+        "birthDate": "2006-01-02",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "baltasar-rodriguez",
+        "name": "Baltasar Rodríguez",
+        "birthDate": "2003-07-09",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "gabriel-neves",
+        "name": "Gabriel Neves",
+        "birthDate": "1997-08-11",
+        "nationality": "URU",
+        "position": "MF"
+      },
+      {
+        "id": "jose-sosa",
+        "name": "José Sosa",
+        "birthDate": "1985-06-19",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "ciro-spalletta",
+        "name": "Ciro Spalletta",
+        "birthDate": "2005-06-22",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "fabricio-perez-escudero",
+        "name": "Fabricio Pérez Escudero",
+        "birthDate": "2005-12-07",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "lucas-alario",
+        "name": "Lucas Alario",
+        "birthDate": "1992-10-08",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "mara-gomez",
+        "name": "Mara Gomez",
+        "birthDate": "1997-03-07",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "mateo-pellegrino",
+        "name": "Mateo Pellegrino",
+        "birthDate": "2001-10-22",
+        "nationality": "ARG",
+        "secondNationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "matias-julian-contrera",
+        "name": "Matías Julián Contrera",
+        "birthDate": "2005-06-19",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "mauro-mendez",
+        "name": "Mauro Méndez",
+        "birthDate": "1999-01-17",
+        "nationality": "URU",
+        "position": "FW"
+      }
+    ]
+  }
+}

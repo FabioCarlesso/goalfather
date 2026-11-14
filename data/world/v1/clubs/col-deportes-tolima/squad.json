@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "neto-volpi",
+        "name": "Neto Volpi",
+        "birthDate": "1992-01-08",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "col-deportes-tolima-gen-01",
+        "name": "Alexis Méndez",
+        "birthDate": "2001-08-28",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-13",
+        "name": "Leandro Romero",
+        "birthDate": "2006-10-24",
+        "nationality": "COL",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "hector-antonio-urrego",
+        "name": "Héctor Antonio Urrego",
+        "birthDate": "1992-11-10",
+        "nationality": "COL",
+        "position": "DF"
+      },
+      {
+        "id": "col-deportes-tolima-gen-06",
+        "name": "Agustín Flores",
+        "birthDate": "1998-11-21",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-04",
+        "name": "Federico Castillo",
+        "birthDate": "1999-05-09",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-08",
+        "name": "Julián Vargas",
+        "birthDate": "2007-04-14",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-02",
+        "name": "Nicolás Villalba",
+        "birthDate": "2006-11-24",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-10",
+        "name": "Santiago Gómez",
+        "birthDate": "2006-12-09",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-14",
+        "name": "Sebastián González",
+        "birthDate": "1999-01-01",
+        "nationality": "COL",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "henry-rojas",
+        "name": "Henry Rojas",
+        "birthDate": "1987-07-27",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "col-deportes-tolima-gen-07",
+        "name": "Bruno Ortiz",
+        "birthDate": "1995-06-28",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-03",
+        "name": "Facundo Romero",
+        "birthDate": "1998-05-30",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-11",
+        "name": "Franco Ibarra",
+        "birthDate": "2007-03-09",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-05",
+        "name": "Juan Pablo Duarte",
+        "birthDate": "1994-07-10",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-09",
+        "name": "Maximiliano Espinoza",
+        "birthDate": "1994-03-01",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-15",
+        "name": "Sebastián Aguirre",
+        "birthDate": "2008-05-10",
+        "nationality": "COL",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "andres-felipe-ibarguen",
+        "name": "Andrés Felipe Ibargüen",
+        "birthDate": "1992-05-07",
+        "nationality": "COL",
+        "position": "FW"
+      },
+      {
+        "id": "juan-fernando-caicedo",
+        "name": "Juan Fernando Caicedo",
+        "birthDate": "1989-07-13",
+        "nationality": "COL",
+        "position": "FW"
+      },
+      {
+        "id": "roger-rojas",
+        "name": "Roger Rojas",
+        "birthDate": "1990-06-09",
+        "nationality": "HON",
+        "position": "FW"
+      },
+      {
+        "id": "col-deportes-tolima-gen-16",
+        "name": "Jhon Pereyra",
+        "birthDate": "2000-08-15",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "col-deportes-tolima-gen-12",
+        "name": "Matías Silva",
+        "birthDate": "2001-05-24",
+        "nationality": "COL",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -20,7 +20,7 @@ const player = (id: number, name: string, position: Position, overall = 70, extr
   goals: 0,
   yellowCards: 0,
   redCards: 0,
-  availability: { type: 'Available' },
+  availability: { type: 'Available' }, suspensions: [],
   star: overall >= 82,
   ...extra,
 })

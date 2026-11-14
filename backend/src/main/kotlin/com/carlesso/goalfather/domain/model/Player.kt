@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.serialization.CompetitionIdSerializer
 import com.carlesso.goalfather.domain.serialization.PlayerIdSerializer
 import kotlinx.serialization.Serializable
 
@@ -58,6 +59,17 @@ data class Player(
      * brasileiro não ocupa vaga de estrangeiro no Brasil.
      */
     val secondNationality: Country? = null,
+    /**
+     * Amarelos ainda não "pagos" com suspensão, POR competição (issue #130):
+     * um amarelo no Brasileirão não conta na copa. Diferente de [yellowCards],
+     * que é estatística da temporada e nunca zera ao cumprir gancho.
+     *
+     * A anotação no ARGUMENTO de tipo (`Map<@Serializable(with = …) K, V>`) é
+     * como o kotlinx aceita um serializer custom só para a chave do mapa.
+     */
+    val pendingYellows: Map<@Serializable(with = CompetitionIdSerializer::class) CompetitionId, Int> = emptyMap(),
+    /** Suspensões em vigor, no máximo uma por competição (issue #130). */
+    val suspensions: List<Suspension> = emptyList(),
 ) {
     val star: Boolean get() = overall >= 82
 
@@ -67,11 +79,28 @@ data class Player(
      */
     val injured: Boolean get() = availability is Availability.Injured
 
+    /** A suspensão em vigor em [competition], se houver — ausência no tipo. */
+    fun suspensionIn(competition: CompetitionId): Suspension? =
+        suspensions.firstOrNull { it.competitionId == competition }
+
+    fun isSuspendedIn(competition: CompetitionId): Boolean = suspensionIn(competition) != null
+
+    /**
+     * Pode entrar em campo num jogo de [competition]? `null` = sem competição
+     * em jogo (partida avulsa, telas): só a lesão conta.
+     */
+    fun canPlayIn(competition: CompetitionId?): Boolean =
+        !injured && (competition == null || !isSuspendedIn(competition))
+
     init {
         require(overall in OVERALL_RANGE) { "overall fora de $OVERALL_RANGE: $overall" }
         require(stamina in 0..100) { "stamina fora de 0..100: $stamina" }
         require(age in AGE_RANGE) { "age fora de $AGE_RANGE: $age" }
         require(secondNationality != nationality) { "segunda nacionalidade repete a primeira: ${nationality.code}" }
+        require(pendingYellows.values.all { it >= 1 }) { "amarelos pendentes devem ser >= 1 (zero sai do mapa): $pendingYellows" }
+        require(suspensions.distinctBy { it.competitionId }.size == suspensions.size) {
+            "mais de uma suspensão na mesma competição: $suspensions"
+        }
     }
 
     /**

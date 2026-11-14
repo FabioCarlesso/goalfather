@@ -44,7 +44,7 @@ describe('RoundPage — resumo da rodada (issue #112)', () => {
     season: 2026, division: 1, round: 1, promotionSpots: 0, relegationSpots: 2,
     rows: [{
       position: 1, clubId: 1, clubName: 'Goal Father FC', played: 1, wins: 1, draws: 0, losses: 0,
-      goalsFor: 2, goalsAgainst: 0, goalDifference: 2, points: 3,
+      goalsFor: 2, goalsAgainst: 0, goalDifference: 2, points: 3, zone: 'NONE',
     }],
   }
   const update = (event: Partial<MatchEvent> & Pick<MatchEvent, 'type' | 'minute'>) =>

@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "dean-henderson",
+        "name": "Dean Henderson",
+        "birthDate": "1997-03-12",
+        "nationality": "ENG",
+        "position": "GK"
+      },
+      {
+        "id": "eng-crystal-palace-gen-04",
+        "name": "George Cooper",
+        "birthDate": "1994-04-15",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-crystal-palace-gen-01",
+        "name": "Ryan Hughes",
+        "birthDate": "2001-11-09",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "axel-disasi",
+        "name": "Axel Disasi",
+        "birthDate": "1998-03-11",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "ben-chilwell",
+        "name": "Ben Chilwell",
+        "birthDate": "1996-12-21",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "chris-richards",
+        "name": "Chris Richards",
+        "birthDate": "2000-03-28",
+        "nationality": "USA",
+        "position": "DF"
+      },
+      {
+        "id": "honest-ahanor",
+        "name": "Honest Ahanor",
+        "birthDate": "2008-02-23",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "takehiro-tomiyasu",
+        "name": "Takehiro Tomiyasu",
+        "birthDate": "1998-11-05",
+        "nationality": "JPN",
+        "position": "DF"
+      },
+      {
+        "id": "oscar-mingueza",
+        "name": "Óscar Mingueza",
+        "birthDate": "1999-05-13",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "eng-crystal-palace-gen-05",
+        "name": "Scott Bailey",
+        "birthDate": "2004-06-30",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "adam-wharton",
+        "name": "Adam Wharton",
+        "birthDate": "2004-02-06",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "jefferson-lerma",
+        "name": "Jefferson Lerma",
+        "birthDate": "1994-10-25",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "quinten-timber",
+        "name": "Quinten Timber",
+        "birthDate": "2001-06-17",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "yeremy-pino",
+        "name": "Yéremy Pino",
+        "birthDate": "2002-10-20",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "eng-crystal-palace-gen-02",
+        "name": "Ben Wilson",
+        "birthDate": "2003-12-12",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-crystal-palace-gen-03",
+        "name": "Daniel Barnes",
+        "birthDate": "2000-06-12",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-crystal-palace-gen-06",
+        "name": "Mason Bennett",
+        "birthDate": "1999-05-08",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "anan-khalaili",
+        "name": "Anan Khalaili",
+        "birthDate": "2004-09-03",
+        "nationality": "ISR",
+        "position": "FW"
+      },
+      {
+        "id": "brennan-johnson",
+        "name": "Brennan Johnson",
+        "birthDate": "2001-05-23",
+        "nationality": "WAL",
+        "position": "FW"
+      },
+      {
+        "id": "eddie-nketiah",
+        "name": "Eddie Nketiah",
+        "birthDate": "1999-05-30",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "ismaila-sarr",
+        "name": "Ismaïla Sarr",
+        "birthDate": "1998-02-25",
+        "nationality": "SEN",
+        "position": "FW"
+      },
+      {
+        "id": "eng-crystal-palace-gen-07",
+        "name": "Matthew Edwards",
+        "birthDate": "1993-12-04",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-athletic-club-gen-19",
+        "name": "Adriano Duarte",
+        "birthDate": "2001-09-13",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-01",
+        "name": "Gustavo Ferreira",
+        "birthDate": "2007-09-17",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-02",
+        "name": "Thiago Machado",
+        "birthDate": "2005-04-11",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-10",
+        "name": "Cristiano Vieira",
+        "birthDate": "2004-05-04",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-20",
+        "name": "Gustavo Oliveira",
+        "birthDate": "2001-10-28",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-03",
+        "name": "Jorge Araújo",
+        "birthDate": "2003-10-23",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-05",
+        "name": "Leandro Borges",
+        "birthDate": "2000-09-23",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-07",
+        "name": "Otávio Santana",
+        "birthDate": "1993-11-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-16",
+        "name": "Rafael Gonçalves",
+        "birthDate": "2000-11-21",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-13",
+        "name": "Sérgio Lopes",
+        "birthDate": "2001-06-27",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-17",
+        "name": "Adriano Queiroz",
+        "birthDate": "2008-06-12",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-04",
+        "name": "Alexandre Pereira",
+        "birthDate": "2008-02-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-11",
+        "name": "Arthur Fonseca",
+        "birthDate": "2000-12-24",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-08",
+        "name": "Hugo Pereira",
+        "birthDate": "1994-12-05",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-14",
+        "name": "José Nascimento",
+        "birthDate": "2007-03-30",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-21",
+        "name": "Roberto Nogueira",
+        "birthDate": "1999-03-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-06",
+        "name": "Rogério Gomes",
+        "birthDate": "2000-07-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-18",
+        "name": "Anderson Freitas",
+        "birthDate": "2001-06-26",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-22",
+        "name": "Bruno Borges",
+        "birthDate": "1994-05-30",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-09",
+        "name": "Hélio Fonseca",
+        "birthDate": "2003-08-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-15",
+        "name": "Jorge Machado",
+        "birthDate": "2001-11-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-athletic-club-gen-12",
+        "name": "Nathan Souza",
+        "birthDate": "2000-10-15",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

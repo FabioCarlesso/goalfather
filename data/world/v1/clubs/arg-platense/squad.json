@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "arg-platense-gen-18",
+        "name": "Facundo Benítez",
+        "birthDate": "1997-09-10",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-01",
+        "name": "Luciano Herrera",
+        "birthDate": "1995-06-01",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-02",
+        "name": "Yeferson Cáceres",
+        "birthDate": "2004-12-18",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "mateo-mendia",
+        "name": "Mateo Mendía",
+        "birthDate": "2004-02-03",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "arg-platense-gen-04",
+        "name": "Franco Flores",
+        "birthDate": "2005-09-22",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-19",
+        "name": "Franco Suárez",
+        "birthDate": "2008-06-26",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-15",
+        "name": "Jonathan Herrera",
+        "birthDate": "1996-02-10",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-06",
+        "name": "Lautaro Suárez",
+        "birthDate": "1995-07-01",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-12",
+        "name": "Leandro Ruiz",
+        "birthDate": "2008-02-17",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-09",
+        "name": "Nahuel Valdez",
+        "birthDate": "2004-07-01",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-16",
+        "name": "Federico Benítez",
+        "birthDate": "2006-10-17",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-07",
+        "name": "Joaquín Aguirre",
+        "birthDate": "2007-01-10",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-05",
+        "name": "Joaquín Fernández",
+        "birthDate": "1998-11-04",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-13",
+        "name": "Leandro Rojas",
+        "birthDate": "2001-12-07",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-03",
+        "name": "Maximiliano Aguirre",
+        "birthDate": "1997-10-08",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-10",
+        "name": "Santiago Vega",
+        "birthDate": "1994-06-14",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-20",
+        "name": "Tomás Aguirre",
+        "birthDate": "2001-02-02",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-11",
+        "name": "Facundo Ríos",
+        "birthDate": "2002-07-21",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-21",
+        "name": "Ignacio Silva",
+        "birthDate": "2003-06-18",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-08",
+        "name": "Leandro Duarte",
+        "birthDate": "1997-11-23",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-17",
+        "name": "Sebastián Gómez",
+        "birthDate": "2003-01-02",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-platense-gen-14",
+        "name": "Yeferson Sosa",
+        "birthDate": "2007-09-04",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

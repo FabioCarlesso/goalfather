@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "fra-auxerre-gen-02",
+        "name": "Hugo Boyer",
+        "birthDate": "2007-11-02",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-16",
+        "name": "Pierre Vincent",
+        "birthDate": "2000-11-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-01",
+        "name": "Yanis Morel",
+        "birthDate": "1996-06-01",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "axel-tuanzebe",
+        "name": "Axel Tuanzebe",
+        "birthDate": "1997-11-14",
+        "nationality": "COD",
+        "position": "DF"
+      },
+      {
+        "id": "fra-auxerre-gen-08",
+        "name": "Adrien Garnier",
+        "birthDate": "1994-08-06",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-10",
+        "name": "Baptiste Dupont",
+        "birthDate": "2005-08-17",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-04",
+        "name": "Hugo Dubois",
+        "birthDate": "1996-09-30",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-13",
+        "name": "Jérémy Moreau",
+        "birthDate": "2004-07-12",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-17",
+        "name": "Lucas Moreau",
+        "birthDate": "2007-11-06",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-06",
+        "name": "Noah Mercier",
+        "birthDate": "2005-05-28",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-18",
+        "name": "Arthur Girard",
+        "birthDate": "1995-07-16",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-05",
+        "name": "Benjamin Roux",
+        "birthDate": "2008-05-31",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-03",
+        "name": "Killian Boyer",
+        "birthDate": "1996-05-07",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-07",
+        "name": "Kévin Rousseau",
+        "birthDate": "2003-11-22",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-14",
+        "name": "Mathieu Moreau",
+        "birthDate": "2004-11-01",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-09",
+        "name": "Romain Simon",
+        "birthDate": "2002-07-14",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-11",
+        "name": "Yanis Michel",
+        "birthDate": "2007-08-25",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "cameron-archer",
+        "name": "Cameron Archer",
+        "birthDate": "2001-12-09",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "mickael-le-bihan",
+        "name": "Mickaël Le Bihan",
+        "birthDate": "1990-05-16",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-auxerre-gen-19",
+        "name": "Alexandre Faure",
+        "birthDate": "2002-05-01",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-15",
+        "name": "Mathieu Faure",
+        "birthDate": "2000-09-14",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-auxerre-gen-12",
+        "name": "Samuel Michel",
+        "birthDate": "2004-04-11",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

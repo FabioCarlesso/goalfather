@@ -78,6 +78,10 @@ export interface MatchSetup {
   // Jogo de mata-mata (issue #61): empate no tempo normal vai aos pênaltis.
   // Ausente = partida de liga, que aceita empate e consome o RNG como antes.
   knockout?: boolean
+  // Ids dos clubes, só repassados ao KickOff (o drill-down resolve os nomes
+  // dos jogadores por eles). Ausentes = não vão no evento, como no contrato.
+  homeClubId?: number
+  awayClubId?: number
 }
 
 const EVENT_RATE       = 0.12  // chance de algo acontecer por minuto
@@ -199,6 +203,8 @@ export function* simulateMatch(
     awayStrength: setup.awayStrength,
     homePosture: setup.homeTactics?.posture ?? 'BALANCED',
     awayPosture: setup.awayTactics?.posture ?? 'BALANCED',
+    ...(setup.homeClubId !== undefined && { homeClubId: setup.homeClubId }),
+    ...(setup.awayClubId !== undefined && { awayClubId: setup.awayClubId }),
   })
 
   let homeGoals = 0
@@ -514,14 +520,97 @@ export function applyRoundFitness<T extends FitPlayer>(
 export function startingEleven<T extends FitPlayer>(
   squad: T[],
   savedPlayerIds: number[] | undefined,
+  rules?: LineupRules<T>,
 ): Set<number> {
-  const available = squad.filter((p) => p.availability.type !== 'Injured')
-  if (!savedPlayerIds) return new Set(available.slice(0, 11).map((p) => p.id))
-
+  const available = squad.filter((p) => p.availability.type !== 'Injured' && !(rules?.suspended(p) ?? false))
   const byId = new Map(available.map((p) => [p.id, p]))
-  const starters = savedPlayerIds.filter((id) => byId.has(id))
+  const starters = (savedPlayerIds ?? []).filter((id) => byId.has(id))
   const substitutes = available.filter((p) => !starters.includes(p.id)).map((p) => p.id)
-  return new Set([...starters, ...substitutes].slice(0, 11))
+  const candidates = [...starters, ...substitutes]
+  // Limite de estrangeiros (issue #130): pula o estrangeiro que estouraria o
+  // limite, na ordem — titulares salvos primeiro, como `Club.startingLineup`.
+  const limit = rules?.foreignLimit
+  let foreigners = 0
+  const kept = limit === undefined || !rules
+    ? candidates
+    : candidates.filter((id) => {
+        const p = byId.get(id)
+        if (!p || !rules.foreign(p)) return true
+        if (foreigners >= limit) return false
+        foreigners += 1
+        return true
+      })
+  return new Set(kept.slice(0, 11))
+}
+
+// ─── Suspensões e estrangeiros (espelha SuspensionRules.kt, issue #130) ───
+
+/** Regras da competição que o apito inicial aplica além da lesão. */
+export interface LineupRules<T> {
+  suspended: (p: T) => boolean
+  foreign: (p: T) => boolean
+  /** Ausente = sem limite. */
+  foreignLimit?: number
+}
+
+/** Limite da CBF para o Brasileirão 2026 — o `NATIONAL_FOREIGN_PLAYER_LIMIT` do backend. */
+export const NATIONAL_FOREIGN_PLAYER_LIMIT = 9
+export const YELLOWS_FOR_SUSPENSION = 3
+export const MATCHES_PER_RED_CARD = 1
+
+/** Estrangeiro no país [countryCode]: nenhuma das nacionalidades é dele. */
+export const isForeignAt = (p: Pick<Player, 'nationality' | 'secondNationality'>, countryCode: string): boolean =>
+  p.nationality.code !== countryCode && p.secondNationality?.code !== countryCode
+
+export const isSuspendedIn = (p: Pick<Player, 'suspensions'>, competitionId: string): boolean =>
+  p.suspensions.some((s) => s.competitionId === competitionId)
+
+/** Amarelos pendentes por jogador → por competição (o contrato não os expõe). */
+export type PendingYellows = Record<number, Record<string, number>>
+
+/**
+ * Efeito disciplinar de UMA partida de [competitionId] sobre o elenco do clube
+ * que a jogou: suspenso cumpre um jogo; expulso (vermelho ou 2 amarelos) pega
+ * gancho; o 3º amarelo acumulado vira 1 jogo e zera. Mesma ordem de
+ * `Player.afterMatchIn` no Kotlin.
+ */
+export function applyMatchDiscipline(
+  squad: Player[],
+  competitionId: string,
+  competitionName: string,
+  cards: Map<number, { yellow: number; red: number }>,
+  pending: PendingYellows,
+): { squad: Player[]; pending: PendingYellows } {
+  const nextPending: PendingYellows = { ...pending }
+  const suspend = (p: Player, matches: number): Player => ({
+    ...p,
+    suspensions: [
+      ...p.suspensions.filter((s) => s.competitionId !== competitionId),
+      { competitionId, competitionName, matchesLeft: matches },
+    ],
+  })
+  const next = squad.map((p): Player => {
+    const serving = p.suspensions.find((s) => s.competitionId === competitionId)
+    if (serving) {
+      const others = p.suspensions.filter((s) => s !== serving)
+      const rest = serving.matchesLeft - 1
+      return { ...p, suspensions: rest >= 1 ? [...others, { ...serving, matchesLeft: rest }] : others }
+    }
+    const c = cards.get(p.id) ?? { yellow: 0, red: 0 }
+    if (c.red >= 1 || c.yellow >= 2) return suspend(p, MATCHES_PER_RED_CARD)
+    if (c.yellow === 0) return p
+    const mine = { ...(nextPending[p.id] ?? {}) }
+    const total = (mine[competitionId] ?? 0) + c.yellow
+    if (total >= YELLOWS_FOR_SUSPENSION) {
+      delete mine[competitionId]
+      nextPending[p.id] = mine
+      return suspend(p, 1)
+    }
+    mine[competitionId] = total
+    nextPending[p.id] = mine
+    return p
+  })
+  return { squad: next, pending: nextPending }
 }
 
 /** Campos derivados da escalação que o schema `Club` exige (issue #87). */
@@ -541,8 +630,9 @@ export interface EffectiveLineupFields {
 export function effectiveLineupOf<T extends FitPlayer>(
   squad: T[],
   saved: Lineup | undefined,
+  rules?: LineupRules<T>,
 ): EffectiveLineupFields {
-  const playerIds = [...startingEleven(squad, saved?.playerIds)]
+  const playerIds = [...startingEleven(squad, saved?.playerIds, rules)]
   const effectiveLineup: Lineup = {
     formation: saved?.formation ?? '4-4-2',
     playerIds,

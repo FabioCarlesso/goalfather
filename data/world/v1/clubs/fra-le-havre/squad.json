@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "mathieu-gorgelin",
+        "name": "Mathieu Gorgelin",
+        "birthDate": "1990-08-05",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "fra-le-havre-gen-01",
+        "name": "Killian Dupont",
+        "birthDate": "2001-07-26",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-14",
+        "name": "Kévin Leroy",
+        "birthDate": "2003-08-22",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-11",
+        "name": "Clément Bernard",
+        "birthDate": "2003-09-16",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-04",
+        "name": "Clément Michel",
+        "birthDate": "2006-12-13",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-03",
+        "name": "Damien Bonnet",
+        "birthDate": "2007-10-15",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-02",
+        "name": "Florian Chevalier",
+        "birthDate": "1997-04-10",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-08",
+        "name": "Mathieu Michel",
+        "birthDate": "2001-09-08",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-05",
+        "name": "Nicolas Chevalier",
+        "birthDate": "2003-03-25",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-15",
+        "name": "Rayan Rousseau",
+        "birthDate": "2002-02-07",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "amir-richardson",
+        "name": "Amir Richardson",
+        "birthDate": "2002-01-24",
+        "nationality": "MAR",
+        "secondNationality": "USA",
+        "position": "MF"
+      },
+      {
+        "id": "mahamadou-diawara",
+        "name": "Mahamadou Diawara",
+        "birthDate": "2005-02-17",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "mohamed-hamony",
+        "name": "Mohamed Hamony",
+        "birthDate": "2006-08-05",
+        "nationality": "MAR",
+        "position": "MF"
+      },
+      {
+        "id": "fra-le-havre-gen-16",
+        "name": "Arthur Michel",
+        "birthDate": "1994-06-30",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-12",
+        "name": "Nicolas Dumont",
+        "birthDate": "2004-06-08",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-06",
+        "name": "Quentin Bernard",
+        "birthDate": "1995-11-02",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-09",
+        "name": "Valentin André",
+        "birthDate": "1997-09-09",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "mbwana-samatta",
+        "name": "Mbwana Samatta",
+        "birthDate": "1992-12-23",
+        "nationality": "TAN",
+        "position": "FW"
+      },
+      {
+        "id": "fra-le-havre-gen-10",
+        "name": "Clément Laurent",
+        "birthDate": "1995-01-22",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-13",
+        "name": "Florian Simon",
+        "birthDate": "1998-02-19",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-07",
+        "name": "Théo Dumont",
+        "birthDate": "1997-01-22",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-le-havre-gen-17",
+        "name": "Yoann Vincent",
+        "birthDate": "2002-08-05",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,6 +1,8 @@
 package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.application.seed.initialLeague
+import com.carlesso.goalfather.application.service.RoundFinalizationGate
+import kotlinx.coroutines.runBlocking
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
 import org.springframework.context.annotation.Profile
@@ -27,6 +29,7 @@ class E2eStateReset(
     private val jdbc: JdbcTemplate,
     private val seed: SeedWriter,
     private val caches: CacheManager,
+    private val finalizationGate: RoundFinalizationGate,
 ) {
 
     /**
@@ -36,6 +39,15 @@ class E2eStateReset(
      */
     @Synchronized
     fun reset() {
+        // Espera as finalizações de encaixe em curso e barra as novas até a
+        // liga ser recriada: a coroutine da rodada sobrevive ao cliente, e a
+        // finalização do teste anterior gravaria por cima da liga nova (ver
+        // `RoundFinalizationGate`). `runBlocking` é a ponte entre este método
+        // bloqueante (chamado por um controller MVC) e o portão `suspend`.
+        runBlocking { finalizationGate.exclusively { recreate() } }
+    }
+
+    private fun recreate() {
         // Tabelas lidas do catálogo, não listadas à mão: migration nova entra
         // no reset sem ninguém lembrar de editar esta classe. O histórico do
         // Flyway fica de fora — o schema não muda, só os dados.

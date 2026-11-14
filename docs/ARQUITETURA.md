@@ -451,9 +451,10 @@ O mundo do jogo vem de um pack versionado em `data/world/v1/`, lido **como se fo
 - [x] **4.6** Múltiplas divisões com promoção/rebaixamento — issue #47
   (clubes têm `division`; fixtures Berger e tabela por divisão; na virada de
   temporada os últimos N da divisão de cima trocam com os primeiros N da de
-  baixo — regra pura em `domain/rules/PromotionRelegationRules.kt`. O
-  contrato expõe `promotionSpots`/`relegationSpots` por tabela para a UI
-  pintar as zonas sem duplicar a regra.)
+  baixo — desde a issue #128, um caso das regras de vaga em
+  `domain/rules/QualificationRules.kt` (`pyramidRules`). O contrato expõe
+  `promotionSpots`/`relegationSpots` por tabela e, desde a #128, a `zone` de
+  cada linha, para a UI pintar as zonas sem duplicar a regra.)
 - [ ] Mercado dinâmico — *futuro* (habilitado pelas divisões da 4.6)
 
 ### Fase 4.5 — DevOps / empacotamento ✅
@@ -1142,6 +1143,32 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   desconhecido cai no default, como o `trainingFocus`. A bandeira (emoji) é
   montada no adapter web (`CountryDto.flag`), então a UI só exibe.
 
+- [x] **Suspensão por cartões e limite de estrangeiros** — issue #130
+  `Player.suspensions: List<Suspension(competitionId, matchesLeft)>` e
+  `Player.pendingYellows: Map<CompetitionId, Int>`: a contagem é **por
+  competição**, e "suspenso por zero jogos" não é representável (mesmo idioma
+  do `Availability`). A regra é dado da competição: `Competition.discipline`
+  (`DisciplineRules`: amarelos para suspender, jogos por vermelho, se zera no
+  mata-mata) e `Competition.foreignPlayerLimit: Int?` (`null` = sem limite),
+  ambos com default. Funções puras em `domain/rules/SuspensionRules.kt`:
+  `Player.afterMatchIn` (suspenso cumpre um jogo; expulsão — vermelho ou 2º
+  amarelo — dá o gancho da regra e absorve os amarelos do jogo; o 3º amarelo
+  vira 1 jogo e zera), `Club.startingLineupIn(competição)` (sem os suspensos
+  dela e dentro do limite de estrangeiros — a escalação automática da IA
+  também) e `Round.competitionByClub()`. O `PlayRoundService` só escolhe a
+  competição de cada partida. Salvar escalação acima do limite da liga do clube
+  devolve `LineupResult.TooManyForeignPlayers` → 400 `TOO_MANY_FOREIGN_PLAYERS`;
+  suspenso **não** é recusado ao salvar (a escalação serve a todas as
+  competições — quem o tira é o apito inicial). Persistência: coluna
+  `players.discipline_json` (V18, `null` = ficha limpa), com um registro próprio
+  do mapper. A virada de temporada limpa a ficha. **Limite:** 9 estrangeiros
+  relacionados por jogo no Brasileirão 2026 (CBF; redução aprovada em set/2026
+  para 8 em 2027 até 5 em 2030) — o jogo não tem banco, então vale para os 11.
+  **Interino:** as regras das competições do mundo atual vivem em
+  `SeasonCompetitions.disciplineOf`/`foreignPlayerLimitOf` até o pack (#131);
+  `enteringKnockoutOf` (zerar amarelos no mata-mata) ainda não tem chamador,
+  porque nenhuma competição atual tem fase de grupos.
+
 - [x] **Provedor de dados do mundo** — issue #126
   Port `WorldDataProvider` com o adapter `FileWorldDataProvider`, que lê o pack
   `data/world/v1/` (property `app.world-data.path`) e o traduz por uma camada
@@ -1213,6 +1240,83 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   está no agendador e entra no serviço com o mundo do MVP (#131). Suspensões
   por cartão ainda não existem (#130); convocações nas datas FIFA são da #134 —
   aqui só se reserva o tempo. O mando dentro do turno segue o Berger antigo.
+
+- [x] **Simulação rápida para partidas sem técnico humano** — issue #129
+
+  Um encaixe do mundo tem 50–60 jogos, e só os de clube com dono precisam do
+  minuto a minuto. O `MatchdaySimulator` (`application/service`) separa o
+  encaixe por `simulationModeOf(home, away)`: técnico humano em qualquer lado →
+  `MatchSimulator` completo, transmitido inteiro; jogo só da IA →
+  `QuickMatchSimulator` (`domain/engine`), em paralelo com
+  `coroutineScope { map { async(Dispatchers.Default) { } }.awaitAll() }`.
+
+  | | Completa | Rápida |
+  |---|---|---|
+  | Saída | `Flow<MatchEvent>` (~30 eventos) | `QuickMatchResult`: placar, destaques (`Goal`/`Card`/`Injury`), pênaltis, `MatchStats` |
+  | Sorteio de minutos | 90 Bernoullis (`EVENT_RATE`) | geométrica por inversão — só os ~11 minutos com lance |
+  | No WS da rodada | feed inteiro | só pênaltis + `FullTime` (minuto 90) |
+  | Drill-down (`/ws/matches/{id}`) | re-roda a completa | `KickOff` + destaques + `FullTime` da rápida |
+
+  **Mesma distribuição, outro consumo do RNG.** A rápida usa as mesmas fatias
+  de probabilidade (`MatchOdds`, a conta força × tática que as duas engines compartilham), o
+  mesmo `drawShooter`, `drawInjuryDuration` e `penaltyShootout`. Mesma seed não
+  dá o mesmo jogo que a completa, mas dá sempre o mesmo jogo rápido — e a seed
+  continua sendo o `matchId`, criada dentro da tarefa de cada jogo, então o
+  paralelismo não muda resultado. O `QuickMatchSimulatorTest` compara 10 mil
+  jogos de cada engine (tolerância documentada no teste: 0,10 gol/jogo e 3 p.p.
+  de vitória do mandante, ~4 erros-padrão; medido 3,46 × 3,51 gols e 44,2 % ×
+  43,7 %). 60 jogos rápidos em paralelo: ~9 ms pela métrica, na máquina de dev
+  carregada). Os efeitos da rodada leem a
+  "súmula" de cada jogo (`SimulatedMatch.sheet`) — o mesmo código para as duas
+  engines. A engine completa não foi alterada.
+
+  **Métrica:** `goalfather.matchday.quick.simulation` (wall time do lote rápido,
+  uma amostra por encaixe); `goalfather.round.simulation` segue cobrindo o
+  encaixe inteiro. **Gravação em lote:** o `ClubSaveTransaction` sincroniza o
+  elenco com `saveAll` (antes, um `findById` + `save` por jogador) e o Hibernate
+  agrupa os UPDATEs (`hibernate.jdbc.batch_size: 50`, `order_updates`).
+
+  **Cortes:** a gravação continua sendo uma transação por clube (o port
+  `ClubRepository` não ganhou `saveAll`, que mexeria em todos os mocks dos
+  testes de serviço); o modo é decidido pela posse NA HORA, então o drill-down
+  de um jogo antigo de um clube assumido depois roda a completa — mesma ressalva
+  do elenco alterado depois do jogo.
+
+- [x] **Vagas, acesso, rebaixamento e playoff** — issue #128
+
+  `sealed interface QualificationRule` (`domain/model/QualificationRule.kt`):
+  `TopN(from, n, to, entryStage)`, `Champion(from, to, entryStage)`,
+  `Relegation(from, bottomN, to)`, `Promotion(from, topN, to)` e
+  `Playoff(upper, upperPosition, lower, lowerPosition, format)`. As regras
+  referenciam competições só por `CompetitionId` e moram **fora** de
+  `Competition`: a vaga é relação entre competições.
+
+  `applyQualificationRules` (`domain/rules/QualificationRules.kt`, puro) recebe
+  as tabelas finais, os campeões das copas e os vencedores de playoff e devolve
+  o `sealed SeasonTransition`: `PlayoffsPending(ties)` enquanto houver playoff
+  sem vencedor (cada `PlayoffTie` gera os próprios jogos com `knockoutLegs` e
+  decide o vencedor por `TieResult`/`TwoLeggedTieResult`), ou `Resolved` com a
+  liga da temporada seguinte de cada clube e as vagas concedidas. **Cascata:**
+  `Champion` vem antes de `TopN`, e `TopN` pega os próximos **sem vaga** — o
+  campeão da Copa do Brasil no G-6 abre a vaga para o 7º. Um clube recebe no
+  máximo uma vaga (destinos exclusivos no MVP).
+
+  **Faixas:** `tableZones` dá a `TableZone` de cada posição (`QUALIFICATION`,
+  `PROMOTION`, `PLAYOFF`, `RELEGATION`, `NONE`), nominal como na TV. A faixa
+  viaja em `StandingRow.zone`, gravada no `rows_json` do snapshot (sem
+  migration; temporada antiga mostra a faixa da época), e `applyRoundToStandings`
+  a devolve à posição depois de reordenar. A UI só pinta.
+
+  **A liga do jogo** (12 clubes, 2 divisões) passou a ser `pyramidRules`: um par
+  `Relegation` + `Promotion` por degrau; `applyPromotionRelegation` manteve nome
+  e contrato, então o `PlayRoundService` não mudou. **Cortes:** as regras do
+  mundo do MVP estão interinas em `WorldQualificationRules` (Brasil: Copa do
+  Brasil + G-4 na fase de grupos da Libertadores, 5º–6º na segunda fase, Série
+  A/B trocam 4) até virarem dado do pack na #131; as **ligas europeias são
+  fechadas** (sem rebaixamento, sem playoff, sem vaga) até as segundas
+  divisões da #146 e as copas europeias da #145. Agendar os jogos de playoff no
+  calendário entra com a primeira liga que tiver playoff (a Bundesliga, na #146);
+  a vaga ganha só é consumida pela Libertadores da #132.
 
 ---
 

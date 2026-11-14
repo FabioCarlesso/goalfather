@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "esp-rayo-vallecano-gen-02",
+        "name": "Juan Molina",
+        "birthDate": "2002-01-15",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-11",
+        "name": "Mario Romero",
+        "birthDate": "1999-03-16",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-01",
+        "name": "Xabier Martínez",
+        "birthDate": "1998-09-13",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "andrei-ratiu",
+        "name": "Andrei Rațiu",
+        "birthDate": "1998-06-20",
+        "nationality": "ROU",
+        "position": "DF"
+      },
+      {
+        "id": "luiz-felipe-ramos-marchi",
+        "name": "Luiz Felipe Ramos Marchi",
+        "birthDate": "1997-03-22",
+        "nationality": "ITA",
+        "secondNationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "mujaid-sadick-aliu",
+        "name": "Mujaid Sadick Aliu",
+        "birthDate": "2000-03-14",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-09",
+        "name": "Alberto González",
+        "birthDate": "2007-12-19",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-07",
+        "name": "Francisco Gil",
+        "birthDate": "2000-08-15",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-05",
+        "name": "Hugo Moreno",
+        "birthDate": "2004-10-13",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-12",
+        "name": "Juan Navarro",
+        "birthDate": "2001-12-08",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "unai-lopez",
+        "name": "Unai López",
+        "birthDate": "1995-10-30",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-04",
+        "name": "Adrián Delgado",
+        "birthDate": "2004-03-17",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-06",
+        "name": "Borja Moreno",
+        "birthDate": "2002-02-23",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-10",
+        "name": "Daniel Sánchez",
+        "birthDate": "1999-12-30",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-08",
+        "name": "David Rubio",
+        "birthDate": "2001-04-26",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-03",
+        "name": "Eduardo Rodríguez",
+        "birthDate": "2004-01-01",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-13",
+        "name": "Iván Gómez",
+        "birthDate": "1998-08-26",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "andres-martin-garcia",
+        "name": "Andrés Martín García",
+        "birthDate": "1999-07-11",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "raul-de-tomas",
+        "name": "Raúl de Tomás",
+        "birthDate": "1994-10-17",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "sergio-camello",
+        "name": "Sergio Camello",
+        "birthDate": "2001-02-10",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "yacine-qasmi",
+        "name": "Yacine Qasmi",
+        "birthDate": "1991-01-03",
+        "nationality": "MAR",
+        "secondNationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "esp-rayo-vallecano-gen-14",
+        "name": "Manuel Fernández",
+        "birthDate": "2006-09-09",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

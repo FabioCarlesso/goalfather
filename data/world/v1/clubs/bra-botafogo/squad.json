@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-botafogo-gen-13",
+        "name": "Gabriel Monteiro",
+        "birthDate": "2002-10-11",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-01",
+        "name": "Hélio Freitas",
+        "birthDate": "1994-10-11",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-02",
+        "name": "Raul Freitas",
+        "birthDate": "2000-11-11",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "alex-telles",
+        "name": "Alex Telles",
+        "birthDate": "1992-12-15",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-botafogo-gen-10",
+        "name": "Alexandre Fernandes",
+        "birthDate": "1997-11-25",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-04",
+        "name": "Breno Fernandes",
+        "birthDate": "1995-02-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-03",
+        "name": "Jefferson Toledo",
+        "birthDate": "1996-09-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-08",
+        "name": "Jorge Batista",
+        "birthDate": "1995-11-07",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-06",
+        "name": "Mateus Cunha",
+        "birthDate": "1993-12-07",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-14",
+        "name": "Wesley Coelho",
+        "birthDate": "2008-04-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "allan-1991",
+        "name": "Allan",
+        "birthDate": "1991-01-08",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "cristian-medina",
+        "name": "Cristian Medina",
+        "birthDate": "2002-06-01",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "hakim-ziyech",
+        "name": "Hakim Ziyech",
+        "birthDate": "1993-03-19",
+        "nationality": "MAR",
+        "position": "MF"
+      },
+      {
+        "id": "rhuan",
+        "name": "Rhuan",
+        "birthDate": "2000-01-25",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "rickson",
+        "name": "Rickson",
+        "birthDate": "1998-06-30",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-botafogo-gen-15",
+        "name": "Bruno Gonçalves",
+        "birthDate": "2002-06-10",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-11",
+        "name": "José Nascimento",
+        "birthDate": "1995-06-15",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-07",
+        "name": "Anderson Rezende",
+        "birthDate": "1997-01-31",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-05",
+        "name": "Cláudio Pereira",
+        "birthDate": "1996-12-15",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-09",
+        "name": "Hugo Abreu",
+        "birthDate": "1999-09-17",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-12",
+        "name": "José Borges",
+        "birthDate": "1999-11-20",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-botafogo-gen-16",
+        "name": "Murilo Siqueira",
+        "birthDate": "1997-05-26",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

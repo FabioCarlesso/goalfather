@@ -68,12 +68,25 @@ class RoundOptimisticLockIntegrationTest {
     fun `finishRound so devolve true para o primeiro chamador`(): Unit = runBlocking {
         val number = 9102
         leagueRepo.saveRound(round(number))
+        leagueRepo.startRound(farMatchday(number)) // só encaixe liberado termina
 
         val finished = round(number).copy(status = RoundStatus.Finished)
         assertTrue(leagueRepo.finishRound(finished), "o primeiro chamador vence a corrida")
         assertFalse(leagueRepo.finishRound(finished), "o segundo desiste sem aplicar efeitos")
 
         assertEquals(RoundStatus.Finished, leagueRepo.findRound(farMatchday(number))?.status)
+    }
+
+    @Test
+    fun `finishRound recusa encaixe ainda agendado`(): Unit = runBlocking {
+        // Stream órfão: a coroutine da rodada sobrevive ao cliente e, se o
+        // estado foi recriado (reset do profile e2e), o mesmo encaixe
+        // reaparece Scheduled. Ele não pode aplicar efeitos na liga nova.
+        val number = 9107
+        leagueRepo.saveRound(round(number))
+
+        assertFalse(leagueRepo.finishRound(round(number).copy(status = RoundStatus.Finished)))
+        assertEquals(RoundStatus.Scheduled, leagueRepo.findRound(farMatchday(number))?.status)
     }
 
     @Test
@@ -119,6 +132,7 @@ class RoundOptimisticLockIntegrationTest {
         // guard de status da linha dele, que já está Finished.
         val number = 9105
         leagueRepo.saveRound(round(number))
+        leagueRepo.startRound(farMatchday(number))
         assertTrue(leagueRepo.finishRound(round(number).copy(status = RoundStatus.Finished)))
 
         val nextSeason = Round(matchday = farMatchday(9155), season = 2027, matches = emptyList())
@@ -141,7 +155,10 @@ class RoundOptimisticLockIntegrationTest {
         // OptimisticLockException do @Version (se as duas leram antes de qualquer
         // commit) — o desfecho é o mesmo e é o que importa: exatamente um vence.
         val number = 9106
-        runBlocking { leagueRepo.saveRound(round(number)) }
+        runBlocking {
+            leagueRepo.saveRound(round(number))
+            leagueRepo.startRound(farMatchday(number))
+        }
         val finished = round(number).copy(status = RoundStatus.Finished)
 
         val barrier = CyclicBarrier(2)

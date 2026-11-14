@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "marko-dmitrovic",
+        "name": "Marko Dmitrović",
+        "birthDate": "1992-01-24",
+        "nationality": "SRB",
+        "position": "GK"
+      },
+      {
+        "id": "esp-espanyol-gen-01",
+        "name": "Luis Martín",
+        "birthDate": "1999-02-19",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "andoni-gorosabel",
+        "name": "Andoni Gorosabel",
+        "birthDate": "1996-08-04",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "charles-pickel",
+        "name": "Charles Pickel",
+        "birthDate": "1997-05-15",
+        "nationality": "COD",
+        "secondNationality": "SUI",
+        "position": "DF"
+      },
+      {
+        "id": "leandro-cabrera",
+        "name": "Leandro Cabrera",
+        "birthDate": "1991-06-17",
+        "nationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "miguel-angel-rubio-lestan",
+        "name": "Miguel Ángel Rubio Lestán",
+        "birthDate": "1998-03-11",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "omar-el-hilali",
+        "name": "Omar El Hilali",
+        "birthDate": "2003-09-03",
+        "nationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "pablo-ramon-parra",
+        "name": "Pablo Ramón Parra",
+        "birthDate": "2001-06-30",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "quilindschy-hartman",
+        "name": "Quilindschy Hartman",
+        "birthDate": "2001-11-14",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "unai-nunez",
+        "name": "Unai Núñez",
+        "birthDate": "1997-01-30",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "urko-gonzalez",
+        "name": "Urko González",
+        "birthDate": "2001-03-20",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "victor-gomez-perea",
+        "name": "Víctor Gómez Perea",
+        "birthDate": "2000-04-01",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "bryan-zaragoza",
+        "name": "Bryan Zaragoza",
+        "birthDate": "2001-09-09",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "edu-exposito",
+        "name": "Edu Expósito",
+        "birthDate": "1996-08-01",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "gabriel-moscardo",
+        "name": "Gabriel Moscardo",
+        "birthDate": "2005-09-28",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "pere-milla-pena",
+        "name": "Pere Milla Peña",
+        "birthDate": "1992-09-23",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "ramon-terrats",
+        "name": "Ramón Terrats",
+        "birthDate": "2000-10-18",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "wu-lei",
+        "name": "Wu Lei",
+        "birthDate": "1991-11-19",
+        "nationality": "CHN",
+        "position": "MF"
+      },
+      {
+        "id": "enrique-garcia-martinez",
+        "name": "Enrique García Martínez",
+        "birthDate": "1989-11-25",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "landry-dimata",
+        "name": "Landry Dimata",
+        "birthDate": "1997-09-01",
+        "nationality": "BEL",
+        "position": "FW"
+      },
+      {
+        "id": "tyrhys-dolan",
+        "name": "Tyrhys Dolan",
+        "birthDate": "2001-12-28",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "esp-espanyol-gen-02",
+        "name": "David Martínez",
+        "birthDate": "2002-01-16",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

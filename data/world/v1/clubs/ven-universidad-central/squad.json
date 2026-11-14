@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ven-universidad-central-gen-19",
+        "name": "Brian Silva",
+        "birthDate": "2000-10-27",
+        "nationality": "VEN",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-02",
+        "name": "Juan Pablo Villalba",
+        "birthDate": "2001-03-13",
+        "nationality": "VEN",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-01",
+        "name": "Nicolás Romero",
+        "birthDate": "1993-07-11",
+        "nationality": "VEN",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-20",
+        "name": "Bruno Quintero",
+        "birthDate": "2002-07-01",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-05",
+        "name": "Franco Villalba",
+        "birthDate": "2007-06-25",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-03",
+        "name": "Gonzalo Pereyra",
+        "birthDate": "1999-11-14",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-07",
+        "name": "Julián Méndez",
+        "birthDate": "1994-10-20",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-10",
+        "name": "Lautaro Gómez",
+        "birthDate": "1996-03-07",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-13",
+        "name": "Lautaro Valdez",
+        "birthDate": "2004-11-21",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-16",
+        "name": "Sebastián Torres",
+        "birthDate": "2008-02-15",
+        "nationality": "VEN",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-04",
+        "name": "Brian Gómez",
+        "birthDate": "2003-04-27",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-11",
+        "name": "Lautaro Ibarra",
+        "birthDate": "1996-07-20",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-06",
+        "name": "Nahuel Torres",
+        "birthDate": "2004-08-29",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-17",
+        "name": "Nicolás Ibarra",
+        "birthDate": "2003-10-03",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-21",
+        "name": "Santiago Méndez",
+        "birthDate": "2006-07-17",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-14",
+        "name": "Tomás Giménez",
+        "birthDate": "1994-10-22",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-08",
+        "name": "Walter Valdez",
+        "birthDate": "2008-01-25",
+        "nationality": "VEN",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-09",
+        "name": "Julián Acosta",
+        "birthDate": "1995-02-14",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-15",
+        "name": "Lucas Duarte",
+        "birthDate": "1997-06-18",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-12",
+        "name": "Luciano Ríos",
+        "birthDate": "1995-08-12",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-18",
+        "name": "Nicolás Pereyra",
+        "birthDate": "1994-08-28",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ven-universidad-central-gen-22",
+        "name": "Tomás Sosa",
+        "birthDate": "2004-05-11",
+        "nationality": "VEN",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

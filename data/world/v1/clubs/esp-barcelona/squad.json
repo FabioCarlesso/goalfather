@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "dominik-livakovic",
+        "name": "Dominik Livaković",
+        "birthDate": "1995-01-09",
+        "nationality": "CRO",
+        "position": "GK"
+      },
+      {
+        "id": "joan-garcia",
+        "name": "Joan Garcia",
+        "birthDate": "2001-05-04",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "wojciech-szczesny",
+        "name": "Wojciech Szczęsny",
+        "birthDate": "1990-04-18",
+        "nationality": "POL",
+        "position": "GK"
+      },
+      {
+        "id": "alejandro-balde",
+        "name": "Alejandro Balde",
+        "birthDate": "2003-10-18",
+        "nationality": "ESP",
+        "secondNationality": "DOM",
+        "position": "DF"
+      },
+      {
+        "id": "andreas-christensen",
+        "name": "Andreas Christensen",
+        "birthDate": "1996-04-10",
+        "nationality": "DEN",
+        "position": "DF"
+      },
+      {
+        "id": "andres-cuenca",
+        "name": "Andrés Cuenca",
+        "birthDate": "2007-06-11",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "gerard-martin",
+        "name": "Gerard Martín",
+        "birthDate": "2002-02-26",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "jimer-fory",
+        "name": "Jimer Fory",
+        "birthDate": "2002-05-24",
+        "nationality": "COL",
+        "position": "DF"
+      },
+      {
+        "id": "joao-cancelo",
+        "name": "João Cancelo",
+        "birthDate": "1994-05-27",
+        "nationality": "POR",
+        "position": "DF"
+      },
+      {
+        "id": "jules-kounde",
+        "name": "Jules Koundé",
+        "birthDate": "1998-11-12",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "pau-cubarsi",
+        "name": "Pau Cubarsí",
+        "birthDate": "2007-01-22",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "xavi-espart",
+        "name": "Xavi Espart",
+        "birthDate": "2007-05-21",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "dani-olmo",
+        "name": "Dani Olmo",
+        "birthDate": "1998-05-07",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "fermin-lopez",
+        "name": "Fermín López",
+        "birthDate": "2003-05-11",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "frenkie-de-jong",
+        "name": "Frenkie de Jong",
+        "birthDate": "1997-05-12",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "gavi",
+        "name": "Gavi",
+        "birthDate": "2004-08-05",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "marc-bernal",
+        "name": "Marc Bernal",
+        "birthDate": "2007-05-26",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "rodri",
+        "name": "Rodri",
+        "birthDate": "1996-06-22",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "anthony-gordon",
+        "name": "Anthony Gordon",
+        "birthDate": "2001-02-24",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "gabriel-jesus",
+        "name": "Gabriel Jesus",
+        "birthDate": "1997-04-03",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "karim-adeyemi",
+        "name": "Karim Adeyemi",
+        "birthDate": "2002-01-18",
+        "nationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "lamine-yamal",
+        "name": "Lamine Yamal",
+        "birthDate": "2007-07-13",
+        "nationality": "ESP",
+        "secondNationality": "EQG",
+        "position": "FW"
+      },
+      {
+        "id": "raphinha",
+        "name": "Raphinha",
+        "birthDate": "1996-12-14",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "roony-bardghji",
+        "name": "Roony Bardghji",
+        "birthDate": "2005-11-15",
+        "nationality": "SWE",
+        "secondNationality": "KUW",
+        "position": "FW"
+      }
+    ]
+  }
+}

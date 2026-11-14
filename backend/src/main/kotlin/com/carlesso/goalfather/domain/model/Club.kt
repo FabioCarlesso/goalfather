@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.model
 
 import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
+import com.carlesso.goalfather.domain.rules.isForeignAt
 import com.carlesso.goalfather.domain.serialization.ClubIdSerializer
 import kotlinx.serialization.Serializable
 
@@ -90,26 +91,52 @@ data class Club(
      *    lesionado, mas isso vale para o momento de SALVAR: quem se machuca
      *    depois continuaria titular na rodada seguinte se a escalação não
      *    fosse revalidada aqui, no apito inicial.
+     * 3. **Suspenso não entra em campo** (issue #130) — mas só nos jogos da
+     *    [competition] em que cumpre gancho: suspenso na liga joga a copa.
+     * 4. **Limite de estrangeiros** (issue #130): com [foreignPlayerLimit], os
+     *    estrangeiros além do limite ficam fora (os últimos da escalação), e a
+     *    vaga vai para um reserva que não estoure o limite. É o que faz a
+     *    escalação AUTOMÁTICA (clube da IA, sem `lineup`) respeitar a regra.
      *
-     * As vagas abertas pelos lesionados são preenchidas por reservas aptos, na
-     * ordem do elenco — substituição simples e determinística, não uma
-     * auto-escalação inteligente (não tenta casar posição: a validação
-     * posicional segue fora do domínio, como no `SaveLineupService`). Sem
-     * reservas aptos suficientes o time entra desfalcado, com menos de 11 —
-     * que é o resultado correto para um elenco dizimado.
+     * As vagas abertas são preenchidas por reservas aptos, na ordem do elenco
+     * — substituição simples e determinística, não uma auto-escalação
+     * inteligente (não tenta casar posição: a validação posicional segue fora
+     * do domínio, como no `SaveLineupService`). Sem reservas aptos suficientes
+     * o time entra desfalcado, com menos de 11 — que é o resultado correto para
+     * um elenco dizimado.
+     *
+     * Os parâmetros têm default `null` (sem competição, sem limite): partida
+     * avulsa e telas que não sabem o jogo seguinte continuam chamando
+     * `startingLineup()` como antes.
      */
-    fun startingLineup(): Lineup {
+    fun startingLineup(competition: CompetitionId? = null, foreignPlayerLimit: Int? = null): Lineup {
         val byId = squad.associateBy { it.id }
-        val available = squad.filterNot { it.injured }
+        val eligible = squad.filter { it.canPlayIn(competition) }
+        val saved = lineup
 
-        val saved = lineup ?: return Lineup(
-            formation = Formation.F_4_4_2,
-            players = available.take(11),
-        )
-
-        val starters = saved.players.mapNotNull { byId[it.id] }.filterNot { it.injured }
+        val starters = saved?.players.orEmpty().mapNotNull { byId[it.id] }.filter { it.canPlayIn(competition) }
         val onField = starters.map { it.id }.toSet()
-        val substitutes = available.filterNot { it.id in onField }
-        return saved.copy(players = (starters + substitutes).take(11))
+        // Titulares primeiro, depois reservas: o filtro de estrangeiros corta
+        // sempre do fim, então quem o técnico escalou tem prioridade.
+        val candidates = starters + eligible.filterNot { it.id in onField }
+        val players = candidates.withinForeignLimit(foreignPlayerLimit).take(11)
+
+        return saved?.copy(players = players) ?: Lineup(formation = Formation.F_4_4_2, players = players)
+    }
+
+    /**
+     * Mantém a ordem e pula o estrangeiro que estouraria [limit]. `fold` com um
+     * `Pair` acumula a lista e a contagem sem `var` — o "for com contador" do
+     * Java vira uma redução imutável.
+     */
+    private fun List<Player>.withinForeignLimit(limit: Int?): List<Player> {
+        if (limit == null) return this
+        return fold(emptyList<Player>() to 0) { (kept, foreigners), player ->
+            when {
+                !player.isForeignAt(this@Club) -> (kept + player) to foreigners
+                foreigners < limit -> (kept + player) to foreigners + 1
+                else -> kept to foreigners
+            }
+        }.first
     }
 }

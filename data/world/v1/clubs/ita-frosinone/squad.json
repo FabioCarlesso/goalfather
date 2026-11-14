@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ita-frosinone-gen-01",
+        "name": "Emanuele De Luca",
+        "birthDate": "2002-01-28",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-11",
+        "name": "Luca Santoro",
+        "birthDate": "2001-05-15",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-02",
+        "name": "Riccardo Barbieri",
+        "birthDate": "2007-06-20",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "gabriele-calvani",
+        "name": "Gabriele Calvani",
+        "birthDate": "2004-01-12",
+        "nationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-frosinone-gen-07",
+        "name": "Filippo Martini",
+        "birthDate": "1996-11-02",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-09",
+        "name": "Giovanni Fontana",
+        "birthDate": "2001-07-24",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-04",
+        "name": "Michele Ferrari",
+        "birthDate": "1995-04-16",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-03",
+        "name": "Riccardo Greco",
+        "birthDate": "2006-12-14",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-05",
+        "name": "Riccardo Santoro",
+        "birthDate": "2001-06-03",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-12",
+        "name": "Tommaso Bruno",
+        "birthDate": "2004-07-08",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "florian-grillitsch",
+        "name": "Florian Grillitsch",
+        "birthDate": "1995-08-07",
+        "nationality": "AUT",
+        "position": "MF"
+      },
+      {
+        "id": "patrizio-masini",
+        "name": "Patrizio Masini",
+        "birthDate": "2001-01-27",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "romano-schmid",
+        "name": "Romano Schmid",
+        "birthDate": "2000-01-27",
+        "nationality": "AUT",
+        "position": "MF"
+      },
+      {
+        "id": "ita-frosinone-gen-08",
+        "name": "Daniele Giordano",
+        "birthDate": "2005-09-27",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-06",
+        "name": "Emanuele Lombardi",
+        "birthDate": "2005-04-10",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-13",
+        "name": "Leonardo Marino",
+        "birthDate": "2008-05-15",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-frosinone-gen-10",
+        "name": "Valerio Costa",
+        "birthDate": "1994-11-19",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "alejandro-cichero-terrero",
+        "name": "Alejandro Cichero Terrero",
+        "birthDate": "2006-07-11",
+        "nationality": "VEN",
+        "secondNationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "daniel-birligea",
+        "name": "Daniel Bîrligea",
+        "birthDate": "2000-04-19",
+        "nationality": "ROU",
+        "position": "FW"
+      },
+      {
+        "id": "roberto-insigne",
+        "name": "Roberto Insigne",
+        "birthDate": "1994-05-11",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "tomas-bobcek",
+        "name": "Tomáš Bobček",
+        "birthDate": "2001-09-08",
+        "nationality": "SVK",
+        "position": "FW"
+      },
+      {
+        "id": "ita-frosinone-gen-14",
+        "name": "Davide Conti",
+        "birthDate": "1997-08-14",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

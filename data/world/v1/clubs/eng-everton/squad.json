@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "eng-everton-gen-14",
+        "name": "Daniel Hughes",
+        "birthDate": "2001-04-29",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-01",
+        "name": "Lewis Edwards",
+        "birthDate": "1994-10-08",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-02",
+        "name": "Tyler Robinson",
+        "birthDate": "1997-09-13",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ainsley-maitland-niles",
+        "name": "Ainsley Maitland-Niles",
+        "birthDate": "1997-08-29",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "vitaliy-mykolenko",
+        "name": "Vitaliy Mykolenko",
+        "birthDate": "1999-05-29",
+        "nationality": "UKR",
+        "position": "DF"
+      },
+      {
+        "id": "eng-everton-gen-11",
+        "name": "Mason Johnson",
+        "birthDate": "2004-08-06",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-08",
+        "name": "Matthew Cooper",
+        "birthDate": "2004-09-26",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-05",
+        "name": "Oliver Bennett",
+        "birthDate": "1999-12-21",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-15",
+        "name": "Oliver Cole",
+        "birthDate": "1998-05-14",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-03",
+        "name": "Tom Edwards",
+        "birthDate": "2007-11-04",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jack-grealish",
+        "name": "Jack Grealish",
+        "birthDate": "1995-09-10",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "kiernan-dewsbury-hall",
+        "name": "Kiernan Dewsbury-Hall",
+        "birthDate": "1998-09-06",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "shea-pita",
+        "name": "Shea Pita",
+        "birthDate": "2009-05-03",
+        "nationality": "WAL",
+        "secondNationality": "VEN",
+        "position": "MF"
+      },
+      {
+        "id": "eng-everton-gen-06",
+        "name": "Adam Bailey",
+        "birthDate": "2003-05-13",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-09",
+        "name": "Callum Harris",
+        "birthDate": "2000-06-12",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-12",
+        "name": "Callum Morgan",
+        "birthDate": "2001-07-12",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-16",
+        "name": "Jack Carter",
+        "birthDate": "1997-04-05",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-10",
+        "name": "Dominic Barnes",
+        "birthDate": "2007-01-19",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-07",
+        "name": "Jacob Green",
+        "birthDate": "2003-12-26",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-04",
+        "name": "Josh Green",
+        "birthDate": "2008-03-17",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-13",
+        "name": "Mason Turner",
+        "birthDate": "2000-04-17",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-everton-gen-17",
+        "name": "Oliver Davies",
+        "birthDate": "2003-06-04",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "marko-marosi",
+        "name": "Marko Maroši",
+        "birthDate": "1993-10-23",
+        "nationality": "SVK",
+        "position": "GK"
+      },
+      {
+        "id": "eng-coventry-city-gen-14",
+        "name": "Adam Bailey",
+        "birthDate": "2002-03-06",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-01",
+        "name": "Reece Phillips",
+        "birthDate": "2005-01-28",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "joel-latibeaudiere",
+        "name": "Joel Latibeaudiere",
+        "birthDate": "2000-01-06",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "eng-coventry-city-gen-08",
+        "name": "George Green",
+        "birthDate": "2000-06-08",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-15",
+        "name": "Harry Robinson",
+        "birthDate": "1999-05-10",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-11",
+        "name": "Jack Morris",
+        "birthDate": "2004-08-26",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-04",
+        "name": "Jake Mills",
+        "birthDate": "2008-05-28",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-02",
+        "name": "Matthew Ward",
+        "birthDate": "1996-05-10",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-06",
+        "name": "Scott Watson",
+        "birthDate": "2000-10-29",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jack-rudoni",
+        "name": "Jack Rudoni",
+        "birthDate": "2001-06-14",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "eng-coventry-city-gen-16",
+        "name": "Dominic Davies",
+        "birthDate": "1999-05-01",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-05",
+        "name": "Finley Clarke",
+        "birthDate": "2004-08-16",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-12",
+        "name": "Josh Morgan",
+        "birthDate": "1999-04-12",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-07",
+        "name": "Liam Hall",
+        "birthDate": "1998-03-05",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-09",
+        "name": "Ryan Robinson",
+        "birthDate": "2006-01-05",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-03",
+        "name": "Tom Edwards",
+        "birthDate": "2006-05-28",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "haji-wright",
+        "name": "Haji Wright",
+        "birthDate": "1998-03-27",
+        "nationality": "USA",
+        "position": "FW"
+      },
+      {
+        "id": "taiwo-awoniyi",
+        "name": "Taiwo Awoniyi",
+        "birthDate": "1997-08-12",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "eng-coventry-city-gen-10",
+        "name": "Callum Wilson",
+        "birthDate": "2005-01-09",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-13",
+        "name": "Jake Phillips",
+        "birthDate": "1998-05-10",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-coventry-city-gen-17",
+        "name": "Lewis Morris",
+        "birthDate": "2003-10-17",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

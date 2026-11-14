@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "eng-brighton-gen-02",
+        "name": "Ben Wright",
+        "birthDate": "1999-01-10",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-brighton-gen-07",
+        "name": "Finley Edwards",
+        "birthDate": "1996-02-06",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-brighton-gen-01",
+        "name": "Jacob Mills",
+        "birthDate": "2007-12-23",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "adam-webster",
+        "name": "Adam Webster",
+        "birthDate": "1995-01-04",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "luka-vuskovic",
+        "name": "Luka Vušković",
+        "birthDate": "2007-02-24",
+        "nationality": "CRO",
+        "position": "DF"
+      },
+      {
+        "id": "maxim-de-cuyper",
+        "name": "Maxim De Cuyper",
+        "birthDate": "2000-12-22",
+        "nationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "pascal-struijk",
+        "name": "Pascal Struijk",
+        "birthDate": "1999-08-11",
+        "nationality": "NED",
+        "secondNationality": "BEL",
+        "position": "DF"
+      },
+      {
+        "id": "eng-brighton-gen-03",
+        "name": "Adam Robinson",
+        "birthDate": "1998-01-18",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-brighton-gen-05",
+        "name": "Joe Hall",
+        "birthDate": "2004-04-26",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-brighton-gen-08",
+        "name": "Reece Wilson",
+        "birthDate": "2000-01-12",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chema-andres",
+        "name": "Chema Andrés",
+        "birthDate": "2005-04-25",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "diego-gomez",
+        "name": "Diego Gómez",
+        "birthDate": "2003-03-27",
+        "nationality": "PAR",
+        "position": "MF"
+      },
+      {
+        "id": "ferdi-kadioglu",
+        "name": "Ferdi Kadıoğlu",
+        "birthDate": "1999-10-07",
+        "nationality": "TUR",
+        "secondNationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "kaoru-mitoma",
+        "name": "Kaoru Mitoma",
+        "birthDate": "1997-05-20",
+        "nationality": "JPN",
+        "position": "MF"
+      },
+      {
+        "id": "mats-wieffer",
+        "name": "Mats Wieffer",
+        "birthDate": "1999-11-16",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "matt-o-riley",
+        "name": "Matt O'Riley",
+        "birthDate": "2000-11-21",
+        "nationality": "DEN",
+        "position": "MF"
+      },
+      {
+        "id": "pascal-gross",
+        "name": "Pascal Groß",
+        "birthDate": "1991-06-15",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "georginio-rutter",
+        "name": "Georginio Rutter",
+        "birthDate": "2002-04-20",
+        "nationality": "FRA",
+        "position": "FW"
+      },
+      {
+        "id": "yankuba-minteh",
+        "name": "Yankuba Minteh",
+        "birthDate": "2004-07-22",
+        "nationality": "GAM",
+        "position": "FW"
+      },
+      {
+        "id": "eng-brighton-gen-09",
+        "name": "Daniel Morgan",
+        "birthDate": "2007-01-01",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-brighton-gen-06",
+        "name": "Dominic Clarke",
+        "birthDate": "2004-03-12",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-brighton-gen-04",
+        "name": "Tom Edwards",
+        "birthDate": "2004-02-27",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

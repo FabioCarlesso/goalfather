@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "alvaro-preciado",
+        "name": "Álvaro Preciado",
+        "birthDate": "1997-11-20",
+        "nationality": "ECU",
+        "position": "GK"
+      },
+      {
+        "id": "ecu-barcelona-gen-17",
+        "name": "Alexis Rojas",
+        "birthDate": "1997-07-13",
+        "nationality": "ECU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-01",
+        "name": "Federico Ruiz",
+        "birthDate": "1994-04-22",
+        "nationality": "ECU",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-08",
+        "name": "Damián Valdez",
+        "birthDate": "1997-04-24",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-06",
+        "name": "Ezequiel Duarte",
+        "birthDate": "1996-08-26",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-11",
+        "name": "Federico Castillo",
+        "birthDate": "2008-04-17",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-02",
+        "name": "Jonathan Torres",
+        "birthDate": "1996-10-27",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-14",
+        "name": "Juan Pablo Aguirre",
+        "birthDate": "2001-12-04",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-04",
+        "name": "Lucas Acosta",
+        "birthDate": "2008-02-26",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-18",
+        "name": "Valentín González",
+        "birthDate": "2002-08-07",
+        "nationality": "ECU",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-03",
+        "name": "Agustín Rojas",
+        "birthDate": "2002-11-24",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-19",
+        "name": "Brian Ramírez",
+        "birthDate": "2006-08-01",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-07",
+        "name": "Federico Silva",
+        "birthDate": "1994-01-31",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-12",
+        "name": "Gastón Cabrera",
+        "birthDate": "1997-09-24",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-15",
+        "name": "Jhon Aguirre",
+        "birthDate": "2006-04-14",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-09",
+        "name": "Kevin Herrera",
+        "birthDate": "2001-02-18",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-05",
+        "name": "Lucas González",
+        "birthDate": "2007-05-06",
+        "nationality": "ECU",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "cristian-penilla",
+        "name": "Cristian Penilla",
+        "birthDate": "1991-05-02",
+        "nationality": "ECU",
+        "position": "FW"
+      },
+      {
+        "id": "ecu-barcelona-gen-20",
+        "name": "Bruno Rojas",
+        "birthDate": "1998-09-03",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-16",
+        "name": "Gonzalo Castillo",
+        "birthDate": "2006-02-25",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-10",
+        "name": "Lucas Cabrera",
+        "birthDate": "2005-06-18",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ecu-barcelona-gen-13",
+        "name": "Yeferson Acosta",
+        "birthDate": "1999-09-27",
+        "nationality": "ECU",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

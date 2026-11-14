@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-goias-gen-02",
+        "name": "Davi Queiroz",
+        "birthDate": "2002-09-15",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-01",
+        "name": "Gilberto Dias",
+        "birthDate": "1993-12-15",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-17",
+        "name": "Roberto Souza",
+        "birthDate": "1995-04-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-08",
+        "name": "Danilo Coelho",
+        "birthDate": "2006-02-10",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-11",
+        "name": "Jorge Cardoso",
+        "birthDate": "1999-01-24",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-18",
+        "name": "Jorge Duarte",
+        "birthDate": "1999-06-16",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-14",
+        "name": "Jorge Monteiro",
+        "birthDate": "2006-07-29",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-06",
+        "name": "Jorge Vieira",
+        "birthDate": "2002-10-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-04",
+        "name": "Leonardo Abreu",
+        "birthDate": "2001-04-01",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-03",
+        "name": "Samuel Azevedo",
+        "birthDate": "2001-12-07",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "juan-pintado",
+        "name": "Juan Pintado",
+        "birthDate": "1997-07-28",
+        "nationality": "URU",
+        "position": "MF"
+      },
+      {
+        "id": "bra-goias-gen-05",
+        "name": "Daniel Oliveira",
+        "birthDate": "1994-03-26",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-09",
+        "name": "Douglas Martins",
+        "birthDate": "1997-08-26",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-19",
+        "name": "Luan Borges",
+        "birthDate": "2005-06-29",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-15",
+        "name": "Murilo Siqueira",
+        "birthDate": "2002-10-05",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-07",
+        "name": "Raul Pereira",
+        "birthDate": "2003-01-28",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-12",
+        "name": "Rogério Fonseca",
+        "birthDate": "2001-10-22",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "vinicius-lopes",
+        "name": "Vinícius Lopes",
+        "birthDate": "1999-05-07",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-goias-gen-10",
+        "name": "Guilherme Teixeira",
+        "birthDate": "2008-05-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-20",
+        "name": "Marcelo Correia",
+        "birthDate": "1994-01-14",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-13",
+        "name": "Maurício Batista",
+        "birthDate": "2005-04-02",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-goias-gen-16",
+        "name": "Raul Xavier",
+        "birthDate": "1997-11-17",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

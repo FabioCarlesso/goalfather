@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "emiliano-martinez",
+        "name": "Emiliano Martínez",
+        "birthDate": "1992-09-02",
+        "nationality": "ARG",
+        "position": "GK"
+      },
+      {
+        "id": "eng-chelsea-gen-01",
+        "name": "George Evans",
+        "birthDate": "1995-06-13",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-chelsea-gen-06",
+        "name": "Jake Walker",
+        "birthDate": "2002-08-06",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "jorrel-hato",
+        "name": "Jorrel Hato",
+        "birthDate": "2006-03-07",
+        "nationality": "NED",
+        "position": "DF"
+      },
+      {
+        "id": "josh-acheampong",
+        "name": "Josh Acheampong",
+        "birthDate": "2006-05-05",
+        "nationality": "ENG",
+        "secondNationality": "IRL",
+        "position": "DF"
+      },
+      {
+        "id": "maxence-lacroix",
+        "name": "Maxence Lacroix",
+        "birthDate": "2000-04-06",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "eng-chelsea-gen-02",
+        "name": "George Bennett",
+        "birthDate": "1999-11-27",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-chelsea-gen-07",
+        "name": "Jack Wilson",
+        "birthDate": "1996-03-24",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-chelsea-gen-04",
+        "name": "Luke Watson",
+        "birthDate": "1997-04-11",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-chelsea-gen-03",
+        "name": "Ryan Morris",
+        "birthDate": "2003-10-25",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "cole-palmer",
+        "name": "Cole Palmer",
+        "birthDate": "2002-05-06",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "jordan-henderson",
+        "name": "Jordan Henderson",
+        "birthDate": "1990-06-17",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "lesley-ugochukwu",
+        "name": "Lesley Ugochukwu",
+        "birthDate": "2004-03-26",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "malo-gusto",
+        "name": "Malo Gusto",
+        "birthDate": "2003-05-19",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "moises-caicedo",
+        "name": "Moisés Caicedo",
+        "birthDate": "2001-11-02",
+        "nationality": "ECU",
+        "position": "MF"
+      },
+      {
+        "id": "morgan-rogers",
+        "name": "Morgan Rogers",
+        "birthDate": "2002-07-26",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "romeo-lavia",
+        "name": "Roméo Lavia",
+        "birthDate": "2004-01-06",
+        "nationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "danny-welbeck",
+        "name": "Danny Welbeck",
+        "birthDate": "1990-11-26",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "joao-pedro-junqueira-de-jesus",
+        "name": "João Pedro Junqueira de Jesus",
+        "birthDate": "2001-09-26",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "pedro-neto",
+        "name": "Pedro Neto",
+        "birthDate": "2000-03-09",
+        "nationality": "POR",
+        "position": "FW"
+      },
+      {
+        "id": "eng-chelsea-gen-05",
+        "name": "Jacob Parker",
+        "birthDate": "1995-02-25",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-chelsea-gen-08",
+        "name": "Joe Turner",
+        "birthDate": "1997-04-21",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

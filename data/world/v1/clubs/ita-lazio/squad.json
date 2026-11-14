@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ita-lazio-gen-09",
+        "name": "Manuel Fabbri",
+        "birthDate": "1995-12-26",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-01",
+        "name": "Marco Ferrara",
+        "birthDate": "2007-09-07",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-02",
+        "name": "Mattia Giordano",
+        "birthDate": "2001-12-22",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "roger-ibanez",
+        "name": "Roger Ibañez",
+        "birthDate": "1998-11-23",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-lazio-gen-07",
+        "name": "Francesco Bruno",
+        "birthDate": "2004-02-16",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-04",
+        "name": "Giuseppe Rinaldi",
+        "birthDate": "1994-08-09",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-06",
+        "name": "Luca Marino",
+        "birthDate": "2000-12-17",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-10",
+        "name": "Matteo Ferrara",
+        "birthDate": "2002-12-22",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-03",
+        "name": "Matteo Pellegrini",
+        "birthDate": "1993-10-09",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-05",
+        "name": "Roberto Rinaldi",
+        "birthDate": "1997-10-10",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "albert-gudmundsson",
+        "name": "Albert Guðmundsson",
+        "birthDate": "1997-06-15",
+        "nationality": "ISL",
+        "position": "MF"
+      },
+      {
+        "id": "davide-frattesi",
+        "name": "Davide Frattesi",
+        "birthDate": "1999-09-22",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "fabio-maistro",
+        "name": "Fabio Maistro",
+        "birthDate": "1998-04-05",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "jonathan-rodriguez-menendez",
+        "name": "Jonathan Rodríguez Menéndez",
+        "birthDate": "1991-07-09",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "kenneth-taylor",
+        "name": "Kenneth Taylor",
+        "birthDate": "2002-05-16",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "mattia-zaccagni",
+        "name": "Mattia Zaccagni",
+        "birthDate": "1995-06-16",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "ita-lazio-gen-11",
+        "name": "Luca Serra",
+        "birthDate": "2005-05-08",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "andrea-pinamonti",
+        "name": "Andrea Pinamonti",
+        "birthDate": "1999-05-19",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "bobby-adekanye",
+        "name": "Bobby Adekanye",
+        "birthDate": "1999-02-14",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "gustav-isaksen",
+        "name": "Gustav Isaksen",
+        "birthDate": "2001-04-19",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "ita-lazio-gen-08",
+        "name": "Davide Villa",
+        "birthDate": "1997-05-17",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-lazio-gen-12",
+        "name": "Giovanni Russo",
+        "birthDate": "1995-12-15",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

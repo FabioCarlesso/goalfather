@@ -29,8 +29,18 @@ data class Competition(
     val name: String,
     val format: CompetitionFormat,
     val tiebreakers: List<Tiebreaker> = DEFAULT_TIEBREAKERS,
+    /** Suspensão por cartões nesta competição (issue #130). */
+    val discipline: DisciplineRules = DisciplineRules.DEFAULT,
+    /**
+     * Máximo de estrangeiros em campo por partida (issue #130); `null` = sem
+     * limite (Champions, Libertadores). Ausência no tipo, não um `0` mágico.
+     */
+    val foreignPlayerLimit: Int? = null,
 ) {
     init {
+        require(foreignPlayerLimit == null || foreignPlayerLimit >= 0) {
+            "Limite de estrangeiros negativo em ${id.value}: $foreignPlayerLimit"
+        }
         require(name.isNotBlank()) { "Competição sem nome: ${id.value}" }
         require(tiebreakers.firstOrNull() == Tiebreaker.POINTS) {
             "O primeiro critério de uma tabela é sempre POINTS: $tiebreakers"

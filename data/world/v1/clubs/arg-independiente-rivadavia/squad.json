@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "arg-independiente-rivadavia-gen-01",
+        "name": "Jonathan Herrera",
+        "birthDate": "2008-04-27",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-18",
+        "name": "Jonathan Pereyra",
+        "birthDate": "1997-09-08",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-02",
+        "name": "Kevin Núñez",
+        "birthDate": "2001-05-11",
+        "nationality": "ARG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "matias-ruiz-diaz",
+        "name": "Matías Ruiz Díaz",
+        "birthDate": "1996-09-09",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-06",
+        "name": "Damián Cáceres",
+        "birthDate": "2000-06-08",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-19",
+        "name": "Emiliano Aguirre",
+        "birthDate": "2001-09-09",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-04",
+        "name": "Ezequiel Morales",
+        "birthDate": "1999-01-08",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-12",
+        "name": "Jhon Acosta",
+        "birthDate": "1999-01-27",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-15",
+        "name": "Jonathan Ramírez",
+        "birthDate": "2003-03-11",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-09",
+        "name": "Nicolás Rojas",
+        "birthDate": "1997-11-06",
+        "nationality": "ARG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-10",
+        "name": "Alexis Flores",
+        "birthDate": "1993-09-09",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-05",
+        "name": "Ezequiel Ruiz",
+        "birthDate": "2003-04-03",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-16",
+        "name": "Gonzalo Suárez",
+        "birthDate": "2007-02-07",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-03",
+        "name": "Jonathan Fernández",
+        "birthDate": "2006-06-10",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-13",
+        "name": "Lucas Ibarra",
+        "birthDate": "1994-04-21",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-07",
+        "name": "Nicolás Cáceres",
+        "birthDate": "2002-12-01",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-20",
+        "name": "Sebastián Vargas",
+        "birthDate": "1993-10-03",
+        "nationality": "ARG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-17",
+        "name": "Bruno Quintero",
+        "birthDate": "1999-05-19",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-08",
+        "name": "Cristian Ramírez",
+        "birthDate": "2003-12-23",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-21",
+        "name": "Gonzalo Pereyra",
+        "birthDate": "2007-08-05",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-14",
+        "name": "Joaquín Rojas",
+        "birthDate": "2003-05-17",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "arg-independiente-rivadavia-gen-11",
+        "name": "Rodrigo Cabrera",
+        "birthDate": "2004-09-12",
+        "nationality": "ARG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

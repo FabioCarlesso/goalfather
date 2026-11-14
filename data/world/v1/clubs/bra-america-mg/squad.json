@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-america-mg-gen-02",
+        "name": "Alexandre Machado",
+        "birthDate": "2005-06-21",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-01",
+        "name": "Bruno Melo",
+        "birthDate": "2000-07-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-17",
+        "name": "Otávio Abreu",
+        "birthDate": "2006-07-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-07",
+        "name": "Davi Teixeira",
+        "birthDate": "1996-06-10",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-09",
+        "name": "Everton Rocha",
+        "birthDate": "1999-09-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-05",
+        "name": "Gabriel Pinheiro",
+        "birthDate": "1993-10-24",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-03",
+        "name": "Luiz Freitas",
+        "birthDate": "1998-12-07",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-14",
+        "name": "Márcio Freitas",
+        "birthDate": "1996-02-10",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-18",
+        "name": "Márcio Nascimento",
+        "birthDate": "2000-08-17",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-11",
+        "name": "Rafael Cunha",
+        "birthDate": "2007-04-26",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-04",
+        "name": "Arthur Pinheiro",
+        "birthDate": "1997-03-07",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-12",
+        "name": "Caio Gonçalves",
+        "birthDate": "1995-09-11",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-15",
+        "name": "Hélio Lima",
+        "birthDate": "1999-07-27",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-08",
+        "name": "Leandro Melo",
+        "birthDate": "1996-06-02",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-19",
+        "name": "Maurício Gomes",
+        "birthDate": "1998-01-17",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-06",
+        "name": "Sérgio Dias",
+        "birthDate": "1996-02-18",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-10",
+        "name": "Thiago Dias",
+        "birthDate": "2000-08-04",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ribamar",
+        "name": "Ribamar",
+        "birthDate": "1997-05-21",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "willian-gomes-de-siqueira",
+        "name": "Willian Gomes de Siqueira",
+        "birthDate": "1986-11-19",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-america-mg-gen-13",
+        "name": "Anderson Fonseca",
+        "birthDate": "2001-05-29",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-16",
+        "name": "Cássio Siqueira",
+        "birthDate": "2007-03-13",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-america-mg-gen-20",
+        "name": "Luiz Castro",
+        "birthDate": "2006-01-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

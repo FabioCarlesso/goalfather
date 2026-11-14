@@ -14,6 +14,7 @@ import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
+import com.carlesso.goalfather.domain.engine.QuickMatchSimulator
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.event.TrainingReport
@@ -23,6 +24,7 @@ import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
@@ -63,6 +65,11 @@ import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.recordRound
 import com.carlesso.goalfather.domain.rules.seasonBoardReviews
 import com.carlesso.goalfather.domain.rules.seasonPlan
+import com.carlesso.goalfather.domain.rules.MatchCards
+import com.carlesso.goalfather.domain.rules.afterMatchIn
+import com.carlesso.goalfather.domain.rules.competitionByClub
+import com.carlesso.goalfather.domain.rules.startingLineupIn
+import com.carlesso.goalfather.domain.rules.withCleanRecord
 import com.carlesso.goalfather.domain.rules.seasonRecordOf
 import com.carlesso.goalfather.domain.rules.seasonStandings
 import com.carlesso.goalfather.domain.rules.train
@@ -71,10 +78,11 @@ import com.carlesso.goalfather.domain.rules.toDismissal
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
@@ -113,6 +121,18 @@ import kotlin.random.Random
  * tabela, folha, diretoria, chave da copa. Lesões andam só para quem jogou
  * (contam jogos do clube). O próximo encaixe sai do plano da temporada
  * (`seasonPlan`), recalculado a cada fim de encaixe.
+ *
+ * **Simulação rápida (issue #129).** Só jogo com técnico humano passa pela
+ * engine completa e é transmitido lance a lance; os jogos só da IA vão para a
+ * `QuickMatchSimulator`, em paralelo, e o stream leva apenas o desfecho deles.
+ * A separação e o paralelismo moram no [MatchdaySimulator]; daqui para baixo
+ * (claim, efeitos, virada) nada sabe qual engine rodou.
+ *
+ * **Suspensões e estrangeiros (issue #130).** Cada clube entra em campo com
+ * `startingLineupIn(competição da partida)` — sem os suspensos dela e dentro do
+ * limite de estrangeiros dela — e os cartões do jogo contam só para aquela
+ * competição (`afterMatchIn`). As regras são funções puras de
+ * `domain/rules/SuspensionRules.kt`; aqui só se escolhe a competição.
  */
 class PlayRoundService(
     private val clubRepo: ClubRepository,
@@ -140,9 +160,23 @@ class PlayRoundService(
     // service sem passar métrica; em produção o BeanConfig injeta o registry real
     // (mesmo padrão do `Random`/`MatchSimulator` já injetáveis).
     private val meterRegistry: MeterRegistry = SimpleMeterRegistry(),
+    // Simulação rápida dos jogos sem técnico humano (issue #129). O dispatcher
+    // é injetável para teste; em produção, o pool de CPU do `Dispatchers.Default`.
+    quickSimulator: QuickMatchSimulator = QuickMatchSimulator(),
+    simulationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    // Claim + efeitos de um encaixe rodam com uma licença deste portão: o
+    // reset do profile e2e espera as finalizações em curso antes de apagar a
+    // liga. Default próprio para os testes que montam o service à mão.
+    private val finalizationGate: RoundFinalizationGate = RoundFinalizationGate(),
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
+
+    // Parâmetros de construtor SEM `val` só existem no `init`/inicializadores:
+    // `quickSimulator` e `simulationDispatcher` não viram propriedade do
+    // service — só montam o colaborador que de fato os usa.
+    private val matchdaySimulator =
+        MatchdaySimulator(simulator, quickSimulator, meterRegistry, simulationDispatcher)
 
     override fun stream(matchday: Matchday): Flow<RoundEvent> = flow {
         val round = leagueRepo.findRound(matchday)
@@ -164,14 +198,6 @@ class PlayRoundService(
             return@flow
         }
 
-        // Pré-computa todos os eventos de todas as partidas.
-        // (Em uma versão futura podemos intercalar geração + emissão para
-        // não materializar tudo na memória, mas com ~3 partidas × ~30
-        // eventos cabe folgado.)
-        val tagged = mutableListOf<Pair<Long, MatchEvent>>()
-        val finalScores = mutableMapOf<Long, Pair<Int, Int>>()
-        // Disputas de pênaltis da rodada de copa (issue #61), por partida.
-        val shootouts = mutableMapOf<Long, PenaltyScore>()
         // Clubes que entraram em campo nesta rodada — guardados para
         // persistir as estatísticas dos jogadores ao final (issue #2).
         val involvedClubs = mutableMapOf<Long, Club>()
@@ -185,16 +211,23 @@ class PlayRoundService(
             home?.let { involvedClubs[it.id.value] = it }
             away?.let { involvedClubs[it.id.value] = it }
 
-            match to MatchSetup(
-                home = home?.startingLineup() ?: emptyLineup(),
-                away = away?.startingLineup() ?: emptyLineup(),
+            val setup = MatchSetup(
+                // Sem suspensos daquela competição e dentro do limite de
+                // estrangeiros dela (issue #130).
+                home = home?.startingLineupIn(match.competition) ?: emptyLineup(),
+                away = away?.startingLineupIn(match.competition) ?: emptyLineup(),
                 homeName = match.homeClubName,
                 awayName = match.awayClubName,
                 // Jogo de copa = mata-mata: empate decide nos pênaltis (issue #61).
                 // Por PARTIDA desde o calendário semanal (issue #125): o mesmo
                 // encaixe pode ter liga e copa.
                 knockout = match.isKnockout,
+                homeClubId = match.homeClubId,
+                awayClubId = match.awayClubId,
             )
+            // Com técnico humano em campo → engine completa e stream; jogo só
+            // da IA → simulação rápida, sem transmissão (issue #129).
+            MatchFixture(match, setup, simulationModeOf(home, away))
         }
 
         // Fase 2 — engine: o timer cobre SÓ `simulator.simulate(...)` de todas as
@@ -206,23 +239,21 @@ class PlayRoundService(
         // Reconexão (replay de rodada já `Finished`) também gera amostra, de
         // propósito: a engine roda de novo para re-emitir os eventos, então é
         // trabalho de simulação real e entra na métrica.
+        //
+        // Desde a issue #129 o trabalho em si mora no [MatchdaySimulator]: os
+        // jogos com humano passam pela engine completa, os demais pela rápida,
+        // em paralelo. Este timer segue medindo o encaixe INTEIRO.
         val sample = Timer.start(meterRegistry)
-        for ((match, setup) in setups) {
-            for (event in simulator.simulate(setup, Random(match.matchId)).toList()) {
-                tagged.add(match.matchId to event)
-                when (event) {
-                    is MatchEvent.FullTime -> finalScores[match.matchId] = event.homeGoals to event.awayGoals
-                    is MatchEvent.PenaltyShootout ->
-                        shootouts[match.matchId] = PenaltyScore(event.homeScore, event.awayScore)
-                    else -> Unit
-                }
-            }
-        }
+        val simulated = matchdaySimulator.simulate(setups)
         sample.stop(simulationTimer)
 
+        // Só o que é transmitido: o feed inteiro dos jogos com humano e apenas
+        // o desfecho (pênaltis + FullTime, minuto 90) dos rápidos.
         // Estável por minuto: eventos de minuto igual saem juntos
         // (sensação de "vários estádios ao mesmo tempo").
-        tagged.sortBy { it.second.minute }
+        val tagged = simulated
+            .flatMap { sim -> sim.broadcast.map { sim.match.matchId to it } }
+            .sortedBy { it.second.minute }
         for ((matchId, event) in tagged) {
             emit(RoundEvent.MatchUpdate(matchId, event))
         }
@@ -245,36 +276,45 @@ class PlayRoundService(
         //
         // Antes disto era um `Mutex` in-JVM, válido só com instância única: dois
         // nós liam `status != Finished` e dobravam caixa, estatísticas e tabela.
-        val finishedMatches = round.matches.map { m -> m.finish(finalScores[m.matchId], shootouts[m.matchId]) }
+        val byMatch = simulated.associateBy { it.match.matchId }
+        val finishedMatches = round.matches.map { m -> m.finish(byMatch[m.matchId]?.score, byMatch[m.matchId]?.penalties) }
         val finishedRound = round.copy(matches = finishedMatches, status = RoundStatus.Finished)
 
-        if (!leagueRepo.finishRound(finishedRound)) {
+        // Claim e efeitos dentro de uma licença do portão de finalização: o
+        // reset do profile e2e espera este bloco terminar antes de apagar a
+        // liga (ver [RoundFinalizationGate]). `null` = perdemos o claim.
+        val tailEvents: List<RoundEvent>? = finalizationGate.finalizing {
+            if (!leagueRepo.finishRound(finishedRound)) return@finalizing null
+
+            // Vencemos a corrida: aplicamos os efeitos exatamente uma vez.
+            //
+            // Ordem (claim ANTES dos efeitos) troca a semântica de *at-least-once*
+            // para *at-most-once*: nunca dobramos caixa/estatísticas, mas uma
+            // interrupção entre o claim e o fim da persistência deixaria a rodada
+            // `Finished` com efeitos parciais — e como todo stream seguinte cai no
+            // replay, a liga travaria (a próxima rodada nunca seria gerada). Por
+            // isso o bloco roda em `NonCancellable`: nenhum cancelamento do coletor
+            // (shutdown, um adapter que cancele o Flow) pode rasgar a finalização no
+            // meio. O `RoundWebSocketHandler` nem cancela mais ao fechar a aba: a
+            // rodada segue até o fim sem pacing (revisão do PR #92).
+            //
+            // NonCancellable NÃO cobre crash de processo entre o claim e o fim —
+            // esse resíduo de durabilidade fica documentado em docs/ARQUITETURA.md
+            // (fechá-lo exige efeitos + claim na MESMA transação, hoje inviável com
+            // os ports `suspend` por agregado). É estreito: dezenas de ms.
+            //
+            // Enquanto os efeitos não são gravados, um leitor concorrente vê a
+            // tabela sem os pontos desta rodada; uma reconexão posterior já devolve
+            // a definitiva (não vale para o caso de crash acima).
+            withContext(NonCancellable) {
+                // Efeitos leem a SÚMULA de cada jogo (feed completo ou destaques do
+                // rápido), não o que foi transmitido.
+                finalizeRound(round, finishedRound, simulated.flatMap { it.sheet }, involvedClubs.values)
+            }
+        }
+        if (tailEvents == null) {
             emit(RoundEvent.RoundFinished(leagueRepo.currentStandings()))
             return@flow
-        }
-
-        // Vencemos a corrida: aplicamos os efeitos exatamente uma vez.
-        //
-        // Ordem (claim ANTES dos efeitos) troca a semântica de *at-least-once*
-        // para *at-most-once*: nunca dobramos caixa/estatísticas, mas uma
-        // interrupção entre o claim e o fim da persistência deixaria a rodada
-        // `Finished` com efeitos parciais — e como todo stream seguinte cai no
-        // replay, a liga travaria (a próxima rodada nunca seria gerada). Por
-        // isso o bloco roda em `NonCancellable`: nenhum cancelamento do coletor
-        // (shutdown, um adapter que cancele o Flow) pode rasgar a finalização no
-        // meio. O `RoundWebSocketHandler` nem cancela mais ao fechar a aba: a
-        // rodada segue até o fim sem pacing (revisão do PR #92).
-        //
-        // NonCancellable NÃO cobre crash de processo entre o claim e o fim —
-        // esse resíduo de durabilidade fica documentado em docs/ARQUITETURA.md
-        // (fechá-lo exige efeitos + claim na MESMA transação, hoje inviável com
-        // os ports `suspend` por agregado). É estreito: dezenas de ms.
-        //
-        // Enquanto os efeitos não são gravados, um leitor concorrente vê a
-        // tabela sem os pontos desta rodada; uma reconexão posterior já devolve
-        // a definitiva (não vale para o caso de crash acima).
-        val tailEvents = withContext(NonCancellable) {
-            finalizeRound(round, finishedRound, tagged.map { it.second }, involvedClubs.values)
         }
         // Emissão fora do NonCancellable: `emit` exige o mesmo contexto do
         // coletor (invariante do Flow), que `withContext` quebraria.
@@ -332,7 +372,15 @@ class PlayRoundService(
             .map { applyRoundToStandings(finishedRound, it) }
         val boardAfterRound = boardEvaluator(finishedRound, newStandings, clubs)
 
-        val training = persistRoundEffects(round.matchday, events, clubs, involvedClubs, finances, boardAfterRound)
+        val training = persistRoundEffects(
+            round.matchday,
+            events,
+            clubs,
+            involvedClubs,
+            finances,
+            boardAfterRound,
+            round.competitionByClub(),
+        )
         newStandings.forEach { leagueRepo.saveStandings(it) }
 
         // Encaixe consumido: zera a prontidão para o próximo começar limpo
@@ -632,7 +680,7 @@ class PlayRoundService(
                         redCards = 0,
                         availability = Availability.Available,
                         stamina = 100,
-                    )
+                    ).withCleanRecord() // sem amarelo pendente nem gancho (issue #130)
                 }
                 current.copy(
                     squad = reset,
@@ -712,6 +760,7 @@ class PlayRoundService(
         cupPrizes: Map<ClubId, Money>,
     ): List<RoundFinance> {
         val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
+        val competitionOf = round.competitionByClub()
         // Folha segue as rodadas de LIGA; jogo de copa não cobra (issue #61).
         // Por clube desde o calendário semanal (issue #125): paga quem joga,
         // neste encaixe, uma rodada de liga que é "mês" de salário.
@@ -723,7 +772,9 @@ class PlayRoundService(
                 if (club.id.value in homeClubIds) {
                     gate(
                         stadiumCapacity = club.stadiumCapacity,
-                        homeStrength = club.startingLineup().teamStrength(),
+                        // Mesmo time que a engine pôs em campo (issue #130).
+                        homeStrength = (competitionOf[club.id]?.let(club::startingLineupIn) ?: club.startingLineup())
+                            .teamStrength(),
                         ticketPriceCents = club.ticketPriceCents,
                     )
                 } else {
@@ -777,6 +828,9 @@ class PlayRoundService(
      *   de titulares é vazio, então o elenco inteiro descansa.
      * @param boardAfterRound a confiança da diretoria depois da rodada (issue
      *   #62) — ver [boardEvaluator].
+     * @param competitionOf a competição que cada clube jogou no encaixe (issue
+     *   #130): decide o limite de estrangeiros dos titulares e em que
+     *   competição os cartões contam para suspensão.
      */
     private suspend fun persistRoundEffects(
         matchday: Matchday,
@@ -785,6 +839,7 @@ class PlayRoundService(
         playedClubs: Collection<Club>,
         finances: List<RoundFinance>,
         boardAfterRound: (Club) -> BoardExpectation?,
+        competitionOf: Map<ClubId, CompetitionId>,
     ): List<TrainingReport> {
         val playedIds = playedClubs.map { it.id }.toSet()
         val goals = mutableMapOf<Long, Int>()
@@ -815,14 +870,18 @@ class PlayRoundService(
         }
 
         val financeByClub = finances.associateBy { it.clubId.value }
+        val cardsByPlayer: Map<PlayerId, MatchCards> = (yellow.keys + red.keys).associate { id ->
+            PlayerId(id) to MatchCards(yellow = yellow[id] ?: 0, red = red[id] ?: 0)
+        }
         val training = mutableListOf<TrainingReport>()
 
         for (club in clubs) {
             // Quem entrou em campo — mesma escalação que a engine usou. Clube
             // que folgou não tem titular: o elenco inteiro recupera.
             val starterIds =
-                if (club.id in playedIds) club.startingLineup().players.map { it.id }.toSet()
-                else emptySet()
+                competitionOf[club.id]?.takeIf { club.id in playedIds }
+                    ?.let { club.startingLineupIn(it).players.map { p -> p.id }.toSet() }
+                    ?: emptySet()
 
             // Efeitos da rodada sobre o clube ATUAL (issue #89): na 1ª tentativa
             // é o `club` já lido; se outra escrita chegar antes do `save`,
@@ -857,13 +916,20 @@ class PlayRoundService(
                     }
                 }
 
+                // Suspensão por cartões (issue #130): conta só na competição que
+                // o clube jogou — quem estava suspenso cumpre um jogo, o 3º
+                // amarelo ou o vermelho abre gancho. Clube que folgou não muda.
+                val disciplined = competitionOf[club.id]?.takeIf { club.id in playedIds }
+                    ?.let { updatedSquad.afterMatchIn(it, cardsByPlayer) }
+                    ?: updatedSquad
+
                 // Semana de treino no foco escolhido (issue #58). Seed própria
                 // (`trainingSeed`) para não repetir a sequência do desgaste desta
                 // mesma rodada/clube. O relatório sai daqui pronto para o evento
                 // de fim de rodada, mesmo vazio — "treinei e ninguém evoluiu"
                 // também é notícia.
                 val trained = train(
-                    squad = updatedSquad,
+                    squad = disciplined,
                     focus = current.trainingFocus,
                     rng = Random(trainingSeed(matchday.serial, current.id)),
                 )

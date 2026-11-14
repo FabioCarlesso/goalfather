@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "guglielmo-vicario",
+        "name": "Guglielmo Vicario",
+        "birthDate": "1996-10-07",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "kamil-grabara",
+        "name": "Kamil Grabara",
+        "birthDate": "1999-01-08",
+        "nationality": "POL",
+        "position": "GK"
+      },
+      {
+        "id": "neto",
+        "name": "Neto",
+        "birthDate": "1989-07-19",
+        "nationality": "BRA",
+        "position": "GK"
+      },
+      {
+        "id": "bremer",
+        "name": "Bremer",
+        "birthDate": "1997-03-18",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "jhon-lucumi",
+        "name": "Jhon Lucumí",
+        "birthDate": "1998-06-26",
+        "nationality": "COL",
+        "position": "DF"
+      },
+      {
+        "id": "lloyd-kelly",
+        "name": "Lloyd Kelly",
+        "birthDate": "1998-10-06",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "pierre-kalulu",
+        "name": "Pierre Kalulu",
+        "birthDate": "2000-06-05",
+        "nationality": "FRA",
+        "secondNationality": "COD",
+        "position": "DF"
+      },
+      {
+        "id": "zeki-celik",
+        "name": "Zeki Çelik",
+        "birthDate": "1997-02-17",
+        "nationality": "TUR",
+        "position": "DF"
+      },
+      {
+        "id": "khephren-thuram",
+        "name": "Khéphren Thuram",
+        "birthDate": "2001-03-26",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "manuel-locatelli",
+        "name": "Manuel Locatelli",
+        "birthDate": "1998-01-08",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "nick-woltemade",
+        "name": "Nick Woltemade",
+        "birthDate": "2002-02-14",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "pape-matar-sarr",
+        "name": "Pape Matar Sarr",
+        "birthDate": "2002-09-14",
+        "nationality": "SEN",
+        "position": "MF"
+      },
+      {
+        "id": "simone-muratore",
+        "name": "Simone Muratore",
+        "birthDate": "1998-05-30",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "teun-koopmeiners",
+        "name": "Teun Koopmeiners",
+        "birthDate": "1998-02-28",
+        "nationality": "NED",
+        "position": "MF"
+      },
+      {
+        "id": "arkadiusz-milik",
+        "name": "Arkadiusz Milik",
+        "birthDate": "1994-02-28",
+        "nationality": "POL",
+        "position": "FW"
+      },
+      {
+        "id": "francisco-conceicao",
+        "name": "Francisco Conceição",
+        "birthDate": "2002-12-14",
+        "nationality": "POR",
+        "position": "FW"
+      },
+      {
+        "id": "jeff-ekhator",
+        "name": "Jeff Ekhator",
+        "birthDate": "2006-11-11",
+        "nationality": "ITA",
+        "secondNationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "kaio-jorge",
+        "name": "Kaio Jorge",
+        "birthDate": "2002-01-24",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "kenan-yildiz",
+        "name": "Kenan Yıldız",
+        "birthDate": "2005-05-04",
+        "nationality": "TUR",
+        "position": "FW"
+      },
+      {
+        "id": "kerim-alajbegovic",
+        "name": "Kerim Alajbegović",
+        "birthDate": "2007-09-21",
+        "nationality": "BIH",
+        "position": "FW"
+      },
+      {
+        "id": "nicolas-gonzalez",
+        "name": "Nicolás González",
+        "birthDate": "1998-04-06",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "randal-kolo-muani",
+        "name": "Randal Kolo Muani",
+        "birthDate": "1998-12-05",
+        "nationality": "FRA",
+        "position": "FW"
+      }
+    ]
+  }
+}

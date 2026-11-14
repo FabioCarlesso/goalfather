@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "karl-darlow",
+        "name": "Karl Darlow",
+        "birthDate": "1990-10-08",
+        "nationality": "WAL",
+        "position": "GK"
+      },
+      {
+        "id": "kristoffer-klaesson",
+        "name": "Kristoffer Klaesson",
+        "birthDate": "2000-11-27",
+        "nationality": "NOR",
+        "position": "GK"
+      },
+      {
+        "id": "ethan-ampadu",
+        "name": "Ethan Ampadu",
+        "birthDate": "2000-09-14",
+        "nationality": "WAL",
+        "position": "DF"
+      },
+      {
+        "id": "james-justin",
+        "name": "James Justin",
+        "birthDate": "1998-02-23",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "joe-rodon",
+        "name": "Joe Rodon",
+        "birthDate": "1997-10-22",
+        "nationality": "WAL",
+        "position": "DF"
+      },
+      {
+        "id": "nico-elvedi",
+        "name": "Nico Elvedi",
+        "birthDate": "1996-09-30",
+        "nationality": "SUI",
+        "position": "DF"
+      },
+      {
+        "id": "eng-leeds-united-gen-03",
+        "name": "Adam Green",
+        "birthDate": "2002-08-20",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-leeds-united-gen-01",
+        "name": "Charlie Turner",
+        "birthDate": "1998-08-23",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "anton-stach",
+        "name": "Anton Stach",
+        "birthDate": "1998-11-15",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "ao-tanaka",
+        "name": "Ao Tanaka",
+        "birthDate": "1998-09-10",
+        "nationality": "JPN",
+        "position": "MF"
+      },
+      {
+        "id": "daniel-james",
+        "name": "Daniel James",
+        "birthDate": "1997-11-10",
+        "nationality": "WAL",
+        "position": "MF"
+      },
+      {
+        "id": "harry-wilson",
+        "name": "Harry Wilson",
+        "birthDate": "1997-03-22",
+        "nationality": "WAL",
+        "position": "MF"
+      },
+      {
+        "id": "helder-costa",
+        "name": "Hélder Costa",
+        "birthDate": "1994-01-12",
+        "nationality": "ANG",
+        "secondNationality": "POR",
+        "position": "MF"
+      },
+      {
+        "id": "jack-harrison",
+        "name": "Jack Harrison",
+        "birthDate": "1996-11-20",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "jaka-bijol",
+        "name": "Jaka Bijol",
+        "birthDate": "1999-02-05",
+        "nationality": "SVN",
+        "position": "MF"
+      },
+      {
+        "id": "jean-matteo-bahoya",
+        "name": "Jean-Mattéo Bahoya",
+        "birthDate": "2005-05-07",
+        "nationality": "FRA",
+        "secondNationality": "CMR",
+        "position": "MF"
+      },
+      {
+        "id": "liam-mccarron",
+        "name": "Liam McCarron",
+        "birthDate": "2001-03-07",
+        "nationality": "SCO",
+        "position": "MF"
+      },
+      {
+        "id": "sean-longstaff",
+        "name": "Sean Longstaff",
+        "birthDate": "1997-10-30",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "dominic-calvert-lewin",
+        "name": "Dominic Calvert-Lewin",
+        "birthDate": "1997-03-16",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "jack-clarke",
+        "name": "Jack Clarke",
+        "birthDate": "2000-11-23",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "eng-leeds-united-gen-04",
+        "name": "Jacob Edwards",
+        "birthDate": "2003-04-29",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-leeds-united-gen-02",
+        "name": "Joe Cole",
+        "birthDate": "2007-11-06",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

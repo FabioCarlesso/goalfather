@@ -331,3 +331,91 @@ describe('LineupPage: alterações não salvas', () => {
     expect(unload()).toBe(false)
   })
 })
+
+// Suspensões e limite de estrangeiros (issue #130): a tela só EXIBE o que o
+// contrato marca (`suspensions`, `foreign`, `foreignPlayerLimit`).
+describe('LineupPage: suspensos e estrangeiros', () => {
+  const original = state.clubs[1]!
+  afterEach(() => {
+    state.clubs[1] = original
+  })
+
+  const ARG = { code: 'ARG', name: 'Argentina', confederation: 'CONMEBOL' as const, flag: '🇦🇷' }
+
+  it('suspenso na liga sai da escalação efetiva e aparece na reserva com o selo', async () => {
+    const suspendedId = original.squad[1]!.id
+    state.clubs[1] = {
+      ...original,
+      squad: original.squad.map((p) =>
+        p.id === suspendedId
+          ? { ...p, suspensions: [{ competitionId: 'liga-d1', competitionName: 'Liga — Divisão 1', matchesLeft: 1 }] }
+          : p,
+      ),
+      lineup: { formation: '4-4-2', playerIds: original.squad.slice(0, 11).map((p) => p.id), posture: 'BALANCED' },
+    }
+
+    renderWithProviders(<LineupPage />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(/Escalação ajustada/)
+    })
+    const reserves = within(screen.getByRole('region', { name: /Reservas/ }))
+    const suspended = reserves.getByRole('button', { name: /suspenso: Liga — Divisão 1 \(1 jogo\)/ })
+    expect(within(suspended).getByTestId('suspended-icon')).toBeInTheDocument()
+    // Continua escalável: a suspensão é só da liga.
+    expect(suspended).toBeEnabled()
+  })
+
+  it('mostra o contador de estrangeiros com o limite do contrato', async () => {
+    state.clubs[1] = {
+      ...original,
+      squad: original.squad.map((p, i) => (i < 2 ? { ...p, nationality: ARG } : p)),
+    }
+
+    renderWithProviders(<LineupPage />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('foreign-counter')).toHaveTextContent('Estrangeiros: 2/9')
+    })
+    expect(screen.getAllByTestId('foreign-icon').length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('acima do limite o contador avisa e a recusa TOO_MANY_FOREIGN_PLAYERS vira mensagem', async () => {
+    const user = userEvent.setup()
+    // 10 estrangeiros no elenco: a escalação automática respeita o limite e
+    // entra desfalcada (10/11) em vez de pôr o 10º estrangeiro. O técnico o
+    // escala à mão na vaga aberta — e o backend recusa.
+    state.clubs[1] = {
+      ...original,
+      squad: original.squad.map((p, i) => (i < 10 ? { ...p, nationality: ARG } : p)),
+    }
+    server.use(
+      http.post('/api/clubs/:id/lineup', () =>
+        HttpResponse.json(
+          {
+            code: 'TOO_MANY_FOREIGN_PLAYERS',
+            message: 'Escalação com 10 estrangeiros; o limite é 9',
+            details: { playerIds: '1,2,3,4,5,6,7,8,9,10', limit: '9' },
+          },
+          { status: 400 },
+        ),
+      ),
+    )
+
+    renderWithProviders(<LineupPage />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('foreign-counter')).toHaveTextContent('Estrangeiros: 9/9')
+    })
+    expect(screen.getByText('10/11 titulares')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /: vazio$/ }))
+    const reserves = within(screen.getByRole('region', { name: /Reservas/ }))
+    await user.click(reserves.getByRole('button', { name: /estrangeiro/ }))
+    expect(screen.getByTestId('foreign-counter')).toHaveTextContent('Estrangeiros: 10/9 — acima do limite')
+
+    await user.click(screen.getByRole('button', { name: 'Salvar escalação' }))
+    expect(await screen.findByText(/no máximo 9 estrangeiros em campo/)).toBeInTheDocument()
+    // Folga para máquina carregada: o render do campinho + POST passa dos 5s padrão.
+  }, 15_000)
+})

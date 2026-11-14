@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ger-union-berlin-gen-02",
+        "name": "Felix Keller",
+        "birthDate": "2003-08-28",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-union-berlin-gen-08",
+        "name": "Jan Klein",
+        "birthDate": "1999-12-07",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-union-berlin-gen-01",
+        "name": "Lukas Fischer",
+        "birthDate": "2007-07-04",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "danilho-doekhi",
+        "name": "Danilho Doekhi",
+        "birthDate": "1998-06-30",
+        "nationality": "SUR",
+        "position": "DF"
+      },
+      {
+        "id": "keven-schlotterbeck",
+        "name": "Keven Schlotterbeck",
+        "birthDate": "1997-04-28",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "robin-knoche",
+        "name": "Robin Knoche",
+        "birthDate": "1992-05-22",
+        "nationality": "GER",
+        "position": "DF"
+      },
+      {
+        "id": "ger-union-berlin-gen-03",
+        "name": "Alexander Klein",
+        "birthDate": "2007-08-18",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-union-berlin-gen-04",
+        "name": "Andreas Meyer",
+        "birthDate": "1996-09-02",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-union-berlin-gen-09",
+        "name": "Daniel Hofmann",
+        "birthDate": "2003-08-28",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-union-berlin-gen-06",
+        "name": "Kevin Schwarz",
+        "birthDate": "1995-05-23",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "aljoscha-kemlein",
+        "name": "Aljoscha Kemlein",
+        "birthDate": "2004-08-02",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "andras-schafer",
+        "name": "András Schäfer",
+        "birthDate": "1999-04-13",
+        "nationality": "HUN",
+        "position": "MF"
+      },
+      {
+        "id": "michel-aebischer",
+        "name": "Michel Aebischer",
+        "birthDate": "1997-01-06",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "sheraldo-becker",
+        "name": "Sheraldo Becker",
+        "birthDate": "1995-02-09",
+        "nationality": "NED",
+        "secondNationality": "SUR",
+        "position": "MF"
+      },
+      {
+        "id": "ger-union-berlin-gen-10",
+        "name": "Christian Scholz",
+        "birthDate": "2001-01-21",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-union-berlin-gen-07",
+        "name": "Julian Schröder",
+        "birthDate": "2002-02-12",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-union-berlin-gen-05",
+        "name": "Leon Meyer",
+        "birthDate": "2001-04-10",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "anthony-ujah",
+        "name": "Anthony Ujah",
+        "birthDate": "1990-10-14",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "cedric-teuchert",
+        "name": "Cedric Teuchert",
+        "birthDate": "1997-01-14",
+        "nationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "marcus-ingvartsen",
+        "name": "Marcus Ingvartsen",
+        "birthDate": "1996-01-04",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "robert-skov",
+        "name": "Robert Skov",
+        "birthDate": "1996-05-20",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "ger-union-berlin-gen-11",
+        "name": "Kevin Weber",
+        "birthDate": "1999-03-04",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

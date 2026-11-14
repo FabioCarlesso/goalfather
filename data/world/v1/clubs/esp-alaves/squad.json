@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "esp-alaves-gen-02",
+        "name": "Alejandro Sánchez",
+        "birthDate": "1997-02-21",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-alaves-gen-08",
+        "name": "José Hernández",
+        "birthDate": "2000-04-05",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-alaves-gen-01",
+        "name": "Pablo Rodríguez",
+        "birthDate": "2007-01-31",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "jonathan-castro-otto",
+        "name": "Jonathan Castro Otto",
+        "birthDate": "1994-03-03",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "nicolas-valentini",
+        "name": "Nicolás Valentini",
+        "birthDate": "2001-04-06",
+        "nationality": "ARG",
+        "secondNationality": "ITA",
+        "position": "DF"
+      },
+      {
+        "id": "pablo-ibanez-lumbreras",
+        "name": "Pablo Ibáñez Lumbreras",
+        "birthDate": "1998-09-20",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "santiago-mourino",
+        "name": "Santiago Mouriño",
+        "birthDate": "2002-02-13",
+        "nationality": "URU",
+        "position": "DF"
+      },
+      {
+        "id": "esp-alaves-gen-04",
+        "name": "Hugo Sánchez",
+        "birthDate": "2001-10-22",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-alaves-gen-06",
+        "name": "Luis Ortega",
+        "birthDate": "2005-10-24",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-alaves-gen-09",
+        "name": "Raúl Martínez",
+        "birthDate": "2008-01-21",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ander-guevara",
+        "name": "Ander Guevara",
+        "birthDate": "1997-07-07",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "denis-suarez",
+        "name": "Denís Suárez",
+        "birthDate": "1994-01-06",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "mikel-rodriguez",
+        "name": "Mikel Rodríguez",
+        "birthDate": "2002-04-03",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-alaves-gen-05",
+        "name": "Alberto Ramos",
+        "birthDate": "1995-01-04",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-alaves-gen-10",
+        "name": "Borja Moreno",
+        "birthDate": "2006-12-20",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-alaves-gen-03",
+        "name": "Borja Muñoz",
+        "birthDate": "1994-01-24",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-alaves-gen-07",
+        "name": "Borja Rubio",
+        "birthDate": "2005-10-08",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "izei-hernandez",
+        "name": "Izei Hernandez",
+        "birthDate": "2007-02-02",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "lander-pinillos",
+        "name": "Lander Pinillos",
+        "birthDate": "2003-10-06",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "lucas-boye",
+        "name": "Lucas Boyé",
+        "birthDate": "1996-02-28",
+        "nationality": "ARG",
+        "position": "FW"
+      },
+      {
+        "id": "mariano-diaz",
+        "name": "Mariano Díaz",
+        "birthDate": "1993-08-01",
+        "nationality": "DOM",
+        "secondNationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "taichi-hara",
+        "name": "Taichi Hara",
+        "birthDate": "1999-05-05",
+        "nationality": "JPN",
+        "position": "FW"
+      }
+    ]
+  }
+}

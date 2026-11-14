@@ -109,6 +109,8 @@ tasks.test {
     // Idem para o pack do mundo (issue #126): FileWorldDataProviderTest carrega
     // `../data/world/v1` e precisa re-rodar quando só o pack muda.
     inputs.dir("../data/world").withPathSensitivity(PathSensitivity.RELATIVE)
+    // E o cache do importador (issue #127): GeneratedWorldPackTest reimporta dele.
+    inputs.files(fileTree("../tools/world-import/cache")).withPathSensitivity(PathSensitivity.RELATIVE)
     testLogging {
         events("passed", "failed", "skipped")
         exceptionFormat = TestExceptionFormat.FULL
@@ -129,4 +131,40 @@ tasks.processResources {
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("goalfather.jar")
     mainClass.set("com.carlesso.goalfather.GoalfatherApplicationKt")
+}
+
+// ── Importador do mundo (issue #127) ─────────────────────────────────────
+//    Ferramenta de linha de comando que gera `data/world/v1/` a partir do
+//    Wikidata. O código vive em `tools/world-import/`, FORA do runtime: é um
+//    source set à parte que enxerga as classes do backend (reusa os DTOs do
+//    pack, o gerador de nomes da #88 e o loader para validar o resultado), mas
+//    não entra no `bootJar`. Rodar: `./gradlew worldImport` (docs/WORLD_DATA.md).
+//    `by sourceSets.creating` é delegação de propriedade do Kotlin DSL: cria o
+//    source set E uma `val worldImport` com o mesmo nome, numa linha só.
+val worldImport by sourceSets.creating {
+    kotlin.srcDir("../tools/world-import/src/main/kotlin")
+    compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
+    runtimeClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
+}
+
+dependencies {
+    // YAML dos arquivos curados (competições, overrides, reputação) direto
+    // para classes `@Serializable` — o mesmo kotlinx.serialization do pack.
+    "worldImportImplementation"("com.charleskorn.kaml:kaml:0.66.0")
+}
+
+// Os testes do importador rodam junto com os do backend (`./gradlew test`).
+sourceSets.test {
+    kotlin.srcDir("../tools/world-import/src/test/kotlin")
+    compileClasspath += worldImport.output + worldImport.compileClasspath
+    runtimeClasspath += worldImport.output + worldImport.runtimeClasspath
+}
+
+tasks.register<JavaExec>("worldImport") {
+    group = "world data"
+    description = "Gera data/world/v1 a partir do Wikidata (cache em tools/world-import/cache). Args: --offline, --refresh."
+    classpath = worldImport.runtimeClasspath
+    mainClass.set("com.carlesso.goalfather.tools.worldimport.WorldImportKt")
+    // `rootDir` é `backend/` (o settings mora lá); o importador roda da raiz do repo.
+    workingDir = rootDir.parentFile
 }

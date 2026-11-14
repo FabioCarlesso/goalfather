@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "elia-caprile",
+        "name": "Elia Caprile",
+        "birthDate": "2001-08-25",
+        "nationality": "ITA",
+        "position": "GK"
+      },
+      {
+        "id": "ita-cagliari-gen-07",
+        "name": "Federico Barbieri",
+        "birthDate": "1994-09-10",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-cagliari-gen-01",
+        "name": "Stefano Rossi",
+        "birthDate": "1994-06-14",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "adam-obert",
+        "name": "Adam Obert",
+        "birthDate": "2002-08-23",
+        "nationality": "SVK",
+        "position": "DF"
+      },
+      {
+        "id": "yerry-mina",
+        "name": "Yerry Mina",
+        "birthDate": "1994-09-23",
+        "nationality": "COL",
+        "position": "DF"
+      },
+      {
+        "id": "ita-cagliari-gen-05",
+        "name": "Federico Russo",
+        "birthDate": "2005-01-10",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-cagliari-gen-02",
+        "name": "Filippo Santoro",
+        "birthDate": "2005-04-25",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-cagliari-gen-08",
+        "name": "Pietro Bianchi",
+        "birthDate": "2006-08-28",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-cagliari-gen-04",
+        "name": "Riccardo Rossi",
+        "birthDate": "1993-12-22",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-cagliari-gen-03",
+        "name": "Tommaso Rizzo",
+        "birthDate": "2003-11-02",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "alessandro-romano-footballer-born-2006",
+        "name": "Alessandro Romano (footballer, born 2006)",
+        "birthDate": "2006-06-17",
+        "nationality": "ITA",
+        "secondNationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "gianluca-gaetano",
+        "name": "Gianluca Gaetano",
+        "birthDate": "2000-05-05",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "harry-winks",
+        "name": "Harry Winks",
+        "birthDate": "1996-02-02",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "michael-folorunsho",
+        "name": "Michael Folorunsho",
+        "birthDate": "1998-02-07",
+        "nationality": "ITA",
+        "position": "MF"
+      },
+      {
+        "id": "michel-adopo",
+        "name": "Michel Adopo",
+        "birthDate": "2000-07-19",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "valter-birsa",
+        "name": "Valter Birsa",
+        "birthDate": "1986-08-07",
+        "nationality": "SVN",
+        "position": "MF"
+      },
+      {
+        "id": "ita-cagliari-gen-09",
+        "name": "Valerio Fabbri",
+        "birthDate": "1996-07-10",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "gennaro-borrelli",
+        "name": "Gennaro Borrelli",
+        "birthDate": "2000-03-10",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "roberto-piccoli",
+        "name": "Roberto Piccoli",
+        "birthDate": "2001-01-27",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "sebastiano-esposito",
+        "name": "Sebastiano Esposito",
+        "birthDate": "2002-07-02",
+        "nationality": "ITA",
+        "position": "FW"
+      },
+      {
+        "id": "ita-cagliari-gen-06",
+        "name": "Filippo Ferrara",
+        "birthDate": "1993-08-03",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-cagliari-gen-10",
+        "name": "Matteo Bianchi",
+        "birthDate": "2007-03-22",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

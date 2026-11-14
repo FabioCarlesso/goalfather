@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "rafal-gikiewicz",
+        "name": "Rafał Gikiewicz",
+        "birthDate": "1987-10-26",
+        "nationality": "POL",
+        "position": "GK"
+      },
+      {
+        "id": "tomas-koubek",
+        "name": "Tomáš Koubek",
+        "birthDate": "1992-08-26",
+        "nationality": "CZE",
+        "position": "GK"
+      },
+      {
+        "id": "ger-augsburg-gen-10",
+        "name": "Tim Neumann",
+        "birthDate": "2006-08-25",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "seol-young-woo",
+        "name": "Seol Young-woo",
+        "birthDate": "1998-12-05",
+        "nationality": "KOR",
+        "position": "DF"
+      },
+      {
+        "id": "ger-augsburg-gen-01",
+        "name": "Andreas Klein",
+        "birthDate": "1999-11-14",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-04",
+        "name": "Dominik Friedrich",
+        "birthDate": "2005-06-15",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-08",
+        "name": "Fabian Scholz",
+        "birthDate": "1994-05-13",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-11",
+        "name": "Florian Hoffmann",
+        "birthDate": "1996-08-04",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-06",
+        "name": "Kai Müller",
+        "birthDate": "2005-10-03",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-02",
+        "name": "Philipp Schmid",
+        "birthDate": "1994-08-10",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "carlos-gruezo",
+        "name": "Carlos Gruezo",
+        "birthDate": "1995-04-19",
+        "nationality": "ECU",
+        "position": "MF"
+      },
+      {
+        "id": "fabian-rieder",
+        "name": "Fabian Rieder",
+        "birthDate": "2002-02-16",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "iago",
+        "name": "Iago",
+        "birthDate": "1997-03-23",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "mert-komur",
+        "name": "Mert Kömür",
+        "birthDate": "2005-07-17",
+        "nationality": "GER",
+        "secondNationality": "TUR",
+        "position": "MF"
+      },
+      {
+        "id": "michael-gregoritsch",
+        "name": "Michael Gregoritsch",
+        "birthDate": "1994-04-18",
+        "nationality": "AUT",
+        "position": "MF"
+      },
+      {
+        "id": "yannik-keitel",
+        "name": "Yannik Keitel",
+        "birthDate": "2000-02-15",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "ger-augsburg-gen-12",
+        "name": "Tobias Richter",
+        "birthDate": "2006-09-29",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-13",
+        "name": "Christian Hoffmann",
+        "birthDate": "1995-02-15",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-05",
+        "name": "Jannik Hartmann",
+        "birthDate": "2004-05-03",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-03",
+        "name": "Lukas Wolf",
+        "birthDate": "2001-06-06",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-09",
+        "name": "Patrick Schröder",
+        "birthDate": "1999-06-13",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-augsburg-gen-07",
+        "name": "Robin Fischer",
+        "birthDate": "1998-04-27",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

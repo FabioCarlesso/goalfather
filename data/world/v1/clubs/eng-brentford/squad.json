@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "caoimhin-kelleher",
+        "name": "Caoimhín Kelleher",
+        "birthDate": "1998-11-23",
+        "nationality": "IRL",
+        "position": "GK"
+      },
+      {
+        "id": "hakon-valdimarsson",
+        "name": "Hákon Valdimarsson",
+        "birthDate": "2001-10-13",
+        "nationality": "ISL",
+        "position": "GK"
+      },
+      {
+        "id": "eng-brentford-gen-12",
+        "name": "Harvey Harris",
+        "birthDate": "2006-02-28",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "el-hadji-malick-diouf",
+        "name": "El Hadji Malick Diouf",
+        "birthDate": "2004-12-28",
+        "nationality": "SEN",
+        "position": "DF"
+      },
+      {
+        "id": "eng-brentford-gen-01",
+        "name": "Connor Walker",
+        "birthDate": "2001-09-10",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-09",
+        "name": "Ethan Lewis",
+        "birthDate": "1993-10-15",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-02",
+        "name": "Finley Harris",
+        "birthDate": "1997-10-26",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-06",
+        "name": "Lewis Edwards",
+        "birthDate": "2007-08-31",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-13",
+        "name": "Mason Edwards",
+        "birthDate": "2002-02-23",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-03",
+        "name": "Tyler Wilson",
+        "birthDate": "2006-07-17",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "dru-yearwood",
+        "name": "Dru Yearwood",
+        "birthDate": "2000-02-17",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "mathias-jensen",
+        "name": "Mathias Jensen",
+        "birthDate": "1996-01-01",
+        "nationality": "DEN",
+        "position": "MF"
+      },
+      {
+        "id": "vitaly-janelt",
+        "name": "Vitaly Janelt",
+        "birthDate": "1998-05-10",
+        "nationality": "GER",
+        "position": "MF"
+      },
+      {
+        "id": "eng-brentford-gen-04",
+        "name": "Ethan Johnson",
+        "birthDate": "1996-12-19",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-14",
+        "name": "Harry Hall",
+        "birthDate": "1996-07-27",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-10",
+        "name": "Jacob Johnson",
+        "birthDate": "1998-08-11",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-07",
+        "name": "William Barnes",
+        "birthDate": "2001-04-20",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "igor-thiago",
+        "name": "Igor Thiago",
+        "birthDate": "2001-06-26",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "eng-brentford-gen-05",
+        "name": "Adam Johnson",
+        "birthDate": "1999-06-12",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-15",
+        "name": "Connor Lewis",
+        "birthDate": "1997-09-26",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-08",
+        "name": "Jake Lewis",
+        "birthDate": "2000-03-03",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-brentford-gen-11",
+        "name": "Scott Ward",
+        "birthDate": "1996-02-18",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

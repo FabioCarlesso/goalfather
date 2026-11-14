@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-juventude-gen-18",
+        "name": "Emerson Monteiro",
+        "birthDate": "2003-12-18",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-02",
+        "name": "Emerson Siqueira",
+        "birthDate": "2001-05-31",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-01",
+        "name": "Wesley Correia",
+        "birthDate": "2005-03-27",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "juan-sebastian-quintero",
+        "name": "Juan Sebastian Quintero",
+        "birthDate": "1995-03-23",
+        "nationality": "COL",
+        "position": "DF"
+      },
+      {
+        "id": "bra-juventude-gen-04",
+        "name": "Anderson Carvalho",
+        "birthDate": "1998-03-29",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-15",
+        "name": "Cláudio Tavares",
+        "birthDate": "2000-01-31",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-06",
+        "name": "Cássio Carvalho",
+        "birthDate": "2005-08-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-19",
+        "name": "Fábio Soares",
+        "birthDate": "2007-04-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-12",
+        "name": "Márcio Nascimento",
+        "birthDate": "2001-07-22",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-09",
+        "name": "Paulo Pinheiro",
+        "birthDate": "2005-06-18",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-20",
+        "name": "Cláudio Pereira",
+        "birthDate": "1995-05-19",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-03",
+        "name": "Cássio Ramos",
+        "birthDate": "2005-01-14",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-07",
+        "name": "Everton Xavier",
+        "birthDate": "2003-10-31",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-13",
+        "name": "Leonardo Carvalho",
+        "birthDate": "1999-03-20",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-05",
+        "name": "Maurício Pereira",
+        "birthDate": "2007-08-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-16",
+        "name": "Vinícius Moraes",
+        "birthDate": "2001-04-16",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-10",
+        "name": "Willian Monteiro",
+        "birthDate": "2008-06-05",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-21",
+        "name": "Bruno Cavalcanti",
+        "birthDate": "1994-08-07",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-08",
+        "name": "Daniel Brandão",
+        "birthDate": "2003-03-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-14",
+        "name": "Douglas Valente",
+        "birthDate": "2000-07-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-11",
+        "name": "Jefferson Farias",
+        "birthDate": "2003-04-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-juventude-gen-17",
+        "name": "Samuel Abreu",
+        "birthDate": "2006-08-24",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

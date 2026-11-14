@@ -9,6 +9,8 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.result.LineupResult
+import com.carlesso.goalfather.domain.rules.foreignPlayerLimit
+import com.carlesso.goalfather.domain.rules.foreignersAmong
 
 /**
  * Implementação de `SaveLineupUseCase`. Valida:
@@ -16,7 +18,12 @@ import com.carlesso.goalfather.domain.result.LineupResult
  * 2. Exatamente 11 jogadores;
  * 3. Nenhum ID repetido (issue #80);
  * 4. Todos os IDs estão no elenco do clube;
- * 5. Nenhum deles está lesionado (issue #54).
+ * 5. Nenhum deles está lesionado (issue #54);
+ * 6. Estrangeiros dentro do limite da liga do clube (issue #130).
+ *
+ * Suspenso NÃO é recusado aqui: a suspensão é por competição e a escalação
+ * salva serve a todas — suspenso na liga pode jogar a copa. Quem decide é o
+ * apito inicial (`Club.startingLineupIn`), que o deixa fora só do jogo certo.
  *
  * A postura (issue #56) não tem o que validar — o enum já é o conjunto
  * fechado de valores aceitos —, só viaja junto e é gravada com a escalação.
@@ -92,6 +99,15 @@ class SaveLineupService(
         val injured = orderedPlayers.filter { it.injured }.map { it.id.value }
         if (injured.isNotEmpty()) {
             return LineupResult.InjuredPlayers(playerIds = injured)
+        }
+
+        // Limite de estrangeiros (issue #130): recusa como VALOR, com o limite e
+        // os estrangeiros escalados. `let` só roda quando há limite (`?.`).
+        club.foreignPlayerLimit()?.let { limit ->
+            val foreigners = club.foreignersAmong(orderedPlayers)
+            if (foreigners.size > limit) {
+                return LineupResult.TooManyForeignPlayers(limit = limit, playerIds = foreigners.map { it.id.value })
+            }
         }
         // Postura entra na MESMA gravação da escalação (issue #56): quando a
         // rodada começar, todas as réplicas leem a mesma tática do banco.

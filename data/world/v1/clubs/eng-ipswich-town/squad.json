@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "eng-ipswich-town-gen-10",
+        "name": "Jack Brooks",
+        "birthDate": "1994-08-17",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-01",
+        "name": "Josh Turner",
+        "birthDate": "2006-06-27",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-02",
+        "name": "Liam Cole",
+        "birthDate": "2002-01-12",
+        "nationality": "ENG",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ben-godfrey",
+        "name": "Ben Godfrey",
+        "birthDate": "1998-01-15",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "issa-diop",
+        "name": "Issa Diop",
+        "birthDate": "1997-01-09",
+        "nationality": "FRA",
+        "secondNationality": "MAR",
+        "position": "DF"
+      },
+      {
+        "id": "leif-davis",
+        "name": "Leif Davis",
+        "birthDate": "1999-12-31",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "eng-ipswich-town-gen-07",
+        "name": "Dominic Walker",
+        "birthDate": "1996-02-17",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-11",
+        "name": "Jake Bailey",
+        "birthDate": "2002-07-07",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-03",
+        "name": "Joe Carter",
+        "birthDate": "2004-10-06",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-05",
+        "name": "Ryan Taylor",
+        "birthDate": "2002-10-12",
+        "nationality": "ENG",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "exequiel-palacios",
+        "name": "Exequiel Palacios",
+        "birthDate": "1998-10-05",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "julio-enciso",
+        "name": "Julio Enciso",
+        "birthDate": "2004-01-23",
+        "nationality": "PAR",
+        "position": "MF"
+      },
+      {
+        "id": "sasa-lukic",
+        "name": "Saša Lukić",
+        "birthDate": "1996-08-13",
+        "nationality": "SRB",
+        "position": "MF"
+      },
+      {
+        "id": "eng-ipswich-town-gen-06",
+        "name": "Jake Harris",
+        "birthDate": "2003-02-09",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-04",
+        "name": "Joe Wright",
+        "birthDate": "1995-01-03",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-08",
+        "name": "Josh Hall",
+        "birthDate": "2001-07-17",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-12",
+        "name": "Reece Cooper",
+        "birthDate": "2006-09-03",
+        "nationality": "ENG",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chuba-akpom",
+        "name": "Chuba Akpom",
+        "birthDate": "1995-10-09",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "daizen-maeda",
+        "name": "Daizen Maeda",
+        "birthDate": "1997-10-20",
+        "nationality": "JPN",
+        "position": "FW"
+      },
+      {
+        "id": "dane-scarlett",
+        "name": "Dane Scarlett",
+        "birthDate": "2004-03-24",
+        "nationality": "ENG",
+        "position": "FW"
+      },
+      {
+        "id": "eng-ipswich-town-gen-13",
+        "name": "Callum Mills",
+        "birthDate": "1998-05-04",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "eng-ipswich-town-gen-09",
+        "name": "William King",
+        "birthDate": "2003-10-30",
+        "nationality": "ENG",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

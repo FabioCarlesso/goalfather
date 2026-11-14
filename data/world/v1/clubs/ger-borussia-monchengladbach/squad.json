@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ger-borussia-monchengladbach-gen-01",
+        "name": "Jonas Friedrich",
+        "birthDate": "2002-11-21",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-12",
+        "name": "Niklas Braun",
+        "birthDate": "2008-02-23",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-02",
+        "name": "Sebastian Wolf",
+        "birthDate": "2006-11-10",
+        "nationality": "GER",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "joe-scally",
+        "name": "Joe Scally",
+        "birthDate": "2002-12-31",
+        "nationality": "USA",
+        "position": "DF"
+      },
+      {
+        "id": "ko-itakura",
+        "name": "Kō Itakura",
+        "birthDate": "1997-01-27",
+        "nationality": "JPN",
+        "position": "DF"
+      },
+      {
+        "id": "stefan-lainer",
+        "name": "Stefan Lainer",
+        "birthDate": "1992-08-27",
+        "nationality": "AUT",
+        "position": "DF"
+      },
+      {
+        "id": "yukhym-konoplia",
+        "name": "Yukhym Konoplia",
+        "birthDate": "1999-08-26",
+        "nationality": "UKR",
+        "position": "DF"
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-09",
+        "name": "Marcel Keller",
+        "birthDate": "1995-06-01",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-06",
+        "name": "Niklas Schmid",
+        "birthDate": "1997-11-05",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-13",
+        "name": "Tobias Becker",
+        "birthDate": "2005-08-06",
+        "nationality": "GER",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "hugo-bolin",
+        "name": "Hugo Bolin",
+        "birthDate": "2003-07-24",
+        "nationality": "SWE",
+        "position": "MF"
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-10",
+        "name": "Daniel Schwarz",
+        "birthDate": "2006-06-09",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-14",
+        "name": "Florian Koch",
+        "birthDate": "1994-07-17",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-05",
+        "name": "Jonas Schmidt",
+        "birthDate": "1994-03-05",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-07",
+        "name": "Kai Schmid",
+        "birthDate": "2007-06-08",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-03",
+        "name": "Marco Frank",
+        "birthDate": "2003-03-17",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-04",
+        "name": "Maximilian Richter",
+        "birthDate": "1997-05-10",
+        "nationality": "GER",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "haris-tabakovic",
+        "name": "Haris Tabaković",
+        "birthDate": "1994-06-20",
+        "nationality": "BIH",
+        "secondNationality": "SUI",
+        "position": "FW"
+      },
+      {
+        "id": "tim-kleindienst",
+        "name": "Tim Kleindienst",
+        "birthDate": "1995-08-31",
+        "nationality": "GER",
+        "position": "FW"
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-11",
+        "name": "Kai Fuchs",
+        "birthDate": "2007-02-18",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-15",
+        "name": "Marcel Krüger",
+        "birthDate": "1998-05-24",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ger-borussia-monchengladbach-gen-08",
+        "name": "Sebastian Koch",
+        "birthDate": "1999-04-14",
+        "nationality": "GER",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

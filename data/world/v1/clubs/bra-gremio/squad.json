@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-gremio-gen-13",
+        "name": "Murilo Ramos",
+        "birthDate": "2003-10-17",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-01",
+        "name": "Paulo Cunha",
+        "birthDate": "2004-06-15",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-02",
+        "name": "Rafael Santana",
+        "birthDate": "1993-10-02",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "diogo-barbosa",
+        "name": "Diogo Barbosa",
+        "birthDate": "1992-08-17",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-gremio-gen-07",
+        "name": "Adriano Ramos",
+        "birthDate": "2000-03-08",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-04",
+        "name": "Fernando Borges",
+        "birthDate": "2000-11-26",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-05",
+        "name": "Jonas Barbosa",
+        "birthDate": "2007-07-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-10",
+        "name": "Vinícius Cavalcanti",
+        "birthDate": "1996-12-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-14",
+        "name": "Vinícius Ramos",
+        "birthDate": "2003-09-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-03",
+        "name": "Wesley Cavalcanti",
+        "birthDate": "2004-10-30",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "cristian-pavon",
+        "name": "Cristian Pavón",
+        "birthDate": "1996-01-21",
+        "nationality": "ARG",
+        "position": "MF"
+      },
+      {
+        "id": "edenilson",
+        "name": "Edenilson",
+        "birthDate": "1989-12-18",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "lucas-camilo",
+        "name": "Lucas Camilo",
+        "birthDate": "2006-05-25",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "everton-cardoso-da-silva",
+        "name": "Éverton Cardoso da Silva",
+        "birthDate": "1988-12-11",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-gremio-gen-08",
+        "name": "Danilo Martins",
+        "birthDate": "2001-11-01",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-15",
+        "name": "Gabriel Santos",
+        "birthDate": "1997-04-09",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-11",
+        "name": "Luan Sampaio",
+        "birthDate": "2004-06-19",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "martin-braithwaite",
+        "name": "Martin Braithwaite",
+        "birthDate": "1991-06-05",
+        "nationality": "DEN",
+        "position": "FW"
+      },
+      {
+        "id": "bra-gremio-gen-16",
+        "name": "Caio Brandão",
+        "birthDate": "2003-06-15",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-06",
+        "name": "Gabriel Fonseca",
+        "birthDate": "1994-02-03",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-12",
+        "name": "Valdir Nascimento",
+        "birthDate": "2002-07-10",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-gremio-gen-09",
+        "name": "Wesley Pereira",
+        "birthDate": "1996-11-09",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

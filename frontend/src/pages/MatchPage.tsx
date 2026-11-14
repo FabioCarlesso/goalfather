@@ -57,11 +57,19 @@ function MatchView({ matchId }: { matchId: string }) {
   const { speed, setSpeed } = useStreamSpeed()
   const [connectionSpeed, setConnectionSpeed] = useState<StreamSpeed>(speed)
 
-  // Os ids dos dois clubes vêm da rodada corrente (o KickOff só traz nomes).
-  // Partida fora da rodada (ex.: drill-down standalone) → resolve ao menos o
-  // elenco do usuário; o resto cai no fallback "#N" (issue #84).
+  // Ids dos dois clubes para resolver os nomes dos jogadores: da rodada
+  // corrente ou, quando a partida já saiu dela (o encaixe terminou e o
+  // relógio andou), do próprio KickOff. Sem nenhum dos dois, resolve ao menos
+  // o elenco do usuário; o resto cai no fallback "#N" (issue #84).
   const match = round?.matches.find((m) => String(m.matchId) === matchId)
-  const playerLookup = useMatchPlayerLookup(match?.homeClubId ?? myClubId, match?.awayClubId)
+  const kickOffIds = useMemo(() => {
+    const kickOff = events.find((e) => e.type === 'KickOff')
+    return kickOff?.type === 'KickOff' ? { home: kickOff.homeClubId, away: kickOff.awayClubId } : undefined
+  }, [events])
+  const playerLookup = useMatchPlayerLookup(
+    match?.homeClubId ?? kickOffIds?.home ?? myClubId,
+    match?.awayClubId ?? kickOffIds?.away,
+  )
 
   // Conecta ao montar. Como o componente é remontado via `key` quando o
   // `matchId` muda, não há reset de estado manual aqui. Reconecta quando a

@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "chi-coquimbo-unido-gen-02",
+        "name": "Joaquín Duarte",
+        "birthDate": "1996-02-05",
+        "nationality": "CHI",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-01",
+        "name": "Jonathan Vargas",
+        "birthDate": "2008-01-16",
+        "nationality": "CHI",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-18",
+        "name": "Leandro Ortiz",
+        "birthDate": "2008-02-11",
+        "nationality": "CHI",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-06",
+        "name": "Facundo Valdez",
+        "birthDate": "2007-03-10",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-12",
+        "name": "Federico Aguirre",
+        "birthDate": "2004-05-28",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-15",
+        "name": "Gastón Vargas",
+        "birthDate": "2001-10-05",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-04",
+        "name": "Joaquín Sosa",
+        "birthDate": "1994-06-28",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-09",
+        "name": "Maximiliano Cabrera",
+        "birthDate": "2004-09-04",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-03",
+        "name": "Sebastián Acosta",
+        "birthDate": "2005-01-21",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-19",
+        "name": "Yeferson Ruiz",
+        "birthDate": "1997-07-31",
+        "nationality": "CHI",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jorge-gatica",
+        "name": "Jorge Gatica",
+        "birthDate": "1996-06-17",
+        "nationality": "CHI",
+        "position": "MF"
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-20",
+        "name": "Damián Villalba",
+        "birthDate": "2002-08-15",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-07",
+        "name": "Ezequiel Flores",
+        "birthDate": "1994-12-29",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-16",
+        "name": "Facundo Villalba",
+        "birthDate": "2008-01-15",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-13",
+        "name": "Jhon Acosta",
+        "birthDate": "1997-08-27",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-10",
+        "name": "Kevin Romero",
+        "birthDate": "2003-09-28",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-05",
+        "name": "Sebastián Ríos",
+        "birthDate": "2004-07-07",
+        "nationality": "CHI",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-08",
+        "name": "Cristian Valdez",
+        "birthDate": "1999-04-07",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-21",
+        "name": "Emiliano Ibarra",
+        "birthDate": "2008-05-19",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-17",
+        "name": "Franco Torres",
+        "birthDate": "2006-10-26",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-11",
+        "name": "Leandro Ibarra",
+        "birthDate": "2007-05-13",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "chi-coquimbo-unido-gen-14",
+        "name": "Rodrigo Romero",
+        "birthDate": "1996-06-01",
+        "nationality": "CHI",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

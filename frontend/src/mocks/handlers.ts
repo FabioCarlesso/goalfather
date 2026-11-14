@@ -31,6 +31,7 @@ import {
   type ClubMeta,
   type MockUser,
   type StoredClub,
+  divisionAssignments,
 } from './seed'
 import {
   simulateMatch,
@@ -39,6 +40,11 @@ import {
   applyMedicalTreatment,
   startingEleven,
   effectiveLineupOf,
+  applyMatchDiscipline,
+  isForeignAt,
+  isSuspendedIn,
+  NATIONAL_FOREIGN_PLAYER_LIMIT,
+  type LineupRules,
   MulberryRng,
   trainSquad,
   gateOf,
@@ -55,7 +61,7 @@ import {
   type SquadMember,
   type TeamTactics,
 } from './engine'
-import { recordCupRound } from './cup'
+import { leagueCompetitionId, recordCupRound } from './cup'
 import { matchdaySerial } from './calendar'
 import { boardStatusOf, forNewManager } from './board'
 import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
@@ -76,6 +82,7 @@ import type {
   TransferOffer,
   TransferOfferResult,
   StreamSpeed,
+  Player,
 } from '../domain/types'
 import { isStreamSpeed } from '../domain/streamSpeed'
 import { WS_CLOSE_NOT_STARTED, WS_REASON_NOT_STARTED } from '../api/wsProtocol'
@@ -148,7 +155,22 @@ const tacticsOf = (clubId: number): TeamTactics => {
  */
 const toClubResponse = (club: StoredClub): Club => ({
   ...club,
-  ...effectiveLineupOf(club.squad, club.lineup),
+  // `foreign` relativo ao clube (issue #130), como `Player.toDto(club)`.
+  squad: club.squad.map((p) => ({ ...p, foreign: isForeignAt(p, club.country.code) })),
+  foreignPlayerLimit: NATIONAL_FOREIGN_PLAYER_LIMIT,
+  // Efetiva = a do próximo jogo de LIGA, como no backend.
+  ...effectiveLineupOf(
+    club.squad,
+    club.lineup,
+    lineupRulesOf(club, leagueCompetitionId(divisionAssignments[club.id] ?? 1)),
+  ),
+})
+
+/** Regras do apito inicial num jogo de [competitionId] (issue #130). */
+const lineupRulesOf = (club: StoredClub, competitionId: string): LineupRules<Player> => ({
+  suspended: (p) => isSuspendedIn(p, competitionId),
+  foreign: (p) => isForeignAt(p, club.country.code),
+  foreignLimit: NATIONAL_FOREIGN_PLAYER_LIMIT,
 })
 
 // Latência simulada para parecer com rede real (descomente em testes determinísticos)
@@ -360,6 +382,21 @@ export const handlers = [
           code: 'DUPLICATE_PLAYERS',
           message: `Jogadores repetidos na escalação: [${duplicated.join(', ')}]`,
           details: { playerIds: duplicated.join(',') },
+        } satisfies ErrorResponse,
+        { status: 400 },
+      )
+    }
+    // Limite de estrangeiros (issue #130), espelhando o SaveLineupService.
+    const foreigners = body.playerIds.filter((id) => {
+      const p = club.squad.find((q) => q.id === id)
+      return p !== undefined && isForeignAt(p, club.country.code)
+    })
+    if (foreigners.length > NATIONAL_FOREIGN_PLAYER_LIMIT) {
+      return HttpResponse.json(
+        {
+          code: 'TOO_MANY_FOREIGN_PLAYERS',
+          message: `Escalação com ${foreigners.length} estrangeiros; o limite é ${NATIONAL_FOREIGN_PLAYER_LIMIT}`,
+          details: { playerIds: foreigners.join(','), limit: String(NATIONAL_FOREIGN_PLAYER_LIMIT) },
         } satisfies ErrorResponse,
         { status: 400 },
       )
@@ -721,6 +758,7 @@ export const handlers = [
       awaySquad:    aiOpponentSquad,
       homeTactics:  tacticsOf(1),
       awayTactics:  DEFAULT_TACTICS,   // adversário mock: sempre equilibrado
+      homeClubId:   1,
     }
 
     let cancelled = false
@@ -901,6 +939,8 @@ export const handlers = [
         homeTactics:  tacticsOf(home.id),
         awayTactics:  tacticsOf(away.id),
         knockout:     match.stage.type === 'Cup',
+        homeClubId:   match.homeClubId,
+        awayClubId:   match.awayClubId,
       }
       for (const event of simulateMatch(setup)) {
         allEvents.push({ matchId: match.matchId, event })
@@ -1036,9 +1076,12 @@ export const handlers = [
         // Titulares = escalação salva revalidada (lesionado fora, reserva apto
         // assume), exatamente como `Club.startingLineup()` do backend. Quem não
         // entrou em campo (eliminado ou de folga na copa) descansa o elenco todo.
-        const myClubPlayed = round.matches.some((m) => m.homeClubId === 1 || m.awayClubId === 1)
-        const starterIds = myClubPlayed
-          ? startingEleven(myClub.squad, myClub.lineup?.playerIds)
+        const myMatch = round.matches.find((m) => m.homeClubId === 1 || m.awayClubId === 1)
+        const myClubPlayed = myMatch !== undefined
+        // Sem os suspensos da competição do jogo e dentro do limite de
+        // estrangeiros (issue #130).
+        const starterIds = myMatch
+          ? startingEleven(myClub.squad, myClub.lineup?.playerIds, lineupRulesOf(myClub, myMatch.competitionId))
           : new Set<number>()
         const rested = applyRoundFitness(
           myClub.squad,
@@ -1051,13 +1094,29 @@ export const handlers = [
         // Semana de treino no foco escolhido (issue #58), DEPOIS do desgaste:
         // o elenco cansa na rodada e é o foco que decide se a semana repõe
         // forma física ou desenvolve atributo. Seed própria, como no backend.
+        const withStats = rested.map((p) => ({
+          ...p,
+          goals: p.goals + (goals.get(p.id) ?? 0),
+          yellowCards: p.yellowCards + (yellow.get(p.id) ?? 0),
+          redCards: p.redCards + (red.get(p.id) ?? 0),
+        }))
+        // Suspensão por cartões (issue #130): só na competição do jogo.
+        let disciplined = withStats
+        if (myMatch) {
+          const cards = new Map(
+            [...new Set([...yellow.keys(), ...red.keys()])].map((id) => [
+              id,
+              { yellow: yellow.get(id) ?? 0, red: red.get(id) ?? 0 },
+            ]),
+          )
+          const after = applyMatchDiscipline(
+            withStats, myMatch.competitionId, myMatch.competitionName, cards, state.pendingYellows,
+          )
+          disciplined = after.squad
+          state.pendingYellows = after.pending
+        }
         const trained = trainSquad(
-          rested.map((p) => ({
-            ...p,
-            goals: p.goals + (goals.get(p.id) ?? 0),
-            yellowCards: p.yellowCards + (yellow.get(p.id) ?? 0),
-            redCards: p.redCards + (red.get(p.id) ?? 0),
-          })),
+          disciplined,
           myClub.trainingFocus,
           new MulberryRng(matchdaySerial(round.matchday) * 7919 + 1),
         )

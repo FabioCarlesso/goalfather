@@ -144,20 +144,22 @@ class ClubSaveTransaction(
 
         // Sincroniza o elenco. Players que estavam no clube e nao estao
         // mais ficam com clubId = null (vao para o mercado via SellPlayer).
-        val currentPlayerIds = playerRepo.findAllByClubId(id).map { it.id }.toSet()
-        val newPlayerIds = club.squad.map { it.id.value }.toSet()
+        //
+        // Em LOTE (issue #129): antes era um `findById` + `save` por jogador
+        // removido e um `save` por jogador do elenco — ~25 chamadas por clube,
+        // e a rodada grava todos os clubes do mundo. Os que saíram já vêm da
+        // própria consulta do elenco atual (estão no contexto de persistência,
+        // sem releitura), e os `saveAll` deixam o Hibernate agrupar os UPDATEs
+        // em batches JDBC (`hibernate.jdbc.batch_size` no application.yml).
+        val currentPlayers = playerRepo.findAllByClubId(id)
+        val newPlayerIds = club.squad.mapTo(HashSet()) { it.id.value }
 
-        val removed = currentPlayerIds - newPlayerIds
-        for (playerId in removed) {
-            val p = playerRepo.findById(playerId).orElse(null) ?: continue
-            p.clubId = null
-            playerRepo.save(p)
-        }
+        val removed = currentPlayers.filter { it.id !in newPlayerIds }
+        removed.forEach { it.clubId = null }
+        playerRepo.saveAll(removed)
 
         // Atualiza/adiciona players do squad
-        for (player in club.squad) {
-            playerRepo.save(player.toEntity(clubId = id))
-        }
+        playerRepo.saveAll(club.squad.map { it.toEntity(clubId = id) })
 
         return ClubSaveResult.Saved(club.copy(version = saved.version))
     }

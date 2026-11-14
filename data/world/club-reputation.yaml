@@ -1,0 +1,189 @@
+# Reputação dos clubes do pack (issue #127): id do clube → 1..100.
+#
+# Tabela CURADA, decisão nossa a partir de fatos públicos (títulos, tamanho da
+# torcida, presença recente em continentais). Não é rating de terceiros.
+# Escala: posição DENTRO da liga do clube, 50 = clube mediano dela. Alimenta o
+# gerador de atributos (`AttributeGenerator`: (rep − 50) / 5 somado à força da
+# liga). Clubes que só aparecem na Libertadores usam a mesma escala, pensando
+# na liga nacional de cada um.
+#
+# Todo clube definido em competitions.yaml precisa estar aqui; o importador
+# falha listando os que faltarem.
+
+# ── Brasileirão Série A 2026 ──────────────────────────────────────────────
+bra-flamengo: 90
+bra-palmeiras: 88
+bra-corinthians: 80
+bra-atletico-mineiro: 78
+bra-botafogo: 78
+bra-sao-paulo: 78
+bra-cruzeiro: 76
+bra-fluminense: 76
+bra-internacional: 76
+bra-gremio: 75
+bra-santos: 72
+bra-vasco-da-gama: 70
+bra-bahia: 68
+bra-athletico-paranaense: 68
+bra-red-bull-bragantino: 60
+bra-vitoria: 52
+bra-coritiba: 50
+bra-mirassol: 48
+bra-chapecoense: 45
+bra-remo: 45
+
+# ── Brasileirão Série B 2026 ──────────────────────────────────────────────
+bra-fortaleza: 66
+bra-sport: 65
+bra-ceara: 62
+bra-goias: 60
+bra-america-mg: 58
+bra-juventude: 55
+bra-cuiaba: 55
+bra-atletico-goianiense: 55
+bra-ponte-preta: 52
+bra-criciuma: 52
+bra-avai: 50
+bra-nautico: 50
+bra-vila-nova: 48
+bra-crb: 45
+bra-londrina: 45
+bra-novorizontino: 45
+bra-operario-ferroviario: 42
+bra-botafogo-sp: 40
+bra-sao-bernardo: 40
+bra-athletic-club: 38
+
+# ── Premier League 2026/27 ────────────────────────────────────────────────
+eng-manchester-city: 92
+eng-liverpool: 92
+eng-arsenal: 90
+eng-chelsea: 86
+eng-manchester-united: 86
+eng-tottenham-hotspur: 80
+eng-newcastle-united: 80
+eng-aston-villa: 76
+eng-brighton: 66
+eng-everton: 64
+eng-nottingham-forest: 64
+eng-crystal-palace: 62
+eng-fulham: 58
+eng-brentford: 58
+eng-leeds-united: 58
+eng-bournemouth: 56
+eng-sunderland: 52
+eng-ipswich-town: 45
+eng-coventry-city: 42
+eng-hull-city: 42
+
+# ── La Liga 2026/27 ───────────────────────────────────────────────────────
+esp-real-madrid: 96
+esp-barcelona: 94
+esp-atletico-madrid: 86
+esp-athletic-bilbao: 74
+esp-villarreal: 74
+esp-real-sociedad: 72
+esp-real-betis: 70
+esp-sevilla: 70
+esp-valencia: 68
+esp-celta-vigo: 60
+esp-osasuna: 56
+esp-getafe: 54
+esp-rayo-vallecano: 54
+esp-espanyol: 54
+esp-alaves: 50
+esp-deportivo-la-coruna: 50
+esp-malaga: 48
+esp-levante: 46
+esp-elche: 46
+esp-racing-santander: 44
+
+# ── Serie A 2026/27 ───────────────────────────────────────────────────────
+ita-inter: 92
+ita-juventus: 90
+ita-milan: 90
+ita-napoli: 86
+ita-roma: 80
+ita-atalanta: 80
+ita-lazio: 76
+ita-fiorentina: 72
+ita-bologna: 70
+ita-torino: 62
+ita-como: 60
+ita-genoa: 58
+ita-udinese: 56
+ita-parma: 54
+ita-cagliari: 52
+ita-sassuolo: 50
+ita-lecce: 48
+ita-monza: 46
+ita-venezia: 44
+ita-frosinone: 44
+
+# ── Bundesliga 2026/27 ────────────────────────────────────────────────────
+ger-bayern-munchen: 96
+ger-borussia-dortmund: 86
+ger-bayer-leverkusen: 84
+ger-rb-leipzig: 80
+ger-eintracht-frankfurt: 74
+ger-stuttgart: 72
+ger-borussia-monchengladbach: 68
+ger-freiburg: 66
+ger-hoffenheim: 62
+ger-werder-bremen: 62
+ger-schalke-04: 62
+ger-hamburger-sv: 62
+ger-union-berlin: 58
+ger-mainz: 56
+ger-koln: 56
+ger-augsburg: 52
+ger-paderborn: 42
+ger-elversberg: 40
+
+# ── Ligue 1 2026/27 ───────────────────────────────────────────────────────
+fra-psg: 96
+fra-marseille: 84
+fra-monaco: 80
+fra-lyon: 80
+fra-lille: 76
+fra-lens: 70
+fra-nice: 70
+fra-rennes: 70
+fra-strasbourg: 62
+fra-toulouse: 58
+fra-brest: 58
+fra-lorient: 50
+fra-auxerre: 50
+fra-paris-fc: 50
+fra-le-havre: 48
+fra-angers: 46
+fra-troyes: 44
+fra-le-mans: 42
+
+# ── Libertadores 2026 (fase de grupos, clubes de fora do Brasil) ──────────
+arg-boca-juniors: 94
+arg-estudiantes: 74
+arg-rosario-central: 72
+arg-lanus: 70
+arg-platense: 50
+arg-independiente-rivadavia: 50
+uru-penarol: 88
+uru-nacional: 88
+par-cerro-porteno: 82
+par-libertad: 78
+bol-bolivar: 82
+bol-always-ready: 62
+chi-universidad-catolica: 76
+chi-coquimbo-unido: 58
+col-junior: 76
+col-santa-fe: 74
+col-independiente-medellin: 72
+col-deportes-tolima: 70
+ecu-ldu-quito: 84
+ecu-independiente-del-valle: 82
+ecu-barcelona: 80
+per-universitario: 82
+per-sporting-cristal: 80
+per-cusco: 52
+ven-deportivo-la-guaira: 58
+ven-universidad-central: 52

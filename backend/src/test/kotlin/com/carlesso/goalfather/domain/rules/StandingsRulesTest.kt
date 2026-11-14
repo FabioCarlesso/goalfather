@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.TableZone
 import com.carlesso.goalfather.test.md
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -67,6 +68,27 @@ class StandingsRulesTest {
         assertEquals(1, home.goalDifference)
         assertEquals(0, away.points)
         assertEquals(1, away.losses)
+    }
+
+    @Test
+    fun `a faixa e da posicao - quem sobe na tabela herda a faixa do lugar (issue 128)`() {
+        val zoned = initialStandings.copy(
+            rows = listOf(
+                row(1, "Goal Father").copy(position = 1, zone = TableZone.PROMOTION),
+                row(2, "Bonsucesso").copy(position = 2),
+                row(3, "Vargem").copy(position = 3, zone = TableZone.RELEGATION),
+            ),
+        )
+        // Vargem vence fora e salta do 3º para o 1º; Goal Father cai para o 3º.
+        val round = Round(
+            matchday = md(1),
+            season = 2026,
+            matches = listOf(match(1001, homeId = 1, awayId = 3, homeGoals = 0, awayGoals = 2)),
+        )
+        val result = applyRoundToStandings(round, zoned)
+
+        assertEquals(listOf(3L, 2, 1), result.rows.map { it.clubId.value })
+        assertEquals(listOf(TableZone.PROMOTION, TableZone.NONE, TableZone.RELEGATION), result.rows.map { it.zone })
     }
 
     @Test

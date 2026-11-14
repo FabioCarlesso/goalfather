@@ -10,7 +10,11 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Posture
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.result.TransferResult
+import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
+import com.carlesso.goalfather.domain.rules.foreignPlayerLimit
+import com.carlesso.goalfather.domain.rules.isForeignAt
+import com.carlesso.goalfather.domain.rules.startingLineupIn
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -68,6 +72,22 @@ data class PlayerDto(
     val nationality: CountryDto,
     /** Segunda nacionalidade — ausente (não `null`) quando não há, por `explicitNulls = false`. */
     val secondNationality: CountryDto? = null,
+    /** Suspensões em vigor, por competição (issue #130). Vazia quando não há. */
+    val suspensions: List<SuspensionDto> = emptyList(),
+    /**
+     * Ocupa vaga de estrangeiro NO CLUBE dele (issue #130)? Só faz sentido no
+     * elenco de um clube — no mercado o jogador não tem clube de referência, e
+     * o campo fica ausente (`null` + `explicitNulls = false`).
+     */
+    val foreign: Boolean? = null,
+)
+
+/** Suspensão como a API a descreve: com o nome da competição para a UI exibir. */
+@Serializable
+data class SuspensionDto(
+    val competitionId: String,
+    val competitionName: String,
+    val matchesLeft: Int,
 )
 
 /**
@@ -113,6 +133,11 @@ data class ClubDto(
     val ticketPriceCents: Long = DEFAULT_TICKET_PRICE_CENTS.cents,
     /** País do clube (issue #123). */
     val country: CountryDto,
+    /**
+     * Máximo de estrangeiros na escalação (issue #130) — o da liga do clube.
+     * Ausente = sem limite.
+     */
+    val foreignPlayerLimit: Int? = null,
 )
 
 @Serializable
@@ -155,7 +180,11 @@ sealed interface TransferResultDto {
 
 // ─── Mapeamento domínio → DTO ─────────────────────────────────────────────
 
-fun Player.toDto(): PlayerDto = PlayerDto(
+/**
+ * [club] é o clube de referência para o "estrangeiro?" — passado só pelo
+ * elenco de um clube; o mercado chama sem ele.
+ */
+fun Player.toDto(club: Club? = null): PlayerDto = PlayerDto(
     id = id.value,
     name = name,
     position = position,
@@ -174,6 +203,15 @@ fun Player.toDto(): PlayerDto = PlayerDto(
     star = star,
     nationality = nationality.toDto(),
     secondNationality = secondNationality?.toDto(),
+    suspensions = suspensions.map {
+        SuspensionDto(
+            competitionId = it.competitionId.value,
+            // Id desconhecido do catálogo cai no próprio id: legível, nunca vazio.
+            competitionName = SeasonCompetitions.nameOf(it.competitionId) ?: it.competitionId.value,
+            matchesLeft = it.matchesLeft,
+        )
+    },
+    foreign = club?.let { isForeignAt(it) },
 )
 
 fun Lineup.toDto(): LineupDto = LineupDto(
@@ -189,13 +227,15 @@ fun Lineup.toDto(): LineupDto = LineupDto(
  */
 fun Club.toDto(): ClubDto = run {
     val saved = lineup?.toDto()
-    val effective = startingLineup().toDto()
+    // A escalação efetiva é a do próximo jogo de LIGA (issue #130): sem os
+    // suspensos dela e dentro do limite de estrangeiros dela.
+    val effective = startingLineupIn(SeasonCompetitions.leagueId(division)).toDto()
     ClubDto(
         id = id.value,
         name = name,
         cash = cash.cents,
         stadiumCapacity = stadiumCapacity,
-        squad = squad.map { it.toDto() },
+        squad = squad.map { it.toDto(club = this) },
         lineup = saved,
         effectiveLineup = effective,
         lineupIsDefault = saved == null,
@@ -207,6 +247,7 @@ fun Club.toDto(): ClubDto = run {
         trainingFocus = trainingFocus,
         ticketPriceCents = ticketPriceCents.cents,
         country = country.toDto(),
+        foreignPlayerLimit = foreignPlayerLimit(),
     )
 }
 

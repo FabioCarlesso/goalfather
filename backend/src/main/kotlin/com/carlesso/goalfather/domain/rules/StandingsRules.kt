@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.TableZone
 
 /**
  * Aplica o resultado de uma rodada finalizada à tabela de UMA divisão.
@@ -58,9 +59,13 @@ fun applyRoundToStandings(round: Round, current: Standings): Standings {
     // `copy` preserva divisão e vagas de promoção/rebaixamento da tabela.
     // A ordenação é a genérica dos formatos de competição (issue #124), com os
     // critérios que a liga do jogo sempre usou — mesmo resultado de antes.
+    // A faixa é da POSIÇÃO, não do clube (issue #128): quem sobe na tabela
+    // herda a faixa do lugar que ocupou.
+    val zoneAt = current.rows.associate { it.position to it.zone }
     return current.copy(
         round = matchday,
-        rows = rankTable(byId.values.toList(), LEAGUE_COMPETITION_TIEBREAKERS),
+        rows = rankTable(byId.values.toList(), LEAGUE_COMPETITION_TIEBREAKERS)
+            .map { it.copy(zone = zoneAt[it.position] ?: TableZone.NONE) },
     )
 }
 
@@ -101,8 +106,6 @@ fun seasonStandings(season: Int, clubs: List<Club>): List<Standings> {
                 StandingRow(position = i + 1, clubId = club.id, clubName = club.name)
             },
             division = division,
-            promotionSpots = promotionSpotsFor(division),
-            relegationSpots = relegationSpotsFor(division, byDivision.size),
         )
-    }
+    }.withPyramidZones() // faixas e vagas das regras da pirâmide (issue #128)
 }

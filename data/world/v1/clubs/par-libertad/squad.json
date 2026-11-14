@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "angel-gonzalez",
+        "name": "Ángel González",
+        "birthDate": "2003-02-04",
+        "nationality": "PAR",
+        "position": "GK"
+      },
+      {
+        "id": "par-libertad-gen-16",
+        "name": "Ignacio Núñez",
+        "birthDate": "2005-05-19",
+        "nationality": "PAR",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-01",
+        "name": "Juan Pablo Aguirre",
+        "birthDate": "2000-07-09",
+        "nationality": "PAR",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "pablo-javier-adorno",
+        "name": "Pablo Javier Adorno",
+        "birthDate": "1996-02-06",
+        "nationality": "PAR",
+        "position": "DF"
+      },
+      {
+        "id": "par-libertad-gen-07",
+        "name": "Jonathan Rojas",
+        "birthDate": "2006-04-23",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-13",
+        "name": "Kevin Vargas",
+        "birthDate": "2004-03-04",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-04",
+        "name": "Luciano Aguirre",
+        "birthDate": "1993-09-28",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-02",
+        "name": "Nicolás Ruiz",
+        "birthDate": "1999-06-15",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-10",
+        "name": "Santiago Duarte",
+        "birthDate": "2007-03-28",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-17",
+        "name": "Santiago Sosa",
+        "birthDate": "1997-03-23",
+        "nationality": "PAR",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ruben-lezcano",
+        "name": "Rubén Lezcano",
+        "birthDate": "2004-02-09",
+        "nationality": "PAR",
+        "position": "MF"
+      },
+      {
+        "id": "par-libertad-gen-08",
+        "name": "Jhon Medina",
+        "birthDate": "2001-03-29",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-18",
+        "name": "Lucas Castillo",
+        "birthDate": "1996-05-22",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-11",
+        "name": "Matías González",
+        "birthDate": "2003-01-01",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-03",
+        "name": "Nicolás Flores",
+        "birthDate": "1994-02-24",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-14",
+        "name": "Valentín Ortiz",
+        "birthDate": "2005-09-15",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-05",
+        "name": "Walter Ruiz",
+        "birthDate": "1998-07-16",
+        "nationality": "PAR",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-12",
+        "name": "Gastón Medina",
+        "birthDate": "2006-08-01",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-09",
+        "name": "Gastón Romero",
+        "birthDate": "1997-06-20",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-06",
+        "name": "Nahuel Vega",
+        "birthDate": "2002-08-06",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-15",
+        "name": "Rodrigo Pereyra",
+        "birthDate": "2002-04-14",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "par-libertad-gen-19",
+        "name": "Santiago Flores",
+        "birthDate": "1996-02-26",
+        "nationality": "PAR",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -131,6 +131,7 @@ describe('estados de tela (issue #105)', () => {
           played: 5, wins: 5, draws: 0, losses: 0,
           goalsFor: 5, goalsAgainst: 0, goalDifference: 5,
           points: 15,
+          zone: 'NONE',
         }],
       },
     ]

@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "odysseas-vlachodimos",
+        "name": "Odysseas Vlachodimos",
+        "birthDate": "1994-04-26",
+        "nationality": "GRE",
+        "secondNationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "esp-sevilla-gen-01",
+        "name": "Alejandro Ramos",
+        "birthDate": "1998-10-16",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-11",
+        "name": "Manuel Muñoz",
+        "birthDate": "1999-03-12",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "adria-pedrosa",
+        "name": "Adrià Pedrosa",
+        "birthDate": "1998-05-13",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "federico-gattoni",
+        "name": "Federico Gattoni",
+        "birthDate": "1999-02-16",
+        "nationality": "ARG",
+        "position": "DF"
+      },
+      {
+        "id": "marcao",
+        "name": "Marcão",
+        "birthDate": "1996-06-05",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "esp-sevilla-gen-05",
+        "name": "Borja Jiménez",
+        "birthDate": "2003-02-04",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-12",
+        "name": "Iker Moreno",
+        "birthDate": "2004-12-16",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-08",
+        "name": "Javier Alonso",
+        "birthDate": "1998-11-22",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-03",
+        "name": "Manuel Iglesias",
+        "birthDate": "2001-01-12",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "giorgi-kochorashvili",
+        "name": "Giorgi Kochorashvili",
+        "birthDate": "1999-06-29",
+        "nationality": "GEO",
+        "position": "MF"
+      },
+      {
+        "id": "jon-guridi",
+        "name": "Jon Guridi",
+        "birthDate": "1995-02-28",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "ruben-vargas",
+        "name": "Rubén Vargas",
+        "birthDate": "1998-08-05",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "youssouf-fofana",
+        "name": "Youssouf Fofana",
+        "birthDate": "1999-01-10",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "esp-sevilla-gen-06",
+        "name": "Pablo Álvarez",
+        "birthDate": "2002-08-31",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-09",
+        "name": "Raúl Molina",
+        "birthDate": "2002-01-06",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-13",
+        "name": "Sergio Ramos",
+        "birthDate": "1994-09-10",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-10",
+        "name": "Andrés Ortega",
+        "birthDate": "2002-03-31",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-02",
+        "name": "Fernando Jiménez",
+        "birthDate": "2001-12-05",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-14",
+        "name": "Jorge García",
+        "birthDate": "2002-06-09",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-07",
+        "name": "José González",
+        "birthDate": "1996-03-19",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-sevilla-gen-04",
+        "name": "Xabier Serrano",
+        "birthDate": "2001-08-23",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

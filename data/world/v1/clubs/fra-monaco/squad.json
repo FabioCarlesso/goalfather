@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "benjamin-lecomte",
+        "name": "Benjamin Lecomte",
+        "birthDate": "1991-04-26",
+        "nationality": "FRA",
+        "position": "GK"
+      },
+      {
+        "id": "lukas-hradecky",
+        "name": "Lukas Hradecky",
+        "birthDate": "1989-11-24",
+        "nationality": "FIN",
+        "secondNationality": "SVK",
+        "position": "GK"
+      },
+      {
+        "id": "fra-monaco-gen-08",
+        "name": "Mathieu Martin",
+        "birthDate": "2008-03-19",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "eric-dier",
+        "name": "Eric Dier",
+        "birthDate": "1994-01-15",
+        "nationality": "ENG",
+        "position": "DF"
+      },
+      {
+        "id": "jordan-teze",
+        "name": "Jordan Teze",
+        "birthDate": "1999-09-30",
+        "nationality": "NED",
+        "secondNationality": "COD",
+        "position": "DF"
+      },
+      {
+        "id": "mohammed-salisu",
+        "name": "Mohammed Salisu",
+        "birthDate": "1999-04-17",
+        "nationality": "GHA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-monaco-gen-01",
+        "name": "Antoine Dupont",
+        "birthDate": "2004-03-23",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-monaco-gen-09",
+        "name": "Corentin Simon",
+        "birthDate": "2003-07-20",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-monaco-gen-05",
+        "name": "Nicolas Vincent",
+        "birthDate": "2003-07-28",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-monaco-gen-02",
+        "name": "Samuel Durand",
+        "birthDate": "1997-01-03",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "almoatasembellah-mohamed",
+        "name": "Almoatasembellah Mohamed",
+        "birthDate": "1996-04-06",
+        "nationality": "LBY",
+        "position": "MF"
+      },
+      {
+        "id": "ansu-fati",
+        "name": "Ansu Fati",
+        "birthDate": "2002-10-31",
+        "nationality": "ESP",
+        "secondNationality": "GNB",
+        "position": "MF"
+      },
+      {
+        "id": "denis-zakaria",
+        "name": "Denis Zakaria",
+        "birthDate": "1996-11-20",
+        "nationality": "SUI",
+        "position": "MF"
+      },
+      {
+        "id": "takumi-minamino",
+        "name": "Takumi Minamino",
+        "birthDate": "1995-01-16",
+        "nationality": "JPN",
+        "position": "MF"
+      },
+      {
+        "id": "fra-monaco-gen-03",
+        "name": "Enzo Bertrand",
+        "birthDate": "2004-06-19",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-monaco-gen-06",
+        "name": "Florian Martin",
+        "birthDate": "2007-06-05",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-monaco-gen-10",
+        "name": "Mathieu Gauthier",
+        "birthDate": "2006-10-31",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "folarin-balogun",
+        "name": "Folarin Balogun",
+        "birthDate": "2001-07-03",
+        "nationality": "USA",
+        "position": "FW"
+      },
+      {
+        "id": "safouane-benzahra",
+        "name": "Safouane Benzahra",
+        "birthDate": "2008-01-01",
+        "nationality": "MAR",
+        "position": "FW"
+      },
+      {
+        "id": "fra-monaco-gen-11",
+        "name": "Hugo Thomas",
+        "birthDate": "2006-05-04",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-monaco-gen-04",
+        "name": "Jordan Gauthier",
+        "birthDate": "2005-09-14",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-monaco-gen-07",
+        "name": "Pierre Morel",
+        "birthDate": "1995-01-28",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "kevin-trapp",
+        "name": "Kevin Trapp",
+        "birthDate": "1990-07-08",
+        "nationality": "GER",
+        "position": "GK"
+      },
+      {
+        "id": "fra-paris-fc-gen-12",
+        "name": "Arthur Faure",
+        "birthDate": "2008-05-10",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-01",
+        "name": "Samuel Mercier",
+        "birthDate": "1993-12-16",
+        "nationality": "FRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "thibault-campanini",
+        "name": "Thibault Campanini",
+        "birthDate": "1998-07-27",
+        "nationality": "FRA",
+        "position": "DF"
+      },
+      {
+        "id": "fra-paris-fc-gen-05",
+        "name": "Benjamin Laurent",
+        "birthDate": "2007-07-26",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-02",
+        "name": "Benjamin Lefebvre",
+        "birthDate": "1999-08-26",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-07",
+        "name": "Benjamin Moreau",
+        "birthDate": "1995-12-22",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-09",
+        "name": "Enzo Durand",
+        "birthDate": "2001-10-10",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-13",
+        "name": "Jordan Lambert",
+        "birthDate": "1994-12-07",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-03",
+        "name": "Thomas Fournier",
+        "birthDate": "1997-10-24",
+        "nationality": "FRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "mario-jason-kikonda",
+        "name": "Mario-Jason Kikonda",
+        "birthDate": "1996-04-20",
+        "nationality": "FRA",
+        "position": "MF"
+      },
+      {
+        "id": "maxime-lopez",
+        "name": "Maxime Lopez",
+        "birthDate": "1997-12-04",
+        "nationality": "FRA",
+        "secondNationality": "ALG",
+        "position": "MF"
+      },
+      {
+        "id": "fra-paris-fc-gen-04",
+        "name": "Arthur Simon",
+        "birthDate": "1996-06-10",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-08",
+        "name": "Enzo Dumont",
+        "birthDate": "2007-04-04",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-14",
+        "name": "Nicolas Chevalier",
+        "birthDate": "2002-04-27",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-06",
+        "name": "Nicolas Richard",
+        "birthDate": "2008-01-19",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-10",
+        "name": "Théo Blanc",
+        "birthDate": "2002-05-07",
+        "nationality": "FRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "jonathan-ikone",
+        "name": "Jonathan Ikoné",
+        "birthDate": "1998-05-02",
+        "nationality": "FRA",
+        "secondNationality": "COD",
+        "position": "FW"
+      },
+      {
+        "id": "marvin-gakpa",
+        "name": "Marvin Gakpa",
+        "birthDate": "1993-11-01",
+        "nationality": "FRA",
+        "secondNationality": "ALG",
+        "position": "FW"
+      },
+      {
+        "id": "moses-simon",
+        "name": "Moses Simon",
+        "birthDate": "1995-07-12",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "fra-paris-fc-gen-15",
+        "name": "Benjamin Bertrand",
+        "birthDate": "2002-07-29",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "fra-paris-fc-gen-11",
+        "name": "Corentin Moreau",
+        "birthDate": "2007-12-12",
+        "nationality": "FRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

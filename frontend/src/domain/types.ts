@@ -18,6 +18,8 @@ export type Position      = components['schemas']['Position']
 export type MarketEntry   = components['schemas']['MarketEntry']
 export type Standings     = components['schemas']['Standings']
 export type StandingRow   = components['schemas']['StandingRow']
+// Faixa da posição na tabela (issue #128)
+export type TableZone     = components['schemas']['TableZone']
 export type MatchEvent    = components['schemas']['MatchEvent']
 export type MatchStats    = components['schemas']['MatchStats']
 export type TeamStats     = components['schemas']['TeamStats']

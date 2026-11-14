@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "bra-santos-gen-12",
+        "name": "Davi Barbosa",
+        "birthDate": "2003-09-22",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-02",
+        "name": "Flávio Oliveira",
+        "birthDate": "2006-05-04",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-01",
+        "name": "José Moraes",
+        "birthDate": "2001-04-29",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "rodinei",
+        "name": "Rodinei",
+        "birthDate": "1992-01-29",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "bra-santos-gen-05",
+        "name": "Davi Cardoso",
+        "birthDate": "2000-01-02",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-13",
+        "name": "Edson Santana",
+        "birthDate": "2000-04-20",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-03",
+        "name": "Elias Nascimento",
+        "birthDate": "2003-10-31",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-07",
+        "name": "Nathan Macedo",
+        "birthDate": "1995-10-06",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-09",
+        "name": "Otávio Queiroz",
+        "birthDate": "2003-10-15",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-04",
+        "name": "Raul Coelho",
+        "birthDate": "2002-09-09",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arthur-melo",
+        "name": "Arthur Melo",
+        "birthDate": "1996-08-12",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "neymar",
+        "name": "Neymar",
+        "birthDate": "1992-02-05",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "philippe-coutinho",
+        "name": "Philippe Coutinho",
+        "birthDate": "1992-06-12",
+        "nationality": "BRA",
+        "secondNationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "willian-arao",
+        "name": "Willian Arão",
+        "birthDate": "1992-03-12",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "angelo",
+        "name": "Ângelo",
+        "birthDate": "2004-12-21",
+        "nationality": "BRA",
+        "position": "MF"
+      },
+      {
+        "id": "bra-santos-gen-14",
+        "name": "Cristiano Abreu",
+        "birthDate": "1995-07-08",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-10",
+        "name": "Cristiano Monteiro",
+        "birthDate": "2007-03-05",
+        "nationality": "BRA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "gabriel-barbosa",
+        "name": "Gabriel Barbosa",
+        "birthDate": "1996-08-30",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-santos-gen-06",
+        "name": "Emerson Santos",
+        "birthDate": "1994-05-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-08",
+        "name": "Gilberto Melo",
+        "birthDate": "2008-01-11",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-11",
+        "name": "Maurício Valente",
+        "birthDate": "2007-03-21",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-santos-gen-15",
+        "name": "Murilo Duarte",
+        "birthDate": "2006-12-24",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

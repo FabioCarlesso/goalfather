@@ -1,22 +1,176 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T00:00:00Z",
-  "source": "exemplo mínimo montado à mão a partir de fatos públicos; elenco parcial, substituído pela importação do Wikidata (issue #127)",
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
   "data": {
     "players": [
       {
-        "id": "weverton",
-        "name": "Weverton",
-        "birthDate": "1987-12-13",
+        "id": "bra-palmeiras-gen-02",
+        "name": "Jefferson Lopes",
+        "birthDate": "2002-05-30",
         "nationality": "BRA",
-        "position": "GK"
+        "position": "GK",
+        "generated": true
       },
       {
-        "id": "raphael-veiga",
-        "name": "Raphael Veiga",
-        "birthDate": "1995-06-19",
+        "id": "bra-palmeiras-gen-10",
+        "name": "Jonas Lima",
+        "birthDate": "2005-05-05",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-01",
+        "name": "Sérgio Lima",
+        "birthDate": "2000-09-26",
+        "nationality": "BRA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "benjamin-kuscevic",
+        "name": "Benjamín Kuscevic",
+        "birthDate": "1996-05-02",
+        "nationality": "CHI",
+        "position": "DF"
+      },
+      {
+        "id": "bra-palmeiras-gen-08",
+        "name": "Anderson Rezende",
+        "birthDate": "2003-05-13",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-11",
+        "name": "Guilherme Ferreira",
+        "birthDate": "2004-06-14",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-04",
+        "name": "Jonas Lopes",
+        "birthDate": "2003-09-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-06",
+        "name": "Otávio Barros",
+        "birthDate": "2002-11-05",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-05",
+        "name": "Paulo Xavier",
+        "birthDate": "1998-08-03",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-03",
+        "name": "Vinícius Borges",
+        "birthDate": "1995-11-25",
+        "nationality": "BRA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "andreas-pereira",
+        "name": "Andreas Pereira",
+        "birthDate": "1996-01-01",
+        "nationality": "BRA",
+        "secondNationality": "BEL",
+        "position": "MF"
+      },
+      {
+        "id": "felipe-anderson",
+        "name": "Felipe Anderson",
+        "birthDate": "1993-04-15",
         "nationality": "BRA",
         "position": "MF"
+      },
+      {
+        "id": "hugo-quintana",
+        "name": "Hugo Quintana",
+        "birthDate": "2001-11-10",
+        "nationality": "PAR",
+        "position": "MF"
+      },
+      {
+        "id": "jhon-arias",
+        "name": "Jhon Arias",
+        "birthDate": "1997-09-21",
+        "nationality": "COL",
+        "position": "MF"
+      },
+      {
+        "id": "joaquin-piquerez",
+        "name": "Joaquín Piquerez",
+        "birthDate": "1998-08-24",
+        "nationality": "URU",
+        "position": "MF"
+      },
+      {
+        "id": "jorge-eduardo-recalde",
+        "name": "Jorge Eduardo Recalde",
+        "birthDate": "1992-05-08",
+        "nationality": "PAR",
+        "position": "MF"
+      },
+      {
+        "id": "ramon-sosa",
+        "name": "Ramón Sosa",
+        "birthDate": "1999-08-31",
+        "nationality": "PAR",
+        "position": "MF"
+      },
+      {
+        "id": "riquelme-fillipi",
+        "name": "Riquelme Fillipi",
+        "birthDate": "2006-09-15",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "vitor-roque",
+        "name": "Vitor Roque",
+        "birthDate": "2005-02-28",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "bra-palmeiras-gen-07",
+        "name": "Anderson Moraes",
+        "birthDate": "2003-11-16",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-12",
+        "name": "Edson Abreu",
+        "birthDate": "2005-04-22",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "bra-palmeiras-gen-09",
+        "name": "Willian Dias",
+        "birthDate": "2006-02-04",
+        "nationality": "BRA",
+        "position": "FW",
+        "generated": true
       }
     ]
   }

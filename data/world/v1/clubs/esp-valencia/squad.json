@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "esp-valencia-gen-02",
+        "name": "Andrés Rodríguez",
+        "birthDate": "2000-03-16",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-01",
+        "name": "Francisco Serrano",
+        "birthDate": "2003-03-09",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-15",
+        "name": "Sergio Martínez",
+        "birthDate": "2004-07-09",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-05",
+        "name": "Adrián Jiménez",
+        "birthDate": "1994-04-04",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-09",
+        "name": "Adrián Rodríguez",
+        "birthDate": "2001-06-20",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-16",
+        "name": "Eduardo Sánchez",
+        "birthDate": "2002-03-13",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-03",
+        "name": "Jorge Ortega",
+        "birthDate": "2004-10-12",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-12",
+        "name": "Miguel Gómez",
+        "birthDate": "1993-07-14",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-04",
+        "name": "Álvaro Gómez",
+        "birthDate": "2008-04-12",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-07",
+        "name": "Álvaro Ortega",
+        "birthDate": "2005-04-26",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "arnaut-danjuma",
+        "name": "Arnaut Danjuma",
+        "birthDate": "1997-01-31",
+        "nationality": "NED",
+        "secondNationality": "NGA",
+        "position": "MF"
+      },
+      {
+        "id": "harvey-elliott",
+        "name": "Harvey Elliott",
+        "birthDate": "2003-04-04",
+        "nationality": "ENG",
+        "position": "MF"
+      },
+      {
+        "id": "esp-valencia-gen-06",
+        "name": "Alejandro Moreno",
+        "birthDate": "1993-11-07",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-13",
+        "name": "Daniel Pérez",
+        "birthDate": "1994-09-29",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-08",
+        "name": "Enrique Rubio",
+        "birthDate": "1999-08-11",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-10",
+        "name": "Hugo Fernández",
+        "birthDate": "2008-06-05",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-17",
+        "name": "Rubén Jiménez",
+        "birthDate": "1996-07-03",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "diego-lopez-noguerol",
+        "name": "Diego López Noguerol",
+        "birthDate": "2002-05-13",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "sadiq-umar",
+        "name": "Sadiq Umar",
+        "birthDate": "1997-02-02",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "esp-valencia-gen-18",
+        "name": "Carlos Torres",
+        "birthDate": "1994-04-17",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-11",
+        "name": "Juan Castro",
+        "birthDate": "1997-01-19",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "esp-valencia-gen-14",
+        "name": "Mario Molina",
+        "birthDate": "1993-08-23",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "julen-agirrezabala",
+        "name": "Julen Agirrezabala",
+        "birthDate": "2000-12-26",
+        "nationality": "ESP",
+        "position": "GK"
+      },
+      {
+        "id": "esp-racing-santander-gen-01",
+        "name": "Alejandro Ruiz",
+        "birthDate": "2007-08-24",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-10",
+        "name": "Raúl Gil",
+        "birthDate": "2003-06-04",
+        "nationality": "ESP",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "aaron-martin",
+        "name": "Aarón Martín",
+        "birthDate": "1997-04-22",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "saul-garcia",
+        "name": "Saúl García",
+        "birthDate": "1994-11-09",
+        "nationality": "ESP",
+        "position": "DF"
+      },
+      {
+        "id": "esp-racing-santander-gen-06",
+        "name": "Eduardo López",
+        "birthDate": "1997-10-28",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-11",
+        "name": "Mario Blanco",
+        "birthDate": "2001-11-01",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-08",
+        "name": "Raúl Hernández",
+        "birthDate": "2006-08-07",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-04",
+        "name": "Rubén Castro",
+        "birthDate": "1996-10-10",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-02",
+        "name": "Xabier Díaz",
+        "birthDate": "2007-08-17",
+        "nationality": "ESP",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "jorge-pombo",
+        "name": "Jorge Pombo",
+        "birthDate": "1994-02-22",
+        "nationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "sergio-canales-madrazo",
+        "name": "Sergio Canales Madrazo",
+        "birthDate": "1991-02-16",
+        "nationality": "NGA",
+        "secondNationality": "ESP",
+        "position": "MF"
+      },
+      {
+        "id": "esp-racing-santander-gen-05",
+        "name": "Alberto Castro",
+        "birthDate": "2001-02-23",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-12",
+        "name": "Alberto Ramos",
+        "birthDate": "1999-06-28",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-03",
+        "name": "Andrés Martín",
+        "birthDate": "1997-07-11",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-07",
+        "name": "Iker Álvarez",
+        "birthDate": "2003-02-25",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "esp-racing-santander-gen-09",
+        "name": "Marcos González",
+        "birthDate": "1997-08-19",
+        "nationality": "ESP",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "asier-villalibre",
+        "name": "Asier Villalibre",
+        "birthDate": "1997-09-30",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "ivan-martin-nunez",
+        "name": "Iván Martín Núñez",
+        "birthDate": "1999-02-14",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "inigo-vicente",
+        "name": "Iñigo Vicente",
+        "birthDate": "1998-01-06",
+        "nationality": "ESP",
+        "position": "FW"
+      },
+      {
+        "id": "matheus-aias",
+        "name": "Matheus Aiás",
+        "birthDate": "1996-12-30",
+        "nationality": "BRA",
+        "position": "FW"
+      },
+      {
+        "id": "esp-racing-santander-gen-13",
+        "name": "Miguel Ramírez",
+        "birthDate": "1998-08-31",
+        "nationality": "ESP",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

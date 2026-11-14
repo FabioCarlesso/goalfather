@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": {
+    "players": [
+      {
+        "id": "ita-venezia-gen-01",
+        "name": "Christian Marchetti",
+        "birthDate": "2006-01-10",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-02",
+        "name": "Daniele Bianchi",
+        "birthDate": "2006-11-12",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-15",
+        "name": "Gabriele Gallo",
+        "birthDate": "1996-09-05",
+        "nationality": "ITA",
+        "position": "GK",
+        "generated": true
+      },
+      {
+        "id": "juan-jesus",
+        "name": "Juan Jesus",
+        "birthDate": "1991-06-10",
+        "nationality": "BRA",
+        "position": "DF"
+      },
+      {
+        "id": "ita-venezia-gen-04",
+        "name": "Antonio Bruno",
+        "birthDate": "2000-04-09",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-12",
+        "name": "Federico Fontana",
+        "birthDate": "2006-05-16",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-03",
+        "name": "Giorgio Conti",
+        "birthDate": "2003-09-05",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-09",
+        "name": "Giorgio Esposito",
+        "birthDate": "2008-03-07",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-16",
+        "name": "Marco De Luca",
+        "birthDate": "1999-03-17",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-06",
+        "name": "Mattia Giordano",
+        "birthDate": "1999-01-13",
+        "nationality": "ITA",
+        "position": "DF",
+        "generated": true
+      },
+      {
+        "id": "emil-bohinen",
+        "name": "Emil Bohinen",
+        "birthDate": "1999-03-12",
+        "nationality": "NOR",
+        "position": "MF"
+      },
+      {
+        "id": "jay-idzes",
+        "name": "Jay Idzes",
+        "birthDate": "2000-06-02",
+        "nationality": "IDN",
+        "position": "MF"
+      },
+      {
+        "id": "ita-venezia-gen-13",
+        "name": "Francesco Moretti",
+        "birthDate": "1994-11-09",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-10",
+        "name": "Giorgio Russo",
+        "birthDate": "2004-12-15",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-17",
+        "name": "Nicolò Villa",
+        "birthDate": "2005-07-26",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-07",
+        "name": "Pietro Bruno",
+        "birthDate": "2003-07-30",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-05",
+        "name": "Pietro Lombardi",
+        "birthDate": "1996-09-14",
+        "nationality": "ITA",
+        "position": "MF",
+        "generated": true
+      },
+      {
+        "id": "akor-adams",
+        "name": "Akor Adams",
+        "birthDate": "2000-01-29",
+        "nationality": "NGA",
+        "position": "FW"
+      },
+      {
+        "id": "ita-venezia-gen-11",
+        "name": "Manuel Ricci",
+        "birthDate": "1993-08-16",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-08",
+        "name": "Matteo Ricci",
+        "birthDate": "2005-07-22",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-18",
+        "name": "Mattia Villa",
+        "birthDate": "2003-06-23",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      },
+      {
+        "id": "ita-venezia-gen-14",
+        "name": "Riccardo Esposito",
+        "birthDate": "2002-09-24",
+        "nationality": "ITA",
+        "position": "FW",
+        "generated": true
+      }
+    ]
+  }
+}

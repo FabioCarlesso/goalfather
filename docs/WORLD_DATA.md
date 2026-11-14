@@ -1,6 +1,6 @@
 # Dados do mundo (pack `data/world/`)
 
-> Issue #126 · épico #148 (Fase 8, onda 2). Os dados reais vêm na #127 e o seed passa a usar o pack na #131.
+> Issues #126 (provedor) e #127 (importação do Wikidata) · épico #148 (Fase 8). O seed passa a usar o pack na #131.
 
 O mundo do jogo (países, competições, clubes, elencos, estádios, datas FIFA e janelas de transferência) é **dado**, não código. Ele fica no repositório, em `data/world/`, organizado **como se fosse uma API externa**: cada arquivo é a resposta de um "endpoint". O backend lê esse pack por um port (`WorldDataProvider`) e o traduz para o domínio por uma **camada anticorrupção**. Trocar o arquivo por um pack fora do git ou por uma API HTTP de verdade é escrever outro adapter. O domínio não muda.
 
@@ -24,14 +24,15 @@ Todo arquivo tem o mesmo envelope:
 ```json
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T00:00:00Z",
-  "source": "Wikidata (CC0), consulta de 2026-11-10",
+  "generatedAt": "2026-11-13T15:26:40Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
   "data": ...
 }
 ```
 
 - `schemaVersion`: versão do formato de `data`. O loader lê **só o cabeçalho primeiro**. Se a versão não for suportada (hoje só `1`), o erro é `UnsupportedSchemaVersion`, e não um "campo X faltando" que esconderia a causa real.
-- `generatedAt` e `source`: proveniência, para auditoria. Não são interpretados.
+- `generatedAt`, `source` e `generator` (opcional): proveniência, para auditoria. Não são interpretados. No pack importado, `generatedAt` é a hora da consulta mais recente ao Wikidata (vem do cache, não do relógio), e `generator` é a versão do importador.
 - **Campos desconhecidos são ignorados** (`ignoreUnknownKeys = true`). Um pack com campos novos continua sendo lido por código antigo. Campos opcionais têm default, então o contrário também vale.
 
 ## Schema (`schemaVersion: 1`)
@@ -95,6 +96,7 @@ Um item **só com `id`** é uma *referência* a um clube definido por completo e
 
 - `position`: `GK`, `DF`, `MF`, `FW` (vocabulário do Wikidata). `CB`, `GOALKEEPER` e afins também são aceitos. O mapper traduz `DF` para o `CB` do jogo, e é aqui que a anticorrupção aparece de forma mais visível.
 - `displayName` (opcional): nome exibido no lugar do real (pedido de remoção, homônimo), **sem mudar o `id`**. Saves e históricos continuam apontando para o mesmo jogador.
+- `generated` (opcional): `true` quando o jogador **não é real** e foi gerado pelo importador para completar o elenco (ver abaixo). Proveniência: o domínio não lê.
 - Erros possíveis: elenco sem goleiro gera `SquadWithoutGoalkeeper`; o mesmo `id` de jogador em dois elencos gera `DuplicatePlayer`.
 
 ### `calendar/{year}.json` → objeto
@@ -159,8 +161,57 @@ O `WorldPackLoader` recebe `read: suspend (resource: String) -> String?`. O adap
 
 O `ArchitectureBoundaryTest` garante que nem `domain/` nem `application/` importam nada de `adapter` (os DTOs do provedor incluídos).
 
+## Importação do Wikidata (`tools/world-import/`, issue #127)
+
+O conteúdo de `data/world/v1/` (menos `calendar/`) é **gerado** por um script reprodutível. Não edite os JSON à mão: a próxima importação apaga a edição. Corrija a curadoria e rode de novo.
+
+```bash
+cd backend
+./gradlew worldImport                     # usa o cache; consulta o Wikidata só o que faltar ou mudou
+./gradlew worldImport --args=--offline    # só o cache: reprodutível, sem rede
+./gradlew worldImport --args=--refresh    # ignora o cache e consulta tudo de novo
+```
+
+O importador é um **source set à parte** do Gradle do backend (`worldImport`, código em `tools/world-import/src/`). Ele enxerga as classes do backend (reusa os DTOs do pack, o gerador de nomes da #88 e o `FileWorldDataProvider`), mas não entra no `bootJar`. Os testes dele rodam junto com o `./gradlew test`.
+
+### Entradas
+
+| Arquivo | O quê |
+|---|---|
+| `data/world/competitions.yaml` | Parâmetros da importação; as competições (formato, desempate, divisão e força, que são regras do jogo); e, por competição, os clubes da temporada com id do pack, nome de exibição e QID do Wikidata. |
+| `data/world/club-reputation.yaml` | Reputação 1..100 de cada clube (tabela curada, decisão nossa). Clube sem reputação faz a importação falhar. |
+| `data/world/overrides.yaml` | Correções aplicadas **depois** da importação: confederação de país, estádio/capacidade de clube, jogador que mudou de clube (`club`), saiu (`exclude`), posição, nome ou `displayName`. Jogadores são identificados pelo QID. |
+| Wikidata (SPARQL) | Rótulos dos clubes, estádio (`P115`) e capacidade (`P1083`), seleções (trigrama FIFA `P3441`, confederação, nome em português, ISO) e jogadores (`P54` clube, `P1532` país esportivo, `P27` cidadania, `P569` nascimento, `P413` posição). |
+
+**Por que a lista de clubes é curada:** os itens de temporada do Wikidata quase nunca têm os participantes (`P1923`), e o `P118` (liga) dos clubes mistura temporadas antigas, jogadores e até partidas. A lista de cada competição foi conferida no artigo da temporada na Wikipédia (campo `reference`) e amarrada ao QID do clube. Temporadas: 2026 no Brasil e na Libertadores (só a **fase de grupos**, 32 clubes), 2026/27 na Europa.
+
+### Regras da importação
+
+- **Vínculo atual** (`Queries.players`). O Wikidata guarda muito vínculo antigo sem data de fim. Por isso conta como atual o `P54` que (1) não tem data de fim nem rank depreciado; (2) **tem** data de início, a partir de `minMembershipStart` (2019-01-01); (3) não tem outro vínculo de clube com início posterior (seleções não contam: têm trigrama FIFA, clubes não); (4) é de um humano vivo, nascido a partir de `minBirthDate` (1984), e não do sexo feminino. Se o jogador sobra em dois clubes do pack, vale o vínculo mais recente.
+- **Nacionalidade**: o país esportivo (`P1532`) primeiro, a cidadania (`P27`) como reserva; a segunda nacionalidade é qualquer outra das duas. Um país do Wikidata vira trigrama pela seleção que o tem como `P1532` (Inglaterra → `ENG`). O Reino Unido aponta para quatro seleções, então é ambíguo e não vira país.
+- **Posição**: as posições do Wikidata descendem de quatro raízes (goleiro, defensor, meio-campista, atacante). Vence a raiz mais citada.
+- **Descartes**: jogador sem posição, sem nacionalidade mapeável, sem nascimento ou sem nome em alfabeto latino fica de fora. O log da importação conta cada motivo.
+- **Estádio**: o `P115` sem data de fim, com rank preferido primeiro e depois o início mais recente. Capacidade abaixo de 1.000 é tratada como erro de cadastro.
+- **Ids**: o do clube é curado. O do jogador vem do nome (`agustin-rossi`); homônimos ganham o ano de nascimento e, se ainda empatarem, o QID.
+- **Elencos curtos** (`SquadFiller`): completados com jogadores **gerados** até `minSquadSize` (22) e `minGoalkeepers` (2), seguindo o elenco-modelo 3 GK / 7 DF / 7 MF / 5 FW. O nome é plausível pelo país do clube: o Brasil reusa o gerador da #88, e os outros países usam listas próprias no mesmo esquema. A idade vai de 18 a 32 anos na `referenceDate`, e a nacionalidade é a do clube. O `Random` de cada clube nasce de `seed + id.hashCode()`, o que torna o resultado estável. O gerado tem `"generated": true` e id `{clube}-gen-NN`.
+- Se faltar curadoria (clube sem reputação, país sem confederação, clube sem estádio com capacidade), a importação **falha listando tudo** e não escreve nada. No fim, o pack escrito é carregado pelo `FileWorldDataProvider`; se não for válido, o comando falha.
+
+### Cache e determinismo
+
+Cada consulta tem seu arquivo em `tools/world-import/cache/{nome}.json`, com o texto da consulta, a data e as linhas **já ordenadas**. O cache é commitado (~0,7 MB). Ele é a "resposta congelada" que torna a importação reprodutível. Uma consulta cujo texto mudou é refeita, e no `--offline` isso é erro. Todo desempate do assembler é explícito (nada depende da ordem das linhas do endpoint), e o JSON sai com ordem de campos fixa. O teste `GeneratedWorldPackTest` reimporta do cache num diretório temporário e compara **byte a byte** com o pack commitado.
+
+Política de uso do endpoint: User-Agent genérico do projeto (`GoalFather-world-import/1.0 (open-source study project)`), sem dado pessoal; poucas consultas em lote (13, sendo uma de jogadores por competição); pausa de 2 s entre consultas; e respeito ao `Retry-After` em 429/503.
+
+### Atualizar o pack
+
+1. Mudou a temporada ou um clube subiu/caiu: edite `competitions.yaml` (id, nome, QID) e `club-reputation.yaml`.
+2. Rode `./gradlew worldImport --args=--refresh` e leia o log: descartes, avisos e erros de curadoria.
+3. Corrija o que faltar em `overrides.yaml` e rode `./gradlew worldImport` (agora do cache).
+4. Revise o diff de `data/world/v1/` e do cache e commite os dois juntos.
+
 ## Estado atual e próximos passos
 
 - O bean `WorldDataProvider` está registrado, mas **o seed do jogo ainda é o `InitialLeague`**. A troca é da #131. A carga é preguiçosa: sem o pack no disco (por exemplo, na imagem Docker, que não copia `data/`), a aplicação sobe normalmente, e só o `load()` devolve `MissingResource`.
-- `data/world/v1/` tem hoje um **exemplo mínimo** (Série A com dois clubes e elencos parciais, montado à mão). O pack real vem do script de importação do Wikidata (#127). O teste `FileWorldDataProviderTest` carrega esse pack em todo build, então ele nunca fica inválido sem que o CI perceba.
+- `data/world/v1/` tem o pack importado do Wikidata: as 7 ligas do MVP (Brasileirão A e B 2026; Premier League, La Liga, Serie A, Bundesliga e Ligue 1 2026/27) e a fase de grupos da Libertadores 2026. São 162 clubes, com 1.329 jogadores reais e 2.258 gerados (3.587 no total, 2,1 MB de JSON). O Wikidata cobre bem os grandes clubes europeus, mas mal o futebol sul-americano, e os elencos brasileiros vêm, na maioria, completados por gerados. A Copa do Brasil ainda não está no pack (a maior parte dos participantes é de fora das Séries A e B). O teste `FileWorldDataProviderTest` carrega o pack em todo build, e o `GeneratedWorldPackTest` confere os critérios da #127.
+- `calendar/2026.json` continua mantido à mão; o importador não toca nele.
 - O catálogo `Countries` em `domain/model/Country.kt` continua sendo o interino da #123, usado pela persistência. A substituição dele pelos países do pack acontece com o seed (#131).
