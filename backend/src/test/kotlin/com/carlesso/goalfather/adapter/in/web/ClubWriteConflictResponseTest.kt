@@ -64,6 +64,7 @@ class ClubWriteConflictResponseTest {
         setTicketPrice = setTicketPrice,
         expandStadium = expandStadium,
         board = mockk(),
+        onboarding = mockk(),
         json = json,
     )
 

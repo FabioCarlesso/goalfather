@@ -35,6 +35,7 @@ class ForeignPlayerLimitResponseTest {
         setTicketPrice = mockk(),
         expandStadium = mockk(),
         board = mockk(),
+        onboarding = mockk(),
         json = Json { classDiscriminator = "type" },
     )
 
