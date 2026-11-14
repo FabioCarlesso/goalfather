@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web
 
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
@@ -103,7 +104,7 @@ class LeagueCupMvcTest {
     fun `cada partida do encaixe corrente traz o stage com o discriminador do contrato`() {
         // Encaixe próprio "lá na frente": outras suítes gravam encaixes no mesmo H2.
         val matchday = farMatchday(9990)
-        val match = RoundMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup(KnockoutPhase.FINAL))
+        val match = leagueMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup(KnockoutPhase.FINAL))
         runBlocking { leagueRepo.saveRound(Round(matchday, 2026, matches = listOf(match))) }
         try {
             val response = get("/api/league/round/current", token())

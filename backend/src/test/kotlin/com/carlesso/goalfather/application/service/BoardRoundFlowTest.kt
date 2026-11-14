@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
@@ -66,6 +69,7 @@ class BoardRoundFlowTest {
         InMemoryCupRepository(),
         claimRepo,
         offerRepo,
+        InMemoryCatalogRepository(),
     )
 
     private val savedClubs = mutableListOf<Club>()
@@ -73,7 +77,7 @@ class BoardRoundFlowTest {
     private fun titleBoard(confidence: Int = INITIAL_BOARD_CONFIDENCE) =
         BoardExpectation(season = 2026, objective = BoardObjective.TITLE, targetPosition = 1, confidence = confidence)
 
-    private fun table(vararg ids: Long, division: Division = Division.FIRST) = Standings(
+    private fun table(vararg ids: Long, division: Division = Division.FIRST) = testStandings(
         season = 2026,
         round = 0,
         rows = ids.mapIndexed { i, id -> StandingRow(position = i + 1, clubId = ClubId(id), clubName = "C$id") },
@@ -86,7 +90,7 @@ class BoardRoundFlowTest {
             season = 2026,
             // O WS só simula encaixe já liberado pelo `play` (issue #151).
             status = RoundStatus.InProgress,
-            matches = listOf(RoundMatch(1001, ClubId(100), ClubId(101), "X", "Y")),
+            matches = listOf(leagueMatch(1001, ClubId(100), ClubId(101), "X", "Y")),
         )
         coEvery { leagueRepo.currentStandings() } returns standings.toList()
         coEvery { clubRepo.findById(any()) } returns null

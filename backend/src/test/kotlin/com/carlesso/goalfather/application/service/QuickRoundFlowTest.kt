@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -50,6 +53,7 @@ class QuickRoundFlowTest {
         InMemoryCupRepository(),
         mockk(relaxed = true),
         mockk(relaxed = true),
+        InMemoryCatalogRepository(),
     )
 
     // Ids de jogador distintos por clube: a ficha de cada um é inequívoca.
@@ -63,11 +67,11 @@ class QuickRoundFlowTest {
     private val aiAway2 = club(4, overall = 65)
     private val clubs = listOf(humanHome, aiAway, aiHome, aiAway2)
 
-    private val humanMatch = RoundMatch(2001, ClubId(1), ClubId(2), "C1", "C2")
-    private val aiMatch = RoundMatch(2002, ClubId(3), ClubId(4), "C3", "C4")
+    private val humanMatch = leagueMatch(2001, ClubId(1), ClubId(2), "C1", "C2")
+    private val aiMatch = leagueMatch(2002, ClubId(3), ClubId(4), "C3", "C4")
     private val round = Round(md(1), 2026, RoundStatus.InProgress, listOf(humanMatch, aiMatch))
 
-    private val standings = Standings(
+    private val standings = testStandings(
         season = 2026,
         round = 0,
         rows = clubs.mapIndexed { i, c -> StandingRow(i + 1, c.id, c.name) },

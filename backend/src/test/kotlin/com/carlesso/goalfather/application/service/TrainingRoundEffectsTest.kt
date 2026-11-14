@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -52,6 +55,7 @@ class TrainingRoundEffectsTest {
             InMemoryCupRepository(),
             mockk(relaxed = true),
             mockk(relaxed = true),
+            InMemoryCatalogRepository(),
         )
 
     // Elenco jovem e cansado: o foco FISICO tem o que recuperar, e a chance de
@@ -68,10 +72,10 @@ class TrainingRoundEffectsTest {
     private val round = Round(
         matchday = md(1),
         season = 2026,
-        matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+        matches = listOf(leagueMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
     )
 
-    private val standings = Standings(
+    private val standings = testStandings(
         season = 2026,
         round = 0,
         rows = listOf(

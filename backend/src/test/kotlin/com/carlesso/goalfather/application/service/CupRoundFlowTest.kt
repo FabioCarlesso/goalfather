@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -8,6 +10,7 @@ import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.KnockoutPhase
@@ -23,11 +26,12 @@ import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TieResult
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.cupDrawSeed
-import com.carlesso.goalfather.domain.rules.cupMatches
+import com.carlesso.goalfather.domain.rules.nationalCupMatches
 import com.carlesso.goalfather.domain.rules.drawCup
-import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.recordRound
-import com.carlesso.goalfather.domain.rules.seasonPlan
+import com.carlesso.goalfather.domain.rules.worldPlan
+import com.carlesso.goalfather.test.COPA_DO_BRASIL
+import com.carlesso.goalfather.test.brazilCatalog
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.Runs
@@ -64,8 +68,14 @@ class CupRoundFlowTest {
     private val cup: Cup = drawCup(2026, clubs, Random(cupDrawSeed(2026)))
     private val cupRepo = InMemoryCupRepository(cup)
 
+    // O Brasil do catálogo de teste (issue #131): Série A em turno único e a
+    // Copa do Brasil — os 4 clubes são todos da Série A.
+    private val catalog = brazilCatalog(legs = 1, cupClubs = 4)
+    private val copa = catalog.single { it.id == COPA_DO_BRASIL }
+    private val plan = worldPlan(catalog, clubs, mapOf(Countries.BRAZIL.code to 2026), mapOf(COPA_DO_BRASIL to cup))
+
     /** Os 5 encaixes da temporada, na ordem: L1, Semi, L2, Final, L3. */
-    private val slots = seasonPlan(2026, clubs, cup).schedule.matchdays
+    private val slots = plan.schedule.matchdays
 
     private val service = PlayRoundService(
         clubRepo,
@@ -77,16 +87,17 @@ class CupRoundFlowTest {
         cupRepo,
         mockk(relaxed = true),
         mockk(relaxed = true),
+        InMemoryCatalogRepository(catalog),
     )
 
-    private val table = Standings(
+    private val table = testStandings(
         season = 2026,
         round = 0,
         rows = clubs.mapIndexed { i, c -> StandingRow(i + 1, c.id, c.name) },
     )
 
     /** O encaixe [matchday] só com os jogos de copa da fase corrente de [cup]. */
-    private fun cupAt(matchday: Matchday, cup: Cup) = Round(matchday, 2026, matches = cupMatches(matchday, cup, clubs))
+    private fun cupAt(matchday: Matchday, cup: Cup) = Round(matchday, 2026, matches = nationalCupMatches(matchday, cup, copa, clubs))
 
     private val savedRounds = mutableListOf<Round>()
     private val claimed = slot<Round>()
@@ -114,7 +125,7 @@ class CupRoundFlowTest {
     @Test
     fun `depois da rodada de liga 1 o encaixe seguinte e a semifinal da copa no meio de semana`() = runTest {
         assertEquals(5, slots.size)
-        stubLeague(generateRound(slots[0], 2026, clubs))
+        stubLeague(plan.roundAt(slots[0], clubs))
 
         service.stream(slots[0]).toList()
 
@@ -174,7 +185,7 @@ class CupRoundFlowTest {
         assertEquals(slots[2], next.matchday)
         assertTrue(next.matches.all { it.stage == RoundStage.League(2) })
         assertEquals(
-            generateRound(slots[2], 2026, clubs, leagueRound = 2).matches.map { it.homeClubId to it.awayClubId },
+            plan.roundAt(slots[2], clubs).matches.map { it.homeClubId to it.awayClubId },
             next.matches.map { it.homeClubId to it.awayClubId },
         )
     }
@@ -186,7 +197,7 @@ class CupRoundFlowTest {
         cupRepo.cups[2026] = cup.recordRound(
             semi.copy(matches = semi.matches.map { it.copy(status = RoundStatus.Finished, homeGoals = 1) }),
         ).cup
-        val league2 = generateRound(slots[2], 2026, clubs, leagueRound = 2)
+        val league2 = plan.roundAt(slots[2], clubs)
         stubLeague(league2)
 
         service.stream(slots[2]).toList()
@@ -215,7 +226,7 @@ class CupRoundFlowTest {
         val record = slot<SeasonRecord>()
         coEvery { historyRepo.append(capture(record)) } returns true
         // Último encaixe = rodada de liga 3, a última da temporada.
-        stubLeague(generateRound(slots[4], 2026, clubs, leagueRound = 3))
+        stubLeague(plan.roundAt(slots[4], clubs))
 
         val events = service.stream(slots[4]).toList()
 
@@ -234,7 +245,7 @@ class CupRoundFlowTest {
     @Test
     fun `liga sem copa segue so de pontos corridos`() = runTest {
         cupRepo.cups.clear()
-        stubLeague(generateRound(slots[0], 2026, clubs))
+        stubLeague(plan.roundAt(slots[0], clubs))
 
         service.stream(slots[0]).toList()
 

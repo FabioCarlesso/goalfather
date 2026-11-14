@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web
 
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.ClubId
@@ -107,8 +108,8 @@ class LeagueStandingsMvcTest {
                     matchday = matchday,
                     season = 2026,
                     matches = listOf(
-                        RoundMatch(9401101, ClubId(1), ClubId(2), "A", "B"),
-                        RoundMatch(9401201, ClubId(7), ClubId(8), "C", "D", division = Division(2)),
+                        leagueMatch(9401101, ClubId(1), ClubId(2), "A", "B"),
+                        leagueMatch(9401201, ClubId(7), ClubId(8), "C", "D", division = Division(2)),
                     ),
                 ),
             )

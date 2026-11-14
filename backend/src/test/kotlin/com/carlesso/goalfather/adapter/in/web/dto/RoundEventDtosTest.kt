@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web.dto
 
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.event.TrainingEvent
@@ -56,7 +57,7 @@ class RoundEventDtosTest {
         goalsFor = 5, goalsAgainst = 1, goalDifference = 4, points = 6,
     )
 
-    private val standings = Standings(
+    private val standings = testStandings(
         season = 2026, round = 2, rows = listOf(row),
         division = Division(2), promotionSpots = 2, relegationSpots = 0,
     )

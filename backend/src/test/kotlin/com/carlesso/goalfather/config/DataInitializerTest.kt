@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.config
 
+import com.carlesso.goalfather.domain.rules.startWorld
+import com.carlesso.goalfather.application.seed.interimBrazilCatalog
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
@@ -9,7 +12,6 @@ import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.Standings
-import com.carlesso.goalfather.domain.rules.seasonPlan
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -32,7 +34,7 @@ class DataInitializerTest {
     private val clubs = mockk<ClubRepository>(relaxed = true) { coEvery { findAll() } returns league.clubs }
     private val leagueRepo = mockk<LeagueRepository>(relaxed = true)
     private val cups = mockk<CupRepository>(relaxed = true)
-    private val initializer = DataInitializer(clubRepo, mockk(relaxed = true), clubs, leagueRepo, cups)
+    private val initializer = DataInitializer(clubRepo, mockk(relaxed = true), clubs, leagueRepo, cups, InMemoryCatalogRepository(interimBrazilCatalog()))
 
     /** Tabela no meio da temporada: alguém já jogou, como num save antigo. */
     private fun midSeasonStandings(): List<Standings> = league.initialStandings().map { s ->
@@ -52,7 +54,7 @@ class DataInitializerTest {
 
         initializer.run()
 
-        val expectedFirst = seasonPlan(league.season, league.clubs, savedCup.captured).first
+        val expectedFirst = startWorld(league.season, league.clubs, interimBrazilCatalog()).firstRound?.matchday
         assertEquals(expectedFirst, savedRound.captured.matchday)
         assertEquals(RoundStatus.Scheduled, savedRound.captured.status)
         assertEquals(league.season, savedCup.captured.season)

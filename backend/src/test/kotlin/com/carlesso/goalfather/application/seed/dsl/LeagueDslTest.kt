@@ -13,7 +13,6 @@ import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.cents
-import com.carlesso.goalfather.domain.rules.PROMOTION_RELEGATION_SPOTS
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -167,8 +166,10 @@ class LeagueDslTest {
         assertEquals(listOf(Division(1), Division(2)), tables.map { it.division })
         // Elite não sobe; última divisão não desce. As demais vagas seguem a regra.
         assertEquals(0, tables[0].promotionSpots)
-        assertEquals(PROMOTION_RELEGATION_SPOTS, tables[0].relegationSpots)
-        assertEquals(PROMOTION_RELEGATION_SPOTS, tables[1].promotionSpots)
+        // Série A ↔ Série B: as faixas cabem até um terço da tabela (issue #131) —
+        // com 2 clubes por divisão, nenhuma (o seed real, de 6, troca 2).
+        assertEquals(0, tables[0].relegationSpots)
+        assertEquals(0, tables[1].promotionSpots)
         assertEquals(0, tables[1].relegationSpots)
     }
 

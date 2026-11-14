@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.application.port.`in`.MatchStream
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -32,7 +34,7 @@ class PlayMatchServiceTest {
 
     private val clubRepo: ClubRepository = mockk()
     private val leagueRepo: LeagueRepository = mockk()
-    private val service = PlayMatchService(clubRepo, leagueRepo)
+    private val service = PlayMatchService(clubRepo, leagueRepo, InMemoryCatalogRepository())
 
     /** `matchId` pela fórmula real (`serial * 1000 + n`): o service acha o encaixe por ele. */
     private fun matchIdIn(matchday: Matchday, n: Int = 101): Long = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY + n
@@ -45,7 +47,7 @@ class PlayMatchServiceTest {
         season = 2026,
         status = RoundStatus.InProgress,
         matches = listOf(
-            RoundMatch(matchId, ClubId(1), ClubId(2), "Home FC", "Away FC"),
+            leagueMatch(matchId, ClubId(1), ClubId(2), "Home FC", "Away FC"),
         ),
     )
 

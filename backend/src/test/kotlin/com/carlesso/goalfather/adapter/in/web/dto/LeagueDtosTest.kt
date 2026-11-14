@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.adapter.`in`.web.dto
 
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.model.CareerCampaign
 import com.carlesso.goalfather.domain.model.ClubCareer
 import com.carlesso.goalfather.domain.model.ClubId
@@ -73,7 +75,7 @@ class LeagueDtosTest {
 
     @Test
     fun `standings achata divisao e clubId em numero e expoe so os campos do contrato`() {
-        val standings = Standings(
+        val standings = testStandings(
             season = 2026, round = 3, rows = listOf(row),
             division = Division(2), promotionSpots = 2, relegationSpots = 0,
         )
@@ -182,7 +184,7 @@ class LeagueDtosTest {
         matchday = md(5),
         season = 2026,
         matches = listOf(
-            RoundMatch(501, ClubId(1), ClubId(2), "Alfa", "Beta", division = Division(2), stage = RoundStage.League(matchday = 3)),
+            leagueMatch(501, ClubId(1), ClubId(2), "Alfa", "Beta", division = Division(2), stage = RoundStage.League(matchday = 3)),
         ),
     )
 

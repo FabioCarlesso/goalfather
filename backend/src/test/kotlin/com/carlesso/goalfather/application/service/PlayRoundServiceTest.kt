@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
@@ -27,7 +30,7 @@ import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
+import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.SeasonRecord
 import com.carlesso.goalfather.domain.model.Suspension
 import com.carlesso.goalfather.domain.model.StandingRow
@@ -37,7 +40,10 @@ import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
-import com.carlesso.goalfather.domain.rules.seasonPlan
+import com.carlesso.goalfather.domain.rules.worldPlan
+import com.carlesso.goalfather.test.COPA_DO_BRASIL
+import com.carlesso.goalfather.test.SERIE_A
+import com.carlesso.goalfather.test.brazilCatalog
 import com.carlesso.goalfather.test.InMemoryCupRepository
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.makePlayer
@@ -84,7 +90,7 @@ class PlayRoundServiceTest {
     // relaxed: só os testes do prazo das propostas (issue #63) o stubam.
     private val offerRepo: TransferOfferRepository = mockk(relaxed = true)
     private val service =
-        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo, claimRepo, offerRepo)
+        PlayRoundService(clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo, claimRepo, offerRepo, InMemoryCatalogRepository())
 
     private val homeClub = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
     private val awayClub = makeClub(id = 2, name = "Away FC", squadSize = 11, overall = 70)
@@ -96,7 +102,7 @@ class PlayRoundServiceTest {
         season = 2026,
         status = RoundStatus.InProgress,
         matches = listOf(
-            RoundMatch(
+            leagueMatch(
                 matchId = 1001,
                 homeClubId = ClubId(1),
                 awayClubId = ClubId(2),
@@ -106,7 +112,7 @@ class PlayRoundServiceTest {
         ),
     )
 
-    private val standings = Standings(
+    private val standings = testStandings(
         season = 2026,
         round = 0,
         rows = listOf(
@@ -285,15 +291,16 @@ class PlayRoundServiceTest {
 
     @Test
     fun `virada de temporada aplica promocao e rebaixamento entre divisoes (issue 47)`() = runTest {
-        // 2 divisões × 4 clubes → temporada de 3 rodadas; a rodada 3 encerra.
-        // A rodada usa clubes fora das tabelas (ids 100/101) de propósito:
-        // nenhum ponto muda e a ordem final é EXATAMENTE a das tabelas abaixo,
-        // tornando o resultado da virada determinístico e legível no teste.
-        val div1Clubs = (1L..4L).map { makeClub(id = it, name = "D1-$it") }
-        val div2Clubs = (5L..8L).map { makeClub(id = it, name = "D2-$it", division = Division(2)) }
+        // Série A e Série B de 6 clubes em turno único → 5 rodadas; a última
+        // encerra. A rodada usa clubes fora das tabelas (ids 100/101) de
+        // propósito: nenhum ponto muda e a ordem final é EXATAMENTE a das
+        // tabelas abaixo, tornando a virada determinística e legível no teste.
+        // Com 6 clubes, acesso e rebaixamento são de 2 (um terço da tabela).
+        val div1Clubs = (1L..6L).map { makeClub(id = it, name = "D1-$it") }
+        val div2Clubs = (7L..12L).map { makeClub(id = it, name = "D2-$it", division = Division(2)) }
         val allClubs = div1Clubs + div2Clubs
 
-        fun tableOf(division: Int, ids: List<Long>, promotion: Int, relegation: Int) = Standings(
+        fun tableOf(division: Int, ids: List<Long>, promotion: Int, relegation: Int) = testStandings(
             season = 2026,
             round = 2,
             division = Division(division),
@@ -306,17 +313,18 @@ class PlayRoundServiceTest {
 
         // O último encaixe do calendário da temporada (issue #125): depois dele
         // não há jogo marcado e a temporada vira.
-        val lastMatchday = seasonPlan(2026, allClubs, cup = null).schedule.matchdays.last()
+        val lastMatchday = worldPlan(brazilCatalog(), allClubs, mapOf(Countries.BRAZIL.code to 2026))
+            .schedule.matchdays.last()
         val finalRound = Round(
             matchday = lastMatchday,
             season = 2026,
             status = RoundStatus.InProgress,
-            matches = listOf(RoundMatch(3101, ClubId(100), ClubId(101), "X", "Y", stage = RoundStage.League(3))),
+            matches = listOf(leagueMatch(3101, ClubId(100), ClubId(101), "X", "Y", stage = RoundStage.League(3))),
         )
         coEvery { leagueRepo.findRound(lastMatchday) } returns finalRound
         coEvery { leagueRepo.currentStandings() } returns listOf(
-            tableOf(1, listOf(1, 2, 3, 4), promotion = 0, relegation = 2),
-            tableOf(2, listOf(5, 6, 7, 8), promotion = 2, relegation = 0),
+            tableOf(1, listOf(1, 2, 3, 4, 5, 6), promotion = 0, relegation = 2),
+            tableOf(2, listOf(7, 8, 9, 10, 11, 12), promotion = 2, relegation = 0),
         )
         coEvery { clubRepo.findById(any()) } returns null
         coEvery { clubRepo.findAll() } returns allClubs
@@ -334,12 +342,15 @@ class PlayRoundServiceTest {
         val seasonFinished = events.filterIsInstance<RoundEvent.SeasonFinished>().single()
         assertEquals(ClubId(1), seasonFinished.champion.clubId)
 
-        // 3 e 4 caem, 5 e 6 sobem; os demais ficam onde estavam. Todos os clubes
+        // 5 e 6 caem, 7 e 8 sobem; os demais ficam onde estavam. Todos os clubes
         // são regravados na virada — desde a issue #55 o elenco envelhece, então
         // não existe mais clube "sem mudança" no fim de temporada.
         val divisionByClub = savedClubs.associate { it.id.value to it.division.value }
         assertEquals(
-            mapOf(1L to 1, 2L to 1, 3L to 2, 4L to 2, 5L to 1, 6L to 1, 7L to 2, 8L to 2),
+            mapOf(
+                1L to 1, 2L to 1, 3L to 1, 4L to 1, 5L to 2, 6L to 2,
+                7L to 1, 8L to 1, 9L to 2, 10L to 2, 11L to 2, 12L to 2,
+            ),
             divisionByClub,
         )
 
@@ -349,13 +360,13 @@ class PlayRoundServiceTest {
         val clubsByDivision = nextRound.matches.groupBy({ it.division.value }) {
             listOf(it.homeClubId.value, it.awayClubId.value)
         }.mapValues { (_, ids) -> ids.flatten().toSet() }
-        assertEquals(setOf(1L, 2L, 5L, 6L), clubsByDivision[1])
-        assertEquals(setOf(3L, 4L, 7L, 8L), clubsByDivision[2])
+        assertEquals(setOf(1L, 2L, 3L, 4L, 7L, 8L), clubsByDivision[1])
+        assertEquals(setOf(5L, 6L, 9L, 10L, 11L, 12L), clubsByDivision[2])
 
         // Tabelas zeradas da temporada nova: uma por divisão, com as vagas de zona.
         val fresh = savedStandings.filter { it.season == 2027 }
         assertEquals(listOf(1, 2), fresh.map { it.division.value })
-        assertEquals(setOf(1L, 2L, 5L, 6L), fresh[0].rows.map { it.clubId.value }.toSet())
+        assertEquals(setOf(1L, 2L, 3L, 4L, 7L, 8L), fresh[0].rows.map { it.clubId.value }.toSet())
         assertEquals(2, fresh[0].relegationSpots)
         assertEquals(2, fresh[1].promotionSpots)
         assertEquals(0, fresh[0].promotionSpots)
@@ -370,11 +381,11 @@ class PlayRoundServiceTest {
             season = 2026,
             status = RoundStatus.InProgress,
             matches = listOf(
-                RoundMatch(1001, ClubId(1), ClubId(4), "C1", "C4"),
-                RoundMatch(1002, ClubId(2), ClubId(3), "C2", "C3"),
+                leagueMatch(1001, ClubId(1), ClubId(4), "C1", "C4"),
+                leagueMatch(1002, ClubId(2), ClubId(3), "C2", "C3"),
             ),
         )
-        val standings4 = Standings(
+        val standings4 = testStandings(
             season = 2026,
             round = 0,
             rows = clubs.mapIndexed { i, c -> StandingRow(i + 1, c.id, c.name) },
@@ -659,7 +670,7 @@ class PlayRoundServiceTest {
 
     @Test
     fun `suspenso na liga fica fora do jogo de liga, cumpre o gancho e cartoes contam so na liga (issue 130)`() = runTest {
-        val league = SeasonCompetitions.leagueId(Division.FIRST)
+        val league = SERIE_A
         val base = makeClub(id = 1, name = "Home FC", squadSize = 14, overall = 80)
         val suspendedHome = base.copy(
             // Com dono → engine completa (issue #129): o stream traz os cartões
@@ -670,7 +681,7 @@ class PlayRoundServiceTest {
                 when (i) {
                     0 -> p.copy(suspensions = listOf(Suspension(league, 1)))
                     // Gancho na COPA: não pode andar num jogo de liga.
-                    1 -> p.copy(suspensions = listOf(Suspension(SeasonCompetitions.CUP_ID, 1)))
+                    1 -> p.copy(suspensions = listOf(Suspension(COPA_DO_BRASIL, 1)))
                     else -> p
                 }
             },
@@ -710,8 +721,8 @@ class PlayRoundServiceTest {
         // Filtra pela copa: se o jogador 2 for expulso NESTE jogo, ganha um
         // gancho de liga a mais — o que importa é o da copa ficar intacto.
         assertEquals(
-            listOf(Suspension(SeasonCompetitions.CUP_ID, 1)),
-            persisted.getValue(PlayerId(2)).suspensions.filter { it.competitionId == SeasonCompetitions.CUP_ID },
+            listOf(Suspension(COPA_DO_BRASIL, 1)),
+            persisted.getValue(PlayerId(2)).suspensions.filter { it.competitionId == COPA_DO_BRASIL },
             "gancho da copa não anda em jogo de liga",
         )
         // Todo cartão do jogo vira acumulado ou gancho NA LIGA, nunca na copa.
@@ -721,7 +732,7 @@ class PlayRoundServiceTest {
                 player.pendingYellows.containsKey(league) || player.isSuspendedIn(league),
                 "cartão de ${card.playerId} deveria contar na liga: $player",
             )
-            assertTrue(SeasonCompetitions.CUP_ID !in player.pendingYellows)
+            assertTrue(COPA_DO_BRASIL !in player.pendingYellows)
         }
     }
 
@@ -774,7 +785,7 @@ class PlayRoundServiceTest {
             matchday = md(1),
             season = 2026,
             status = RoundStatus.InProgress,
-            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+            matches = listOf(leagueMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
@@ -809,7 +820,7 @@ class PlayRoundServiceTest {
             matchday = md(1),
             season = 2026,
             status = RoundStatus.InProgress,
-            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+            matches = listOf(leagueMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
@@ -865,7 +876,7 @@ class PlayRoundServiceTest {
             matchday = md(1),
             season = 2026,
             status = RoundStatus.InProgress,
-            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+            matches = listOf(leagueMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
@@ -900,7 +911,7 @@ class PlayRoundServiceTest {
             matchday = md(1),
             season = 2026,
             status = RoundStatus.InProgress,
-            matches = listOf(RoundMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+            matches = listOf(leagueMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
         )
         coEvery { leagueRepo.findRound(md(1)) } returns lastRound
         coEvery { leagueRepo.currentStandings() } returns listOf(standings)
@@ -939,7 +950,7 @@ class PlayRoundServiceTest {
             season = 2026,
             status = RoundStatus.InProgress,
             matches = listOf(
-                RoundMatch(2001, ClubId(1), ClubId(2), "Home FC", "Away FC", stage = RoundStage.League(2)),
+                leagueMatch(2001, ClubId(1), ClubId(2), "Home FC", "Away FC", stage = RoundStage.League(2)),
             ),
         )
         coEvery { leagueRepo.findRound(md(2)) } returns salaryRound
@@ -1202,7 +1213,7 @@ class PlayRoundServiceTest {
         // Duas partidas → eventos intercalados. Sort estável garante
         // que para um mesmo minuto, a ordem seja determinística.
         val twoMatchRound = round.copy(
-            matches = round.matches + RoundMatch(
+            matches = round.matches + leagueMatch(
                 matchId = 1002,
                 homeClubId = ClubId(2),
                 awayClubId = ClubId(1),

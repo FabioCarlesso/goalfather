@@ -2,12 +2,18 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.application.seed.initialLeague
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.RoundStage
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.Slot
+import com.carlesso.goalfather.test.COPA_DO_BRASIL
+import com.carlesso.goalfather.test.SERIE_A
+import com.carlesso.goalfather.test.SERIE_A_NAME
+import com.carlesso.goalfather.test.SERIE_B
+import com.carlesso.goalfather.test.SERIE_B_NAME
+import com.carlesso.goalfather.test.brazilCatalog
 import com.carlesso.goalfather.test.makeClub
 import kotlin.random.Random
 import kotlin.test.Test
@@ -17,22 +23,26 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Plano da temporada do mundo atual (issue #125): liga de cada divisão + copa,
- * encaixadas na semana pelo agendador.
+ * Plano da temporada de um país pequeno (issues #125/#131): Série A e Série B
+ * de 6 clubes em turno único + a Copa do Brasil, encaixadas na semana pelo
+ * agendador. O mundo do MVP em tamanho real está em [WorldCalendarTest].
  */
 class SeasonCalendarTest {
 
     private val twelve = (1L..12L).map { makeClub(id = it, name = "C$it", division = Division(if (it <= 6) 1 else 2)) }
-    private val cup = drawCup(2026, twelve, Random(cupDrawSeed(2026)))
-    private val plan = seasonPlan(2026, twelve, cup)
+    private val catalog = brazilCatalog(legs = 1)
+    private val copa = catalog.single { it.id == COPA_DO_BRASIL }
+    private val cup = assertNotNull(drawNationalCup(2026, copa, twelve, Random(nationalCupDrawSeed(2026, COPA_DO_BRASIL))))
+    private val seasons = mapOf(Countries.BRAZIL.code to 2026)
+    private val plan = worldPlan(catalog, twelve, seasons, mapOf(COPA_DO_BRASIL to cup))
 
     private fun stagesAt(index: Int) =
-        plan.roundAt(plan.schedule.matchdays[index], twelve, cup).matches.map { it.stage }.toSet()
+        plan.roundAt(plan.schedule.matchdays[index], twelve).matches.map { it.stage }.toSet()
 
     @Test
     fun `seed - 5 rodadas de liga por divisao e 4 fases de copa, cada uma no seu encaixe`() {
-        val league = plan.schedule.rounds.filter { it.competition == SeasonCompetitions.leagueId(Division.FIRST) }
-        val cupRounds = plan.schedule.rounds.filter { it.competition == SeasonCompetitions.CUP_ID }
+        val league = plan.schedule.rounds.filter { it.competition == SERIE_A }
+        val cupRounds = plan.schedule.rounds.filter { it.competition == COPA_DO_BRASIL }
         assertEquals(5, league.size)
         assertEquals(4, cupRounds.size)
         // As duas divisões jogam a mesma rodada no mesmo domingo; a copa, na quarta.
@@ -45,8 +55,8 @@ class SeasonCalendarTest {
     fun `primeiro encaixe e de liga em janeiro e a copa termina antes da ultima rodada`() {
         assertEquals(setOf<RoundStage>(RoundStage.League(1)), stagesAt(0))
         assertEquals(1, plan.first?.date?.monthValue)
-        val finalAt = assertNotNull(plan.schedule.lastOf(SeasonCompetitions.CUP_ID))
-        val lastLeague = assertNotNull(plan.schedule.lastOf(SeasonCompetitions.leagueId(Division.FIRST)))
+        val finalAt = assertNotNull(plan.schedule.lastOf(COPA_DO_BRASIL))
+        val lastLeague = assertNotNull(plan.schedule.lastOf(SERIE_A))
         assertTrue(finalAt < lastLeague, "o campeão da copa chega à virada")
         assertTrue(plan.schedule.matchdays.all { it.date.year == 2026 })
     }
@@ -54,9 +64,9 @@ class SeasonCalendarTest {
     @Test
     fun `copa pausa nas datas FIFA e a liga brasileira nao precisa`() {
         val fifa = interimFifaWindows(2026)
-        val cupRounds = plan.schedule.rounds.filter { it.competition == SeasonCompetitions.CUP_ID }
+        val cupRounds = plan.schedule.rounds.filter { it.competition == COPA_DO_BRASIL }
         assertTrue(cupRounds.none { fifa.reserves(it.matchday.week) })
-        val league = plan.competitions.getValue(SeasonCompetitions.leagueId(Division.FIRST)).season
+        val league = plan.competitions.getValue(SERIE_A).season
         assertTrue(!league.pausesOnFifaWindows)
     }
 
@@ -71,14 +81,14 @@ class SeasonCalendarTest {
     @Test
     fun `encaixe de copa traz os confrontos em aberto da fase corrente`() {
         val cupSlot = plan.schedule.matchdays[1]
-        val matches = plan.roundAt(cupSlot, twelve, cup).matches
+        val matches = plan.roundAt(cupSlot, twelve).matches
         assertEquals(4, matches.size) // 12 clubes numa chave de 16: 4 jogos e 4 folgas
         assertTrue(matches.all { it.stage == RoundStage.Cup(KnockoutPhase.ROUND_OF_16) && it.isKnockout })
     }
 
     @Test
     fun `plano e funcao pura dos clubes - recalcular da o mesmo calendario`() {
-        assertEquals(plan, seasonPlan(2026, twelve.shuffled(Random(3)), cup))
+        assertEquals(plan, worldPlan(catalog, twelve.shuffled(Random(3)), seasons, mapOf(COPA_DO_BRASIL to cup)))
     }
 
     @Test
@@ -86,6 +96,7 @@ class SeasonCalendarTest {
         val league = initialLeague()
         val round = assertNotNull(league.firstRound())
         assertEquals(6, round.matches.size)
+        assertEquals(setOf(SERIE_A, SERIE_B), round.matches.map { it.competition }.toSet())
         assertTrue(round.matches.all { it.stage == RoundStage.League(1) })
     }
 
@@ -98,11 +109,11 @@ class SeasonCalendarTest {
         val bye = cup.stages.first().ties
             .filterIsInstance<CupTie.Bye>()
             .first().club.id
-        val next = assertNotNull(plan.nextMatchOf(bye, plan.schedule.matchdays[0], twelve, cup))
+        val next = assertNotNull(plan.nextMatchOf(bye, plan.schedule.matchdays[0], twelve))
         assertEquals(plan.schedule.matchdays[2], next.matchday)
         assertEquals(RoundStage.League(2), next.match.stage)
         val division = twelve.single { it.id == bye }.division
-        assertEquals(SeasonCompetitions.leagueName(division), next.match.competitionName)
+        assertEquals(if (division == Division.FIRST) SERIE_A_NAME else SERIE_B_NAME, next.match.competitionName)
     }
 
     @Test
@@ -110,9 +121,9 @@ class SeasonCalendarTest {
         val playing = cup.stages.first().ties
             .filterIsInstance<CupTie.Fixture>()
             .first().home.id
-        val next = assertNotNull(plan.nextMatchOf(playing, plan.schedule.matchdays[0], twelve, cup))
+        val next = assertNotNull(plan.nextMatchOf(playing, plan.schedule.matchdays[0], twelve))
         assertEquals(plan.schedule.matchdays[1], next.matchday)
-        assertEquals(SeasonCompetitions.CUP_ID, next.match.competition)
+        assertEquals(COPA_DO_BRASIL, next.match.competition)
     }
 
     @Test
@@ -120,12 +131,12 @@ class SeasonCalendarTest {
         val playing = cup.stages.first().ties
             .filterIsInstance<CupTie.Fixture>()
             .first().home.id
-        val next = assertNotNull(plan.nextMatchOf(playing, plan.schedule.matchdays[1], twelve, cup, cupStageInPlay = true))
+        val next = assertNotNull(plan.nextMatchOf(playing, plan.schedule.matchdays[1], twelve, cupsInPlay = setOf(COPA_DO_BRASIL)))
         assertTrue(next.match.stage is RoundStage.League)
     }
 
     @Test
     fun `sem jogo adiante devolve null`() {
-        assertNull(plan.nextMatchOf(ClubId(1), plan.schedule.matchdays.last(), twelve, cup))
+        assertNull(plan.nextMatchOf(ClubId(1), plan.schedule.matchdays.last(), twelve))
     }
 }
