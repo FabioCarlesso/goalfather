@@ -35,7 +35,7 @@ data class RoundMatch(
     // Divisão da partida (issue #47). Default = elite.
     val division: Division = Division.FIRST,
     // Disputa de pênaltis (issue #61) — só existe em jogo de copa que
-    // terminou empatado. Nulo no resto.
+    // terminou empatado no jogo único ou no AGREGADO da volta. Nulo no resto.
     val penalties: PenaltyScore? = null,
     val stage: RoundStage = RoundStage.League(1),
     // Um default pode ler os parâmetros ANTERIORES do mesmo construtor: a
@@ -44,7 +44,11 @@ data class RoundMatch(
     val competition: CompetitionId = SeasonCompetitions.leagueId(division),
     val competitionName: String = SeasonCompetitions.leagueName(division),
 ) {
-    /** Jogo de mata-mata? Empate nele não existe: decide nos pênaltis. */
+    /**
+     * Jogo de copa? Desde a ida e volta (issue #131) isso NÃO quer dizer "empate
+     * vai aos pênaltis" — a ida pode empatar. Quem decide os pênaltis é
+     * `decidesOnPenalties` (`CupRules.kt`), pela perna do [stage].
+     */
     val isKnockout: Boolean
         get() = when (stage) {
             is RoundStage.League -> false
@@ -84,10 +88,14 @@ sealed interface RoundStage {
         }
     }
 
-    /** Fase da copa disputada nesta data — jogo único, empate vai aos pênaltis. */
+    /**
+     * Jogo de copa (issue #131): a fase pelo NOME (`"Quinta fase"`, `"Final"`
+     * — as fases vêm do formato da competição, não de um enum) e a perna do
+     * confronto, que carrega o que é preciso para decidir os pênaltis.
+     */
     @Serializable
     @SerialName("Cup")
-    data class Cup(val phase: KnockoutPhase) : RoundStage
+    data class Cup(val stageName: String, val leg: CupLeg) : RoundStage
 }
 
 /**

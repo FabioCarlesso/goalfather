@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Identificador tipado de competição (issue #124). `String` e não `Long`
  * porque as competições vêm do pack de dados do mundo (issue #126) com ids
@@ -117,14 +119,13 @@ enum class Legs(val matches: Int) {
 }
 
 /**
- * Uma fase de mata-mata no formato genérico. Diferente de [KnockoutPhase] (as
- * fases fixas 32-avos → final da copa do jogo, com prêmio), aqui a fase é DADO:
- * a Copa do Brasil 2026 tem 126 clubes e fases que nenhum enum de 5 valores
- * descreveria.
+ * Uma fase de mata-mata no formato genérico: a fase é DADO, não enum — a Copa
+ * do Brasil 2026 tem 126 clubes e fases que nenhum enum fixo descreveria. É o
+ * que a copa do jogo (`Cup`, issue #131) sorteia e joga.
  *
  * [newEntrants] é quantos clubes ENTRAM nesta fase. Na primeira, todos; nas
  * seguintes, os cabeças de chave que pulam fases (a Série A só entra na 5ª fase
- * da Copa do Brasil) — e é também como se descrevem as folgas da copa atual.
+ * da Copa do Brasil).
  */
 data class KnockoutStage(
     val name: String,
@@ -240,7 +241,12 @@ sealed interface CompetitionFormat {
  */
 enum class SwissPlacement { DIRECT_TO_KNOCKOUT, PLAYOFF, ELIMINATED }
 
-/** Placar de um jogo, na orientação mandante × visitante daquele jogo. */
+/**
+ * Placar de um jogo, na orientação mandante × visitante daquele jogo.
+ * `@Serializable` porque a copa (issue #131) guarda o placar de cada perna no
+ * JSON da chave e o `RoundStage.Cup` da volta carrega o placar da ida.
+ */
+@Serializable
 data class LegScore(val homeGoals: Int, val awayGoals: Int) {
     init {
         require(homeGoals >= 0 && awayGoals >= 0) { "Placar negativo: $homeGoals × $awayGoals" }

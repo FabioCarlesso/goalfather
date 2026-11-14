@@ -2,7 +2,7 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundFinance
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.cents
 import kotlin.test.Test
@@ -199,7 +199,7 @@ class FinanceRulesTest {
     fun `folha segue as rodadas da liga e data de copa nao cobra`() {
         assertEquals(isSalaryRound(2), isSalaryDate(RoundStage.League(2)))
         assertEquals(isSalaryRound(3), isSalaryDate(RoundStage.League(3)))
-        assertFalse(isSalaryDate(RoundStage.Cup(KnockoutPhase.FINAL)))
+        assertFalse(isSalaryDate(RoundStage.Cup("Final", CupLeg.Single)))
     }
 
     @Test
@@ -215,7 +215,8 @@ class FinanceRulesTest {
 
     @Test
     fun `premio da copa cresce a cada fase`() {
-        val prizes = KnockoutPhase.entries.map { it.prizeCents }
+        // Da 6ª fase antes da final até a final (issue #131: regra por ordem).
+        val prizes = (6 downTo 0).map { cupPhasePrize(it) }
         assertEquals(prizes.sorted(), prizes)
         assertTrue(prizes.zipWithNext().all { (a, b) -> a < b })
     }

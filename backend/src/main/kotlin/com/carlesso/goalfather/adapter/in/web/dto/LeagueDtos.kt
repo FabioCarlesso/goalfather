@@ -3,7 +3,7 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 import com.carlesso.goalfather.domain.model.CareerCampaign
 import com.carlesso.goalfather.domain.model.ClubCareer
 import com.carlesso.goalfather.domain.model.CalendarView
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.ReadinessStatus
 import com.carlesso.goalfather.domain.model.Round
@@ -33,7 +33,7 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  * `Int`/`Long` crus, que é o que o contrato declara.
  *
  * Reusados do domínio, pelo critério de `Responses.kt` (enum cuja forma JSON já
- * é EXATAMENTE a do contrato): `RoundStatus` e `KnockoutPhase`.
+ * é EXATAMENTE a do contrato): `RoundStatus`.
  *
  * `ReadinessStatus.allReady`/`canStart` são computed properties do domínio
  * (getter sem backing field, que o kotlinx não serializa). O DTO os MATERIALIZA
@@ -131,9 +131,18 @@ sealed interface RoundStageDto {
     @SerialName("League")
     data class League(val matchday: Int) : RoundStageDto
 
+    /**
+     * Jogo de copa (issue #131): a fase pelo nome e a perna. `firstLeg` só
+     * vem na volta — o placar da ida, na orientação da ida — para a UI mostrar
+     * o que está em jogo no agregado.
+     */
     @Serializable
     @SerialName("Cup")
-    data class Cup(val phase: KnockoutPhase) : RoundStageDto
+    data class Cup(
+        val stageName: String,
+        val leg: CupLegDto,
+        val firstLeg: LegScoreDto? = null,
+    ) : RoundStageDto
 }
 
 /**
@@ -273,7 +282,11 @@ fun ClubCareer.toDto(): ClubCareerDto = ClubCareerDto(
 /** `when` exaustivo, sem `else`: tipo de data novo no calendário quebra a compilação aqui. */
 private fun RoundStage.toDto(): RoundStageDto = when (this) {
     is RoundStage.League -> RoundStageDto.League(matchday = matchday)
-    is RoundStage.Cup -> RoundStageDto.Cup(phase = phase)
+    is RoundStage.Cup -> RoundStageDto.Cup(
+        stageName = stageName,
+        leg = leg.toDto(),
+        firstLeg = (leg as? CupLeg.Second)?.firstLeg?.toDto(),
+    )
 }
 
 fun RoundMatch.toDto(): RoundMatchDto = RoundMatchDto(

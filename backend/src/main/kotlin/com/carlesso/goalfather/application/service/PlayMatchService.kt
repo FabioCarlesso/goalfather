@@ -12,6 +12,7 @@ import com.carlesso.goalfather.domain.engine.kickOff
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Matchday
+import com.carlesso.goalfather.domain.rules.decidesOnPenalties
 import com.carlesso.goalfather.domain.rules.startingLineupIn
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
@@ -75,8 +76,8 @@ class PlayMatchService(
             homeName = match.homeClubName,
             awayName = match.awayClubName,
             // Mesmo modo da rodada: jogo de copa reproduz a mesma disputa de
-            // pênaltis no drill-down (issue #61).
-            knockout = match.isKnockout,
+            // pênaltis no drill-down (issue #61) — pela perna (#131).
+            decidesOnPenalties = match::decidesOnPenalties,
             homeClubId = match.homeClubId,
             awayClubId = match.awayClubId,
         )

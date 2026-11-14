@@ -1,6 +1,5 @@
 package com.carlesso.goalfather.domain.model
 
-import com.carlesso.goalfather.domain.rules.cupFormat
 import com.carlesso.goalfather.domain.rules.cupDrawSeed
 import com.carlesso.goalfather.domain.rules.drawCup
 import kotlin.random.Random
@@ -95,23 +94,23 @@ class CompetitionTest {
         }
     }
 
-    // ─── A copa atual no formato genérico ─────────────────────────────
+    // ─── A copa no formato genérico (issue #131) ──────────────────────
 
     @Test
-    fun `cupFormat descreve a mesma chave que o drawCup sorteia`() {
-        for (count in 4..32) {
-            val clubs = (1..count).map {
-                Club(ClubId(it.toLong()), "C$it", cash = Money.ZERO, stadiumCapacity = 0, squad = emptyList())
-            }
-            val drawn = drawCup(2026, clubs, Random(cupDrawSeed(2026))).stages.single()
-            val format = cupFormat(count)
-
-            val fixtures = drawn.ties.count { it is CupTie.Fixture }
-            val byes = drawn.ties.count { it is CupTie.Bye }
-            assertEquals(count, format.entrants, "$count clubes")
-            assertEquals(fixtures, format.stages.first().ties, "$count clubes: jogos da 1ª fase")
-            assertEquals(byes, format.stages.getOrNull(1)?.newEntrants ?: 0, "$count clubes: folgas")
-            assertEquals(drawn.phase.teams / 2, format.stages[1].teams, "$count clubes: 2ª fase")
+    fun `a copa sorteada expoe o mesmo formato Knockout de onde saiu`() {
+        val format = CompetitionFormat.Knockout(
+            listOf(
+                KnockoutStage("Primeira fase", 8, Legs.SINGLE, newEntrants = 8),
+                KnockoutStage("Quartas de final", 8, Legs.TWO_LEGGED, newEntrants = 4),
+                KnockoutStage("Semifinal", 4, Legs.TWO_LEGGED),
+                KnockoutStage("Final", 2, Legs.SINGLE),
+            ),
+        )
+        val clubs = (1..12).map {
+            Club(ClubId(it.toLong()), "C$it", cash = Money.ZERO, stadiumCapacity = 0, squad = emptyList())
         }
+        val cup = drawCup(2026, Competition(CompetitionId("copa"), "Copa", format), clubs, Random(cupDrawSeed(2026)))
+        assertEquals(format, cup.format)
+        assertEquals(12, cup.format.entrants)
     }
 }

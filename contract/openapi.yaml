@@ -849,15 +849,17 @@ paths:
     get:
       tags: [Cup]
       operationId: getCup
-      summary: Chave da copa mata-mata (issue #61)
+      summary: Chave da copa mata-mata (issues #61 e #131)
       description: |
-        Copa da liga em jogo único, sorteada no início de cada temporada com
-        seed determinística. Sem `season`, devolve a copa da temporada mais
-        recente (a que está em disputa). Os confrontos já trazem quem passou
-        (`winnerId`, pênaltis incluídos) — o cliente não recalcula nada.
+        Copa nacional (a Copa do Brasil no MVP) em fases nomeadas, cada uma em
+        jogo único ou ida e volta, com clubes entrando em fases diferentes
+        (os mais fortes nas mais tardias). Sorteada no início de cada temporada
+        com seed determinística; cada fase seguinte é sorteada quando a anterior
+        termina. Sem `season`, devolve a copa da temporada mais recente (a que
+        está em disputa). Os confrontos já trazem quem passou (`winnerId`,
+        agregado e pênaltis incluídos) — o cliente não recalcula nada.
 
-        404 `CUP_NOT_FOUND` quando a temporada não teve copa (liga com menos
-        de 4 clubes, ou save anterior à copa).
+        404 `CUP_NOT_FOUND` quando a temporada não teve copa.
       parameters:
         - name: season
           in: query
@@ -2590,11 +2592,18 @@ components:
           description: Rodada DA LIGA (1..N-1 do turno) disputada neste jogo
 
     CupRoundStage:
+      description: |
+        Jogo de copa (issue #131): a fase pelo nome (vem do formato da
+        competição) e qual jogo do confronto ele é. `firstLeg` só vem na volta
+        (`leg: SECOND`) — o placar da ida, na orientação da ida — para a UI
+        mostrar o que está em jogo no agregado.
       type: object
-      required: [type, phase]
+      required: [type, stageName, leg]
       properties:
-        type:  { type: string, enum: [Cup] }
-        phase: { $ref: '#/components/schemas/KnockoutPhase' }
+        type:      { type: string, enum: [Cup] }
+        stageName: { type: string, description: 'Nome da fase, ex.: "Quinta fase", "Final"' }
+        leg:       { $ref: '#/components/schemas/CupLeg' }
+        firstLeg:  { $ref: '#/components/schemas/CupLegScore' }
 
     RoundEvent:
       description: |
@@ -2894,11 +2903,27 @@ components:
         targetPosition: { type: integer, minimum: 1 }
         finalPosition:  { type: integer, minimum: 1 }
 
-    # ─── Copa (issue #61) ────────────────────────────────────────────────
-    KnockoutPhase:
+    # ─── Copa (issues #61 e #131) ────────────────────────────────────────
+    CupLegs:
       type: string
-      description: Fase do mata-mata, da mais larga para a final
-      enum: [ROUND_OF_32, ROUND_OF_16, QUARTER_FINALS, SEMI_FINALS, FINAL]
+      description: Formato dos confrontos de uma fase — jogo único ou ida e volta.
+      enum: [SINGLE, TWO_LEGGED]
+
+    CupLeg:
+      type: string
+      description: |
+        Qual jogo do confronto uma partida de copa é. `SINGLE` (jogo único:
+        empate vai aos pênaltis), `FIRST` (ida: empate é só placar) ou `SECOND`
+        (volta: pênaltis só com o agregado empatado; não há gol fora de casa).
+      enum: [SINGLE, FIRST, SECOND]
+
+    CupLegScore:
+      description: Placar de UM jogo, na orientação mandante × visitante daquele jogo.
+      type: object
+      required: [homeGoals, awayGoals]
+      properties:
+        homeGoals: { type: integer, minimum: 0 }
+        awayGoals: { type: integer, minimum: 0 }
 
     CupClub:
       description: Clube como a copa o registra (nome copiado — é história).
@@ -2927,34 +2952,33 @@ components:
         awayGoals: { type: integer, minimum: 0 }
         penalties: { $ref: '#/components/schemas/PenaltyScore' }
 
+    CupAggregate:
+      description: Gols somados nos jogos já disputados, na orientação do CONFRONTO (`home` = mandante da ida).
+      type: object
+      required: [home, away]
+      properties:
+        home: { type: integer, minimum: 0 }
+        away: { type: integer, minimum: 0 }
+
     CupTie:
       description: |
-        Mapeia o `sealed interface CupTie` do domínio: uma vaga da chave é
-        `Bye` (o clube passa sem jogar — chave que não é potência de 2) ou
-        `Fixture` (jogo único). Os vencedores de `index` 2k e 2k+1 se enfrentam
-        na fase seguinte.
+        Mapeia o `sealed interface CupTie` do domínio: um confronto da chave é
+        `Single` (jogo único) ou `TwoLegged` (ida e volta). `home` é o
+        mandante do jogo único ou da IDA — na volta o mando se inverte.
       oneOf:
-        - $ref: '#/components/schemas/CupByeTie'
-        - $ref: '#/components/schemas/CupFixtureTie'
+        - $ref: '#/components/schemas/CupSingleTie'
+        - $ref: '#/components/schemas/CupTwoLeggedTie'
       discriminator:
         propertyName: type
         mapping:
-          Bye:     '#/components/schemas/CupByeTie'
-          Fixture: '#/components/schemas/CupFixtureTie'
+          Single:    '#/components/schemas/CupSingleTie'
+          TwoLegged: '#/components/schemas/CupTwoLeggedTie'
 
-    CupByeTie:
-      type: object
-      required: [type, index, club]
-      properties:
-        type:  { type: string, enum: [Bye] }
-        index: { type: integer, minimum: 0 }
-        club:  { $ref: '#/components/schemas/CupClub' }
-
-    CupFixtureTie:
+    CupSingleTie:
       type: object
       required: [type, index, home, away]
       properties:
-        type:   { type: string, enum: [Fixture] }
+        type:   { type: string, enum: [Single] }
         index:  { type: integer, minimum: 0 }
         home:   { $ref: '#/components/schemas/CupClub' }
         away:   { $ref: '#/components/schemas/CupClub' }
@@ -2968,42 +2992,83 @@ components:
             Quem passou (pênaltis incluídos), decidido no backend. Omitido
             enquanto o confronto não foi disputado.
 
-    CupStage:
-      description: Uma fase já sorteada, com os confrontos na ordem da chave.
+    CupTwoLeggedTie:
+      description: |
+        Ida e volta. `firstLeg`/`secondLeg` na orientação de CADA jogo (como
+        na súmula: na volta o mandante é `away`); `aggregate` e `penalties` na
+        orientação do confronto. Pênaltis só existem com o agregado empatado.
       type: object
-      required: [phase, ties]
+      required: [type, index, home, away]
       properties:
-        phase: { $ref: '#/components/schemas/KnockoutPhase' }
+        type:      { type: string, enum: [TwoLegged] }
+        index:     { type: integer, minimum: 0 }
+        home:      { $ref: '#/components/schemas/CupClub' }
+        away:      { $ref: '#/components/schemas/CupClub' }
+        firstLeg:
+          $ref: '#/components/schemas/CupLegScore'
+          description: Omitido enquanto a ida não foi disputada
+        secondLeg:
+          $ref: '#/components/schemas/CupLegScore'
+          description: Omitido enquanto a volta não foi disputada
+        aggregate:
+          $ref: '#/components/schemas/CupAggregate'
+          description: Omitido antes da ida
+        penalties:
+          $ref: '#/components/schemas/PenaltyScore'
+          description: Disputa ao fim da volta, na orientação do confronto
+        winnerId:
+          type: integer
+          format: int64
+          description: Quem passou, decidido no backend. Omitido até a volta decidir.
+
+    CupStage:
+      description: Uma fase já sorteada, com os confrontos na ordem do sorteio.
+      type: object
+      required: [name, legs, ties]
+      properties:
+        name: { type: string }
+        legs: { $ref: '#/components/schemas/CupLegs' }
         ties:
           type: array
           items: { $ref: '#/components/schemas/CupTie' }
 
     CupPhaseInfo:
-      description: Uma fase da copa e o prêmio de quem vence um confronto dela.
+      description: |
+        Uma fase do plano da copa (sorteada ou não): quantos clubes, jogo único
+        ou ida e volta, quem ENTRA nela (os mais fortes nas fases mais
+        tardias) e o prêmio de quem vence um confronto dela.
       type: object
-      required: [phase, prizeCents]
+      required: [name, teams, legs, entrants, prizeCents]
       properties:
-        phase:      { $ref: '#/components/schemas/KnockoutPhase' }
+        name:  { type: string }
+        teams: { type: integer, minimum: 2 }
+        legs:  { $ref: '#/components/schemas/CupLegs' }
+        entrants:
+          type: array
+          items: { $ref: '#/components/schemas/CupClub' }
         prizeCents: { type: integer, format: int64, minimum: 0, description: Prêmio por confronto vencido (centavos de USD) }
 
     Cup:
       description: |
-        Copa mata-mata da temporada (issue #61). `phases` lista a copa inteira
-        (com o prêmio de cada fase) para a UI desenhar a chave completa;
-        `stages` só as fases já sorteadas — a seguinte nasce quando a anterior
-        termina. `currentPhase` é omitido quando a copa acabou; `champion`,
-        enquanto ela não acabou.
+        Copa mata-mata da temporada (issues #61 e #131). `phases` lista a copa
+        inteira (com entrantes e prêmio de cada fase) para a UI desenhar a
+        chave completa; `stages` só as fases já sorteadas, alinhadas por
+        índice com `phases` — a seguinte é sorteada quando a anterior termina.
+        `currentStage` (nome da fase em disputa) é omitido quando a copa
+        acabou; `champion`, enquanto ela não acabou.
       type: object
-      required: [season, phases, stages]
+      required: [season, competitionId, competitionName, phases, stages]
       properties:
-        season: { type: integer }
+        season:          { type: integer }
+        competitionId:   { type: string }
+        competitionName: { type: string }
         phases:
           type: array
           items: { $ref: '#/components/schemas/CupPhaseInfo' }
         stages:
           type: array
           items: { $ref: '#/components/schemas/CupStage' }
-        currentPhase: { $ref: '#/components/schemas/KnockoutPhase' }
+        currentStage: { type: string }
         champion:     { $ref: '#/components/schemas/CupClub' }
 
     ReadinessStatus:

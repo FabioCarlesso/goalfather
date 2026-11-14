@@ -1,10 +1,13 @@
 package com.carlesso.goalfather.adapter.`in`.web.dto
 
-import com.carlesso.goalfather.domain.model.TieResult
 import com.carlesso.goalfather.domain.model.PenaltyScore
-import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.CupStage
+import com.carlesso.goalfather.domain.model.CupPhase
+import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.LegScore
+import com.carlesso.goalfather.domain.model.Legs
+import com.carlesso.goalfather.domain.rules.CUP_FINAL_PRIZE
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.ClubId
@@ -345,59 +348,73 @@ class ResponsesTest {
         assertEquals(42, encoded.getValue("playerId").jsonPrimitive.content.toLong())
     }
 
-    // ─── Copa (issue #61) ─────────────────────────────────────────────────
+    // ─── Copa (issues #61 e #131) ─────────────────────────────────────────
 
     private fun club(id: Long) = CupClub(ClubId(id), "C$id")
 
+    /**
+     * Semifinal (ida e volta) com um confronto decidido nos pênaltis da volta
+     * e outro só com a ida jogada; a final ainda não sorteada.
+     */
     private val semis = Cup(
         season = 2026,
+        competitionId = CompetitionId("bra-copa-do-brasil"),
+        competitionName = "Copa do Brasil",
+        phases = listOf(
+            CupPhase("Semifinal", 4, Legs.TWO_LEGGED, entrants = (1L..4L).map { club(it) }),
+            CupPhase("Final", 2, Legs.SINGLE, entrants = emptyList()),
+        ),
         stages = listOf(
             CupStage(
-                KnockoutPhase.SEMI_FINALS,
+                "Semifinal",
                 listOf(
-                    CupTie.Fixture(0, club(1), club(2), TieResult(1, 1, PenaltyScore(3, 4))),
-                    CupTie.Bye(1, club(3)),
+                    // Ida 2 × 1, volta 1 × 0 para o C2: agregado 2 × 2; C2 vence nos pênaltis 4 × 3.
+                    CupTie.TwoLegged(0, club(1), club(2), LegScore(2, 1), LegScore(1, 0), PenaltyScore(4, 3)),
+                    CupTie.TwoLegged(1, club(3), club(4), firstLeg = LegScore(0, 0)),
                 ),
             ),
         ),
+        drawSeed = 1,
     )
 
     private fun encodeCup(cup: Cup): JsonObject =
         json.parseToJsonElement(json.encodeToString(CupDto.serializer(), cup.toDto())).jsonObject
 
     @Test
-    fun `cup expoe confrontos discriminados e o vencedor ja decidido pelos penaltis`() {
+    fun `cup expoe confrontos discriminados com agregado e o vencedor ja decidido pelos penaltis`() {
         val encoded = encodeCup(semis)
         val ties = encoded.getValue("stages").jsonArray.single().jsonObject.getValue("ties").jsonArray
-        val fixture = ties[0].jsonObject
-        assertEquals("Fixture", fixture.getValue("type").jsonPrimitive.content)
-        // O backend decide quem passou — a UI não recalcula pênaltis.
-        assertEquals(2, fixture.getValue("winnerId").jsonPrimitive.content.toInt())
-        assertEquals(
-            4,
-            fixture.getValue("result").jsonObject.getValue("penalties").jsonObject
-                .getValue("away").jsonPrimitive.content.toInt(),
-        )
+        val decided = ties[0].jsonObject
+        assertEquals("TwoLegged", decided.getValue("type").jsonPrimitive.content)
+        // O backend decide quem passou — a UI não recalcula agregado nem pênaltis.
+        assertEquals(2, decided.getValue("winnerId").jsonPrimitive.content.toInt())
+        val aggregate = decided.getValue("aggregate").jsonObject
+        assertEquals(2, aggregate.getValue("home").jsonPrimitive.content.toInt())
+        assertEquals(2, aggregate.getValue("away").jsonPrimitive.content.toInt())
+        // Pênaltis na orientação do CONFRONTO: o C2 (away do confronto) fez 4.
+        val penalties = decided.getValue("penalties").jsonObject
+        assertEquals(3, penalties.getValue("home").jsonPrimitive.content.toInt())
+        assertEquals(4, penalties.getValue("away").jsonPrimitive.content.toInt())
+        // A volta na orientação do próprio jogo (mandante = C2).
+        assertEquals(1, decided.getValue("secondLeg").jsonObject.getValue("homeGoals").jsonPrimitive.content.toInt())
 
-        val bye = ties[1].jsonObject
-        assertEquals("Bye", bye.getValue("type").jsonPrimitive.content)
-        assertEquals(3, bye.getValue("club").jsonObject.getValue("id").jsonPrimitive.content.toInt())
+        val open = ties[1].jsonObject
+        assertNull(open["winnerId"])
+        assertNull(open["secondLeg"])
+        assertEquals(0, open.getValue("aggregate").jsonObject.getValue("home").jsonPrimitive.content.toInt())
     }
 
     @Test
-    fun `cup lista todas as fases com o premio e omite o que ainda nao existe`() {
+    fun `cup lista todas as fases com legs, entrantes e premio e omite o que ainda nao existe`() {
         val encoded = encodeCup(semis)
-        assertEquals(
-            listOf("SEMI_FINALS", "FINAL"),
-            encoded.getValue("phases").jsonArray.map { it.jsonObject.getValue("phase").jsonPrimitive.content },
-        )
-        assertEquals(
-            KnockoutPhase.FINAL.prizeCents.cents,
-            encoded.getValue("phases").jsonArray[1].jsonObject.getValue("prizeCents").jsonPrimitive.content.toLong(),
-        )
-        // Fase das semis completa (pênaltis + folga) e final ainda não sorteada:
-        // nem fase corrente nem campeão — ausentes, não `null`.
-        assertNull(encoded["currentPhase"])
+        assertEquals("bra-copa-do-brasil", encoded.getValue("competitionId").jsonPrimitive.content)
+        val phases = encoded.getValue("phases").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("Semifinal", "Final"), phases.map { it.getValue("name").jsonPrimitive.content })
+        assertEquals(listOf("TWO_LEGGED", "SINGLE"), phases.map { it.getValue("legs").jsonPrimitive.content })
+        assertEquals(4, phases[0].getValue("entrants").jsonArray.size)
+        assertEquals(CUP_FINAL_PRIZE.cents, phases[1].getValue("prizeCents").jsonPrimitive.content.toLong())
+        assertEquals("Semifinal", encoded.getValue("currentStage").jsonPrimitive.content)
+        // Copa em andamento: campeão ausente, não `null`.
         assertNull(encoded["champion"])
     }
 }

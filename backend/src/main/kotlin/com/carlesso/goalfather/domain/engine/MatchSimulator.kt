@@ -25,21 +25,28 @@ import kotlin.random.Random
  * (`lineup.tactics`), junto da formação — não há campo separado aqui de
  * propósito: duas fontes para a mesma decisão só criariam divergência.
  *
- * `knockout` (issue #61) marca jogo de mata-mata: empate no tempo normal vai
- * aos pênaltis. Default `false` — partida de liga continua aceitando empate e
- * consumindo o RNG exatamente como antes da copa existir.
+ * `decidesOnPenalties` (issues #61 e #131) responde, no minuto 90, se o placar
+ * do tempo normal vai aos pênaltis: jogo único empatado sim, ida nunca, volta
+ * só com o agregado empatado. É uma FUNÇÃO e não um `Boolean` porque a resposta
+ * depende do placar que só a simulação conhece; os serviços passam
+ * `match::decidesOnPenalties` (`CupRules.kt`). Default [NO_SHOOTOUT] — partida
+ * de liga continua aceitando empate e consumindo o RNG exatamente como antes
+ * da copa existir.
  */
 data class MatchSetup(
     val home: Lineup,
     val away: Lineup,
     val homeName: String,
     val awayName: String,
-    val knockout: Boolean = false,
+    val decidesOnPenalties: (homeGoals: Int, awayGoals: Int) -> Boolean = NO_SHOOTOUT,
     // Só repassados ao `KickOff` (o drill-down resolve nomes por eles); a
     // simulação não os usa. Default `null` mantém os construtores existentes.
     val homeClubId: ClubId? = null,
     val awayClubId: ClubId? = null,
 )
+
+/** Liga: empate é resultado, ninguém cobra pênalti. Uma instância só, para `MatchSetup` comparar por `==`. */
+val NO_SHOOTOUT: (Int, Int) -> Boolean = { _, _ -> false }
 
 /**
  * Engine de simulação — pura sobre `MatchSetup` + RNG.
@@ -178,10 +185,11 @@ class MatchSimulator {
             }
         }
 
-        // Mata-mata não termina empatado (issue #61): a disputa usa o MESMO RNG,
+        // Mata-mata decidido no empate (jogo único, ou agregado da volta — #131):
+        // a disputa usa o MESMO RNG,
         // já depois dos 90 minutos — então ela não altera nenhum evento do tempo
         // normal, e mesma seed continua dando o mesmo jogo E a mesma disputa.
-        if (setup.knockout && homeGoals == awayGoals) {
+        if (setup.decidesOnPenalties(homeGoals, awayGoals)) {
             val shootout = penaltyShootout(onPitch(home = true), onPitch(home = false), rng)
             emitting(
                 MatchEvent.PenaltyShootout(

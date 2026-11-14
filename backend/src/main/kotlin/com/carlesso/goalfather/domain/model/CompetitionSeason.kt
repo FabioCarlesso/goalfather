@@ -7,7 +7,7 @@ import java.time.Month
  * Como a temporada de um país se distribui no ano (issue #125). O Brasil joga
  * de janeiro a dezembro; a Europa, de agosto a maio, atravessando a virada do
  * ano. Conjunto fechado e sem dado próprio por variante — `enum`, com o
- * comportamento (as datas) no próprio valor, como `KnockoutPhase`.
+ * comportamento (as datas) no próprio valor, como `Posture`.
  */
 enum class SeasonSpan {
     /** Janeiro a dezembro do mesmo ano (Brasil, CONMEBOL). */

@@ -6,7 +6,6 @@ import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.Slot
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -180,8 +179,10 @@ class LeagueDslTest {
         val cup = league.initialCup()
         assertNotNull(cup)
         assertEquals(2026, cup.season)
-        // 6 clubes → chave de 8 (quartas) com 2 folgas; o mesmo seed sorteia igual.
-        assertEquals(KnockoutPhase.QUARTER_FINALS, cup.stages.single().phase)
+        // 6 clubes → chave de 8: 4 jogam a 1ª fase e os 2 mais fortes entram na
+        // semifinal; o mesmo seed sorteia igual.
+        assertEquals("Primeira fase", cup.stages.single().name)
+        assertEquals(listOf(4, 2, 0), cup.phases.map { it.entrants.size })
         assertEquals(cup, league.initialCup())
     }
 

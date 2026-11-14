@@ -167,16 +167,17 @@ fun seasonPlan(
 
     val cupEntry = cup?.let {
         val (start, end) = cupWindow(season)
+        // #131 integrador: ponte da frente C (formato e encaixes vêm da própria copa); a frente B reescreve.
         val competition = Competition(
-            SeasonCompetitions.CUP_ID,
-            SeasonCompetitions.CUP_NAME,
-            cupFormat(clubs.size),
-            discipline = SeasonCompetitions.disciplineOf(SeasonCompetitions.CUP_ID),
-            foreignPlayerLimit = SeasonCompetitions.foreignPlayerLimitOf(SeasonCompetitions.CUP_ID),
+            it.competitionId,
+            it.competitionName,
+            it.format,
+            discipline = SeasonCompetitions.disciplineOf(it.competitionId),
+            foreignPlayerLimit = SeasonCompetitions.foreignPlayerLimitOf(it.competitionId),
         )
         val competitionSeason = CompetitionSeason(competition, season, start, end, pausesOnFifaWindows = true)
         val everyone = clubs.mapTo(HashSet()) { club -> club.id }
-        SeasonCompetition.SeasonCup(competitionSeason) to it.phases.map { everyone }
+        SeasonCompetition.SeasonCup(competitionSeason) to List(it.calendarRounds) { everyone }
     }
 
     val entries = leagues + listOfNotNull(cupEntry)

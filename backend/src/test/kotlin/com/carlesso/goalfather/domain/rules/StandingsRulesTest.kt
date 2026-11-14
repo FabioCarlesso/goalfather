@@ -1,7 +1,7 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.RoundStage
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -185,7 +185,7 @@ class StandingsRulesTest {
         val cupRound = Round(
             matchday = md(2),
             season = 2026,
-            matches = listOf(finishedMatch(1, 2, 3, 0).copy(stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS))),
+            matches = listOf(finishedMatch(1, 2, 3, 0).copy(stage = RoundStage.Cup("Semifinal", CupLeg.Single))),
         )
         assertEquals(initialStandings, applyRoundToStandings(cupRound, initialStandings))
     }
