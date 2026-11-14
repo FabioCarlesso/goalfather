@@ -35,6 +35,9 @@ services:
       # Swagger UI em /swagger-ui.html — ver backend/Dockerfile.
       additional_contexts:
         contract: ./contract
+        # Pack do mundo (issue #131): com o banco vazio, o seed monta o mundo
+        # a partir dele — sem o pack o backend não sobe. Ver backend/Dockerfile.
+        world: ./data/world/v1
     # `dev,postgres`, não `prod`: este stack usa Postgres mas NÃO é produção
     # (credenciais fixas, portas abertas ao host). Ativar `prod` só para trocar
     # o datasource fazia o JwtSecretGuard (#30) derrubar o boot, porque o

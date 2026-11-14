@@ -60,10 +60,14 @@ class ClubPersistenceAdapter(
     }
 
     override suspend fun findAvailable(): List<Club> = withContext(Dispatchers.IO) {
-        clubRepo.findAllByOwnerIdIsNull().map { entity ->
-            val players = playerRepo.findAllByClubId(entity.id)
-            entity.toDomain(players, json)
-        }
+        val entities = clubRepo.findAllByOwnerIdIsNull()
+        // Mesma consulta única do `findAll` (issue #23): com o mundo do MVP
+        // (issue #131, ~136 clubes livres) o N+1 virava 137 consultas por
+        // abertura da tela de escolha.
+        val playersByClub = playerRepo
+            .findAllByClubIdIn(entities.map { it.id })
+            .groupBy { it.clubId }
+        entities.map { entity -> entity.toDomain(playersByClub[entity.id].orEmpty(), json) }
     }
 
     /**
