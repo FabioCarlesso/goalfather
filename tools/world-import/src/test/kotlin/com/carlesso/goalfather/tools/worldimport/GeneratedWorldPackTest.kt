@@ -39,14 +39,15 @@ class GeneratedWorldPackTest {
     }
 
     @Test
-    fun `tem as 7 ligas do MVP e a fase de grupos da Libertadores`() = runTest {
+    fun `tem as 7 ligas do MVP, a Copa do Brasil e a fase de grupos da Libertadores`() = runTest {
         val pack = pack()
         val sizes = pack.competitions.associate { it.id.value to it.clubIds.size }
 
         assertEquals(
             mapOf(
-                "bra-serie-a" to 20, "bra-serie-b" to 20, "eng-premier-league" to 20, "esp-la-liga" to 20,
-                "ita-serie-a" to 20, "ger-bundesliga" to 18, "fra-ligue-1" to 18, "conmebol-libertadores" to 32,
+                "bra-serie-a" to 20, "bra-serie-b" to 20, "bra-copa-do-brasil" to 40, "eng-premier-league" to 20,
+                "esp-la-liga" to 20, "ita-serie-a" to 20, "ger-bundesliga" to 18, "fra-ligue-1" to 18,
+                "conmebol-libertadores" to 32,
             ),
             sizes,
         )
@@ -54,6 +55,10 @@ class GeneratedWorldPackTest {
         val libertadores = pack.competitions.single { it.id == CompetitionId("conmebol-libertadores") }
         val serieA = pack.competitions.single { it.id == CompetitionId("bra-serie-a") }
         assertEquals(6, libertadores.clubIds.count { it in serieA.clubIds })
+        // A Copa do Brasil (issue #131) só referencia os clubes de A e B: nenhum clube novo.
+        val serieB = pack.competitions.single { it.id == CompetitionId("bra-serie-b") }
+        val copa = pack.competitions.single { it.id == CompetitionId("bra-copa-do-brasil") }
+        assertEquals(serieA.clubIds + serieB.clubIds, copa.clubIds)
         assertEquals(20 * 5 + 18 * 2 + 26, pack.clubs.size)
     }
 

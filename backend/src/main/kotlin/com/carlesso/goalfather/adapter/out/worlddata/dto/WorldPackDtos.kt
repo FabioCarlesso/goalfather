@@ -64,6 +64,16 @@ data class CompetitionDto(
     val strength: Int? = null,
     val format: FormatDto,
     val tiebreakers: List<String>? = null,
+    /**
+     * Máximo de estrangeiros em campo por jogo (issue #131); ausente = sem
+     * limite. Regra do jogo (CBF: 9), não fato do Wikidata.
+     */
+    val foreignPlayerLimit: Int? = null,
+    /**
+     * A competição para nas datas FIFA? (issue #131). Default `true`, o caso
+     * comum (Europa, copas, continentais); o Brasileirão declara `false`.
+     */
+    val pausesOnFifaWindows: Boolean = true,
 )
 
 /**

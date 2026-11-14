@@ -117,11 +117,14 @@ internal class PackMapper(private val errors: MutableList<PackLoadError>) {
                     format = format(dto.format),
                     tiebreakers = dto.tiebreakers?.map { enumValue<Tiebreaker>(it, "critério de desempate") }
                         ?: Competition.DEFAULT_TIEBREAKERS,
+                    // Limite negativo é recusado pelo `init` do `Competition` → InvalidValue.
+                    foreignPlayerLimit = dto.foreignPlayerLimit,
                 ),
                 owner = owner,
                 tier = dto.tier?.also { require(it >= 1) { "tier deve ser >= 1: $it" } },
                 strength = dto.strength?.let(::LeagueStrength),
                 clubIds = clubIds,
+                pausesOnFifaWindows = dto.pausesOnFifaWindows,
             )
         }
     }
