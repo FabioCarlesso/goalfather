@@ -17,14 +17,16 @@ interface LeagueRepository {
     suspend fun findLatest(): Round?
 
     /**
-     * Tabelas da temporada ativa (a de maior `season`) — uma por divisão,
-     * ordenadas da elite para baixo (issue #47).
+     * A tabela corrente de cada liga do mundo (issue #131): cada uma na SUA
+     * temporada (a de maior `season` daquela competição). Ordem de exibição:
+     * Brasil primeiro, depois o país e a divisão (elite primeiro). É também o
+     * estado da temporada de cada país (`worldSeasons`).
      */
     suspend fun currentStandings(): List<Standings>
 
     /**
-     * Tabelas de uma temporada específica (histórico), uma por divisão;
-     * lista vazia se a temporada não existir.
+     * Tabelas das ligas cuja temporada começou em [season] (histórico), na
+     * mesma ordem; lista vazia se nenhuma liga teve essa temporada.
      */
     suspend fun findStandings(season: Int): List<Standings>
 

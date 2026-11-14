@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.model.BoardExpectation
 import com.carlesso.goalfather.domain.model.BoardMood
 import com.carlesso.goalfather.domain.model.BoardObjective
@@ -178,7 +179,7 @@ class BoardRulesTest {
         val withBoard = makeClub(id = 1, name = "Com meta").copy(board = expectation(target = 1))
         val stale = makeClub(id = 2, name = "Meta velha").copy(board = expectation().copy(season = 2025))
         val legacy = makeClub(id = 3, name = "Sem meta")
-        val table = Standings(
+        val table = testStandings(
             season = 2026,
             round = 5,
             rows = listOf(1L, 2L, 3L).mapIndexed { i, id ->

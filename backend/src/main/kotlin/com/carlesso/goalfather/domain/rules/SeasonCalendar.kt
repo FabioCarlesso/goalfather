@@ -2,56 +2,81 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
-import com.carlesso.goalfather.domain.model.Competition
+import com.carlesso.goalfather.domain.model.CompetitionFormat
 import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.CompetitionKind
 import com.carlesso.goalfather.domain.model.CompetitionSeason
+import com.carlesso.goalfather.domain.model.CountryCode
 import com.carlesso.goalfather.domain.model.Cup
-import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.FifaWindow
+import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.NextMatch
+import com.carlesso.goalfather.domain.model.Pairing
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.SeasonSpan
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.Month
 import java.time.temporal.TemporalAdjusters
 
 /**
- * Calendário da temporada do mundo atual do jogo (issue #125): a liga de cada
- * divisão + a copa, encaixadas na semana pelo agendador genérico
- * ([scheduleSeasons]). Função PURA dos clubes (ids e divisões não mudam no
- * meio da temporada) e da copa — por isso o calendário nunca é persistido: o
- * serviço o recalcula a cada encaixe encerrado.
+ * Calendário do MUNDO (issues #125 e #131): as competições do catálogo do
+ * save — uma liga por (país, tier) e a copa nacional de cada país —, cada uma
+ * na SUA temporada corrente, encaixadas na semana pelo agendador genérico
+ * ([scheduleSeasons]).
  *
- * Substitui a sequência de "datas" da issue #61 (liga intercalada com copa,
- * uma por clique). O que se mantém: o primeiro encaixe é de liga e as fases da
- * copa se espalham entre as rodadas. O campeão da copa sempre chega à virada
- * porque ela só acontece quando o plano não tem mais NENHUM encaixe — de
- * nenhuma competição. Que a copa acabe antes da última rodada da liga é
- * consequência dos parâmetros do seed (janela fev–nov, 4 fases), não uma
- * garantia do agendador.
+ * **Uma temporada por país.** O Brasil joga jan–dez e a Europa ago–mai, então
+ * no mesmo encaixe convivem o Brasil de 2027 e a Europa de 2026/27. O estado
+ * que o plano precisa é, por país, o ano de início da edição corrente
+ * ([WorldSeasons]) — o resto (clubes, catálogo, copa sorteada) já está no save.
+ *
+ * **País a país, e por isso recalculável.** Os clubes de dois países nunca se
+ * cruzam nas competições domésticas, então o encaixe de um país não depende
+ * do outro: o plano do mundo é a UNIÃO dos planos de cada país. É isso que
+ * deixa recalcular o plano a cada encaixe encerrado (ele nunca é persistido)
+ * sem que a virada do Brasil mexa uma vírgula no calendário da Premier League —
+ * a "nova edição por cima do calendário corrente" sai de graça. As janelas
+ * (`SeasonSpan`) de duas edições seguidas do mesmo país não se sobrepõem, então
+ * a edição nova nunca cai no passado (o serviço confere: [SeasonPlan.first]).
+ *
+ * **Datas FIFA**: ainda as interinas ([interimFifaWindows]) do ano de início e
+ * do seguinte — o pack já traz `calendar/2026.json`, mas só um ano; quando o
+ * pack trouxer a série, o plano passa a recebê-las do catálogo.
  */
 
-/** O que cada competição do mundo atual é — o que o calendário precisa para gerar os jogos do encaixe. */
+/** O ano de início da edição que cada país está jogando (`2026` = Brasil 2026, Europa 2026/27). */
+typealias WorldSeasons = Map<CountryCode, Int>
+
+/** Uma competição do plano, já na temporada corrente — o que o calendário precisa para gerar os jogos. */
 sealed interface SeasonCompetition {
+    val game: GameCompetition
     val season: CompetitionSeason
 
-    /** A liga de pontos corridos de uma [division]. */
-    data class DivisionLeague(override val season: CompetitionSeason, val division: Division) : SeasonCompetition
+    /**
+     * Liga de pontos corridos: os [rounds] de pareamentos (turno e returno do
+     * formato do catálogo) e o [slot] da liga na faixa de `matchId`.
+     */
+    data class League(
+        override val game: GameCompetition,
+        override val season: CompetitionSeason,
+        val slot: Int,
+        val rounds: List<List<Pairing>>,
+    ) : SeasonCompetition
 
-    /** A copa mata-mata da temporada (issue #61). */
-    data class SeasonCup(override val season: CompetitionSeason) : SeasonCompetition
+    /** Copa nacional já sorteada. Só a fase corrente tem confrontos conhecidos. */
+    data class NationalCup(
+        override val game: GameCompetition,
+        override val season: CompetitionSeason,
+        val cup: Cup,
+    ) : SeasonCompetition
 }
 
 /**
- * As competições da temporada + o calendário montado. [roundAt] transforma um
- * encaixe nos jogos de verdade.
+ * As competições do mundo na temporada corrente de cada país + o calendário
+ * montado. [roundAt] transforma um encaixe nos jogos de verdade.
  */
 data class SeasonPlan(
-    val season: Int,
     val competitions: Map<CompetitionId, SeasonCompetition>,
     val schedule: Schedule,
 ) {
@@ -59,136 +84,213 @@ data class SeasonPlan(
 
     fun nextAfter(matchday: Matchday): Matchday? = schedule.nextAfter(matchday)
 
+    /** A temporada corrente de cada país do plano. */
+    val seasons: WorldSeasons
+        get() = competitions.values.associate { it.game.country.code to it.season.year }
+
     /**
-     * Os jogos do encaixe [matchday]: a rodada de cada liga marcada nele e,
-     * se a copa estiver nele, os confrontos em aberto da fase corrente. O
-     * `when` é exaustivo sobre [SeasonCompetition]: uma terceira competição
-     * vira erro de compilação aqui, não um encaixe jogado como liga.
+     * Países cujas competições domésticas já terminaram TODAS em [matchday]: a
+     * última rodada do país (de qualquer competição dele) é a deste encaixe —
+     * ou anterior, o que só acontece num save que parou entre o fim e a virada
+     * (vira agora, em vez de nunca). É o gatilho da virada POR PAÍS — o Brasil
+     * vira em dezembro, a Europa em maio.
      */
-    fun roundAt(matchday: Matchday, clubs: List<Club>, cup: Cup?): Round {
-        val byDivision = clubs.groupBy { it.division }
+    fun countriesEndingBy(matchday: Matchday): Set<CountryCode> {
+        val lastByCountry = schedule.rounds
+            .groupBy { competitions.getValue(it.competition).game.country.code }
+            .mapValues { (_, rounds) -> rounds.maxOf { it.matchday } }
+        return lastByCountry.filterValues { it <= matchday }.keys
+    }
+
+    /**
+     * Os jogos do encaixe [matchday]: a rodada de cada liga marcada nele e, se
+     * uma copa estiver nele, os confrontos em aberto da fase corrente. O `when`
+     * é exaustivo sobre [SeasonCompetition]: uma competição de outro papel vira
+     * erro de compilação aqui, não um encaixe jogado como liga.
+     *
+     * [Round.season] é o ano CIVIL do encaixe — com várias temporadas no mesmo
+     * domingo, a temporada é de cada competição, não da rodada.
+     */
+    fun roundAt(matchday: Matchday, clubs: Collection<Club>): Round {
+        val byId = clubs.associateBy { it.id }
         val matches = schedule.at(matchday).flatMap { scheduled ->
             when (val competition = competitions.getValue(scheduled.competition)) {
-                is SeasonCompetition.DivisionLeague ->
-                    leagueMatches(matchday, scheduled.round, competition.division, byDivision[competition.division].orEmpty())
-                // O calendário só reserva encaixes de copa quando ela existe; um
-                // `null` aqui é bug de quem montou o plano, não estado de jogo.
-                is SeasonCompetition.SeasonCup ->
-                    cupMatches(matchday, requireNotNull(cup) { "Encaixe $matchday reservado para a copa, mas não há copa em $season" }, clubs)
+                is SeasonCompetition.League ->
+                    leagueMatches(
+                        matchday,
+                        scheduled.round,
+                        competition.game,
+                        competition.slot,
+                        competition.rounds[scheduled.round - 1],
+                        byId,
+                    )
+                is SeasonCompetition.NationalCup ->
+                    nationalCupMatches(matchday, competition.cup, competition.game, clubs)
             }
         }
-        return Round(matchday = matchday, season = season, status = RoundStatus.Scheduled, matches = matches)
+        return Round(matchday = matchday, season = matchday.date.year, status = RoundStatus.Scheduled, matches = matches)
     }
 
     /**
      * O próximo jogo de [clubId] DEPOIS do encaixe [after], como o calendário o
      * enxerga hoje. Jogos de liga são conhecidos de antemão (Berger); da copa
      * só se conhece a fase corrente — a seguinte depende de resultados —, então
-     * só o PRIMEIRO encaixe de copa adiante entra na busca, e nenhum quando a
-     * fase corrente ainda está em jogo ([cupStageInPlay]).
+     * só o PRIMEIRO encaixe de cada copa adiante entra na busca, e nenhum
+     * quando a fase corrente dela ainda está em jogo ([cupsInPlay]).
      */
     fun nextMatchOf(
         clubId: ClubId,
         after: Matchday,
-        clubs: List<Club>,
-        cup: Cup?,
-        cupStageInPlay: Boolean = false,
+        clubs: Collection<Club>,
+        cupsInPlay: Set<CompetitionId> = emptySet(),
     ): NextMatch? {
-        var cupKnown = !cupStageInPlay
+        val cupsUnknown = cupsInPlay.toMutableSet()
         for (matchday in schedule.matchdays.filter { it > after }) {
-            val hasCup = schedule.at(matchday).any { competitions[it.competition] is SeasonCompetition.SeasonCup }
-            if (hasCup && !cupKnown) continue
-            val match = roundAt(matchday, clubs, cup).matches.firstOrNull { it.involves(clubId) }
+            val cups = schedule.at(matchday)
+                .map { it.competition }
+                .filterTo(HashSet()) { competitions[it] is SeasonCompetition.NationalCup }
+            val visible = Round(
+                matchday = matchday,
+                season = matchday.date.year,
+                matches = roundAt(matchday, clubs).matches.filterNot { it.competition in cupsUnknown },
+            )
+            val match = visible.matches.firstOrNull { it.involves(clubId) }
             if (match != null) return NextMatch(matchday, match)
-            if (hasCup) cupKnown = false
+            cupsUnknown += cups
         }
         return null
     }
+
+    /** O plano com as competições e o calendário de [other] junto (países disjuntos). */
+    operator fun plus(other: SeasonPlan): SeasonPlan =
+        SeasonPlan(competitions + other.competitions, schedule + other.schedule)
+
+    companion object {
+        val EMPTY = SeasonPlan(emptyMap(), Schedule.EMPTY)
+    }
 }
 
 /**
- * Janela da copa do mundo atual: fevereiro a novembro, dentro da temporada
- * brasileira — começa depois da 1ª rodada da liga e termina antes da última,
- * para o campeão chegar à virada.
+ * Plano do mundo: o de cada país do catálogo com temporada em [seasons], unidos.
+ * País sem temporada corrente fica de fora (ainda não começou).
  *
- * Começa na 1ª SEGUNDA de fevereiro: assim a semana inicial da janela tem os
- * dois encaixes, e a copa estreia na quarta que prefere. `TemporalAdjusters`
- * é o "ajuste de data" do `java.time` — `nextOrSame(MONDAY)` devolve o próprio
- * dia se já for segunda.
+ * [cups]: a copa já sorteada de cada copa nacional, pela competição. Copa
+ * ausente = o país joga só as ligas (o motor não comportou os inscritos, ou o
+ * save é anterior à copa).
  */
-private fun cupWindow(season: Int): Pair<LocalDate, LocalDate> =
-    LocalDate.of(season, Month.FEBRUARY, 1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY)) to
-        LocalDate.of(season, Month.NOVEMBER, 30)
+fun worldPlan(
+    competitions: List<GameCompetition>,
+    clubs: Collection<Club>,
+    seasons: WorldSeasons,
+    cups: Map<CompetitionId, Cup> = emptyMap(),
+): SeasonPlan {
+    val slots = leagueSlots(competitions)
+    return competitions.groupBy { it.country.code }
+        .toList()
+        .mapNotNull { (code, own) ->
+            seasons[code]?.let { year -> countryPlan(own, year, clubs.filter { it.country.code == code }, cups, slots) }
+        }
+        .fold(SeasonPlan.EMPTY, SeasonPlan::plus)
+}
 
 /**
- * Monta o plano da temporada [season] para [clubs] + [cup].
- *
- * - Liga: uma competição por divisão, na janela do país dos clubes (ano civil
- *   no Brasil) e SEM pausa nas datas FIFA — o Brasileirão segue jogando.
- * - Copa: pausa nas datas FIFA; cada fase reserva TODOS os clubes da liga,
- *   porque os confrontos das fases seguintes só existem depois dos resultados.
- *   Na prática a copa nunca divide encaixe com a liga — que é o que garante que
- *   o sorteio de qualquer fase cabe no encaixe reservado.
- *
- * Uma liga que não cabe no calendário é erro de configuração do mundo (o seed
- * tem 5 rodadas num ano de 104 encaixes), não desfecho de jogo — daí o `error`.
+ * O slot de cada liga na faixa de `matchId` do encaixe: a posição dela entre
+ * as ligas do catálogo, 1-based. Fixo enquanto o catálogo do save não muda —
+ * e ele não muda num jogo em andamento.
  */
-fun seasonPlan(
-    season: Int,
-    clubs: List<Club>,
-    cup: Cup?,
-    fifaWindows: List<FifaWindow> = interimFifaWindows(season..season + 1),
+fun leagueSlots(competitions: List<GameCompetition>): Map<CompetitionId, Int> {
+    val leagues = competitions.filter { it.kind is CompetitionKind.League }
+    require(leagues.size <= MAX_LEAGUE_SLOTS) {
+        "O calendário comporta até $MAX_LEAGUE_SLOTS ligas por encaixe (faixa de matchId): ${leagues.size}"
+    }
+    return leagues.withIndex().associate { (i, league) -> league.id to i + 1 }
+}
+
+/**
+ * Plano de UM país na temporada [year]:
+ *
+ * - liga: uma por `GameCompetition` League, com os clubes do país cujo
+ *   `division` é o tier dela, em ordem de id; o formato do catálogo dá os
+ *   turnos (`RoundRobin(legs = 2)` = turno e returno). Encaixe na janela do
+ *   `span` e com a pausa da competição (o Brasileirão segue nas datas FIFA; as
+ *   europeias param). Liga com menos de 2 clubes não tem calendário;
+ * - copa nacional: cada encaixe dela reserva TODOS os clubes das ligas do
+ *   país (os confrontos das fases seguintes só existem depois dos resultados).
+ *   Na prática a copa nunca divide encaixe com a liga do país — é o que
+ *   garante que o sorteio de qualquer fase cabe no encaixe reservado. Janela:
+ *   do 2º ao penúltimo mês da temporada ([cupWindow]), para o campeão sair
+ *   antes da virada do país.
+ *
+ * Não caber no calendário é erro de CONFIGURAÇÃO do mundo (o catálogo pede
+ * mais rodadas do que a janela tem), não desfecho de jogo — daí o `error`.
+ */
+fun countryPlan(
+    competitions: List<GameCompetition>,
+    year: Int,
+    clubs: Collection<Club>,
+    cups: Map<CompetitionId, Cup>,
+    slots: Map<CompetitionId, Int>,
+    fifaWindows: List<FifaWindow> = interimFifaWindows(year..year + 1),
 ): SeasonPlan {
-    require(canScheduleSeason(clubs)) { "Liga sem calendário possível: ${clubs.size} clubes" }
-    val byDivision = clubs.groupBy { it.division }.toSortedMap()
-
-    val leagues = byDivision.map { (division, divisionClubs) ->
-        val country = divisionClubs.first().country
-        val leagueId = SeasonCompetitions.leagueId(division)
-        val competition = Competition(
-            leagueId,
-            SeasonCompetitions.leagueName(division),
-            LEAGUE_FORMAT,
-            discipline = SeasonCompetitions.disciplineOf(leagueId),
-            foreignPlayerLimit = SeasonCompetitions.foreignPlayerLimitOf(leagueId),
-        )
-        val competitionSeason = CompetitionSeason.of(
-            competition,
-            SeasonSpan.of(country.confederation),
-            season,
-            pausesOnFifaWindows = false,
-        )
-        val ids = divisionClubs.map { it.id }
-        val rounds = (1..turnRounds(ids.size)).map { round ->
-            roundRobinMatchday(ids, round).flatMapTo(HashSet()) { listOf(it.home, it.away) }
+    val countryClubs = clubs.sortedBy { it.id.value }
+    // `buildList` monta a lista com `add` num bloco e devolve a versão imutável.
+    val entries: List<Pair<SeasonCompetition, List<Set<ClubId>>>> = buildList {
+        for (game in competitions) {
+            // `when` exaustivo sobre o papel da competição: um papel novo
+            // (continental, #132) obriga a decidir aqui como ele entra no plano.
+            when (val kind = game.kind) {
+                is CompetitionKind.League -> {
+                    val ids = countryClubs.filter { it.division == kind.tier }.map { it.id }
+                    if (ids.size < 2) continue
+                    val rounds = leagueRounds(game, ids)
+                    val league = SeasonCompetition.League(game, game.seasonOf(year), slots.getValue(game.id), rounds)
+                    add(league to rounds.map { round -> round.flatMapTo(HashSet()) { listOf(it.home, it.away) } })
+                }
+                CompetitionKind.NationalCup -> {
+                    val cup = cups[game.id] ?: continue
+                    val everyone = countryClubs.mapTo(HashSet()) { it.id }
+                    val (start, end) = cupWindow(game.span, year)
+                    val season = CompetitionSeason(game.competition, year, start, end, game.pausesOnFifaWindows)
+                    add(SeasonCompetition.NationalCup(game, season, cup) to List(cupRounds(cup)) { everyone })
+                }
+            }
         }
-        SeasonCompetition.DivisionLeague(competitionSeason, division) to rounds
     }
+    if (entries.isEmpty()) return SeasonPlan.EMPTY
 
-    val cupEntry = cup?.let {
-        val (start, end) = cupWindow(season)
-        val competition = Competition(
-            SeasonCompetitions.CUP_ID,
-            SeasonCompetitions.CUP_NAME,
-            cupFormat(clubs.size),
-            discipline = SeasonCompetitions.disciplineOf(SeasonCompetitions.CUP_ID),
-            foreignPlayerLimit = SeasonCompetitions.foreignPlayerLimitOf(SeasonCompetitions.CUP_ID),
-        )
-        val competitionSeason = CompetitionSeason(competition, season, start, end, pausesOnFifaWindows = true)
-        val everyone = clubs.mapTo(HashSet()) { club -> club.id }
-        SeasonCompetition.SeasonCup(competitionSeason) to it.phases.map { everyone }
-    }
-
-    val entries = leagues + listOfNotNull(cupEntry)
     val requests = entries.map { (competition, rounds) -> ScheduleRequest(competition.season, rounds) }
     val schedule = when (val result = scheduleSeasons(requests, fifaWindows)) {
         is ScheduleResult.Scheduled -> result.schedule
-        is ScheduleResult.NoRoomLeft -> error("Temporada $season não cabe no calendário: $result")
+        is ScheduleResult.NoRoomLeft -> error("Temporada $year de ${competitions.first().country.name} não cabe no calendário: $result")
     }
-    return SeasonPlan(
-        season = season,
-        competitions = entries.associate { (competition, _) -> competition.season.competition.id to competition },
-        schedule = schedule,
-    )
+    return SeasonPlan(entries.associate { (competition, _) -> competition.game.id to competition }, schedule)
 }
 
+/**
+ * As rodadas de pareamentos da liga [game] entre [clubs], no formato do
+ * catálogo. Só pontos corridos é liga; os demais formatos são de copa ou
+ * continental — numa competição de papel `League` são erro de configuração.
+ */
+private fun leagueRounds(game: GameCompetition, clubs: List<ClubId>): List<List<Pairing>> =
+    when (val format = game.competition.format) {
+        is CompetitionFormat.RoundRobin -> roundRobinSchedule(clubs, format.legs)
+        is CompetitionFormat.Knockout,
+        is CompetitionFormat.GroupsThenKnockout,
+        is CompetitionFormat.SwissLeague,
+        -> error("Liga ${game.id.value} com formato que não é de pontos corridos: $format")
+    }
+
+/**
+ * Janela da copa nacional dentro da temporada do país: da 1ª SEGUNDA do 2º mês
+ * ao fim do penúltimo mês (no Brasil, fevereiro a novembro) — começa depois da
+ * 1ª rodada da liga e termina antes da última, para o campeão chegar à virada.
+ *
+ * Começa numa segunda para a semana inicial ter os dois encaixes e a copa
+ * estrear na quarta que prefere. `TemporalAdjusters.nextOrSame(MONDAY)`
+ * devolve o próprio dia se já for segunda.
+ */
+private fun cupWindow(span: SeasonSpan, year: Int): Pair<LocalDate, LocalDate> {
+    val start = span.start(year).plusMonths(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY))
+    val end = span.end(year).withDayOfMonth(1).minusDays(1)
+    return start to end
+}

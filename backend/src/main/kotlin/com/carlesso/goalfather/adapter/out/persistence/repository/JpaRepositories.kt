@@ -10,6 +10,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryId
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsId
 import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntity
@@ -174,7 +175,7 @@ interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, Roun
  * quando o técnico abre a tela de histórico, não a cada rodada, e o cache só
  * adicionaria um lugar para a temporada recém-gravada não aparecer.
  */
-interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, Int> {
+interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, SeasonHistoryId> {
     /** Da temporada mais recente para a mais antiga — ordem de exibição. */
     fun findAllByOrderBySeasonDesc(): List<SeasonHistoryEntity>
 }
@@ -229,20 +230,30 @@ interface TransferOfferJpaRepository : JpaRepository<TransferOfferEntity, Long> 
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, StandingsId> {
     /**
-     * Tabelas da temporada ativa = maior `season`, uma por divisão (issue
-     * #47). Sem parâmetros de propósito: o cache usa `SimpleKey.EMPTY` e a
-     * subquery resolve a temporada ativa na mesma ida ao banco.
+     * A tabela corrente de cada liga do mundo (issue #131): a de maior
+     * `season` DE CADA COMPETIÇÃO — o Brasil pode já estar em 2027 enquanto a
+     * Europa segue em 2026/27. Sem parâmetros de propósito: o cache usa
+     * `SimpleKey.EMPTY` e a subquery correlacionada resolve tudo numa ida ao
+     * banco. Ordem de exibição: Brasil primeiro, depois o código do país e a
+     * divisão (elite primeiro).
      */
     @Cacheable("standings")
     @Query(
         "select s from StandingsEntity s " +
-            "where s.season = (select max(x.season) from StandingsEntity x) " +
-            "order by s.division",
+            "where s.season = (select max(x.season) from StandingsEntity x where x.competitionId = s.competitionId) " +
+            "order by case when s.countryCode = 'BRA' then 0 else 1 end, s.countryCode, s.division",
     )
-    fun findAllForLatestSeason(): List<StandingsEntity>
+    fun findAllCurrent(): List<StandingsEntity>
 
-    /** Tabelas de uma temporada específica (histórico), ordenadas por divisão. */
-    fun findAllBySeasonOrderByDivision(season: Int): List<StandingsEntity>
+    /**
+     * Tabelas das ligas cuja temporada COMEÇOU em [season] (histórico), na
+     * mesma ordem de exibição.
+     */
+    @Query(
+        "select s from StandingsEntity s where s.season = :season " +
+            "order by case when s.countryCode = 'BRA' then 0 else 1 end, s.countryCode, s.division",
+    )
+    fun findAllBySeason(@Param("season") season: Int): List<StandingsEntity>
 
     @CacheEvict("standings", allEntries = true)
     override fun <S : StandingsEntity> save(entity: S): S

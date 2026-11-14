@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.CompetitionFormat
+import com.carlesso.goalfather.domain.model.Competition
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionId
@@ -12,7 +15,6 @@ import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.domain.model.Suspension
 import com.carlesso.goalfather.test.makeClub
@@ -32,6 +34,10 @@ class SuspensionRulesTest {
 
     private val league = CompetitionId("liga-d1")
     private val cup = CompetitionId("copa")
+
+    // Regras de cada competição (issue #131): vêm do `Competition` do catálogo.
+    private val leagueRules = Competition(league, "Liga", CompetitionFormat.RoundRobin(), foreignPlayerLimit = 9)
+    private val cupRules = Competition(cup, "Copa", CompetitionFormat.RoundRobin(), foreignPlayerLimit = 9)
     private val rules = DisciplineRules.DEFAULT
     private val yellow = MatchCards(yellow = 1)
 
@@ -134,8 +140,8 @@ class SuspensionRulesTest {
             squad = base.squad.map { if (it.id == PlayerId(1)) it.copy(suspensions = listOf(Suspension(league, 1))) else it },
         )
 
-        val inLeague = club.startingLineupIn(league).players.map { it.id }
-        val inCup = club.startingLineupIn(cup).players.map { it.id }
+        val inLeague = club.startingLineupIn(leagueRules).players.map { it.id }
+        val inCup = club.startingLineupIn(cupRules).players.map { it.id }
 
         assertFalse(PlayerId(1) in inLeague, "suspenso na liga fica fora do jogo de liga")
         assertEquals(11, inLeague.size, "reserva apto completa o time")
@@ -151,9 +157,9 @@ class SuspensionRulesTest {
             squad = base.squad.mapIndexed { i, p -> if (i < 12) p.copy(nationality = Countries.ARGENTINA) else p },
         )
 
-        val onField = club.startingLineupIn(SeasonCompetitions.leagueId(club.division)).players
+        val onField = club.startingLineupIn(leagueRules).players
 
-        assertEquals(SeasonCompetitions.NATIONAL_FOREIGN_PLAYER_LIMIT, club.foreignersAmong(onField).size)
+        assertEquals(9, club.foreignersAmong(onField).size)
         assertEquals(11, onField.size)
     }
 
@@ -171,8 +177,8 @@ class SuspensionRulesTest {
             matchday = Matchday.of(LocalDate.of(2026, 3, 1), Slot.WEEKEND),
             season = 2026,
             matches = listOf(
-                RoundMatch(1, ClubId(1), ClubId(2), "A", "B"),
-                RoundMatch(2, ClubId(3), ClubId(4), "C", "D", competition = cup, competitionName = "Copa"),
+                leagueMatch(1, ClubId(1), ClubId(2), "A", "B", competition = league, competitionName = "Liga"),
+                leagueMatch(2, ClubId(3), ClubId(4), "C", "D", competition = cup, competitionName = "Copa"),
             ),
         )
 

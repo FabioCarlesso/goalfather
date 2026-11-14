@@ -773,9 +773,10 @@ paths:
       operationId: getSeasonHistory
       summary: Temporadas encerradas (histórico da liga)
       description: |
-        Snapshot de cada temporada já encerrada — campeão, artilheiro e
-        classificação final de todas as divisões —, da mais recente para a
-        mais antiga. Os records são gravados na virada de temporada, ANTES
+        Snapshot de cada temporada já encerrada de cada país (issue #131) —
+        campeão, artilheiro e classificação final de todas as divisões do
+        país —, da mais recente para a mais antiga; na mesma temporada, o
+        Brasil primeiro e os demais pelo código do país. Os records são gravados na virada de temporada, ANTES
         de a tabela e as estatísticas dos jogadores serem zeradas, e nunca
         são reescritos.
 
@@ -795,12 +796,23 @@ paths:
       tags: [League]
       operationId: getSeasonRecord
       summary: Uma temporada do histórico
+      description: |
+        Cada país vira no seu tempo (issue #131), então o histórico é por
+        temporada + país: o Brasil de 2026 e a Europa de 2026/27 são dois
+        records de `season = 2026`. Sem `country`, devolve o primeiro
+        encerrado naquele ano na ordem de `/history` (o Brasil, quando ele já
+        virou).
       parameters:
         - name: season
           in: path
           required: true
-          description: Ano da temporada encerrada
+          description: Ano (de início) da temporada encerrada
           schema: { type: integer }
+        - name: country
+          in: query
+          required: false
+          description: Código do país (`BRA`, `ENG`…) — issue #131
+          schema: { type: string, example: BRA }
       responses:
         '200':
           description: Snapshot da temporada
@@ -2379,9 +2391,10 @@ components:
 
     SeasonRecord:
       description: |
-        Snapshot imutável de uma temporada encerrada. Gravado na virada,
-        ANTES de a tabela e as estatísticas dos jogadores serem zeradas, e
-        nunca reescrito (append-only, uma linha por temporada).
+        Snapshot imutável da temporada encerrada de UM país. Gravado na
+        virada daquele país, ANTES de a tabela e as estatísticas dos jogadores
+        serem zeradas, e nunca reescrito (append-only, uma linha por
+        temporada + país — issue #131).
 
         `finalStandings` já vem na ordem de exibição: elite primeiro e, dentro
         de cada divisão, da 1ª à última posição. `champion` é a primeira linha
@@ -2403,6 +2416,15 @@ components:
           description: |
             Campeão da copa mata-mata da temporada (issue #61). Omitido quando
             não houve copa ou ela não chegou à final.
+        country:
+          $ref: '#/components/schemas/Country'
+          description: |
+            País da temporada (issue #131): cada país vira no seu tempo e tem o
+            seu record. Omitido nos records anteriores ao mundo do MVP (que
+            eram só do Brasil).
+        seasonLabel:
+          type: string
+          description: '`2026` ou `2026/27` (issue #131); omitido nos records antigos'
 
     CareerCampaign:
       description: Uma temporada da carreira — em que ano foi e como o clube terminou.
@@ -2552,7 +2574,15 @@ components:
           description: Encaixe corrente; ausente sem calendário
         season:
           type: integer
-          description: Temporada do encaixe corrente
+          description: |
+            Com `clubId`, o ano de INÍCIO da temporada da liga do clube (issue
+            #131: o técnico da Premier League vê 2026 em janeiro de 2027); sem
+            ele, o ano civil do encaixe corrente.
+        seasonLabel:
+          type: string
+          description: |
+            Rótulo da temporada da liga do clube — `2026` ou `2026/27` (issue
+            #131). Ausente sem `clubId` (o mundo não tem "a" temporada).
         nextMatch:
           $ref: '#/components/schemas/NextMatch'
           description: Próximo jogo do clube pedido em `clubId`; ausente sem jogo marcado

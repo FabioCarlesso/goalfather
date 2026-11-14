@@ -33,7 +33,10 @@ fun StandingRow.pointsPercentage(): Int =
  * ANTES de zerar `goals`/`yellowCards` na virada, senão o artilheiro sairia
  * sempre nulo.
  *
- * @param clubs todos os clubes da liga, com as estatísticas da temporada que
+ * As [finalStandings] são as do país que virou (issue #131): o artilheiro é o
+ * do país, e o record leva o país e o rótulo da temporada das tabelas.
+ *
+ * @param clubs os clubes do país, com as estatísticas da temporada que
  *   acabou — inclusive os da IA, que também acumulam gols.
  * @param cupChampion vencedor da copa da temporada (issue #61), ou `null` se
  *   não houve copa ou ela não terminou.
@@ -56,12 +59,16 @@ fun seasonRecordOf(
     val champion = standings.firstOrNull()
     requireNotNull(champion) { "Temporada $season sem classificação final" }
 
+    // Uma virada é de UM país (issue #131): país e rótulo saem das próprias tabelas.
+    val elite = finalStandings.minBy { it.division }
     return SeasonRecord(
         season = season,
         champion = champion,
         finalStandings = standings,
         topScorer = clubs.topScorer(),
         cupChampion = cupChampion,
+        country = elite.country,
+        seasonLabel = elite.seasonLabel,
     )
 }
 

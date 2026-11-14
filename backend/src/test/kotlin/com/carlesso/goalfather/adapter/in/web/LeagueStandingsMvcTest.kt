@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web
 
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.ClubId
@@ -94,6 +95,13 @@ class LeagueStandingsMvcTest {
         // value classes serializam como número puro (ClubId → long), não objeto.
         val firstRow = elite.getValue("rows").jsonArray.first().jsonObject
         assertNotNull(firstRow["clubId"]).jsonPrimitive.int
+
+        // Liga do mundo (issue #131): competição, país e rótulo da temporada.
+        assertEquals("bra-serie-a", elite.getValue("competitionId").jsonPrimitive.content)
+        assertEquals("bra-serie-b", second.getValue("competitionId").jsonPrimitive.content)
+        assertEquals("BRA", elite.getValue("country").jsonObject.getValue("code").jsonPrimitive.content)
+        assertEquals(elite.getValue("season").jsonPrimitive.int.toString(), elite.getValue("seasonLabel").jsonPrimitive.content)
+        assertNotNull(elite["competitionName"])
     }
 
     @Test
@@ -107,8 +115,8 @@ class LeagueStandingsMvcTest {
                     matchday = matchday,
                     season = 2026,
                     matches = listOf(
-                        RoundMatch(9401101, ClubId(1), ClubId(2), "A", "B"),
-                        RoundMatch(9401201, ClubId(7), ClubId(8), "C", "D", division = Division(2)),
+                        leagueMatch(9401101, ClubId(1), ClubId(2), "A", "B"),
+                        leagueMatch(9401201, ClubId(7), ClubId(8), "C", "D", division = Division(2)),
                     ),
                 ),
             )

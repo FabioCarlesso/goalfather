@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
@@ -36,7 +37,7 @@ class MatchdaySimulatorTest {
     private val ai = makeClub(id = 2, name = "IA FC", overall = 70)
 
     private fun fixture(matchId: Long, mode: SimulationMode) = MatchFixture(
-        match = RoundMatch(
+        match = leagueMatch(
             matchId = matchId,
             homeClubId = ClubId(1),
             awayClubId = ClubId(2),

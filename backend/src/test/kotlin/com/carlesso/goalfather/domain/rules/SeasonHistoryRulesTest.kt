@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
@@ -33,7 +34,7 @@ class SeasonHistoryRulesTest {
         points = points,
     )
 
-    private fun table(division: Int, vararg rows: StandingRow) = Standings(
+    private fun table(division: Int, vararg rows: StandingRow) = testStandings(
         season = 2026,
         round = 3,
         division = Division(division),

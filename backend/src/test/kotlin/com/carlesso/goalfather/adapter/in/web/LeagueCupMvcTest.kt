@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web
 
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.adapter.`in`.web.dto.AuthResponse
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
@@ -103,7 +104,7 @@ class LeagueCupMvcTest {
     fun `cada partida do encaixe corrente traz o stage com o discriminador do contrato`() {
         // Encaixe próprio "lá na frente": outras suítes gravam encaixes no mesmo H2.
         val matchday = farMatchday(9990)
-        val match = RoundMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup(KnockoutPhase.FINAL))
+        val match = leagueMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup(KnockoutPhase.FINAL))
         runBlocking { leagueRepo.saveRound(Round(matchday, 2026, matches = listOf(match))) }
         try {
             val response = get("/api/league/round/current", token())
@@ -115,7 +116,7 @@ class LeagueCupMvcTest {
             // Sem o `type` o cliente não distingue rodada de liga de fase de copa —
             // é o que o Jackson entregaria para um `ResponseEntity<Any>`.
             assertEquals("Cup", stage.getValue("type").jsonPrimitive.content)
-            assertEquals("liga-d1", first.getValue("competitionId").jsonPrimitive.content)
+            assertEquals("bra-serie-a", first.getValue("competitionId").jsonPrimitive.content)
 
             // Relógio do jogo (issue #125): encaixe corrente + próximo jogo do clube.
             val calendar = json.parseToJsonElement(get("/api/league/calendar?clubId=1", token()).contentAsString).jsonObject
@@ -123,6 +124,11 @@ class LeagueCupMvcTest {
             val next = calendar.getValue("nextMatch").jsonObject
             assertEquals(matchday.key, next.getValue("matchday").jsonObject.getValue("key").jsonPrimitive.content)
             assertEquals(1L, next.getValue("match").jsonObject.getValue("matchId").jsonPrimitive.long)
+            // Temporada da liga do clube (issue #131): o clube 1 é da Série A.
+            assertEquals(
+                calendar.getValue("season").jsonPrimitive.content,
+                calendar.getValue("seasonLabel").jsonPrimitive.content,
+            )
         } finally {
             roundJpa.deleteById(matchday.toKey())
         }

@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
@@ -54,6 +57,7 @@ class SimulationMetricsTest {
         InMemoryCupRepository(),
         mockk(relaxed = true),
         mockk(relaxed = true),
+        InMemoryCatalogRepository(),
         meterRegistry = registry,
     )
 
@@ -68,7 +72,7 @@ class SimulationMetricsTest {
         season = 2026,
         status = RoundStatus.InProgress,
         matches = listOf(
-            RoundMatch(
+            leagueMatch(
                 matchId = 1001,
                 homeClubId = ClubId(1),
                 awayClubId = ClubId(2),
@@ -76,7 +80,7 @@ class SimulationMetricsTest {
                 awayClubName = "Away FC",
             ),
             // Segunda partida (mando invertido) para o timer ter o que agregar.
-            RoundMatch(
+            leagueMatch(
                 matchId = 1002,
                 homeClubId = ClubId(2),
                 awayClubId = ClubId(1),
@@ -86,7 +90,7 @@ class SimulationMetricsTest {
         ),
     )
 
-    private val standings = Standings(
+    private val standings = testStandings(
         season = 2026,
         round = 0,
         rows = listOf(
@@ -147,6 +151,7 @@ class SimulationMetricsTest {
             InMemoryCupRepository(),
             mockk(relaxed = true),
             mockk(relaxed = true),
+            InMemoryCatalogRepository(),
             simulator = simulator,
             meterRegistry = clockedRegistry,
         )

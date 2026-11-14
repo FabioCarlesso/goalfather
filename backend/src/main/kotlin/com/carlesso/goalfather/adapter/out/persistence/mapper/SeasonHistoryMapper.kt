@@ -9,5 +9,7 @@ fun SeasonHistoryEntity.toDomain(json: Json): SeasonRecord =
 
 fun SeasonRecord.toEntity(json: Json): SeasonHistoryEntity = SeasonHistoryEntity(
     season = season,
+    // Record sem país é do mundo antigo, que era só o Brasil.
+    countryCode = country?.code?.value ?: "BRA",
     recordJson = json.encodeToString(SeasonRecord.serializer(), this),
 )

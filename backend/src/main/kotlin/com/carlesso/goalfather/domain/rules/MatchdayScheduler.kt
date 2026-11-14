@@ -48,8 +48,16 @@ data class Schedule(val rounds: List<ScheduledRound>) {
     /** Encaixes com algum jogo, em ordem. */
     val matchdays: List<Matchday> by lazy { rounds.map { it.matchday }.distinct().sorted() }
 
+    /**
+     * Índice por encaixe, montado uma vez (`by lazy`) na primeira consulta: o
+     * mundo do MVP tem ~700 rodadas de liga, e o serviço consulta [at] encaixe
+     * a encaixe. Propriedade do CORPO da data class — fica fora de
+     * `equals`/`copy`, que só olham o construtor.
+     */
+    private val byMatchday: Map<Matchday, List<ScheduledRound>> by lazy { rounds.groupBy { it.matchday } }
+
     /** O que se joga em [matchday]. */
-    fun at(matchday: Matchday): List<ScheduledRound> = rounds.filter { it.matchday == matchday }
+    fun at(matchday: Matchday): List<ScheduledRound> = byMatchday[matchday].orEmpty()
 
     /** O primeiro encaixe com jogo; `null` num calendário vazio. */
     val first: Matchday? get() = matchdays.firstOrNull()
