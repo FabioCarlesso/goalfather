@@ -61,6 +61,8 @@ tags:
     description: Departamento médico — recuperação de fadiga e lesões
   - name: Training
     description: Treino semanal — foco escolhido pelo técnico entre rodadas
+  - name: World
+    description: Mundo do jogo — países, ligas e clubes para o onboarding (issue #131)
   - name: League
     description: Tabela e calendário do campeonato
   - name: Cup
@@ -145,6 +147,32 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /api/world/countries:
+    get:
+      tags: [World]
+      operationId: listWorldCountries
+      summary: Países do mundo e as ligas de cada um (onboarding, issue #131)
+      description: |
+        Primeiro passo do onboarding (país → liga → clube): os países que têm
+        pelo menos uma liga jogável, cada um com as suas ligas, da elite para
+        baixo. `availableClubCount` conta os clubes sem dono — no multiplayer,
+        cada técnico escolhe um clube livre. Copas e continentais não entram:
+        o clube é escolhido pela LIGA que disputa.
+
+        Ordem: países por nome; ligas por `tier`.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Países com as suas ligas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WorldCountry' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /api/clubs/available:
     get:
       tags: [Club]
@@ -153,8 +181,19 @@ paths:
       description: |
         Lista os clubes com `ownerId == null`, com metadados para o card de
         seleção (caixa, capacidade do estádio, força média do elenco).
+
+        Com `competitionId` (issue #131), só os clubes daquela liga — o último
+        passo do onboarding país → liga → clube. Uma liga inexistente devolve
+        lista vazia, não 404: o filtro é de consulta, não um recurso.
+        Ordem: força média decrescente, depois nome.
       security:
         - bearerAuth: []
+      parameters:
+        - name: competitionId
+          in: query
+          required: false
+          description: Id da liga (`bra-serie-a`, `eng-premier-league`); omitido = todas
+          schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]*$' }
       responses:
         '200':
           description: Clubes disponíveis
@@ -698,11 +737,13 @@ paths:
     get:
       tags: [League]
       operationId: getStandings
-      summary: Tabelas de classificação do campeonato (uma por divisão)
+      summary: Tabelas de classificação (uma por liga do mundo)
       description: |
-        Sem `season`, retorna as tabelas da temporada ativa. Com `season`,
-        retorna as tabelas finais de uma temporada já encerrada (histórico).
-        Uma tabela por divisão, ordenadas da elite (divisão 1) para baixo.
+        Sem `season`, retorna a tabela corrente de cada liga do mundo (issue
+        #131) — cada liga está na sua própria temporada (a europeia de 2026/27
+        convive com a brasileira de 2027). Com `season`, as tabelas finais das
+        ligas cuja temporada COMEÇOU naquele ano (histórico).
+        Ordem: país do mundo (Brasil primeiro), depois `division` (elite primeiro).
       parameters:
         - name: season
           in: query
@@ -1204,8 +1245,14 @@ components:
     AvailableClub:
       description: Resumo de um clube sem dono, para o card de seleção.
       type: object
-      required: [id, name, cash, stadiumCapacity, averageOverall, division]
+      required: [id, name, cash, stadiumCapacity, averageOverall, division, country, competitionId, competitionName]
       properties:
+        country:         { $ref: '#/components/schemas/Country' }
+        competitionId:
+          type: string
+          description: Liga que o clube disputa na temporada (issue #131)
+          example: bra-serie-a
+        competitionName: { type: string, example: Campeonato Brasileiro Série A }
         id:              { type: integer, format: int64 }
         name:            { type: string }
         cash:            { type: integer, format: int64, description: Caixa em centavos de USD }
@@ -1219,6 +1266,35 @@ components:
           type: integer
           minimum: 1
           description: 'Divisão em que o clube disputa a temporada (1 = elite)'
+
+    WorldCountry:
+      description: Um país do onboarding com as suas ligas jogáveis (issue #131).
+      type: object
+      required: [country, leagues]
+      properties:
+        country: { $ref: '#/components/schemas/Country' }
+        leagues:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/WorldLeague' }
+
+    WorldLeague:
+      description: Uma liga de pontos corridos do mundo, para o onboarding (issue #131).
+      type: object
+      required: [id, name, tier, clubCount, availableClubCount, seasonLabel]
+      properties:
+        id:   { type: string, example: bra-serie-a }
+        name: { type: string, example: Campeonato Brasileiro Série A }
+        tier:
+          type: integer
+          minimum: 1
+          description: Divisão no país (1 = elite)
+        clubCount:          { type: integer, minimum: 0 }
+        availableClubCount: { type: integer, minimum: 0, description: Clubes sem dono }
+        seasonLabel:
+          type: string
+          description: Temporada corrente da liga — `2026` no Brasil, `2026/27` na Europa
+          example: '2026'
 
     # ─── Enums ─────────────────────────────────────────────────────────────
     Confederation:
@@ -2228,15 +2304,26 @@ components:
 
     Standings:
       description: |
-        Tabela de UMA divisão em uma temporada. A UI pinta as faixas pela
+        Tabela de UMA liga em uma temporada (issue #131: cada liga do mundo —
+        Série A, Série B, Premier League… — tem a sua; `division` é o `tier`
+        da liga no país). A UI pinta as faixas pela
         `zone` de cada linha (issue #128), sem duplicar a regra de negócio no
         cliente. `promotionSpots` / `relegationSpots` contam as posições de
         acesso/rebaixamento das mesmas regras (0 quando não há para onde subir
         ou descer) e ficam por compatibilidade.
       type: object
-      required: [season, division, round, rows, promotionSpots, relegationSpots]
+      required: [season, division, round, rows, promotionSpots, relegationSpots, competitionId, competitionName, country, seasonLabel]
       properties:
-        season:   { type: integer, description: Ano da temporada }
+        season:   { type: integer, description: Ano de INÍCIO da temporada da liga }
+        seasonLabel:
+          type: string
+          description: '`2026` quando a temporada cabe num ano; `2026/27` quando atravessa a virada (issue #131)'
+        competitionId:
+          type: string
+          description: Liga desta tabela (issue #131)
+          example: bra-serie-a
+        competitionName: { type: string, example: Campeonato Brasileiro Série A }
+        country:  { $ref: '#/components/schemas/Country' }
         division: { type: integer, minimum: 1, description: 'Divisão (1 = elite)' }
         round:
           type: integer
