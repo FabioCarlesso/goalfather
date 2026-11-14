@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.domain.model.CountryCode
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.SeasonHistoryJpaRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
@@ -74,7 +75,7 @@ class SeasonHistoryIntegrationTest {
     fun `append grava e o record volta inteiro do banco`() = runBlocking {
         assertTrue(repo.append(recordOf(9101, championId = 1)))
 
-        val found = assertNotNull(repo.findBySeason(9101))
+        val found = assertNotNull(repo.findBySeason(9101, BRAZIL))
         assertEquals(ClubId(1), found.champion.row.clubId)
         assertEquals(2, found.finalStandings.size)
         assertEquals("Renato Silva", found.topScorer?.playerName)
@@ -88,7 +89,7 @@ class SeasonHistoryIntegrationTest {
         // disputando a virada (issue #46). História não se reescreve.
         assertFalse(repo.append(recordOf(9102, championId = 42)))
 
-        assertEquals(ClubId(1), repo.findBySeason(9102)?.champion?.row?.clubId)
+        assertEquals(ClubId(1), repo.findBySeason(9102, BRAZIL)?.champion?.row?.clubId)
     }
 
     /**
@@ -129,6 +130,9 @@ class SeasonHistoryIntegrationTest {
 
     @Test
     fun `temporada nunca encerrada nao tem record`() = runBlocking {
-        assertNull(repo.findBySeason(9199))
+        assertNull(repo.findBySeason(9199, BRAZIL))
     }
 }
+
+/** Records sem país são do mundo antigo, que era só o Brasil (issue #131). */
+private val BRAZIL = CountryCode("BRA")

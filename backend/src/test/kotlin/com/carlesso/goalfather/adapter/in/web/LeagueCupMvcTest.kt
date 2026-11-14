@@ -116,7 +116,7 @@ class LeagueCupMvcTest {
             // Sem o `type` o cliente não distingue rodada de liga de fase de copa —
             // é o que o Jackson entregaria para um `ResponseEntity<Any>`.
             assertEquals("Cup", stage.getValue("type").jsonPrimitive.content)
-            assertEquals("liga-d1", first.getValue("competitionId").jsonPrimitive.content)
+            assertEquals("bra-serie-a", first.getValue("competitionId").jsonPrimitive.content)
 
             // Relógio do jogo (issue #125): encaixe corrente + próximo jogo do clube.
             val calendar = json.parseToJsonElement(get("/api/league/calendar?clubId=1", token()).contentAsString).jsonObject
@@ -124,6 +124,11 @@ class LeagueCupMvcTest {
             val next = calendar.getValue("nextMatch").jsonObject
             assertEquals(matchday.key, next.getValue("matchday").jsonObject.getValue("key").jsonPrimitive.content)
             assertEquals(1L, next.getValue("match").jsonObject.getValue("matchId").jsonPrimitive.long)
+            // Temporada da liga do clube (issue #131): o clube 1 é da Série A.
+            assertEquals(
+                calendar.getValue("season").jsonPrimitive.content,
+                calendar.getValue("seasonLabel").jsonPrimitive.content,
+            )
         } finally {
             roundJpa.deleteById(matchday.toKey())
         }

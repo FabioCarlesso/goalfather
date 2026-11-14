@@ -5,6 +5,7 @@ import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.model.CareerCampaign
 import com.carlesso.goalfather.domain.model.ClubCareer
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.KnockoutPhase
@@ -82,10 +83,17 @@ class LeagueDtosTest {
         val encoded = encode(StandingsDto.serializer(), standings.toDto())
 
         assertEquals(
-            setOf("season", "division", "round", "promotionSpots", "relegationSpots", "rows"),
+            setOf(
+                "season", "division", "round", "promotionSpots", "relegationSpots", "rows",
+                // Liga do mundo (issue #131).
+                "competitionId", "competitionName", "country", "seasonLabel",
+            ),
             encoded.keys,
         )
         assertEquals("2", encoded.string("division"))
+        assertEquals("bra-serie-b", encoded.string("competitionId"))
+        assertEquals("2026", encoded.string("seasonLabel"))
+        assertEquals("BRA", encoded.obj("country").string("code"))
         val rowJson = encoded.getValue("rows").jsonArray.single().jsonObject
         assertEquals(standingRowKeys, rowJson.keys)
         assertEquals("1", rowJson.string("clubId"))
@@ -141,6 +149,17 @@ class LeagueDtosTest {
         val encoded = encode(SeasonRecordDto.serializer(), record.copy(topScorer = null, cupChampion = null).toDto())
 
         assertEquals(setOf("season", "champion", "finalStandings"), encoded.keys)
+    }
+
+    @Test
+    fun `season record de um pais traz o pais e o rotulo da temporada (issue 131)`() {
+        val encoded = encode(
+            SeasonRecordDto.serializer(),
+            record.copy(country = Countries.ENGLAND, seasonLabel = "2026/27").toDto(),
+        )
+
+        assertEquals("ENG", encoded.obj("country").string("code"))
+        assertEquals("2026/27", encoded.string("seasonLabel"))
     }
 
     // ─── ClubCareer ───────────────────────────────────────────────────────

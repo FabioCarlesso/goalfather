@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryId
 import com.carlesso.goalfather.adapter.out.persistence.repository.SeasonHistoryJpaRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
@@ -49,7 +50,7 @@ class SeasonHistoryPersistenceAdapterTest {
     fun `perdedor da corrida na PK recebe false em vez de exception`() = runBlocking {
         // Cenário de duas réplicas: o `existsById` não viu nada (a outra ainda
         // não commitou), então a gravação segue e é a PK que barra.
-        every { historyRepo.existsById(2026) } returns false
+        every { historyRepo.existsById(SeasonHistoryId(2026, "BRA")) } returns false
         every { historyRepo.saveAndFlush(any()) } throws DataIntegrityViolationException("PK duplicada")
 
         assertFalse(adapter.append(record), "temporada já registrada por outra réplica")
@@ -57,7 +58,7 @@ class SeasonHistoryPersistenceAdapterTest {
 
     @Test
     fun `temporada ja registrada nao chega a gravar`() = runBlocking {
-        every { historyRepo.existsById(2026) } returns true
+        every { historyRepo.existsById(SeasonHistoryId(2026, "BRA")) } returns true
 
         assertFalse(adapter.append(record))
         verify(exactly = 0) { historyRepo.saveAndFlush(any()) }
@@ -65,7 +66,7 @@ class SeasonHistoryPersistenceAdapterTest {
 
     @Test
     fun `temporada inedita grava e devolve true`() = runBlocking {
-        every { historyRepo.existsById(2026) } returns false
+        every { historyRepo.existsById(SeasonHistoryId(2026, "BRA")) } returns false
         every { historyRepo.saveAndFlush(any()) } answers { firstArg<SeasonHistoryEntity>() }
 
         assertTrue(adapter.append(record))

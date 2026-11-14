@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.adapter.`in`.web.dto
 
+import com.carlesso.goalfather.test.COPA_DO_BRASIL
+import com.carlesso.goalfather.test.brazilCatalog
 import com.carlesso.goalfather.domain.model.TieResult
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.KnockoutPhase
@@ -15,7 +17,6 @@ import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Posture
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.Suspension
 import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.model.cents
@@ -63,21 +64,22 @@ class ResponsesTest {
             squad = club.squad.mapIndexed { i, p ->
                 when (i) {
                     0 -> p.copy(nationality = Countries.ARGENTINA)
-                    1 -> p.copy(suspensions = listOf(Suspension(SeasonCompetitions.CUP_ID, 2)))
+                    1 -> p.copy(suspensions = listOf(Suspension(COPA_DO_BRASIL, 2)))
                     else -> p
                 }
             },
         )
 
-        val body = encode(withDiscipline.toDto())
+        // O limite e os nomes saem do catálogo do save (issue #131): a liga do clube é a Série A.
+        val body = encode(withDiscipline.toDto(brazilCatalog()))
         val squad = body.getValue("squad").jsonArray.map { it.jsonObject }
 
         assertEquals("9", body.getValue("foreignPlayerLimit").jsonPrimitive.content)
         assertEquals("true", squad[0].getValue("foreign").jsonPrimitive.content)
         assertEquals("false", squad[1].getValue("foreign").jsonPrimitive.content)
         val suspension = squad[1].getValue("suspensions").jsonArray.single().jsonObject
-        assertEquals("copa", suspension.getValue("competitionId").jsonPrimitive.content)
-        assertEquals("Copa", suspension.getValue("competitionName").jsonPrimitive.content)
+        assertEquals("bra-copa-do-brasil", suspension.getValue("competitionId").jsonPrimitive.content)
+        assertEquals("Copa do Brasil", suspension.getValue("competitionName").jsonPrimitive.content)
         assertEquals("2", suspension.getValue("matchesLeft").jsonPrimitive.content)
         // Sempre presente (vazia), como o contrato exige.
         assertEquals(0, squad[0].getValue("suspensions").jsonArray.size)
@@ -161,7 +163,7 @@ class ResponsesTest {
         val encoded = encode(
             club.copy(
                 lineup = Lineup(players = club.squad.take(11), formation = Formation.F_4_4_2),
-            ).toDto(),
+            ).toDto(brazilCatalog()),
         )
 
         assertEquals(
@@ -399,5 +401,11 @@ class ResponsesTest {
         // nem fase corrente nem campeão — ausentes, não `null`.
         assertNull(encoded["currentPhase"])
         assertNull(encoded["champion"])
+    }
+
+    @Test
+    fun `sem liga no catalogo o clube nao tem limite de estrangeiros (issue 131)`() {
+        val encoded = encode(club.toDto())
+        assertNull(encoded["foreignPlayerLimit"])
     }
 }

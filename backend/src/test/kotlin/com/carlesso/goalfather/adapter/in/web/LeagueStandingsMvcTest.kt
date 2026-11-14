@@ -95,6 +95,13 @@ class LeagueStandingsMvcTest {
         // value classes serializam como número puro (ClubId → long), não objeto.
         val firstRow = elite.getValue("rows").jsonArray.first().jsonObject
         assertNotNull(firstRow["clubId"]).jsonPrimitive.int
+
+        // Liga do mundo (issue #131): competição, país e rótulo da temporada.
+        assertEquals("bra-serie-a", elite.getValue("competitionId").jsonPrimitive.content)
+        assertEquals("bra-serie-b", second.getValue("competitionId").jsonPrimitive.content)
+        assertEquals("BRA", elite.getValue("country").jsonObject.getValue("code").jsonPrimitive.content)
+        assertEquals(elite.getValue("season").jsonPrimitive.int.toString(), elite.getValue("seasonLabel").jsonPrimitive.content)
+        assertNotNull(elite["competitionName"])
     }
 
     @Test
