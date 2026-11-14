@@ -17,7 +17,7 @@ describe('rótulos do calendário semanal (issue #125)', () => {
 
   it('título junta liga e copa quando dividem o encaixe', () => {
     const league = match({ type: 'League', matchday: 3 })
-    const cup = match({ type: 'Cup', phase: 'SEMI_FINALS' })
+    const cup = match({ type: 'Cup', stageName: 'Semifinal', leg: 'SINGLE' })
     expect(roundTitle({ matches: [league, league] })).toBe('Rodada 3')
     expect(roundTitle({ matches: [league, cup] })).toBe('Rodada 3 + Copa — Semifinal')
     expect(roundTitle({ matches: [] })).toBe('Encaixe sem jogos')
@@ -29,6 +29,14 @@ describe('rótulos do calendário semanal (issue #125)', () => {
 
   it('rótulo da partida diz a competição e o que ela disputa', () => {
     expect(matchCompetitionLabel(match({ type: 'League', matchday: 2 }))).toBe('Liga — Divisão 1 · Rodada 2')
-    expect(matchCompetitionLabel(match({ type: 'Cup', phase: 'FINAL' }))).toBe('Copa · Final')
+    expect(matchCompetitionLabel(match({ type: 'Cup', stageName: 'Final', leg: 'SINGLE' }))).toBe('Copa · Final')
+    expect(matchCompetitionLabel(match({ type: 'Cup', stageName: 'Quartas de final', leg: 'FIRST' })))
+      .toBe('Copa · Quartas de final — ida')
+  })
+
+  it('voltas da mesma fase com placares de ida diferentes contam como um só estágio', () => {
+    const volta = (homeGoals: number) =>
+      match({ type: 'Cup', stageName: 'Semifinal', leg: 'SECOND', firstLeg: { homeGoals, awayGoals: 0 } })
+    expect(roundTitle({ matches: [volta(1), volta(2)] })).toBe('Copa — Semifinal — volta')
   })
 })

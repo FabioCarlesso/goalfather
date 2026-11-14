@@ -228,7 +228,7 @@ describe('simulateMatch: finalizações e sumário', () => {
     let sentOff = 0
     for (let seed = 1; seed <= 200; seed++) {
       const offPitch = new Set<number>()
-      for (const e of collect({ ...baseSetup, knockout: true }, seed)) {
+      for (const e of collect({ ...baseSetup, decidesOnPenalties: (h: number, a: number) => h === a }, seed)) {
         // switch exaustivo sobre a união discriminada (espelho do `when` Kotlin).
         const participants: (number | null)[] = (() => {
           switch (e.type) {

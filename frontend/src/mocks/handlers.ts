@@ -61,7 +61,7 @@ import {
   type SquadMember,
   type TeamTactics,
 } from './engine'
-import { leagueCompetitionId, recordCupRound } from './cup'
+import { decidesOnPenalties, leagueCompetitionId, recordCupRound } from './cup'
 import { matchdaySerial } from './calendar'
 import { boardStatusOf, forNewManager } from './board'
 import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
@@ -938,7 +938,8 @@ export const handlers = [
         awaySquad:    squadInPlay(away),
         homeTactics:  tacticsOf(home.id),
         awayTactics:  tacticsOf(away.id),
-        knockout:     match.stage.type === 'Cup',
+        decidesOnPenalties: (homeGoals: number, awayGoals: number) =>
+          decidesOnPenalties(match.stage, homeGoals, awayGoals),
         homeClubId:   match.homeClubId,
         awayClubId:   match.awayClubId,
       }

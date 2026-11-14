@@ -37,7 +37,7 @@ describe('RoundPage — resumo da rodada (issue #112)', () => {
     matchday: testMatchday(2, 'MIDWEEK'),
     matches: [{
       ...played.matches[0]!, matchId: 20, awayClubId: 3, awayClubName: 'Copeiro EC',
-      ...matchCompetition({ type: 'Cup', phase: 'ROUND_OF_16' }),
+      ...matchCompetition({ type: 'Cup', stageName: 'Oitavas de final', leg: 'SINGLE' }),
     }],
   }
   const table: Standings = {

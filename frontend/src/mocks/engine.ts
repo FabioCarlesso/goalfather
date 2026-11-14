@@ -75,9 +75,11 @@ export interface MatchSetup {
   // 4-4-2, que é o eixo neutro e reproduz a engine anterior à tática.
   homeTactics?: TeamTactics
   awayTactics?: TeamTactics
-  // Jogo de mata-mata (issue #61): empate no tempo normal vai aos pênaltis.
-  // Ausente = partida de liga, que aceita empate e consome o RNG como antes.
-  knockout?: boolean
+  // Mata-mata (issues #61 e #131): o placar dos 90' vai aos pênaltis? Jogo
+  // único empatado sim, ida nunca, volta só com o agregado empatado — espelha
+  // `MatchSetup.decidesOnPenalties`. Ausente = partida de liga, que aceita
+  // empate e consome o RNG como antes.
+  decidesOnPenalties?: (homeGoals: number, awayGoals: number) => boolean
   // Ids dos clubes, só repassados ao KickOff (o drill-down resolve os nomes
   // dos jogadores por eles). Ausentes = não vão no evento, como no contrato.
   homeClubId?: number
@@ -285,9 +287,9 @@ export function* simulateMatch(
     }
   }
 
-  // Mata-mata não termina empatado (issue #61): a disputa usa o MESMO RNG,
-  // depois dos 90' — o tempo normal fica idêntico ao de um jogo de liga.
-  if (setup.knockout && homeGoals === awayGoals) {
+  // Mata-mata decidido no empate (jogo único, ou agregado da volta): a disputa
+  // usa o MESMO RNG, depois dos 90' — o tempo normal fica idêntico ao de liga.
+  if (setup.decidesOnPenalties?.(homeGoals, awayGoals)) {
     const shootout = penaltyShootout(
       onPitch(true), onPitch(false), setup.homeStrength, setup.awayStrength, rng,
     )

@@ -36,7 +36,9 @@ import {
   type SquadMember,
 } from './engine'
 import {
-  canHoldCup,
+  E2E_CUP_FORMAT,
+  cupEntrants,
+  cupLegSlots,
   cupRound,
   drawCup,
   leagueCompetitionId,
@@ -148,6 +150,7 @@ export interface ClubMeta {
   strength: number         // overall agregado (mock)
   squad: SquadMember[]     // id + posição: autoria de gols/cartões e peso de quem finaliza
   division: number         // divisão INICIAL (a corrente vive em state.divisions)
+  country?: Country        // país do clube (issue #131); ausente = Brasil
 }
 
 /**
@@ -388,14 +391,26 @@ export function applyRoundToStandings(round: Round, current: Standings): Standin
 export const SEASON_ROUNDS =
   Math.max(...divisionsInPlay(initialDivisions).map((d) => clubsOfDivision(initialDivisions, d).length)) - 1
 
-// ─── Copa (issue #61) ────────────────────────────────────────────────────
-// Sorteio da temporada com seed = temporada (no backend, `cupDrawSeed`). O
-// RNG é outro, então a chave do mock não coincide com a do backend — só as
-// regras (folgas, avanço, prêmio) coincidem.
+// ─── Copa do Brasil (issues #61 e #131) ──────────────────────────────────
+// Os clubes da copa nacional saem do mundo por FUNÇÃO (os do Brasil), não por
+// lista de ids — o mundo dos mocks muda sem mexer aqui. Ordenados do mais forte
+// ao mais fraco: os mais fortes entram nas quartas (formato do pack do E2E).
+// O RNG é outro, então a chave do mock não coincide com a do backend — só as
+// regras (entrantes, ida e volta, avanço, prêmio) coincidem.
+const countryOfClub = (id: number): string => (clubMeta[id]?.country ?? COUNTRIES.BRA).code
+
+export function nationalCupClubs(): CupClub[] {
+  return allClubIds
+    .filter((id) => countryOfClub(id) === 'BRA')
+    .map((id) => clubMeta[id]!)
+    .sort((a, b) => b.strength - a.strength || a.id - b.id)
+    .map(({ id, name }) => ({ id, name }))
+}
+
 export function drawSeasonCup(season: number): Cup | null {
-  if (!canHoldCup(allClubIds.length)) return null
-  const clubs: CupClub[] = allClubIds.map((id) => ({ id, name: clubMeta[id]!.name }))
-  return drawCup(season, clubs, new MulberryRng(season * 7 + 61))
+  const clubs = nationalCupClubs()
+  if (clubs.length !== cupEntrants(E2E_CUP_FORMAT)) return null
+  return drawCup(season, E2E_CUP_FORMAT, clubs)
 }
 
 const divisionOf = (clubId: number): number => divisionAssignments[clubId] ?? 1
@@ -414,13 +429,13 @@ export function roundTrainingReports(myTraining: TrainingReport | null): Trainin
   )
 }
 
-/** Calendário da temporada: as rodadas de liga com as fases da copa intercaladas. */
+/** Calendário da temporada: as rodadas de liga com as pernas da copa intercaladas. */
 export function calendar(): RoundStage[] {
   return calendarFor(state.cup)
 }
 
 function calendarFor(cup: Cup | null): RoundStage[] {
-  return seasonCalendar(SEASON_ROUNDS, cup?.phases.map((p) => p.phase) ?? [])
+  return seasonCalendar(SEASON_ROUNDS, cup ? cupLegSlots(cup) : [])
 }
 
 /**
