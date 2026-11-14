@@ -7,7 +7,7 @@ import { renderWithProviders } from '../../test/render'
 import { server } from '../../test/setup'
 import type { BoardReview, Round, RoundMatch, StandingRow, Standings } from '../../domain/types'
 import type { RoundOutcome, SeasonFinishedEvent } from '../../api/queries/useRoundStream'
-import { matchCompetition, testMatchday } from '../../test/fixtures'
+import { leagueOfTable, matchCompetition, testMatchday } from '../../test/fixtures'
 
 const MY_CLUB = 1
 
@@ -33,8 +33,7 @@ function row(position: number, clubId: number, clubName: string, points: number)
 }
 
 const table: Standings = {
-  season: 2026,
-  division: 1,
+  ...leagueOfTable(),
   round: 5,
   promotionSpots: 0,
   relegationSpots: 2,
@@ -113,7 +112,7 @@ describe('RoundSummary (issue #112)', () => {
     expect(within(summary).getByText('Vitória')).toBeInTheDocument()
     expect(screen.getByTestId('my-match-score')).toHaveTextContent('Rival FC 1 × 2 Goal Father FC')
     expect(within(summary).getByText('Fora contra Rival FC')).toBeInTheDocument()
-    expect(within(summary).getByText(/Você está em/)).toHaveTextContent('Você está em 4º na Divisão 1 · 9 pts')
+    expect(within(summary).getByText(/Você está em/)).toHaveTextContent('Você está em 4º — Campeonato Brasileiro Série A · 9 pts')
     expect(within(summary).getByText(/salários$/)).toBeInTheDocument()
 
     const headings = within(summary).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
@@ -169,7 +168,7 @@ describe('RoundSummary (issue #112)', () => {
     })
     expect(screen.getByText('Derrota nos pênaltis')).toBeInTheDocument()
     expect(screen.getByText('Copa — Oitavas de final encerrada')).toBeInTheDocument()
-    expect(screen.queryByRole('list', { name: 'Três primeiros da divisão' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Três primeiros da liga' })).not.toBeInTheDocument()
   })
 
   it('fim de temporada: campeão, veredito da diretoria e aposentadorias do clube', () => {

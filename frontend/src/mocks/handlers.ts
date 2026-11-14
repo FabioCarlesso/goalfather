@@ -6,7 +6,6 @@
 import { http, HttpResponse, delay, ws } from 'msw'
 import {
   state,
-  clubMeta,
   applyRoundToStandings,
   careerOf,
   isLastSlotOfSeason,
@@ -27,12 +26,12 @@ import {
   squadOf,
   evaluateBoards,
   applyBoardTurnover,
-  DEFAULT_POSITIONS,
-  type ClubMeta,
+  leagueOf,
+  leagueAssignments,
   type MockUser,
   type StoredClub,
-  divisionAssignments,
 } from './seed'
+import { WORLD_LEAGUES, seasonLabelOf } from './world'
 import {
   simulateMatch,
   averageOverall,
@@ -61,7 +60,7 @@ import {
   type SquadMember,
   type TeamTactics,
 } from './engine'
-import { leagueCompetitionId, recordCupRound } from './cup'
+import { recordCupRound } from './cup'
 import { matchdaySerial } from './calendar'
 import { boardStatusOf, forNewManager } from './board'
 import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
@@ -79,6 +78,7 @@ import type {
   AuthResponse,
   AuthUser,
   AvailableClub,
+  WorldCountry,
   TransferOffer,
   TransferOfferResult,
   StreamSpeed,
@@ -116,12 +116,6 @@ const msPerMinuteOf = (url: URL): number => {
   return isStreamSpeed(speed) ? MS_PER_MINUTE[speed] : MS_PER_MINUTE.NORMAL
 }
 
-// ─── Parâmetros financeiros do mock ───────────────────────────────────────
-// A CURVA (ocupação, preço justo, receita) mora em engine.ts, espelhando
-// domain/rules/FinanceRules.kt. Aqui ficam só os números do cenário mockado.
-const AI_DEFAULT_CAPACITY = 12_000   // seed dos clubes da IA
-const AI_SALARY_PER_PLAYER = 2_000_00
-
 /**
  * Tática com que um clube entra em campo (issue #56) — espelha
  * `Club.startingLineup()` do backend: sai da escalação salva, e quem nunca
@@ -130,15 +124,14 @@ const AI_SALARY_PER_PLAYER = 2_000_00
 const DEFAULT_TACTICS: TeamTactics = { posture: 'BALANCED', formation: '4-4-2' }
 
 /**
- * Elenco que a engine enxerga (id + posição — issue #57). Para o clube do
- * usuário vale o elenco VIVO, que compras e vendas alteram; para os da IA, a
- * escalação sintética do seed.
+ * Elenco que a engine enxerga (id + posição — issue #57): o elenco VIVO do
+ * clube, que compras, vendas e propostas alteram. Todo clube do mundo tem
+ * elenco desde a issue #131.
  */
-const squadInPlay = (meta: ClubMeta): SquadMember[] =>
-  meta.id === 1 && state.clubs[1] ? squadOf(state.clubs[1].squad) : meta.squad
+const squadInPlay = (clubId: number): SquadMember[] => squadOf(state.clubs[clubId]?.squad ?? [])
 
-/** Adversário do drill-down standalone: 4-4-2 sintético, ids fora da liga. */
-const aiOpponentSquad: SquadMember[] = DEFAULT_POSITIONS.map((pos, i) => ({ id: 1001 + i, pos }))
+/** Força do clube para a engine: overall médio do elenco vivo, com a fadiga. */
+const strengthOf = (clubId: number): number => averageOverall(state.clubs[clubId]?.squad ?? [])
 
 const tacticsOf = (clubId: number): TeamTactics => {
   const lineup = state.clubs[clubId]?.lineup
@@ -159,11 +152,7 @@ const toClubResponse = (club: StoredClub): Club => ({
   squad: club.squad.map((p) => ({ ...p, foreign: isForeignAt(p, club.country.code) })),
   foreignPlayerLimit: NATIONAL_FOREIGN_PLAYER_LIMIT,
   // Efetiva = a do próximo jogo de LIGA, como no backend.
-  ...effectiveLineupOf(
-    club.squad,
-    club.lineup,
-    lineupRulesOf(club, leagueCompetitionId(divisionAssignments[club.id] ?? 1)),
-  ),
+  ...effectiveLineupOf(club.squad, club.lineup, lineupRulesOf(club, leagueOf(club.id).id)),
 })
 
 /** Regras do apito inicial num jogo de [competitionId] (issue #130). */
@@ -206,14 +195,56 @@ const offerNotFound = (id: number): ErrorResponse => ({
 })
 
 /**
- * Clube por id, materializando o da IA na primeira vez (mesma regra do getClub).
- * O dono vem de `clubOwners`, a posse PERSISTIDA do mock: depois de um reload o
- * `state.clubs[1]` volta ao seed sem dono, mas o técnico continua sendo dele.
+ * Clube por id com o dono de `clubOwners`, a posse PERSISTIDA do mock: depois
+ * de um reload o `state.clubs` volta ao seed sem dono, mas o técnico continua
+ * sendo dele.
  */
 const loadClub = (id: number): StoredClub | undefined => {
-  if (!state.clubs[id] && clubMeta[id]) materializeClub(id)
   const club = state.clubs[id]
   return club && { ...club, ownerId: clubOwners[id] ?? null }
+}
+
+/**
+ * Setup da engine para uma partida do calendário: nomes, força e elenco vivos
+ * de cada lado e a tática salva (a IA, que nunca escala, entra EQUILIBRADA em
+ * 4-4-2). O mesmo para o stream do encaixe e o drill-down, então os dois
+ * contam a mesma partida.
+ */
+const matchSetupOf = (match: RoundMatch) => ({
+  matchId:      match.matchId,
+  homeName:     match.homeClubName,
+  awayName:     match.awayClubName,
+  homeStrength: strengthOf(match.homeClubId),
+  awayStrength: strengthOf(match.awayClubId),
+  homeSquad:    squadInPlay(match.homeClubId),
+  awaySquad:    squadInPlay(match.awayClubId),
+  homeTactics:  tacticsOf(match.homeClubId),
+  awayTactics:  tacticsOf(match.awayClubId),
+  knockout:     match.stage.type === 'Cup',
+  homeClubId:   match.homeClubId,
+  awayClubId:   match.awayClubId,
+})
+
+/** Países do onboarding (issue #131): só ligas com clube, contagens pela liga CORRENTE. */
+function worldCountries(): WorldCountry[] {
+  const byCountry = new Map<string, WorldCountry>()
+  for (const league of WORLD_LEAGUES) {
+    const clubIds = Object.keys(leagueAssignments).map(Number).filter((id) => leagueAssignments[id] === league.id)
+    if (clubIds.length === 0) continue
+    const entry = byCountry.get(league.country.code) ?? { country: league.country, leagues: [] }
+    entry.leagues.push({
+      id: league.id,
+      name: league.name,
+      tier: league.tier,
+      clubCount: clubIds.length,
+      availableClubCount: clubIds.filter((id) => clubOwners[id] == null).length,
+      seasonLabel: seasonLabelOf(league, state.currentRound.season),
+    })
+    byCountry.set(league.country.code, entry)
+  }
+  return [...byCountry.values()]
+    .map((c) => ({ ...c, leagues: [...c.leagues].sort((a, b) => a.tier - b.tier) }))
+    .sort((a, b) => a.country.name.localeCompare(b.country.name, 'pt-BR'))
 }
 
 const requesterOf = (request: Request): number | null =>
@@ -293,13 +324,24 @@ export const handlers = [
     return HttpResponse.json(toAuthUser(user))
   }),
 
-  // ─── listAvailableClubs (issue #19) ───────────────────────────────────
-  // Registrado ANTES de `/api/clubs/:id` para `available` não cair no :id.
-  http.get('/api/clubs/available', async () => {
+  // ─── listWorldCountries (onboarding, issue #131) ──────────────────────
+  http.get('/api/world/countries', async () => {
     await delay(SIMULATED_LATENCY_MS)
+    return HttpResponse.json(worldCountries())
+  }),
+
+  // ─── listAvailableClubs (issues #19 e #131) ───────────────────────────
+  // Registrado ANTES de `/api/clubs/:id` para `available` não cair no :id.
+  // `competitionId` filtra pela liga corrente; liga inexistente → `[]`.
+  // Ordem do contrato: força média decrescente, depois nome.
+  http.get('/api/clubs/available', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const competitionId = new URL(request.url).searchParams.get('competitionId')
     const available: AvailableClub[] = Object.entries(clubOwners)
       .filter(([, owner]) => owner == null)
       .map(([id]) => availableClubInfo(Number(id)))
+      .filter((club) => competitionId == null || club.competitionId === competitionId)
+      .sort((a, b) => b.averageOverall - a.averageOverall || a.name.localeCompare(b.name, 'pt-BR'))
     return HttpResponse.json(available)
   }),
 
@@ -341,13 +383,9 @@ export const handlers = [
   http.get('/api/clubs/:id', async ({ params }) => {
     await delay(SIMULATED_LATENCY_MS)
     const id = Number(params.id)
-    // Após reload, `state.clubs` volta ao seed mas a posse foi restaurada de
-    // `clubOwners` — rematerializa o clube reivindicado sob demanda (issue #19).
-    // Clubes da IA também: o feed da partida busca o ADVERSÁRIO para nomear
-    // os jogadores (issue #84), e o backend devolve qualquer clube da liga.
-    // Os ids do elenco materializado (id*1000+n) batem com os de `clubMeta`.
-    if (!state.clubs[id] && clubMeta[id]) materializeClub(id)
-    const club = state.clubs[id]
+    // Qualquer clube do mundo: o feed da partida busca o ADVERSÁRIO para
+    // nomear os jogadores (issue #84). O dono vem da posse persistida.
+    const club = loadClub(id)
     return club
       ? HttpResponse.json(toClubResponse(club))
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
@@ -742,24 +780,15 @@ export const handlers = [
       client.close(WS_CLOSE_NOT_STARTED, WS_REASON_NOT_STARTED)
       return
     }
-    const myClub = state.clubs[1]
-    if (!myClub) {
-      client.close(1011, 'Clube do usuário não encontrado')
+    // A partida do encaixe corrente é contada como no stream do encaixe (mesmo
+    // setup, mesmo matchId → mesmos lances). Fora dele, o modo standalone
+    // encena a 1ª partida do encaixe com o matchId pedido.
+    const match = state.currentRound.matches.find((m) => m.matchId === matchId) ?? state.currentRound.matches[0]
+    if (!match) {
+      client.close(1011, 'Nenhuma partida no encaixe corrente')
       return
     }
-
-    const setup = {
-      matchId,
-      homeName:     myClub.name,
-      awayName:     'Atlético Bonsucesso', // adversário mock para exibição standalone
-      homeStrength: averageOverall(myClub.squad),
-      awayStrength: 75,
-      homeSquad:    squadOf(myClub.squad),
-      awaySquad:    aiOpponentSquad,
-      homeTactics:  tacticsOf(1),
-      awayTactics:  DEFAULT_TACTICS,   // adversário mock: sempre equilibrado
-      homeClubId:   1,
-    }
+    const setup = { ...matchSetupOf(match), matchId }
 
     let cancelled = false
     client.addEventListener('close', () => { cancelled = true })
@@ -925,24 +954,8 @@ export const handlers = [
     )
 
     for (const match of round.matches) {
-      const home = clubMeta[match.homeClubId]
-      const away = clubMeta[match.awayClubId]
-      if (!home || !away) continue
-      const setup = {
-        matchId:      match.matchId,
-        homeName:     home.name,
-        awayName:     away.name,
-        homeStrength: home.id === 1 ? averageOverall(state.clubs[1]!.squad) : home.strength,
-        awayStrength: away.id === 1 ? averageOverall(state.clubs[1]!.squad) : away.strength,
-        homeSquad:    squadInPlay(home),
-        awaySquad:    squadInPlay(away),
-        homeTactics:  tacticsOf(home.id),
-        awayTactics:  tacticsOf(away.id),
-        knockout:     match.stage.type === 'Cup',
-        homeClubId:   match.homeClubId,
-        awayClubId:   match.awayClubId,
-      }
-      for (const event of simulateMatch(setup)) {
+      if (!state.clubs[match.homeClubId] || !state.clubs[match.awayClubId]) continue
+      for (const event of simulateMatch(matchSetupOf(match))) {
         allEvents.push({ matchId: match.matchId, event })
         if (event.type === 'FullTime') {
           finalScores.set(match.matchId, { home: event.homeGoals, away: event.awayGoals })
@@ -1016,84 +1029,77 @@ export const handlers = [
       const finances: RoundFinance[] = round.matches
         .flatMap((m) => [m.homeClubId, m.awayClubId])
         .map((clubId) => {
-          const capacity = clubId === 1 ? (state.clubs[1]?.stadiumCapacity ?? AI_DEFAULT_CAPACITY) : AI_DEFAULT_CAPACITY
-          const strength = clubId === 1 ? averageOverall(state.clubs[1]!.squad) : (clubMeta[clubId]?.strength ?? 70)
-          const salaries = payroll.has(clubId)
-            ? (clubId === 1 ? state.clubs[1]!.squad.reduce((s, p) => s + p.salary, 0) : 11 * AI_SALARY_PER_PLAYER)
-            : 0
-          // Preço do ingresso do clube (issue #59). Diferente de capacidade e
-          // caixa, o preço é lido de QUALQUER clube materializado: quem
-          // reivindicou o clube 3 e definiu US$ 24 precisa ver esses US$ 24 no
-          // extrato, senão o loop de feedback que a issue abre não existe para
-          // ninguém além do clube 1. Quem não foi materializado (IA) cobra o
-          // default.
-          const price = state.clubs[clubId]?.ticketPriceCents ?? DEFAULT_TICKET_PRICE_CENTS
-          const home = homeIds.has(clubId) ? gateOf(capacity, strength, price) : null
-          const cash = clubId === 1 ? (state.clubs[1]?.cash ?? 0) : Number.MAX_SAFE_INTEGER
-          // Rombo da folha não coberto pelo caixa+bilheteria (issue #23). Só o
-          // clube do usuário tem caixa rastreado; a IA nunca fica no vermelho.
+          const club = state.clubs[clubId]
+          const capacity = club?.stadiumCapacity ?? 0
+          const salaries = payroll.has(clubId) ? (club?.squad ?? []).reduce((s, p) => s + p.salary, 0) : 0
+          // Preço do ingresso do clube (issue #59): quem definiu US$ 24 precisa
+          // ver esses US$ 24 no extrato.
+          const price = club?.ticketPriceCents ?? DEFAULT_TICKET_PRICE_CENTS
+          const home = homeIds.has(clubId) ? gateOf(capacity, strengthOf(clubId), price) : null
+          // Rombo da folha não coberto pelo caixa+bilheteria (issue #23).
           const revenue = home?.revenue ?? 0
           const cupPrize = cupPrizes.get(clubId) ?? 0
           return {
             clubId,
             ticketRevenue: revenue,
             salariesPaid: salaries,
-            deficit: Math.max(0, salaries - revenue - cupPrize - cash),
+            deficit: Math.max(0, salaries - revenue - cupPrize - (club?.cash ?? 0)),
             ticketPrice: price,
             attendance: home?.attendance ?? 0,
             cupPrize,
           }
         })
 
-      // Extrato do treino da semana (issue #58). O mock só acompanha o elenco
-      // do clube do usuário, então os demais entram com o relatório vazio do
-      // default — no backend cada clube tem o seu.
-      let myTraining: TrainingReport | null = null
-
-      // Acumula estatísticas dos jogadores do clube do usuário a partir dos
-      // eventos da rodada — espelha o PlayRoundService do backend (issue #2),
-      // mantendo a parity mock ↔ real. Aplica também o caixa (issue #4).
-      const myClub = state.clubs[1]
-      if (myClub) {
-        const goals = new Map<number, number>()
-        const yellow = new Map<number, number>()
-        const red = new Map<number, number>()
-        // Lesão carrega a duração sorteada pela engine; duas na mesma rodada,
-        // vale o afastamento mais longo (issue #54).
-        const injuries = new Map<number, number>()
-        for (const { event } of allEvents) {
-          if (event.type === 'Goal') {
-            goals.set(event.scorerId, (goals.get(event.scorerId) ?? 0) + 1)
-          } else if (event.type === 'Card') {
-            const target = event.red ? red : yellow
-            target.set(event.playerId, (target.get(event.playerId) ?? 0) + 1)
-          } else if (event.type === 'Injury') {
-            injuries.set(event.playerId, Math.max(injuries.get(event.playerId) ?? 0, event.roundsOut))
-          }
+      // Estatísticas, forma física, disciplina, treino e caixa de TODO clube
+      // a partir dos eventos da rodada — espelha o PlayRoundService do backend
+      // (issues #2, #4, #54, #58 e #130). Ids de jogador são únicos no mundo,
+      // então um mapa só serve a todos os elencos.
+      const goals = new Map<number, number>()
+      const yellow = new Map<number, number>()
+      const red = new Map<number, number>()
+      // Lesão carrega a duração sorteada pela engine; duas na mesma rodada,
+      // vale o afastamento mais longo (issue #54).
+      const injuries = new Map<number, number>()
+      for (const { event } of allEvents) {
+        if (event.type === 'Goal') {
+          goals.set(event.scorerId, (goals.get(event.scorerId) ?? 0) + 1)
+        } else if (event.type === 'Card') {
+          const target = event.red ? red : yellow
+          target.set(event.playerId, (target.get(event.playerId) ?? 0) + 1)
+        } else if (event.type === 'Injury') {
+          injuries.set(event.playerId, Math.max(injuries.get(event.playerId) ?? 0, event.roundsOut))
         }
-        const myFinance = finances.find((f) => f.clubId === 1)
-        const cashDelta = myFinance ? myFinance.ticketRevenue + myFinance.cupPrize - myFinance.salariesPaid : 0
+      }
+      const cards = new Map(
+        [...new Set([...yellow.keys(), ...red.keys()])].map((id) => [
+          id,
+          { yellow: yellow.get(id) ?? 0, red: red.get(id) ?? 0 },
+        ]),
+      )
+      // Extrato do treino da semana (issue #58), um por clube.
+      const trainingReports: TrainingReport[] = []
+      const serial = matchdaySerial(round.matchday)
+
+      for (const club of Object.values(state.clubs)) {
+        const finance = finances.find((f) => f.clubId === club.id)
+        const cashDelta = finance ? finance.ticketRevenue + finance.cupPrize - finance.salariesPaid : 0
         // Titulares = escalação salva revalidada (lesionado fora, reserva apto
         // assume), exatamente como `Club.startingLineup()` do backend. Quem não
         // entrou em campo (eliminado ou de folga na copa) descansa o elenco todo.
-        const myMatch = round.matches.find((m) => m.homeClubId === 1 || m.awayClubId === 1)
-        const myClubPlayed = myMatch !== undefined
+        const match = round.matches.find((m) => m.homeClubId === club.id || m.awayClubId === club.id)
         // Sem os suspensos da competição do jogo e dentro do limite de
         // estrangeiros (issue #130).
-        const starterIds = myMatch
-          ? startingEleven(myClub.squad, myClub.lineup?.playerIds, lineupRulesOf(myClub, myMatch.competitionId))
+        const starterIds = match
+          ? startingEleven(club.squad, club.lineup?.playerIds, lineupRulesOf(club, match.competitionId))
           : new Set<number>()
         const rested = applyRoundFitness(
-          myClub.squad,
+          club.squad,
           starterIds,
-          new MulberryRng(matchdaySerial(round.matchday) * 1000 + 1),
+          new MulberryRng(serial * 1000 + club.id),
           injuries,
           // Lesão conta jogos do clube (issue #125).
-          myClubPlayed,
+          match !== undefined,
         )
-        // Semana de treino no foco escolhido (issue #58), DEPOIS do desgaste:
-        // o elenco cansa na rodada e é o foco que decide se a semana repõe
-        // forma física ou desenvolve atributo. Seed própria, como no backend.
         const withStats = rested.map((p) => ({
           ...p,
           goals: p.goals + (goals.get(p.id) ?? 0),
@@ -1102,28 +1108,21 @@ export const handlers = [
         }))
         // Suspensão por cartões (issue #130): só na competição do jogo.
         let disciplined = withStats
-        if (myMatch) {
-          const cards = new Map(
-            [...new Set([...yellow.keys(), ...red.keys()])].map((id) => [
-              id,
-              { yellow: yellow.get(id) ?? 0, red: red.get(id) ?? 0 },
-            ]),
-          )
+        if (match) {
           const after = applyMatchDiscipline(
-            withStats, myMatch.competitionId, myMatch.competitionName, cards, state.pendingYellows,
+            withStats, match.competitionId, match.competitionName, cards, state.pendingYellows,
           )
           disciplined = after.squad
           state.pendingYellows = after.pending
         }
-        const trained = trainSquad(
-          disciplined,
-          myClub.trainingFocus,
-          new MulberryRng(matchdaySerial(round.matchday) * 7919 + 1),
-        )
-        myTraining = { clubId: 1, focus: myClub.trainingFocus, events: trained.events }
-        state.clubs[1] = {
-          ...myClub,
-          cash: Math.max(0, myClub.cash + cashDelta),
+        // Semana de treino no foco escolhido (issue #58), DEPOIS do desgaste:
+        // o elenco cansa na rodada e é o foco que decide se a semana repõe
+        // forma física ou desenvolve atributo. Seed própria, como no backend.
+        const trained = trainSquad(disciplined, club.trainingFocus, new MulberryRng(serial * 7919 + club.id))
+        trainingReports.push({ clubId: club.id, focus: club.trainingFocus, events: trained.events })
+        state.clubs[club.id] = {
+          ...club,
+          cash: Math.max(0, club.cash + cashDelta),
           squad: trained.squad,
         }
       }
@@ -1175,9 +1174,9 @@ export const handlers = [
         state.clubs[o.sellerClubId]?.squad.some((p) => p.id === o.playerId) ?? true,
       ))
 
-      // Extrato de TODOS os clubes da liga, como o backend — inclusive de
+      // Extrato de TODOS os clubes do mundo, como o backend — inclusive de
       // quem folgou ou já caiu na copa (review do PR #78).
-      const training: TrainingReport[] = roundTrainingReports(myTraining)
+      const training: TrainingReport[] = roundTrainingReports(...trainingReports)
       const finished: RoundEvent = {
         type: 'RoundFinished',
         standings: finalStandings,

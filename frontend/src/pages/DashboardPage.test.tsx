@@ -7,7 +7,7 @@ import { http, HttpResponse } from 'msw'
 import { state } from '../mocks/seed'
 import type { TransferOffer, TransferOfferResult } from '../domain/types'
 
-const clubHeading = () => screen.findByRole('heading', { level: 1, name: 'Goal Father FC' })
+const clubHeading = () => screen.findByRole('heading', { level: 1, name: 'Flamengo' })
 const tabs = () => within(screen.getByRole('navigation', { name: 'Seções do clube' }))
 
 describe('DashboardPage', () => {

@@ -1,15 +1,24 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { PageTitle } from '../components/PageTitle'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
 import { useStandings } from '../api/queries/useStandings'
 import { useMyClubId } from '../auth/useMyClubId'
-import type { Standings, TableZone } from '../domain/types'
+import type { Country, Standings, TableZone } from '../domain/types'
 
+// Liga escolhida no seletor, na URL: sobrevive ao F5 e o link aponta para ela.
+const LEAGUE_PARAM = 'league'
+
+/**
+ * Tabelas de classificação, uma liga por vez (issue #131): o mundo tem várias
+ * ligas, cada uma na sua temporada. O seletor agrupa as ligas por país; sem
+ * escolha na URL, abre a liga do clube do técnico.
+ */
 export function StandingsPage() {
   const { data, isPending, isLoadingError, error, refetch } = useStandings()
   const myClubId = useMyClubId()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   if (isPending) return <><PageTitle>Tabela</PageTitle><LoadingState label="Carregando tabela…" shape="table" /></>
   if (isLoadingError) return <><PageTitle>Tabela</PageTitle><ErrorState error={error} onRetry={refetch} /></>
@@ -19,31 +28,78 @@ export function StandingsPage() {
       <section className="space-y-4">
         <PageTitle>Tabela</PageTitle>
         <h1 className="text-3xl font-bold text-slate-100">Tabela</h1>
-        <EmptyState message="Nenhuma divisão com tabela por enquanto. A classificação aparece aqui quando a temporada estiver montada." />
+        <EmptyState message="Nenhuma liga com tabela por enquanto. A classificação aparece aqui quando a temporada estiver montada." />
       </section>
     )
   }
 
-  const first = data[0]!
+  // Liga da URL; senão a do clube do técnico (#108: a dele vem primeiro);
+  // senão a primeira do contrato. Só escolhe o que mostrar — sem regra de domínio.
+  const selected =
+    data.find((t) => t.competitionId === searchParams.get(LEAGUE_PARAM)) ??
+    data.find((t) => isMine(t, myClubId)) ??
+    data[0]!
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6">
       <PageTitle>Tabela</PageTitle>
-      <header>
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-3xl font-bold text-slate-100">Tabela</h1>
-        <p className="text-sm text-slate-400">
-          Temporada {first.season} · Rodada {first.round}
-        </p>
+        <LeagueSelect
+          tables={data}
+          value={selected.competitionId}
+          myClubId={myClubId}
+          onChange={(competitionId) => setSearchParams({ [LEAGUE_PARAM]: competitionId }, { replace: true })}
+        />
       </header>
 
-      {/* A divisão do usuário vem primeiro (#108): só reordena a apresentação,
-          sem regra de domínio; as demais mantêm a ordem do contrato. */}
-      {[...data]
-        .sort((a, b) => Number(isMine(b, myClubId)) - Number(isMine(a, myClubId)))
-        .map((table) => (
-          <DivisionTable key={table.division} table={table} myClubId={myClubId} />
-        ))}
+      <LeagueTable table={selected} myClubId={myClubId} />
     </section>
+  )
+}
+
+/** Ligas agrupadas por país, na ordem do contrato (país, depois divisão). */
+function byCountry(tables: Standings[]): Array<{ country: Country; tables: Standings[] }> {
+  const groups: Array<{ country: Country; tables: Standings[] }> = []
+  for (const table of tables) {
+    const group = groups.find((g) => g.country.code === table.country.code)
+    if (group) group.tables.push(table)
+    else groups.push({ country: table.country, tables: [table] })
+  }
+  return groups
+}
+
+function LeagueSelect({
+  tables,
+  value,
+  myClubId,
+  onChange,
+}: {
+  tables: Standings[]
+  value: string
+  myClubId: number
+  onChange: (competitionId: string) => void
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm text-slate-400">
+      Liga
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100"
+      >
+        {byCountry(tables).map(({ country, tables: leagues }) => (
+          <optgroup key={country.code} label={`${country.flag} ${country.name}`}>
+            {leagues.map((t) => (
+              <option key={t.competitionId} value={t.competitionId}>
+                {t.competitionName}
+                {isMine(t, myClubId) ? ' (sua liga)' : ''}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </label>
   )
 }
 
@@ -94,21 +150,28 @@ const legendOrder: PaintedZone[] = ['QUALIFICATION', 'PROMOTION', 'PLAYOFF', 'RE
 const isPainted = (zone: TableZone): zone is PaintedZone => zone !== 'NONE'
 
 /**
- * Tabela de uma divisão com as faixas de cada posição pintadas (issue #128):
+ * Tabela de uma liga com as faixas de cada posição pintadas (issue #128):
  * vaga continental, promoção, playoff e rebaixamento. A faixa vem PRONTA do
  * contrato (`row.zone`) — o frontend não recalcula a regra; a legenda só conta
  * as linhas de cada faixa presente.
  */
-function DivisionTable({ table, myClubId }: { table: Standings; myClubId: number }) {
+function LeagueTable({ table, myClubId }: { table: Standings; myClubId: number }) {
   const legend = legendOrder
     .map((zone) => ({ zone, count: table.rows.filter((r) => r.zone === zone).length }))
     .filter((entry) => entry.count > 0)
 
   return (
     <div>
-      <div className="mb-2 flex items-baseline justify-between">
-        <h2 className="text-xl font-semibold text-slate-100">Divisão {table.division}</h2>
-        <div className="flex gap-4 text-xs text-slate-400">
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-100">
+            {table.competitionName} {table.seasonLabel}
+          </h2>
+          <p className="text-sm text-slate-400">
+            <span aria-hidden="true">{table.country.flag}</span> {table.country.name} · Rodada {table.round}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-4 text-xs text-slate-400">
           {legend.map(({ zone, count }) => (
             <span key={zone} className="flex items-center gap-1.5">
               <span className={`inline-block h-2.5 w-2.5 rounded-sm ${zoneStyles[zone].swatch}`} />

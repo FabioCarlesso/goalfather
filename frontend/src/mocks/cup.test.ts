@@ -129,8 +129,8 @@ describe('copa do mock (issue #61)', () => {
   it('extrato de treino cobre a liga inteira, mesmo quem não jogou a data de copa', () => {
     const mine = { clubId: 1, focus: 'FISICO' as const, events: [] }
     const reports = roundTrainingReports(mine)
-    // 12 clubes, embora uma data de oitavas só tenha 4 jogos (8 clubes).
-    expect(reports).toHaveLength(12)
+    // O mundo inteiro (16 clubes, issue #131), embora uma data de oitavas só tenha 4 jogos (8 clubes).
+    expect(reports).toHaveLength(16)
     expect(reports.find((r) => r.clubId === 1)).toBe(mine)
     expect(reports.filter((r) => r.clubId !== 1).every((r) => r.focus === 'DESCANSO')).toBe(true)
   })

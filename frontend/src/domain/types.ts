@@ -82,3 +82,7 @@ export type AuthResponse    = components['schemas']['AuthResponse']
 export type RegisterRequest = components['schemas']['RegisterRequest']
 export type LoginRequest    = components['schemas']['LoginRequest']
 export type AvailableClub   = components['schemas']['AvailableClub']
+
+// Mundo do onboarding país → liga → clube (issue #131)
+export type WorldCountry    = components['schemas']['WorldCountry']
+export type WorldLeague     = components['schemas']['WorldLeague']
