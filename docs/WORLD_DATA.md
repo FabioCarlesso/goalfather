@@ -1,6 +1,6 @@
 # Dados do mundo (pack `data/world/`)
 
-> Issues #126 (provedor) e #127 (importação do Wikidata) · épico #148 (Fase 8). O seed passa a usar o pack na #131.
+> Issues #126 (provedor), #127 (importação do Wikidata) e #131 (o seed do jogo a partir do pack) · épico #148 (Fase 8).
 
 O mundo do jogo (países, competições, clubes, elencos, estádios, datas FIFA e janelas de transferência) é **dado**, não código. Ele fica no repositório, em `data/world/`, organizado **como se fosse uma API externa**: cada arquivo é a resposta de um "endpoint". O backend lê esse pack por um port (`WorldDataProvider`) e o traduz para o domínio por uma **camada anticorrupção**. Trocar o arquivo por um pack fora do git ou por uma API HTTP de verdade é escrever outro adapter. O domínio não muda.
 
@@ -13,6 +13,8 @@ data/world/v1/
 ├── competitions/{id}/clubs.json      GET /competitions/{id}/clubs
 ├── clubs/{id}/squad.json             GET /clubs/{id}/squad
 └── calendar/{year}.json              GET /calendar/{year}
+
+data/world/e2e/v1/                    o mesmo layout, recortado para o profile `e2e` (ver "Pack reduzido do E2E")
 ```
 
 `v1` é a versão **do layout**. Os ids (`bra-serie-a`, `bra-flamengo`, `agustin-rossi`) são estáveis entre versões do pack e só podem ter minúsculas, dígitos e hífen (`[a-z0-9][a-z0-9-]*`), porque viram parte do caminho. Um id fora do padrão é recusado antes de qualquer leitura.
@@ -59,6 +61,8 @@ Todo código de país usado em outro arquivo (país de clube ou competição, na
 | `strength` | int? | 1..99, "overall típico de um titular mediano". Calibra o gerador de atributos. Copas e continentais não têm. |
 | `format` | objeto | Discriminado por `type` (abaixo). |
 | `tiebreakers` | string[]? | Valores de `Tiebreaker`; o primeiro é sempre `POINTS`. Ausente = default do jogo. |
+| `foreignPlayerLimit` | int? | Máximo de estrangeiros em campo por jogo (issue #131). Ausente = sem limite. Brasileirão A/B e Copa do Brasil: `9` (CBF 2026). Ligas europeias: sem limite **no MVP** — as regras reais delas (home-grown na Inglaterra, extracomunitários na Espanha e na Itália) não são "N estrangeiros em campo", e o jogo ainda não modela passaporte comunitário. |
+| `pausesOnFifaWindows` | bool | A competição para nas datas FIFA? Default `true` (Europa, copas, continentais). Brasileirão A/B: `false` — a CBF não para a liga. |
 
 Formatos (espelham `CompetitionFormat`, issue #124):
 
@@ -128,7 +132,7 @@ Função pura com `Random` injetado: a mesma seed produz os mesmos atributos.
 - **Overall esperado** = `strength` da liga do clube + reputação (`(rep − 50) / 5`, de −9 a +10) + curva de idade. A curva sobe até ~24 anos, tem platô até 30 (33 para goleiro) e depois cai. Somam-se um ruído "triangular" (soma de dois dados, −6..+6) e um corte em 35..94.
 - **Detalhados** = overall + perfil da posição (atacante +8 de finalização e −22 de defesa; zagueiro +8 de defesa etc.) + ruído de ±3, cortados em 1..99.
 - A força da liga de um clube é a da liga mais forte em que ele aparece (`WorldPack.leagueStrengthOf`). Copas não contam.
-- O gerador consome o `Random` a cada chamada. Para que um jogador não dependa da ordem dos outros, quem chama pode dar um `Random` por jogador (por exemplo, com a seed derivada do id). Essa decisão fica para o seed da #131.
+- O gerador consome o `Random` a cada chamada. Para que um jogador não dependa da ordem dos outros, o seed da #131 dá um `Random` **por jogador**, com a seed derivada do id do pack (ver "Seed do jogo").
 
 ## Validação: erro como valor
 
@@ -207,11 +211,106 @@ Política de uso do endpoint: User-Agent genérico do projeto (`GoalFather-world
 1. Mudou a temporada ou um clube subiu/caiu: edite `competitions.yaml` (id, nome, QID) e `club-reputation.yaml`.
 2. Rode `./gradlew worldImport --args=--refresh` e leia o log: descartes, avisos e erros de curadoria.
 3. Corrija o que faltar em `overrides.yaml` e rode `./gradlew worldImport` (agora do cache).
-4. Revise o diff de `data/world/v1/` e do cache e commite os dois juntos.
+4. Revise o diff de `data/world/v1/`, de `data/world/e2e/v1/` (o recorte do E2E é refeito na mesma execução) e do cache, e commite tudo junto.
 
-## Estado atual e próximos passos
+## Estado do pack
 
-- O bean `WorldDataProvider` está registrado, mas **o seed do jogo ainda é o `InitialLeague`**. A troca é da #131. A carga é preguiçosa: sem o pack no disco (por exemplo, na imagem Docker, que não copia `data/`), a aplicação sobe normalmente, e só o `load()` devolve `MissingResource`.
-- `data/world/v1/` tem o pack importado do Wikidata: as 7 ligas do MVP (Brasileirão A e B 2026; Premier League, La Liga, Serie A, Bundesliga e Ligue 1 2026/27) e a fase de grupos da Libertadores 2026. São 162 clubes, com 1.329 jogadores reais e 2.258 gerados (3.587 no total, 2,1 MB de JSON). O Wikidata cobre bem os grandes clubes europeus, mas mal o futebol sul-americano, e os elencos brasileiros vêm, na maioria, completados por gerados. A Copa do Brasil ainda não está no pack (a maior parte dos participantes é de fora das Séries A e B). O teste `FileWorldDataProviderTest` carrega o pack em todo build, e o `GeneratedWorldPackTest` confere os critérios da #127.
+- `data/world/v1/` tem o pack importado do Wikidata: as 7 ligas do MVP (Brasileirão A e B 2026; Premier League, La Liga, Serie A, Bundesliga e Ligue 1 2026/27), a Copa do Brasil 2026 recortada (só referências aos 40 clubes de A e B, ver abaixo) e a fase de grupos da Libertadores 2026. São 162 clubes, com 1.329 jogadores reais e 2.258 gerados (3.587 no total, 2,1 MB de JSON). O Wikidata cobre bem os grandes clubes europeus, mas mal o futebol sul-americano, e os elencos brasileiros vêm, na maioria, completados por gerados. O `FileWorldDataProviderTest` carrega o pack em todo build, e o `GeneratedWorldPackTest` confere os critérios da #127.
 - `calendar/2026.json` continua mantido à mão; o importador não toca nele.
-- O catálogo `Countries` em `domain/model/Country.kt` continua sendo o interino da #123, usado pela persistência. A substituição dele pelos países do pack acontece com o seed (#131).
+- `data/world/e2e/v1/` é o recorte do profile `e2e` (16 clubes, ~350 jogadores), gerado na mesma importação.
+
+## Seed do jogo (issue #131)
+
+Com o banco vazio, o jogo nasce do pack: o `DataInitializer` carrega o pack pelo `WorldDataProvider`, passa pelo seed **puro** (`application/seed/WorldSeed.kt`, `WorldPack.toInitialWorld()`), abre a temporada com `startWorld` (o calendário) e grava tudo numa transação só (`SeedWriter`). O seed não conhece Spring nem banco: o `WorldSeedTest` monta o mundo do MVP inteiro a partir do pack real, sem contexto.
+
+```
+WorldDataProvider.load() ──► WorldPack ──► toInitialWorld() ──► InitialWorld ──► startWorld() ──► WorldStart
+        (adapter)                           (puro, application)                    (puro, domain)
+                                                      └──────────── SeedWriter.write(world, start) ────────────┘
+```
+
+`NewWorldFactory` (config) guarda o mundo montado em memória (`by lazy`): é imutável e determinístico, então o reset do E2E só regrava, sem reler o disco nem refazer o seed.
+
+### O que entra no save
+
+- **Competições (catálogo do save):** as **nacionais** do pack, na ordem dele. Liga de pontos corridos com `tier` vira `CompetitionKind.League(tier)`, e mata-mata nacional vira `CompetitionKind.NationalCup`. A janela da temporada sai de `SeasonSpan.of(confederação do país)`: ano civil no Brasil e agosto a maio na UEFA. `pausesOnFifaWindows` e `foreignPlayerLimit` vêm do pack. O MVP tem 8 competições: Série A, Série B, Copa do Brasil, Premier League, La Liga, Serie A, Bundesliga e Ligue 1. **A Libertadores fica no pack, mas fora do save** (continental, #132), e com ela os clubes que só aparecem nela. O catálogo vai para a tabela `competition_catalog` (V19), e o pack não é mais lido depois disso: mudar o pack não mexe num jogo em andamento.
+- **Clubes:** só os das ligas do catálogo (136). Cada clube entra uma vez, na primeira liga em que aparece. `division` = `tier` da liga, `country` = país do clube. A liga de um clube é a do catálogo para (país, divisão) (`List<GameCompetition>.leagueOf`).
+- **Países:** todos os do pack (97), na tabela `countries` (V19). As nacionalidades dos jogadores reais citam países sem liga (Nigéria, Japão...), e o catálogo fixo `Countries` do domínio (16 países, interino da #123) as transformaria em "Brasil". O mapper de persistência resolve o trigrama primeiro nos países do save (`SavedCountries`, recarregado no boot e depois de cada seed) e só depois no catálogo fixo.
+
+### Ids (determinísticos)
+
+| O quê | Regra | Exemplo |
+|---|---|---|
+| Clube | `1..N` na ordem do pack: liga a liga e, dentro dela, a ordem de `clubs.json` | Série A → 1..20, Série B → 21..40, Premier League → 41..60 |
+| Jogador de clube | `clube × 1000 + posição no elenco` (1-based, ordem de `squad.json`) | 3º do clube 9 → 9003 |
+| Jogador livre (mercado) | `1..999` (o "clube 0") | 1..16 |
+
+São estáveis entre boots para o **mesmo** pack, mas não entre versões dele: um clube a mais na Série A desloca a numeração. O save não depende disso, porque o pack só é lido para criar um jogo novo. O id do pack (`bra-flamengo`) não é gravado. Nada o consulta depois do seed, e regravar um jogador com o mapper atual (que cria a entidade a partir do domínio) apagaria a coluna. Os ids dos garotos da base (`youthPlayerId`) ficam numa faixa disjunta, a partir de 10¹².
+
+### Jogadores
+
+- **Atributos:** `AttributeGenerator` com a força da liga do clube (`WorldPack.leagueStrengthOf`), a reputação do clube, a posição e a idade. Cada jogador tem o próprio `Random`, com seed `id do pack.hashCode() xor sal`. O `String.hashCode` é definido pela especificação do Java, então a seed não muda entre JVMs. O resultado é que o mesmo jogador tem sempre os mesmos atributos, mesmo que o elenco mude de ordem ou ganhe um jogador.
+- **Idade:** completa em **1º de julho** do ano inicial, a mesma `referenceDate` do importador. A idade fica limitada a `Player.AGE_RANGE`.
+- **Nome:** `displayName` se houver; senão o nome real.
+
+### Economia inicial (`domain/rules/InitialEconomyRules.kt`)
+
+Tudo em USD (`Money`, centavos), por regra pura, sem `Random`. A escala é a do jogo antes da #131 (craque de 88 ganhava US$ 11 mil por folha; o clube do usuário tinha US$ 160 mil), para mercado, prêmios e ampliação de estádio continuarem coerentes.
+
+| Valor | Regra | Exemplos |
+|---|---|---|
+| Salário (por folha) | `US$ 1.500 × 2^((overall − 60) / 10)`, arredondado a US$ 10, piso US$ 500 | 60 → 1,5 mil; 70 → 3 mil; 80 → 6 mil; 90 → 12 mil |
+| Caixa | `(4 + reputação / 10)` folhas salariais do elenco gerado, arredondado a US$ 1.000 | rep 20 → 6 folhas; rep 50 → 9; rep 90 → 13 |
+| Estádio | capacidade **real** do pack (Wikidata + `overrides.yaml`) | Maracanã 78.838 |
+| Ingresso | preço justo da curva de demanda (`fairTicketPriceCents`) para a força esperada do clube (`strength` da liga + `(rep − 50) / 5`), × `1 + (rep − 50) / 250` (−20% a +20%), arredondado a US$ 0,50, dentro de `TICKET_PRICE_RANGE` | liga 70, rep 50 → US$ 9,00 |
+
+Por que a caixa depende da folha: a força da liga já está no overall (o gerador parte dela) e, portanto, na folha. Um clube grande da Premier League e um pequeno da Série B nascem com o mesmo fôlego relativo, e o grande nasce mais rico em dólares. Por que o ingresso parte do preço justo: a IA nunca mexe no ingresso, e um preço longe do justo esvaziaria (ou lotaria de graça) o estádio dela a temporada inteira.
+
+Ressalva: com as capacidades reais (até 99 mil lugares), a bilheteria dos clubes grandes passa com folga a folha salarial. O equilíbrio fino da economia com o mundo real é da #135/#136.
+
+### Mercado inicial
+
+O pack só tem jogadores com clube. Para a tela de mercado não nascer vazia, o seed gera **16 jogadores livres**: 2 goleiros, 5 zagueiros, 5 meias e 4 atacantes. Os nomes vêm do gerador da #88 (brasileiros) e não repetem nomes do pack. A nacionalidade é o país da primeira liga do catálogo (o Brasil no MVP). Os atributos saem do `AttributeGenerator` com a força dessa liga e reputação mediana. A idade vai de 20 a 32 anos, o preço é o de tabela (`marketListingPrice`, 12× o salário) e cada vaga tem seed fixa.
+
+### Copa do Brasil: o corte do MVP
+
+A Copa do Brasil 2026 tem 126 clubes: estaduais, Copa do Nordeste e Copa Verde nas primeiras fases, e a Série A entrando na 5ª fase. O pack só tem as Séries A e B, então a copa do MVP começa **na 4ª fase**, com os 40 clubes do pack:
+
+| Fase | Clubes | Jogos | Entram |
+|---|---|---|---|
+| Quarta fase | 16 | jogo único | 16 (os 16 mais fracos da Série B) |
+| Quinta fase | 32 | ida e volta | 24 (os 20 da Série A + os 4 mais fortes da Série B) |
+| Oitavas de final | 16 | ida e volta | — |
+| Quartas de final | 8 | ida e volta | — |
+| Semifinal | 4 | ida e volta | — |
+| Final | 2 | jogo único | — |
+
+O formato e a lista de participantes (os 40, como referências) estão no pack. Quem distribui os clubes entre a 4ª e a 5ª fase, pelo ranking de força, é o motor da copa. Desempate omitido = default. Limite de 9 estrangeiros e pausa nas datas FIFA, como uma copa nacional da CBF.
+
+### Pack reduzido do E2E (`data/world/e2e/v1`)
+
+O reset do E2E (`POST /test-support/reset`, profile `e2e`) recria o mundo a cada teste, e o profile aponta `app.world-data.path` para um **recorte** do pack completo:
+
+- `bra-serie-a`: os 6 clubes de maior reputação da Série A (empate: id);
+- `bra-serie-b`: os 6 de maior reputação da Série B;
+- `bra-copa-do-brasil`: esses 12 clubes. Na Primeira fase, 8 clubes em jogo único; nas Quartas de final, 8 clubes em ida e volta, 4 deles entrando ali; Semifinal em ida e volta; Final em jogo único;
+- `eng-premier-league`: os 4 de maior reputação.
+
+Elencos e calendário são copiados do pack completo; os países são só os citados. Os clubes ficam na ordem do pack completo. O mundo dos mocks do frontend tem a **mesma forma**, e a suíte E2E roda contra os dois. O recorte é **gerado**, não editado à mão: o `./gradlew worldImport` o refaz a partir de `data/world/v1` (`tools/world-import/.../e2e/E2ePack.kt`), e o `E2ePackTest` compara o recorte com o commitado byte a byte. Os testes de integração do backend (`src/test/resources/application.yml`) usam o mesmo pack: cada contexto Spring com banco vazio monta 16 clubes em vez de 136.
+
+### Save antigo
+
+Um banco com clubes mas **sem** catálogo de competições é um save anterior à #131 (o mundo de 12 clubes do `InitialLeague`). Ids, ligas e calendário mudaram e não há migração que faça sentido, então o boot **falha** com uma mensagem dizendo como zerar o banco:
+
+- H2 de desenvolvimento: `rm -rf backend/data/` e `./gradlew bootRun` de novo;
+- Postgres do `docker compose`: `docker compose down -v` (apaga o volume) e `up` de novo.
+
+Pelo mesmo motivo saíram os remendos de save antigo do `DataInitializer` (`restartSeasonWithoutMatchday`, da #125, e `backfillBoards`, da #62). Um save anterior à #131 nem passa do boot, e o seed atual já grava o primeiro encaixe e as metas. O `InitialLeague` e a DSL de seed viraram **fixture de teste** (`src/test/.../application/seed/`): uma liga pequena e conhecida para os testes de regra.
+
+Um pack inválido com o banco vazio também derruba o boot, listando **todos** os erros do `PackLoadResult.Invalid`: é erro de configuração do servidor. Com o banco já populado, o pack nem é lido. A imagem Docker copia `data/world/v1` (contexto nomeado `world`, `WORLD_DATA_PATH=/app/world/v1`).
+
+### Tempo de subida
+
+O boot loga o tempo de cada etapa do seed: carga do pack, seed puro e abertura da temporada (`NewWorldFactory`), gravação (`DataInitializer`) e o total. Para medir, apague o banco (`rm -rf backend/data/`), rode `./gradlew bootRun` e procure as linhas `Mundo montado do pack`, `Mundo novo gravado` e `Seed do mundo concluído`, além do `Started GoalfatherApplication in N seconds` do Spring.
+
+**Ainda não medido.** Na sessão que implementou a #131, o Gradle não conseguiu resolver as dependências do Maven Central, então nada compilou nem subiu. Os números (pack completo, banco H2 vazio, com a máquina) entram aqui na integração da #131. O critério é que só o seed fique abaixo de ~15 s. O seed já grava com `EntityManager.persist` em lote (batch JDBC de 50, `flush`/`clear` a cada 20 clubes), sem o SELECT por linha do `save` com id atribuído.

@@ -1176,7 +1176,7 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   schema desconhecida, referência a clube inexistente, elenco sem goleiro,
   país desconhecido, entre outros. O `AttributeGenerator` gera os atributos
   simulados a partir da força da liga, da reputação, da posição e da idade.
-  O bean existe, mas o seed ainda é o `InitialLeague` (a troca é da #131).
+  O seed do jogo passou a usar o pack na #131 (abaixo).
   Detalhes em [`docs/WORLD_DATA.md`](WORLD_DATA.md) e na seção 7.
 
 - [x] **Calendário semanal com dois encaixes e temporadas por país** — issue #125
@@ -1317,6 +1317,42 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   divisões da #146 e as copas europeias da #145. Agendar os jogos de playoff no
   calendário entra com a primeira liga que tiver playoff (a Bundesliga, na #146);
   a vaga ganha só é consumida pela Libertadores da #132.
+
+- [x] **Mundo do MVP a partir do pack: seed, catálogo e onboarding** — issue #131
+  (frente do seed; calendário e copas das competições do mundo estão nas
+  frentes paralelas da mesma issue)
+
+  **Seed puro** (`application/seed/WorldSeed.kt`): `WorldPack.toInitialWorld()`
+  monta o catálogo do save (`List<GameCompetition>`, as 8 competições nacionais
+  do MVP; a Libertadores fica no pack, fora do save, até a #132), os 136 clubes
+  das ligas, com ids determinísticos (clube `1..N` na ordem do pack; jogador
+  `clube × 1000 + slot`), atributos do `AttributeGenerator` com um `Random` por
+  jogador (seed derivada do id do pack) e um mercado inicial de 16 livres
+  gerados. A economia inicial é regra de domínio (`InitialEconomyRules.kt`):
+  salário exponencial no overall, caixa em folhas salariais pela reputação e
+  ingresso no preço justo da curva de demanda com prêmio de reputação. Tudo é
+  testado sem Spring sobre o pack real (`WorldSeedTest`).
+
+  **Boot:** `DataInitializer` → `NewWorldFactory` (carga do pack + seed +
+  `startWorld`, em memória para o reset do E2E) → `SeedWriter` (uma transação,
+  `EntityManager.persist` em lote). Um pack inválido derruba o boot listando os
+  erros. Um save antigo (clubes sem catálogo) também derruba o boot, com a
+  instrução de zerar o banco. O `InitialLeague` e a DSL de seed viraram fixture
+  de teste. A V19 cria `countries` (os países do pack, resolvidos pelo mapper
+  de persistência no lugar do catálogo fixo `Countries`) e
+  `competition_catalog` (adapter do `CompetitionCatalogRepository`, formato em
+  JSON de um registro próprio).
+
+  **Onboarding:** `GET /api/world/countries` (país → ligas, com contagem de
+  clubes e de livres e o `seasonLabel` da liga) e `GET
+  /api/clubs/available?competitionId=` (com país e liga, ordenado por força
+  média). Caso de uso `WorldOnboardingUseCase`. O claim continua recusando
+  clube com dono.
+
+  **E2E:** o profile `e2e` e os testes de integração usam um pack recortado,
+  gerado pelo importador (`data/world/e2e/v1`: 6+6 clubes do Brasil, a Copa do
+  Brasil com eles e 4 da Premier League). Detalhes, regras e corte da Copa do
+  Brasil em [`docs/WORLD_DATA.md`](WORLD_DATA.md), seção "Seed do jogo".
 
 ---
 
