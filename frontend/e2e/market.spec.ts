@@ -73,17 +73,18 @@ test.describe('Market flow', () => {
     await expect(page).toHaveURL(/dir=desc/)
     // `pressSequentially` digita tecla a tecla: letra perdida aqui acusa o campo
     // voltando a ser controlado pelo valor da URL, que muda dentro de uma transição.
-    await search.pressSequentially('Aparício Vidigal', { delay: 0 })
-    await expect(search).toHaveValue('Aparício Vidigal')
+    // Nome que não existe em nenhum mercado (mock ou elenco gerado do backend).
+    await search.pressSequentially('Xyzzy Ninguém', { delay: 0 })
+    await expect(search).toHaveValue('Xyzzy Ninguém')
     await expect(page).toHaveURL(/pos=FW/)
     await expect(page).toHaveURL(/sort=age/)
     await expect(page).toHaveURL(/dir=desc/)
-    await expect(page).toHaveURL(/q=Apar/)
+    await expect(page).toHaveURL(/q=Xyzzy/)
     await expect(page.getByText('Nenhum jogador encontrado.')).toBeVisible()
 
     await page.reload()
 
-    await expect(page.getByLabel('Buscar por nome')).toHaveValue('Aparício Vidigal')
+    await expect(page.getByLabel('Buscar por nome')).toHaveValue('Xyzzy Ninguém')
     await expect(page.getByRole('button', { name: 'AT', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByRole('button', { name: 'Ordem: decrescente' })).toBeVisible()
     await expect(page.getByLabel('Ordenar por')).toHaveValue('age')
@@ -93,7 +94,7 @@ test.describe('Market flow', () => {
     await expect(page.getByLabel('Buscar por nome')).toHaveValue('')
     await expect(page).not.toHaveURL(/q=/)
     await page.goBack()
-    await expect(page.getByLabel('Buscar por nome')).toHaveValue('Aparício Vidigal')
+    await expect(page.getByLabel('Buscar por nome')).toHaveValue('Xyzzy Ninguém')
   })
 
   test('em 360px os controles não criam rolagem horizontal na área do Mercado', async ({ page }) => {

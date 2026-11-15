@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, startRound, test } from './helpers'
+import { escapeRegExp, expect, startRound, test } from './helpers'
 
 // Escalação (issue #12): preencher os 11 titulares, salvar e validar que a
 // escalação persiste no servidor. Roda contra MSW e contra o backend real.
@@ -23,10 +23,30 @@ const slotIds = (page: Page) =>
 
 const reserves = (page: Page) => page.getByRole('region', { name: /Reservas/ })
 
+/**
+ * Primeiro reserva que pode entrar e o nome dele. O nome acessível do botão
+ * começa pelo do jogador ("Fulano, Meio-campo, OVR 71…"): lido da tela, porque
+ * o elenco do backend real é gerado e não tem os nomes do mock.
+ */
+async function firstReserve(page: Page) {
+  const button = reserves(page).getByRole('button').and(page.locator(':enabled')).first()
+  const name = ((await button.getAttribute('aria-label')) ?? '').split(',')[0]!.trim()
+  expect(name, 'nome do reserva').not.toBe('')
+  return { button, name }
+}
+
+/** Nome do jogador num slot do campinho ("Zagueiro 1: Fulano, Zagueiro, OVR 75…"). */
+async function slotPlayerName(page: Page, slotLabel: string): Promise<string> {
+  const text = await page.getByRole('button', { name: new RegExp(`^${slotLabel}: `) }).textContent()
+  // O nome acessível sai do texto `sr-only`, o primeiro do botão.
+  const accessible = (text ?? '').split(`${slotLabel}: `)[1] ?? ''
+  return accessible.split(',')[0]!.trim()
+}
+
 test.describe('Lineup flow', () => {
-  // Campinho (issue #110): o elenco-semente tem 11 jogadores, então o 4-4-2
-  // automático já é completo. Trocar para 4-3-3 tira um MC (vai para a reserva)
-  // e abre o 3º AT — montar a partir daí exercita slot → reserva de verdade.
+  // Campinho (issue #110): o 4-4-2 automático já é completo. Trocar para 4-3-3
+  // tira um MC (vai para a reserva) e abre o 3º AT — montar a partir daí
+  // exercita slot → reserva de verdade. Nomes lidos da tela (issue #131).
   test('salvar a escalação e mantê-la após navegar', async ({ page }) => {
     await page.goto('/lineup')
     await expect(page).toHaveTitle(/Escalação · GoalFather/)
@@ -37,7 +57,8 @@ test.describe('Lineup flow', () => {
     await expect(page.getByText('10/11 titulares')).toBeVisible()
 
     await page.getByRole('button', { name: 'Atacante 3: vazio' }).click()
-    await reserves(page).getByRole('button', { name: /^Carlos Almeida/ }).click()
+    const reserve = await firstReserve(page)
+    await reserve.button.click()
     await expect(page.getByText('11/11 titulares')).toBeVisible()
 
     const saveBtn = page.getByRole('button', { name: 'Salvar escalação' })
@@ -53,7 +74,7 @@ test.describe('Lineup flow', () => {
     await expect(page.getByRole('heading', { name: 'Escalação' })).toBeVisible()
     await expect(page.getByText('11/11 titulares')).toBeVisible({ timeout: 10_000 })
     await expect(page.locator('#formation')).toHaveValue('4-3-3')
-    await expect(page.getByRole('button', { name: /^Atacante 3: Carlos Almeida.*fora de posição$/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: new RegExp(`^Atacante 3: ${escapeRegExp(reserve.name)},`) })).toBeVisible()
   })
 
   test('montar a escalação só com teclado', async ({ page }) => {
@@ -76,17 +97,18 @@ test.describe('Lineup flow', () => {
     await page.keyboard.press('Enter')
     await expect(empty).toHaveAttribute('aria-pressed', 'true')
 
-    const benched = reserves(page).getByRole('button', { name: /^Carlos Almeida/ })
+    const benched = (await firstReserve(page)).button
     await benched.focus()
     await page.keyboard.press('Space')
     await expect(page.getByText('11/11 titulares')).toBeVisible()
 
     // Troca dois titulares de lugar, ainda pelo teclado.
+    const defender = await slotPlayerName(page, 'Zagueiro 1')
     await page.getByRole('button', { name: /^Goleiro 1:/ }).focus()
     await page.keyboard.press('Enter')
     await page.getByRole('button', { name: /^Zagueiro 1:/ }).focus()
     await page.keyboard.press('Enter')
-    await expect(page.getByRole('button', { name: /^Goleiro 1: Rodrigo Alves/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: new RegExp(`^Goleiro 1: ${escapeRegExp(defender)},`) })).toBeVisible()
 
     const save = page.getByRole('button', { name: 'Salvar escalação' })
     await save.focus()

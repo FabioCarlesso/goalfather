@@ -14,8 +14,8 @@ test.describe('Auth + onboarding', () => {
   })
 
   test('cadastrar e escolher clube leva à dashboard; Tutorial reabre o welcome', async ({ page }) => {
-    await authenticate(page)
-    await expect(page.getByRole('heading', { name: 'Goal Father FC' })).toBeVisible()
+    const clubName = await authenticate(page)
+    await expect(page.getByRole('heading', { level: 1, name: clubName })).toBeVisible()
 
     await page.getByRole('button', { name: /Menu do usuário/ }).click()
     await page.getByRole('link', { name: 'Tutorial' }).click()

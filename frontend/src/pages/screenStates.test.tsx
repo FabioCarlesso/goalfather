@@ -48,7 +48,7 @@ const PAGES: PageCase[] = [
   { name: 'HistoryPage', url: '/api/league/history', title: 'Histórico', ui: <HistoryPage /> },
   { name: 'DashboardPage', url: '/api/clubs/1', title: 'Clube', ui: <DashboardPage /> },
   { name: 'RoundPage', url: '/api/league/round/current', title: 'Rodada', ui: <RoundPage /> },
-  { name: 'SelectClubPage', url: '/api/clubs/available', title: 'Escolha seu clube', ui: <SelectClubPage /> },
+  { name: 'SelectClubPage', url: '/api/world/countries', title: 'Escolha seu clube', ui: <SelectClubPage /> },
   { name: 'LineupPage', url: '/api/clubs/1', title: 'Escalação', ui: <LineupPage /> },
   { name: 'MarketPage', url: '/api/market', title: 'Mercado', ui: <MarketPage /> },
   { name: 'ClubPage', url: '/api/clubs/2', title: 'Clube', ui: clubRoute, initialEntries: ['/clubs/2'] },
@@ -72,25 +72,25 @@ describe('estados de tela (issue #105)', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('StandingsPage: tabela sem divisões explica, em vez de ficar em branco', async () => {
+  it('StandingsPage: tabela sem ligas explica, em vez de ficar em branco', async () => {
     server.use(http.get('/api/league/standings', () => HttpResponse.json([])))
     renderWithProviders(<StandingsPage />)
 
-    expect(await screen.findByText(/nenhuma divisão com tabela/i)).toBeInTheDocument()
+    expect(await screen.findByText(/nenhuma liga com tabela/i)).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Tabela' })).toBeInTheDocument()
     expect(document.title).toBe('Tabela · GoalFather')
   })
 
   it('falha de refetch em background mantém os dados na tela (issue #23)', async () => {
     const { queryClient } = renderWithProviders(<StandingsPage />)
-    await screen.findByRole('link', { name: 'Goal Father FC' })
+    await screen.findByRole('link', { name: 'Flamengo' })
 
     failOnce('/api/league/standings')
     await queryClient.invalidateQueries({ queryKey: standingsKey })
 
     await waitFor(() => expect(queryClient.getQueryState(standingsKey)?.status).toBe('error'))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Goal Father FC' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Flamengo' })).toBeInTheDocument()
   })
 
   it('sem rede, a query pausada mostra skeleton em vez de estado vazio e retoma sozinha', async () => {
@@ -101,12 +101,12 @@ describe('estados de tela (issue #105)', () => {
       // Dá tempo de um eventual fetch resolver: pausada, ela não sai do lugar.
       await new Promise((resolve) => setTimeout(resolve, 50))
       expect(screen.getByRole('status')).toBeInTheDocument()
-      expect(screen.queryByText(/nenhuma divisão com tabela/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/nenhuma liga com tabela/i)).not.toBeInTheDocument()
     } finally {
       onlineManager.setOnline(true)
     }
 
-    expect(await screen.findByRole('link', { name: 'Goal Father FC' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Flamengo' })).toBeInTheDocument()
   })
 
   it('ClubPage: id inválido mostra "não encontrado", sem skeleton eterno', () => {

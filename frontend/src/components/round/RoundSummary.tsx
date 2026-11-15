@@ -118,7 +118,7 @@ export function RoundSummary({
 }
 
 /**
- * Tabela da divisão do usuário (fallback: a primeira, a elite). Sem nenhuma
+ * Tabela da liga do usuário (fallback: a primeira do contrato). Sem nenhuma
  * tabela no `RoundFinished`, `undefined`: o resumo omite o card em vez de
  * quebrar — `tables[0]!` só silenciava o compilador.
  */

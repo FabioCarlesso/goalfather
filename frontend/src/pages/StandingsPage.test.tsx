@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { StandingsPage } from './StandingsPage'
 import { renderWithProviders } from '../test/render'
 import { server } from '../test/setup'
+import { leagueOfTable } from '../test/fixtures'
 import type { Standings, TableZone } from '../domain/types'
 
 /** Tabela fabricada com a faixa de cada posição já decidida pelo "backend". */
 const zonedTable = (zones: TableZone[]): Standings => ({
-  season: 2026,
-  division: 1,
+  ...leagueOfTable(),
   round: 38,
   promotionSpots: 0,
   relegationSpots: zones.filter((z) => z === 'RELEGATION').length,
@@ -27,33 +28,60 @@ const serveTables = (...tables: Standings[]) =>
   server.use(http.get('/api/league/standings', () => HttpResponse.json(tables)))
 
 const rowOf = (clubName: string) => screen.getByRole('link', { name: clubName }).closest('tr')
+const tableTitle = () => screen.getByRole('heading', { level: 2 })
 
-describe('StandingsPage (issue #108)', () => {
+describe('StandingsPage (issues #108 e #131)', () => {
   it('destaca a linha do clube do usuário com aria-current', async () => {
     renderWithProviders(<StandingsPage />)
 
-    const link = await screen.findByRole('link', { name: 'Goal Father FC' })
+    const link = await screen.findByRole('link', { name: 'Flamengo' })
     expect(link.closest('tr')).toHaveAttribute('aria-current', 'true')
     expect(screen.getByText(/seu clube/)).toBeInTheDocument()
 
-    const rival = screen.getByRole('link', { name: 'Atlético Bonsucesso' })
+    const rival = screen.getByRole('link', { name: 'Palmeiras' })
     expect(rival.closest('tr')).not.toHaveAttribute('aria-current')
   })
 
-  it('mostra a divisão do usuário primeiro', async () => {
-    // Clube 7 (Ferroviária da Serra) começa na divisão 2 do seed.
+  it('abre na liga do técnico, com o nome e a temporada da liga no título', async () => {
+    // Clube 13 (Liverpool) é da Premier League no seed do mock.
     renderWithProviders(<StandingsPage />, {
-      auth: { user: { id: 7, username: 'serra', clubId: 7 }, status: 'authenticated' },
+      auth: { user: { id: 7, username: 'reds', clubId: 13 }, status: 'authenticated' },
     })
 
-    await waitFor(() => {
-      expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(1)
-    })
-    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
-    expect(headings).toEqual(['Divisão 2', 'Divisão 1'])
-    expect(
-      screen.getByRole('link', { name: 'Ferroviária da Serra' }).closest('tr'),
-    ).toHaveAttribute('aria-current', 'true')
+    await screen.findByRole('link', { name: 'Liverpool' })
+    expect(tableTitle()).toHaveTextContent('Premier League 2026/27')
+    expect(screen.getByText(/Inglaterra · Rodada 0/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Liga')).toHaveValue('eng-premier-league')
+    expect(rowOf('Liverpool')).toHaveAttribute('aria-current', 'true')
+    // Uma liga por vez: a Série A não aparece junto.
+    expect(screen.queryByRole('link', { name: 'Flamengo' })).not.toBeInTheDocument()
+  })
+
+  it('o seletor agrupa as ligas por país e troca a tabela exibida', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<StandingsPage />)
+    await screen.findByRole('link', { name: 'Flamengo' })
+    expect(tableTitle()).toHaveTextContent('Campeonato Brasileiro Série A 2026')
+
+    const select = screen.getByLabelText('Liga')
+    const groups = within(select).getAllByRole('group')
+    expect(groups.map((g) => g.getAttribute('label'))).toEqual(['🇧🇷 Brasil', expect.stringMatching(/Inglaterra$/)])
+    expect(within(groups[0]!).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Campeonato Brasileiro Série A (sua liga)',
+      'Campeonato Brasileiro Série B',
+    ])
+
+    await user.selectOptions(select, 'bra-serie-b')
+    await waitFor(() => expect(tableTitle()).toHaveTextContent('Campeonato Brasileiro Série B 2026'))
+    expect(screen.getByRole('link', { name: 'Fortaleza' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Flamengo' })).not.toBeInTheDocument()
+  })
+
+  it('a liga escolhida na URL vence a do técnico', async () => {
+    renderWithProviders(<StandingsPage />, { initialEntries: ['/standings?league=eng-premier-league'] })
+
+    await screen.findByRole('link', { name: 'Arsenal' })
+    expect(tableTitle()).toHaveTextContent('Premier League 2026/27')
   })
 })
 
@@ -80,12 +108,11 @@ describe('StandingsPage: faixas da tabela (issue #128)', () => {
     serveTables(continentalTable)
     renderWithProviders(<StandingsPage />)
 
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Divisão 1' })
-    const header = within(heading.parentElement as HTMLElement)
-    expect(header.getByText('Vaga continental (2)')).toBeInTheDocument()
-    expect(header.getByText('Playoff (1)')).toBeInTheDocument()
-    expect(header.getByText('Rebaixamento (1)')).toBeInTheDocument()
-    expect(header.queryByText(/Promoção/)).not.toBeInTheDocument()
+    await screen.findByRole('link', { name: 'Clube 1' })
+    expect(screen.getByText('Vaga continental (2)')).toBeInTheDocument()
+    expect(screen.getByText('Playoff (1)')).toBeInTheDocument()
+    expect(screen.getByText('Rebaixamento (1)')).toBeInTheDocument()
+    expect(screen.queryByText(/Promoção/)).not.toBeInTheDocument()
   })
 
   it('liga fechada (tudo NONE) não pinta nem mostra legenda', async () => {
@@ -97,11 +124,16 @@ describe('StandingsPage: faixas da tabela (issue #128)', () => {
     expect(rowOf('Clube 2')).not.toHaveAttribute('title')
   })
 
-  it('no seed do mock, a elite traz o rebaixamento e a segunda divisão o acesso', async () => {
+  it('no seed do mock, a Série A traz o rebaixamento e a Série B o acesso', async () => {
+    const user = userEvent.setup()
     renderWithProviders(<StandingsPage />)
 
-    await screen.findByRole('link', { name: 'Goal Father FC' })
-    expect(screen.getAllByText('Rebaixamento (2)')).toHaveLength(1)
-    expect(screen.getAllByText('Promoção (2)')).toHaveLength(1)
+    await screen.findByRole('link', { name: 'Flamengo' })
+    expect(screen.getByText('Rebaixamento (2)')).toBeInTheDocument()
+    expect(screen.queryByText(/Promoção/)).not.toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Liga'), 'bra-serie-b')
+    expect(await screen.findByText('Promoção (2)')).toBeInTheDocument()
+    expect(screen.queryByText(/Rebaixamento/)).not.toBeInTheDocument()
   })
 })

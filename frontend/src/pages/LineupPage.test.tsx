@@ -348,7 +348,7 @@ describe('LineupPage: suspensos e estrangeiros', () => {
       ...original,
       squad: original.squad.map((p) =>
         p.id === suspendedId
-          ? { ...p, suspensions: [{ competitionId: 'liga-d1', competitionName: 'Liga — Divisão 1', matchesLeft: 1 }] }
+          ? { ...p, suspensions: [{ competitionId: 'bra-serie-a', competitionName: 'Campeonato Brasileiro Série A', matchesLeft: 1 }] }
           : p,
       ),
       lineup: { formation: '4-4-2', playerIds: original.squad.slice(0, 11).map((p) => p.id), posture: 'BALANCED' },
@@ -360,7 +360,7 @@ describe('LineupPage: suspensos e estrangeiros', () => {
       expect(screen.getByRole('status')).toHaveTextContent(/Escalação ajustada/)
     })
     const reserves = within(screen.getByRole('region', { name: /Reservas/ }))
-    const suspended = reserves.getByRole('button', { name: /suspenso: Liga — Divisão 1 \(1 jogo\)/ })
+    const suspended = reserves.getByRole('button', { name: /suspenso: Campeonato Brasileiro Série A \(1 jogo\)/ })
     expect(within(suspended).getByTestId('suspended-icon')).toBeInTheDocument()
     // Continua escalável: a suspensão é só da liga.
     expect(suspended).toBeEnabled()

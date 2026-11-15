@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../client'
 import { availableClubsKey } from './useAvailableClubs'
+import { worldCountriesKey } from './useWorldCountries'
 import type { AuthUser } from '../../domain/types'
 
 /**
@@ -11,9 +12,12 @@ export function useClaimClub() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (clubId: number) => api.post<AuthUser>(`/api/clubs/${clubId}/claim`),
-    onSuccess: () => {
-      // A lista de disponíveis mudou — invalida para refletir o clube tomado.
+    // `onSettled`, não só `onSuccess`: no 409 outro técnico levou o clube
+    // primeiro, e a lista também precisa refletir isso.
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: availableClubsKey })
+      // Clubes livres por liga mudaram (issue #131).
+      qc.invalidateQueries({ queryKey: worldCountriesKey })
     },
   })
 }

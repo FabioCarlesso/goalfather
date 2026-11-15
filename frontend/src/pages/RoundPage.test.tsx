@@ -13,11 +13,11 @@ describe('RoundPage — card de partida (issue #85)', () => {
   it('expõe o nome completo do clube no title, já que nomes longos são truncados', async () => {
     renderWithProviders(<RoundPage />, { initialEntries: ['/round'] })
 
-    // Seed: "Atlético Bonsucesso" e "Independente Sul" estão na 1ª divisão.
-    const home = await screen.findByTitle('Atlético Bonsucesso')
-    expect(home).toHaveTextContent('Atlético Bonsucesso')
+    // Seed: "Palmeiras" × "Botafogo" abre a Série A do mock (issue #131).
+    const home = await screen.findByTitle('Palmeiras')
+    expect(home).toHaveTextContent('Palmeiras')
     expect(home).toHaveClass('truncate')
-    expect(await screen.findByTitle('Independente Sul')).toHaveClass('truncate')
+    expect(await screen.findByTitle('Botafogo')).toHaveClass('truncate')
   })
 })
 

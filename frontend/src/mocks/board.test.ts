@@ -40,7 +40,7 @@ const table = (clubIds: number[], division = 1): Standings => ({
 
 describe('mock da diretoria (issue #62)', () => {
   it('meta é determinística dada a composição da liga', () => {
-    const clubs = [85, 80, 76, 72, 68, 64].map((rating, i) => ({ id: i + 1, division: 1, rating }))
+    const clubs = [85, 80, 76, 72, 68, 64].map((rating, i) => ({ id: i + 1, leagueId: 'bra-serie-a', rating }))
 
     const boards = boardExpectations(2026, clubs)
 
@@ -50,12 +50,16 @@ describe('mock da diretoria (issue #62)', () => {
     expect(boards[6]).toMatchObject({ objective: 'MID_TABLE', targetPosition: 5 })
   })
 
-  it('ranqueia cada clube só contra a própria divisão', () => {
+  it('ranqueia cada clube só contra a própria liga, mesmo com outra liga de mesma divisão (issue #131)', () => {
     const boards = boardExpectations(2026, [
-      { id: 1, division: 1, rating: 85 }, { id: 2, division: 1, rating: 84 },
-      { id: 3, division: 2, rating: 70 }, { id: 4, division: 2, rating: 60 },
+      { id: 1, leagueId: 'bra-serie-a', rating: 85 }, { id: 2, leagueId: 'bra-serie-a', rating: 84 },
+      { id: 3, leagueId: 'bra-serie-b', rating: 70 }, { id: 4, leagueId: 'bra-serie-b', rating: 60 },
+      { id: 5, leagueId: 'eng-premier-league', rating: 80 }, { id: 6, leagueId: 'eng-premier-league', rating: 90 },
     ])
     expect(boards[3]!.objective).toBe('TITLE')
+    // Série A e Premier League são divisão 1, mas metas separadas.
+    expect(boards[1]!.objective).toBe('TITLE')
+    expect(boards[6]!.objective).toBe('TITLE')
   })
 
   it('candidatos ao título são 3 numa liga de 20 e 1 numa de 6', () => {

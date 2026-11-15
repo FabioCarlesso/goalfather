@@ -66,7 +66,8 @@ goalfather/
 │       │       ├── useClub.ts
 │       │       ├── useMatch.ts
 │       │       ├── useMarket.ts
-│       │       ├── useStandings.ts
+│       │       ├── useStandings.ts       # uma tabela por liga do mundo (issue #131)
+│       │       ├── useWorldCountries.ts  # países → ligas do onboarding (issue #131)
 │       │       ├── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
 │       │       ├── useCup.ts          # chave da copa mata-mata; 404 vira `null` (issue #61)
 │       │       ├── useBoard.ts        # painel da diretoria: meta + confiança (issue #62)
@@ -76,7 +77,8 @@ goalfather/
 │       │   ├── browser.ts            # setupWorker do MSW
 │       │   ├── handlers.ts           # handlers HTTP
 │       │   ├── ws.ts                 # mock de WebSocket para partida ao vivo
-│       │   ├── seed.ts               # dados iniciais (espelha protótipo)
+│       │   ├── seed.ts               # estado inicial: clubes, tabelas por liga, calendário, auth
+│       │   ├── world.ts              # mundo pequeno com a forma do pack E2E: Série A/B (6+6) e Premier League (4) (issue #131)
 │       │   ├── engine.ts             # simulação local de partida (porta JS da engine Kotlin)
 │       │   ├── cup.ts                # sorteio/avanço da copa, ida e volta + calendário (espelha CupRules.kt, issues #61/#131)
 │       │   ├── board.ts              # meta, confiança e veredito da diretoria (espelha BoardRules.kt, issue #62)
@@ -89,7 +91,8 @@ goalfather/
 │       │   ├── MatchPage.tsx         # consome WS
 │       │   ├── RoundPage.tsx         # rodada ao vivo: prontidão, grade e feed; stream em useRoundStream (issue #112)
 │       │   ├── MarketPage.tsx
-│       │   ├── StandingsPage.tsx
+│       │   ├── StandingsPage.tsx     # uma liga por vez, seletor agrupado por país; padrão = liga do técnico (issue #131)
+│       │   ├── SelectClubPage.tsx    # onboarding país → liga → clube, passo na URL (issue #131)
 │       │   ├── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
 │       │   ├── CupPage.tsx           # chave (bracket) da copa mata-mata (issue #61)
 │       │   ├── FiredPage.tsx         # game over: demissão + resumo da carreira + recomeçar (issue #62)
