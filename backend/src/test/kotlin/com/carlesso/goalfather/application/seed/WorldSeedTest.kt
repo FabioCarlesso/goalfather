@@ -163,4 +163,15 @@ class WorldSeedTest {
         val sizes = e2e.clubs.groupingBy { e2e.competitions.leagueOf(it)?.id?.value ?: "sem liga" }.eachCount()
         assertEquals(mapOf("bra-serie-a" to 6, "bra-serie-b" to 6, "eng-premier-league" to 4), sizes)
     }
+
+    @Test
+    fun `a escalacao automatica de todo clube tem um goleiro so`() {
+        // Os 11 primeiros do elenco são o time automático (`Club.startingLineup`);
+        // o pack lista os goleiros primeiro, e o seed reordena (issue #131).
+        for (club in world.clubs) {
+            val starters = club.squad.take(11)
+            assertEquals(1, starters.count { it.position == Position.GK }, club.name)
+            assertEquals(club.squad.map { it.id }.sortedBy { it.value }, club.squad.map { it.id }, "ids na ordem do elenco: ${club.name}")
+        }
+    }
 }

@@ -1,4 +1,27 @@
+import { type Page } from '@playwright/test'
 import { expect, test } from './helpers'
+
+/** Data do próximo encaixe ("Semana 6 · Meio de semana"): muda a cada encaixe jogado. */
+const nextMatchday = (page: Page) => page.getByText(/Semana \d+ · (Meio de semana|Fim de semana)/).first()
+
+/**
+ * Joga os encaixes que vierem até o próximo ser [name]. Contra o backend real
+ * (issue #131) o calendário intercala rodadas de liga entre as fases da copa
+ * numa ordem que o mock não reproduz; o que o teste afirma é o fluxo da copa,
+ * não a posição dela no calendário.
+ */
+async function playUntil(page: Page, name: string): Promise<void> {
+  const target = page.getByRole('heading', { name })
+  for (let step = 0; step < 8; step++) {
+    // Dá tempo de a tela assentar depois do resumo antes de decidir avançar.
+    if (await target.waitFor({ timeout: 3_000 }).then(() => true, () => false)) return
+    const date = (await nextMatchday(page).textContent()) ?? ''
+    await page.getByRole('button', { name: 'Estou pronto' }).click()
+    await page.getByRole('button', { name: /^(Jogar rodada|Próxima rodada)$/ }).click()
+    await expect(nextMatchday(page)).not.toHaveText(date, { timeout: 30_000 })
+  }
+  await expect(target).toBeVisible()
+}
 
 // Copa do Brasil (issues #61 e #131): cada perna da copa é um encaixe do
 // calendário como a rodada de liga — mesmo botão, mesma prontidão, mesmo
@@ -22,16 +45,16 @@ test.describe('Cup flow', () => {
     await page.getByRole('button', { name: 'Jogar rodada' }).click()
     await expect(page.getByText(/Pontuações atualizadas após a rodada 1/i)).toBeVisible({ timeout: 30_000 })
 
-    // Encaixe 2: 1ª fase da copa (jogo único), numa quarta, no mesmo fluxo.
-    await expect(page.getByRole('heading', { name: 'Copa — Primeira fase' })).toBeVisible()
+    // 1ª fase da copa (jogo único), numa quarta, no mesmo fluxo.
+    await playUntil(page, 'Copa — Primeira fase')
     await expect(page.getByText(/Semana \d+ · Meio de semana/)).toBeVisible()
     await expect(page.getByText(/agregado da volta vai aos pênaltis/)).toBeVisible()
     await page.getByRole('button', { name: 'Estou pronto' }).click()
     await page.getByRole('button', { name: 'Próxima rodada' }).click()
     await expect(page.getByText(/Copa — Primeira fase encerrada/)).toBeVisible({ timeout: 30_000 })
 
-    // Encaixe 3: ida das quartas, com os 4 mais fortes já em campo.
-    await expect(page.getByRole('heading', { name: 'Copa — Quartas de final — ida' })).toBeVisible()
+    // Ida das quartas, com os 4 mais fortes já em campo.
+    await playUntil(page, 'Copa — Quartas de final — ida')
     await page.getByRole('button', { name: 'Estou pronto' }).click()
     await page.getByRole('button', { name: 'Próxima rodada' }).click()
     await expect(page.getByText(/Copa — Quartas de final — ida encerrada/)).toBeVisible({ timeout: 30_000 })

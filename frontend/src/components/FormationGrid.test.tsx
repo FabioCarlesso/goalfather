@@ -108,7 +108,8 @@ describe('FormationGrid', () => {
     renderGrid()
 
     const buttons = reserves().getAllByRole('button')
-    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+    // Nome acessível vem do texto `sr-only` (issue #131), não de `aria-label`.
+    expect(buttons.map((b) => b.querySelector('.sr-only')?.textContent)).toEqual([
       expect.stringMatching(/^Bruno Machucado.*lesionado por 3 jogo/),
       expect.stringMatching(/^Lucas Reserva/),
     ])

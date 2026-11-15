@@ -30,7 +30,8 @@ const reserves = (page: Page) => page.getByRole('region', { name: /Reservas/ })
  */
 async function firstReserve(page: Page) {
   const button = reserves(page).getByRole('button').and(page.locator(':enabled')).first()
-  const name = ((await button.getAttribute('aria-label')) ?? '').split(',')[0]!.trim()
+  // O nome acessível vem do texto `sr-only` do botão (issue #131), não de `aria-label`.
+  const name = ((await button.locator('.sr-only').textContent()) ?? '').split(',')[0]!.trim()
   expect(name, 'nome do reserva').not.toBe('')
   return { button, name }
 }

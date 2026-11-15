@@ -41,15 +41,22 @@ test.describe('Market flow', () => {
     // Gasta o caixa nos mais baratos (ordem padrão) até alguém ficar caro demais.
     // Espera lista e caixa atualizarem antes de reavaliar, senão compraria a mais.
     const overCash = page.getByRole('listitem').filter({ hasText: 'acima do seu caixa' })
+    // Com o elenco real do pack (issue #131) o clube já nasce perto do limite
+    // de 25: a compra pode ser recusada por elenco cheio antes de o caixa acabar.
+    const squadFull = page.getByText(/^Elenco cheio/)
     for (let bought = 0; bought < 6 && (await overCash.count()) === 0; bought++) {
       const count = await buyButtons.count()
       if (count <= 1) break
       const cashBefore = (await cash.textContent()) ?? ''
       await buyButtons.first().click()
-      await expect(buyButtons).toHaveCount(count - 1, { timeout: 10_000 })
+      // Ou a lista encolhe (compra feita) ou o backend recusa por elenco cheio.
+      await expect
+        .poll(async () => (await squadFull.isVisible()) || (await buyButtons.count()) === count - 1, { timeout: 10_000 })
+        .toBe(true)
+      if (await squadFull.isVisible()) break
       await expect(cash).not.toHaveText(cashBefore)
     }
-    test.skip((await overCash.count()) === 0, 'ninguém acima do caixa com o estado atual do mercado')
+    test.skip((await overCash.count()) === 0, 'ninguém acima do caixa com o estado atual do mercado e do elenco')
 
     const button = overCash.first().getByRole('button', { name: 'Comprar' })
     await expect(button).toBeEnabled()

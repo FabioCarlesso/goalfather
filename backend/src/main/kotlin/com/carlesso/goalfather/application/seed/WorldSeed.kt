@@ -20,6 +20,7 @@ import com.carlesso.goalfather.domain.model.world.PlayerProfile
 import com.carlesso.goalfather.domain.model.world.Reputation
 import com.carlesso.goalfather.domain.model.world.WorldCompetition
 import com.carlesso.goalfather.domain.model.world.WorldPack
+import com.carlesso.goalfather.domain.rules.inStartingOrder
 import com.carlesso.goalfather.domain.rules.AttributeGenerator
 import com.carlesso.goalfather.domain.rules.PlayerAttributes
 import com.carlesso.goalfather.domain.rules.WorldStart
@@ -90,14 +91,21 @@ fun WorldPack.toInitialWorld(year: Int = startYear()): InitialWorld {
     val clubs = profiles.mapIndexed { index, (profile, league) ->
         val clubId = ClubId(index + 1L)
         val strength = leagueStrengthOf(profile.id) ?: DEFAULT_LEAGUE_STRENGTH
-        val squad = profile.squad.mapIndexed { slot, player ->
-            player.toPlayer(
-                id = PlayerId(clubId.value * PLAYER_ID_BLOCK + slot + 1),
-                referenceDate = referenceDate,
-                strength = strength,
-                reputation = profile.reputation,
-            )
-        }
+        // Os 11 primeiros = o melhor 4-4-2: é o time da escalação automática.
+        // Os ids saem DEPOIS da ordem, porque o elenco é relido do banco pelo
+        // id do jogador — numerar pela ordem do pack desfaria a ordenação.
+        val squad = profile.squad
+            // Id provisório pela ordem do pack: desempata a ordenação.
+            .mapIndexed { slot, player ->
+                player.toPlayer(
+                    id = PlayerId(clubId.value * PLAYER_ID_BLOCK + slot + 1),
+                    referenceDate = referenceDate,
+                    strength = strength,
+                    reputation = profile.reputation,
+                )
+            }
+            .inStartingOrder()
+            .mapIndexed { slot, player -> player.copy(id = PlayerId(clubId.value * PLAYER_ID_BLOCK + slot + 1)) }
         Club(
             id = clubId,
             name = profile.name,

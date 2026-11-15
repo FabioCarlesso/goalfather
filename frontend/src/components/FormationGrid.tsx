@@ -325,9 +325,13 @@ function ReserveButton({
   const name = `${playerSummary(player)}${roundsOut !== null ? `, lesionado por ${roundsOut} jogo(s)` : ''}`
 
   return (
+    // Nome acessível por texto `sr-only`, como no `SlotButton`: com
+    // `aria-label` o nome deixaria de conter o texto visível ("ZG Fulano 74"),
+    // e o axe acusa (label-content-name-mismatch, WCAG 2.5.3). Com o elenco
+    // real (issue #131) a lista de reservas passou a ter jogadores e o problema
+    // apareceu. O visual fica `aria-hidden` para não ser lido duas vezes.
     <button
       type="button"
-      aria-label={name}
       aria-pressed={injured ? undefined : selected}
       disabled={injured}
       onClick={onClick}
@@ -340,8 +344,9 @@ function ReserveButton({
         selected && 'ring-2 ring-yellow-300',
       )}
     >
-      <span className="w-6 shrink-0 text-xs font-semibold text-slate-400">{POSITION_ABBR[player.position]}</span>
-      <span className="min-w-0 flex-1 truncate">
+      <span className="sr-only">{name}</span>
+      <span aria-hidden="true" className="w-6 shrink-0 text-xs font-semibold text-slate-400">{POSITION_ABBR[player.position]}</span>
+      <span aria-hidden="true" className="min-w-0 flex-1 truncate">
         {player.star && <span aria-hidden="true" className="mr-0.5 text-yellow-400">★</span>}
         {player.name}
       </span>
@@ -352,8 +357,8 @@ function ReserveButton({
       )}
       {isSuspended(player) && <SuspendedIcon />}
       {isForeign(player) && <ForeignIcon />}
-      <span className="w-6 shrink-0 text-right text-xs tabular-nums text-slate-300">{player.overall}</span>
-      <span className="w-10 shrink-0">
+      <span aria-hidden="true" className="w-6 shrink-0 text-right text-xs tabular-nums text-slate-300">{player.overall}</span>
+      <span aria-hidden="true" className="w-10 shrink-0">
         <StaminaBar stamina={player.stamina} />
       </span>
     </button>
