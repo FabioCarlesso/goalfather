@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.engine
 
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.LegScore
@@ -508,7 +509,7 @@ class MatchSimulatorTest {
         // Ida: nunca. Volta depois de uma ida 1 × 0 do visitante desta partida
         // (que era o mandante da ida): pênaltis só se o mandante da volta vencer
         // por exatamente um gol — agregado empatado.
-        val firstLeg = RoundMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup("Semifinal", CupLeg.First))
+        val firstLeg = leagueMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup("Semifinal", CupLeg.First))
         val secondLeg = firstLeg.copy(stage = RoundStage.Cup("Semifinal", CupLeg.Second(LegScore(1, 0))))
         for (seed in 0L until 200L) {
             val ida = MatchSimulator().simulate(setup.copy(decidesOnPenalties = firstLeg::decidesOnPenalties), Random(seed)).toList()

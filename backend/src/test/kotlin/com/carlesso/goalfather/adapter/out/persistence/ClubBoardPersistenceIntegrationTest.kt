@@ -24,11 +24,14 @@ class ClubBoardPersistenceIntegrationTest {
 
     @Test
     fun `seed nasce com a meta da diretoria de todos os clubes`() = runBlocking {
-        val clubs = clubRepo.findAll()
+        // Só os clubes do seed (pack do E2E, ids 1..16): outros testes de
+        // integração criam clubes avulsos no mesmo banco.
+        val clubs = clubRepo.findAll().filter { it.id.value <= E2E_PACK_CLUBS }
 
-        // Uma meta de título por divisão (o favorito de cada uma).
+        // Uma meta de título por LIGA (o favorito de cada uma): Série A, Série B
+        // e Premier League — ligas são (país, divisão) desde a issue #131.
         val boards = clubs.map { assertNotNull(it.board, "clube ${it.id.value} sem meta") }
-        assertEquals(clubs.map { it.division }.distinct().size, boards.count { it.objective == BoardObjective.TITLE })
+        assertEquals(clubs.map { it.country.code to it.division }.distinct().size, boards.count { it.objective == BoardObjective.TITLE })
     }
 
     @Test
@@ -45,3 +48,6 @@ class ClubBoardPersistenceIntegrationTest {
         assertIs<ClubSaveResult.Saved>(clubRepo.save(reloaded.copy(board = club.board)))
     }
 }
+
+/** Clubes do pack reduzido do profile de teste: 6 + 6 no Brasil, 4 na Premier League. */
+private const val E2E_PACK_CLUBS = 16L

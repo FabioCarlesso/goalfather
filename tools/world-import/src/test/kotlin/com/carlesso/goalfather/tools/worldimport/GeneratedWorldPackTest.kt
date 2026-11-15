@@ -4,7 +4,6 @@ import com.carlesso.goalfather.adapter.out.worlddata.FileWorldDataProvider
 import com.carlesso.goalfather.application.port.out.PackLoadResult
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Position
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.world.WorldPack
 import com.carlesso.goalfather.tools.worldimport.wikidata.CacheMode
 import com.carlesso.goalfather.tools.worldimport.wikidata.SparqlClient
@@ -79,7 +78,8 @@ class GeneratedWorldPackTest {
     @Test
     fun `todo clube brasileiro escala 11 dentro do limite de estrangeiros`() = runTest {
         val pack = pack()
-        val limit = SeasonCompetitions.NATIONAL_FOREIGN_PLAYER_LIMIT
+        // Limite do Brasileirão 2026 (CBF), agora dado do pack em cada competição.
+        val limit = pack.competitions.first { it.id.value == "bra-serie-a" }.competition.foreignPlayerLimit ?: 9
         val brazilian = pack.competitions
             .filter { it.id.value.startsWith("bra-") }
             .flatMap { it.clubIds }

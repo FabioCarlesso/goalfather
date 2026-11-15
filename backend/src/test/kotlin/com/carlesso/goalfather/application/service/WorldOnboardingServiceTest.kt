@@ -14,7 +14,10 @@ import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.KnockoutStage
 import com.carlesso.goalfather.domain.model.SeasonSpan
-import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.domain.model.GameWeek
+import com.carlesso.goalfather.domain.model.Matchday
+import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -68,7 +71,9 @@ class WorldOnboardingServiceTest {
         coEvery { findAvailable() } returns clubs.filter { it.ownerId == null }
     }
     private val leagueRepo = mockk<LeagueRepository> {
-        coEvery { currentStandings() } returns listOf(Standings(season = 2026, round = 0, rows = emptyList()))
+        // Sem tabelas: o rótulo de cada liga sai do ano do encaixe corrente.
+        coEvery { currentStandings() } returns emptyList()
+        coEvery { findLatest() } returns Round(Matchday(GameWeek(2026, 2), Slot.WEEKEND), 2026, matches = emptyList())
     }
     private val service = WorldOnboardingService(catalog, clubRepo, leagueRepo)
 

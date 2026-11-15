@@ -133,7 +133,10 @@ class RoundEventDtosTest {
         val table = encode(seasonFinished).getValue("standings").jsonArray.single().jsonObject
 
         assertEquals(
-            setOf("season", "division", "round", "promotionSpots", "relegationSpots", "rows"),
+            setOf(
+                "competitionId", "competitionName", "country", "season", "seasonLabel",
+                "division", "round", "promotionSpots", "relegationSpots", "rows",
+            ),
             table.keys,
         )
         assertEquals("2", table.string("division"))

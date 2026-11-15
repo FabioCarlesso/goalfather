@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Competition
@@ -323,7 +324,7 @@ class CupRulesTest {
 
     @Test
     fun `jogo de liga nunca vai aos penaltis`() {
-        val league = RoundMatch(1, ClubId(1), ClubId(2), "A", "B")
+        val league = leagueMatch(1, ClubId(1), ClubId(2), "A", "B")
         assertFalse(league.decidesOnPenalties(0, 0))
     }
 

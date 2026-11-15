@@ -14,7 +14,7 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.startWorld
-import com.carlesso.goalfather.application.seed.interimBrazilCatalog
+import com.carlesso.goalfather.test.brazilCatalog
 import kotlin.random.Random
 
 /**
@@ -76,7 +76,9 @@ data class League(
     // #131 integrador: ponte da frente B para o seed antigo continuar de pé
     // enquanto a frente A (seed pelo pack + catálogo gravado) não entra — o
     // mundo do seed vira o do `startWorld` sobre o catálogo interino do Brasil.
-    private val world by lazy { startWorld(season, clubs, interimBrazilCatalog()) }
+    private val world by lazy { // A copa de teste comporta de 4 a 32 clubes; com menos, o formato não fecha
+    // com os inscritos e o mundo nasce sem copa (como no `drawNationalCup`).
+    startWorld(season, clubs, brazilCatalog(legs = 2, cupClubs = clubs.size.coerceIn(4, 32))) }
 
     /** Tabelas zeradas — uma por liga do catálogo, com as faixas das regras de vaga. */
     fun initialStandings(): List<Standings> = world.standings

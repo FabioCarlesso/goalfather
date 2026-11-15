@@ -52,7 +52,7 @@ class WorldSeedTest {
 
     @Test
     fun `as 7 ligas tem 20-20-20-20-20-18-18 clubes`() {
-        val sizes = world.clubs.groupingBy { world.competitions.leagueOf(it)?.id?.value }.eachCount()
+        val sizes = world.clubs.groupingBy { world.competitions.leagueOf(it)?.id?.value ?: "sem liga" }.eachCount()
         assertEquals(
             mapOf(
                 "bra-serie-a" to 20, "bra-serie-b" to 20, "eng-premier-league" to 20, "esp-la-liga" to 20,
@@ -160,7 +160,7 @@ class WorldSeedTest {
         val e2e = load("../data/world/e2e/v1").toInitialWorld()
         assertEquals(listOf("bra-serie-a", "bra-serie-b", "bra-copa-do-brasil", "eng-premier-league"), e2e.competitions.map { it.id.value })
         assertEquals(16, e2e.clubs.size)
-        val sizes = e2e.clubs.groupingBy { e2e.competitions.leagueOf(it)?.id?.value }.eachCount()
+        val sizes = e2e.clubs.groupingBy { e2e.competitions.leagueOf(it)?.id?.value ?: "sem liga" }.eachCount()
         assertEquals(mapOf("bra-serie-a" to 6, "bra-serie-b" to 6, "eng-premier-league" to 4), sizes)
     }
 }

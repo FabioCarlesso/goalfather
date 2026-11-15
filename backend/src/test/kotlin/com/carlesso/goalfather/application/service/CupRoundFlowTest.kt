@@ -33,7 +33,6 @@ import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.cupDrawSeed
 import com.carlesso.goalfather.domain.rules.nationalCupMatches
 import com.carlesso.goalfather.domain.rules.drawCup
-import com.carlesso.goalfather.domain.rules.generateRound
 import com.carlesso.goalfather.domain.rules.prizeOf
 import com.carlesso.goalfather.domain.rules.recordRound
 import com.carlesso.goalfather.domain.rules.worldPlan
@@ -311,7 +310,7 @@ class CupRoundFlowTest {
     fun `ida nao vai aos penaltis e a volta so vai com o agregado empatado`() = runTest {
         cupRepo.cups[2026] = twoLeggedCup
         // 3 rodadas de liga + 3 encaixes de copa (ida, volta e final): uma perna por encaixe.
-        val schedule = seasonPlan(2026, clubs, twoLeggedCup).schedule
+        val schedule = worldPlan(catalog, clubs, mapOf(Countries.BRAZIL.code to 2026), mapOf(COPA_DO_BRASIL to twoLeggedCup)).schedule
         assertEquals(6, schedule.matchdays.size)
         val cupSlots = schedule.rounds.filter { it.competition == twoLeggedCup.competitionId }.map { it.matchday }
         assertEquals(twoLeggedCup.calendarRounds, cupSlots.size)

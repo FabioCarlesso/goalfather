@@ -74,20 +74,29 @@ class LeagueStandingsMvcTest {
         val token = register("mvc-standings-${System.nanoTime()}")
 
         val tables = json.parseToJsonElement(getJson("/api/league/standings", token)).jsonArray
-        assertEquals(2, tables.size, "Seed tem 2 divisões → 2 tabelas")
-
-        val byDivision = tables.map { it.jsonObject }.associateBy {
+        // Pack do E2E (issue #131): Série A e Série B no Brasil, Premier League
+        // na Inglaterra — uma tabela por LIGA, Brasil primeiro, elite primeiro.
+        assertEquals(
+            listOf("bra-serie-a", "bra-serie-b", "eng-premier-league"),
+            tables.map { it.jsonObject.getValue("competitionId").jsonPrimitive.content },
+        )
+        val byLeague = tables.map { it.jsonObject }.associateBy {
             assertNotNull(it["division"], "Campo requerido `division` ausente do payload")
-                .jsonPrimitive.int
+            it.getValue("competitionId").jsonPrimitive.content
         }
-        assertEquals(setOf(1, 2), byDivision.keys)
 
-        val elite = byDivision.getValue(1)
+        val elite = byLeague.getValue("bra-serie-a")
+        assertEquals(1, elite.getValue("division").jsonPrimitive.int)
         assertEquals(0, elite.getValue("promotionSpots").jsonPrimitive.int)
         assertEquals(2, elite.getValue("relegationSpots").jsonPrimitive.int)
         assertEquals(6, elite.getValue("rows").jsonArray.size)
 
-        val second = byDivision.getValue(2)
+        val premier = byLeague.getValue("eng-premier-league")
+        assertEquals(0, premier.getValue("relegationSpots").jsonPrimitive.int, "europeias sem rebaixamento no MVP")
+        assertEquals(4, premier.getValue("rows").jsonArray.size)
+        assertEquals("ENG", premier.getValue("country").jsonObject.getValue("code").jsonPrimitive.content)
+
+        val second = byLeague.getValue("bra-serie-b")
         assertEquals(2, second.getValue("promotionSpots").jsonPrimitive.int)
         assertEquals(0, second.getValue("relegationSpots").jsonPrimitive.int)
         assertEquals(6, second.getValue("rows").jsonArray.size)

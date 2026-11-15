@@ -226,7 +226,7 @@ class LeagueDtosTest {
         assertEquals(matchKeys, match.keys)
         assertEquals("2", match.string("division"))
         assertEquals("2", match.string("awayClubId"))
-        assertEquals("liga-d2", match.string("competitionId"))
+        assertEquals("bra-serie-b", match.string("competitionId"))
 
         val stage = match.obj("stage")
         assertEquals(setOf("type", "matchday"), stage.keys)

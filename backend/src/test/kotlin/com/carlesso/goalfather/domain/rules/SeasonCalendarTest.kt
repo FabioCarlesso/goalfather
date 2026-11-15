@@ -5,7 +5,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.Division
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.test.COPA_DO_BRASIL
@@ -82,8 +82,8 @@ class SeasonCalendarTest {
     fun `encaixe de copa traz os confrontos em aberto da fase corrente`() {
         val cupSlot = plan.schedule.matchdays[1]
         val matches = plan.roundAt(cupSlot, twelve).matches
-        assertEquals(4, matches.size) // 12 clubes numa chave de 16: 4 jogos e 4 folgas
-        assertTrue(matches.all { it.stage == RoundStage.Cup(KnockoutPhase.ROUND_OF_16) && it.isKnockout })
+        assertEquals(4, matches.size) // 12 clubes: 8 na Primeira fase (4 jogos), 4 entram nas quartas
+        assertTrue(matches.all { it.stage == RoundStage.Cup("Primeira fase", CupLeg.Single) && it.isKnockout })
     }
 
     @Test
@@ -104,11 +104,9 @@ class SeasonCalendarTest {
 
     @Test
     fun `proximo jogo do clube pula encaixes em que ele nao joga`() {
-        // Clube que folga na 1ª fase da copa: depois da rodada 1, o próximo jogo
-        // é a rodada 2 da liga, não o encaixe de copa.
-        val bye = cup.stages.first().ties
-            .filterIsInstance<CupTie.Bye>()
-            .first().club.id
+        // Clube que só entra nas quartas: depois da rodada 1, o próximo jogo é
+        // a rodada 2 da liga, não o encaixe da Primeira fase da copa.
+        val bye = cup.phases[1].entrants.first().id
         val next = assertNotNull(plan.nextMatchOf(bye, plan.schedule.matchdays[0], twelve))
         assertEquals(plan.schedule.matchdays[2], next.matchday)
         assertEquals(RoundStage.League(2), next.match.stage)
@@ -119,7 +117,7 @@ class SeasonCalendarTest {
     @Test
     fun `proximo jogo de quem esta na copa e o confronto da fase corrente`() {
         val playing = cup.stages.first().ties
-            .filterIsInstance<CupTie.Fixture>()
+            .filterIsInstance<CupTie.Single>()
             .first().home.id
         val next = assertNotNull(plan.nextMatchOf(playing, plan.schedule.matchdays[0], twelve))
         assertEquals(plan.schedule.matchdays[1], next.matchday)
@@ -129,7 +127,7 @@ class SeasonCalendarTest {
     @Test
     fun `com a fase da copa em jogo nenhum encaixe de copa adiante e conhecido`() {
         val playing = cup.stages.first().ties
-            .filterIsInstance<CupTie.Fixture>()
+            .filterIsInstance<CupTie.Single>()
             .first().home.id
         val next = assertNotNull(plan.nextMatchOf(playing, plan.schedule.matchdays[1], twelve, cupsInPlay = setOf(COPA_DO_BRASIL)))
         assertTrue(next.match.stage is RoundStage.League)

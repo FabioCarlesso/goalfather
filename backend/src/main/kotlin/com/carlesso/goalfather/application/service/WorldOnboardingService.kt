@@ -9,6 +9,7 @@ import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.CompetitionKind
+import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.leagueOf
 import java.text.Collator
 import java.util.Locale
@@ -29,7 +30,7 @@ class WorldOnboardingService(
         val competitions = catalog.findAll()
         val leagues = competitions.filter { it.kind is CompetitionKind.League }
         if (leagues.isEmpty()) return emptyList()
-        val year = currentYear() ?: return emptyList()
+        val labels = seasonLabels(leagues)
         // Liga de cada clube calculada uma vez; `groupingBy { }.eachCount()`
         // conta por chave sem montar as listas intermediárias.
         val all = clubs.findAll()
@@ -38,6 +39,7 @@ class WorldOnboardingService(
         val freeCount = all.filter { it.ownerId == null }.groupingBy { leagueIdOf[it.id] }.eachCount()
 
         return leagues
+            .filter { it.id in labels }
             .groupBy { it.country }
             .map { (country, countryLeagues) ->
                 OnboardingCountry(
@@ -50,7 +52,7 @@ class WorldOnboardingService(
                                 league = it,
                                 clubCount = clubCount[it.id] ?: 0,
                                 availableClubCount = freeCount[it.id] ?: 0,
-                                seasonLabel = it.seasonOf(year).label,
+                                seasonLabel = labels.getValue(it.id),
                             )
                         },
                 )
@@ -71,12 +73,19 @@ class WorldOnboardingService(
     }
 
     /**
-     * Ano da temporada corrente do mundo: o das tabelas em jogo. A europeia
-     * de 2026/27 e a brasileira de 2026 começam no mesmo ano; o `label` de
-     * cada liga sai do [com.carlesso.goalfather.domain.model.SeasonSpan] dela.
+     * Rótulo da temporada corrente de cada liga (`2026`, `2026/27`). Cada liga
+     * está na SUA temporada (a europeia de 2026/27 convive com a brasileira de
+     * 2027), e a tabela corrente dela já traz o rótulo. Liga sem tabela (save
+     * no meio do seed) cai no ano do encaixe corrente; sem nenhum dos dois, a
+     * liga fica fora do onboarding.
      */
-    private suspend fun currentYear(): Int? =
-        league.currentStandings().minOfOrNull { it.season } ?: league.findLatest()?.season
+    private suspend fun seasonLabels(leagues: List<GameCompetition>): Map<CompetitionId, String> {
+        val fromTables = league.currentStandings().associate { it.competitionId to it.seasonLabel }
+        val year = league.findLatest()?.season
+        return leagues.mapNotNull { game ->
+            (fromTables[game.id] ?: year?.let { game.seasonOf(it).label })?.let { game.id to it }
+        }.toMap()
+    }
 
     private companion object {
         /** `Collator` é um `Comparator<Any>` do JDK: ordem alfabética do português. */
