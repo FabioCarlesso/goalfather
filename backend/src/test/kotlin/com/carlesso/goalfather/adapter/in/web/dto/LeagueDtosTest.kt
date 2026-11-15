@@ -8,7 +8,8 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
+import com.carlesso.goalfather.domain.model.LegScore
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.ReadinessStatus
@@ -241,7 +242,7 @@ class LeagueDtosTest {
                 leagueRound.matches.single().copy(
                     status = RoundStatus.Finished, homeGoals = 1, awayGoals = 1, minute = 90,
                     penalties = PenaltyScore(home = 4, away = 3),
-                    stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS),
+                    stage = RoundStage.Cup("Semifinal", CupLeg.Second(LegScore(2, 1))),
                 ),
             ),
         )
@@ -249,9 +250,19 @@ class LeagueDtosTest {
 
         val match = encoded.getValue("matches").jsonArray.single().jsonObject
         val stage = match.obj("stage")
-        assertEquals(setOf("type", "phase"), stage.keys)
+        assertEquals(setOf("type", "stageName", "leg", "firstLeg"), stage.keys)
         assertEquals("Cup", stage.string("type"))
-        assertEquals("SEMI_FINALS", stage.string("phase"))
+        assertEquals("Semifinal", stage.string("stageName"))
+        assertEquals("SECOND", stage.string("leg"))
+        assertEquals("2", stage.obj("firstLeg").string("homeGoals"))
+
+        // Jogo único: sem `firstLeg` (ausente, não `null`).
+        val single = encode(
+            RoundDto.serializer(),
+            cupRound.copy(matches = cupRound.matches.map { it.copy(stage = RoundStage.Cup("Final", CupLeg.Single)) }).toDto(),
+        ).getValue("matches").jsonArray.single().jsonObject.obj("stage")
+        assertEquals(setOf("type", "stageName", "leg"), single.keys)
+        assertEquals("SINGLE", single.string("leg"))
 
         assertEquals(matchKeys + "penalties", match.keys)
         assertEquals(setOf("home", "away"), match.obj("penalties").keys)

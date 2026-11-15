@@ -70,6 +70,7 @@ import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
 import com.carlesso.goalfather.domain.rules.boardExpectations
 import com.carlesso.goalfather.domain.rules.cashDelta
+import com.carlesso.goalfather.domain.rules.decidesOnPenalties
 import com.carlesso.goalfather.domain.rules.fitnessSeed
 import com.carlesso.goalfather.domain.rules.gate
 import com.carlesso.goalfather.domain.rules.isSalaryDate
@@ -242,10 +243,10 @@ class PlayRoundService(
                 away = away?.startingLineupIn(catalog.matchRulesOf(match.competition)) ?: emptyLineup(),
                 homeName = match.homeClubName,
                 awayName = match.awayClubName,
-                // Jogo de copa = mata-mata: empate decide nos pênaltis (issue #61).
-                // Por PARTIDA desde o calendário semanal (issue #125): o mesmo
-                // encaixe pode ter liga e copa.
-                knockout = match.isKnockout,
+                // Pênaltis pela perna do jogo de copa (issues #61/#131): jogo
+                // único empatado, ou volta com agregado empatado. Por PARTIDA
+                // (issue #125): o mesmo encaixe pode ter liga e copa.
+                decidesOnPenalties = match::decidesOnPenalties,
                 homeClubId = match.homeClubId,
                 awayClubId = match.awayClubId,
             )

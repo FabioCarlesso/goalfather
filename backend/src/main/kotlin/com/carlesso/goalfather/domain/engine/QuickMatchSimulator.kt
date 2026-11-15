@@ -159,7 +159,7 @@ class QuickMatchSimulator {
 
         // Mata-mata: a mesma regra de domínio da engine, com o mesmo RNG, já
         // depois do minuto 90.
-        val shootout = if (setup.knockout && home.goals == away.goals) {
+        val shootout = if (setup.decidesOnPenalties(home.goals, away.goals)) {
             val result = penaltyShootout(homeOnPitch, awayOnPitch, rng)
             MatchEvent.PenaltyShootout(
                 minute = 90,

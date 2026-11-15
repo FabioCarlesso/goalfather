@@ -11,7 +11,7 @@ import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.engine.QuickMatchSimulator
 import com.carlesso.goalfather.domain.engine.kickOff
 import com.carlesso.goalfather.domain.model.ClubId
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -118,7 +118,7 @@ class PlayMatchServiceTest {
         val cupId = matchIdIn(md(2), n = 1)
         val cupDate = round.copy(
             matchday = md(2),
-            matches = round.matches.map { it.copy(matchId = cupId, stage = RoundStage.Cup(KnockoutPhase.FINAL)) },
+            matches = round.matches.map { it.copy(matchId = cupId, stage = RoundStage.Cup("Final", CupLeg.Single)) },
         )
         // Com dono: jogo de técnico humano passa pela engine completa (issue #129).
         val home = makeClub(id = 1, overall = 75, ownerId = 9)
@@ -133,7 +133,7 @@ class PlayMatchServiceTest {
                 away.startingLineup(),
                 "Home FC",
                 "Away FC",
-                knockout = true,
+                decidesOnPenalties = { h, a -> h == a },
                 homeClubId = home.id,
                 awayClubId = away.id,
             ),

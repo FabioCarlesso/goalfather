@@ -1,17 +1,29 @@
-// Rótulos da copa mata-mata e do calendário (issue #61).
+// Rótulos da copa mata-mata e do calendário (issues #61 e #131).
 //
-// SÓ apresentação: quem passou, quanto vale cada fase e em que data cai cada
-// fase são regras do backend (`CupRules.kt`, `SeasonCalendar.kt`) e chegam
-// prontos pelo contrato — mesma separação de `training.ts`.
+// SÓ apresentação: quem passou, o agregado, quanto vale cada fase e em que
+// data cai cada perna são regras do backend (`CupRules.kt`, `SeasonCalendar.kt`)
+// e chegam prontos pelo contrato — mesma separação de `training.ts`. O nome da
+// fase também vem pronto (`stageName`): as fases são dado do formato da
+// competição, não um enum que a UI traduz.
 
-import type { KnockoutPhase, RoundStage } from './types'
+import type { CupLeg, CupLegs, RoundStage } from './types'
 
-export const KNOCKOUT_PHASE_LABEL: Record<KnockoutPhase, string> = {
-  ROUND_OF_32: '32-avos de final',
-  ROUND_OF_16: 'Oitavas de final',
-  QUARTER_FINALS: 'Quartas de final',
-  SEMI_FINALS: 'Semifinal',
-  FINAL: 'Final',
+/** Sufixo da perna: jogo único não tem; ida e volta dizem qual jogo é. */
+export const CUP_LEG_LABEL: Record<CupLeg, string> = {
+  SINGLE: '',
+  FIRST: 'ida',
+  SECOND: 'volta',
+}
+
+export const CUP_LEGS_LABEL: Record<CupLegs, string> = {
+  SINGLE: 'jogo único',
+  TWO_LEGGED: 'ida e volta',
+}
+
+/** "Quartas de final — ida", "Final". */
+export function cupStageLabel(stage: Extract<RoundStage, { type: 'Cup' }>): string {
+  const leg = CUP_LEG_LABEL[stage.leg]
+  return leg ? `${stage.stageName} — ${leg}` : stage.stageName
 }
 
 /**
@@ -24,6 +36,6 @@ export function stageTitle(stage: RoundStage): string {
     case 'League':
       return `Rodada ${stage.matchday}`
     case 'Cup':
-      return `Copa — ${KNOCKOUT_PHASE_LABEL[stage.phase]}`
+      return `Copa — ${cupStageLabel(stage)}`
   }
 }

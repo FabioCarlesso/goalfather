@@ -175,7 +175,7 @@ describe('useRoundStream (issue #112)', () => {
     const next: Round = {
       ...round,
       matchday: testMatchday(4, 'MIDWEEK'),
-      matches: [match({ matchId: 20, ...matchCompetition({ type: 'Cup', phase: 'ROUND_OF_16' }) })],
+      matches: [match({ matchId: 20, ...matchCompetition({ type: 'Cup', stageName: 'Oitavas de final', leg: 'SINGLE' }) })],
     }
     rerender({ r: next })
 

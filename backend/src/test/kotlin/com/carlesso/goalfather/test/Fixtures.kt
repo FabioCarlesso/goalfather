@@ -6,7 +6,6 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.Division
-import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.GameWeek
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Lineup
@@ -101,11 +100,8 @@ internal fun md(week: Int, slot: Slot = Slot.WEEKEND): Matchday = Matchday(GameW
 internal fun farMatchday(n: Int): Matchday = Matchday(GameWeek(2900 + n / 50, n % 50 + 1), Slot.WEEKEND)
 
 /**
- * Encaixe só de copa na semana [week] de 2026 (issue #125): os confrontos em
- * aberto da fase corrente de [cup]. Ponte para os testes da copa escritos na
- * época da "data de copa" (`cupRound(data, temporada, fase, …)`); a [phase]
- * fica na assinatura só pela leitura — quem decide a fase é a própria copa.
+ * Encaixe só de copa na semana [week] de 2026 (issue #125): a perna em aberto
+ * de cada confronto da fase corrente de [cup].
  */
-@Suppress("UNUSED_PARAMETER")
-internal fun cupRound(week: Int, season: Int, phase: KnockoutPhase, cup: Cup, clubs: Collection<Club>): Round =
+internal fun cupRound(week: Int, season: Int, cup: Cup, clubs: Collection<Club>): Round =
     Round(matchday = md(week), season = season, matches = cupMatches(md(week), cup, clubs))

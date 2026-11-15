@@ -853,6 +853,23 @@ O mundo do jogo vem de um pack versionado em `data/world/v1/`, lido **como se fo
   `cupTitles`, e a copa da temporada nova é sorteada com os clubes já nas
   divisões novas. Liga com menos de 4 clubes não tem copa (`canHoldCup`).
 
+  **Copa do Brasil (issue #131).** O motor deixou o enum `KnockoutPhase` (32→final,
+  jogo único, folgas) pelo formato `Knockout` do pack: `drawCup(season,
+  competition, seeded, rng)` distribui os entrantes por força (da última fase
+  para a primeira, cada fase tira do topo da lista os seus `newEntrants` — no
+  MVP os 24 mais fortes entram na 5ª fase e os 16 restantes jogam a 4ª), sorteia
+  só a abertura e fixa uma `drawSeed` para os sorteios das fases seguintes, que
+  acontecem quando a anterior fecha (vencedores + entrantes dela). `CupTie` é
+  `Single` (jogo único) ou `TwoLegged` (placar de cada perna + pênaltis da
+  volta, validados pelo `TwoLeggedTieResult`). `RoundStage.Cup(stageName, leg)`
+  carrega a perna como `sealed CupLeg` — `Single`, `First`, `Second(firstLeg)` —
+  e a engine pergunta no minuto 90 `MatchSetup.decidesOnPenalties(h, a)`, que os
+  serviços preenchem com `match::decidesOnPenalties`: jogo único empatado sim,
+  ida nunca, volta só com o agregado empatado (sem gol fora, como a CBF).
+  `Cup.calendarRounds` soma uma perna por encaixe (10 no formato do MVP, 69
+  jogos). Prêmio por ordem da fase (`cupPhasePrize`): final US$ 10 mi, semifinal
+  US$ 2 mi e metade a cada fase anterior, com piso de US$ 50 mil.
+
   **Achado de infraestrutura.** `ResponseEntity<Any>` faz o Spring procurar o
   serializer do kotlinx pelo tipo DECLARADO (`Object`), não achar, e cair no
   Jackson — que ignora `@JsonClassDiscriminator`. Para tipos planos passava

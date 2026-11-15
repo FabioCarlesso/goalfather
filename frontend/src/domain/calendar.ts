@@ -5,7 +5,7 @@
 // `SeasonCalendar.kt`) e chegam prontos pelo contrato — este módulo só
 // transforma em texto o que a API entregou.
 
-import { KNOCKOUT_PHASE_LABEL, stageTitle } from './cup'
+import { cupStageLabel, stageTitle } from './cup'
 import type { Matchday, Round, RoundMatch, RoundStage, Slot } from './types'
 
 export const SLOT_LABEL: Record<Slot, string> = {
@@ -30,7 +30,9 @@ export function formatMatchday(matchday: Matchday): string {
  */
 export function roundStages(round: Pick<Round, 'matches'>): RoundStage[] {
   const seen = new Map<string, RoundStage>()
-  for (const m of round.matches) seen.set(JSON.stringify(m.stage), m.stage)
+  // Pela forma EXIBIDA: as voltas de uma fase carregam placares de ida
+  // diferentes, mas são o mesmo "Quartas de final — volta".
+  for (const m of round.matches) if (!seen.has(stageTitle(m.stage))) seen.set(stageTitle(m.stage), m.stage)
   return [...seen.values()]
 }
 
@@ -40,7 +42,7 @@ export function roundTitle(round: Pick<Round, 'matches'>): string {
   return stages.length === 0 ? 'Encaixe sem jogos' : stages.map(stageTitle).join(' + ')
 }
 
-/** O encaixe tem jogo de mata-mata? Então empate vai aos pênaltis. */
+/** O encaixe tem jogo de copa? (Pênaltis: jogo único empatado ou volta com agregado empatado.) */
 export function hasKnockout(round: Pick<Round, 'matches'>): boolean {
   return round.matches.some((m) => m.stage.type === 'Cup')
 }
@@ -60,6 +62,6 @@ export function matchCompetitionLabel(match: Pick<RoundMatch, 'competitionName' 
     case 'League':
       return `${match.competitionName} · Rodada ${match.stage.matchday}`
     case 'Cup':
-      return `${match.competitionName} · ${KNOCKOUT_PHASE_LABEL[match.stage.phase]}`
+      return `${match.competitionName} · ${cupStageLabel(match.stage)}`
   }
 }

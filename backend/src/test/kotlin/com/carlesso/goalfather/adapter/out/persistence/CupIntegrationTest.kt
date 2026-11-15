@@ -6,9 +6,9 @@ import com.carlesso.goalfather.adapter.out.persistence.repository.CupJpaReposito
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
-import com.carlesso.goalfather.domain.model.CupTie
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.Division
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.LegScore
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStage
@@ -48,11 +48,12 @@ class CupIntegrationTest {
     private val clubs = (1L..12L).map { makeClub(id = it, name = "C$it", division = Division(if (it <= 6) 1 else 2)) }
 
     @Test
-    fun `seed sorteia a copa da temporada inicial com 12 clubes nas oitavas`() = runBlocking {
+    fun `seed sorteia a copa da temporada inicial com 12 clubes na primeira fase`() = runBlocking {
         val seeded = assertNotNull(cups.findBySeason(2026), "DataInitializer deveria sortear a copa de 2026")
         val opening = seeded.stages.first()
-        assertEquals(KnockoutPhase.ROUND_OF_16, opening.phase)
-        assertEquals(4, opening.ties.count { it is CupTie.Bye })
+        assertEquals("Primeira fase", opening.name)
+        assertEquals(4, opening.ties.size)
+        assertEquals(4, seeded.phases[1].entrants.size, "os 4 mais fortes entram nas quartas")
     }
 
     @Test
@@ -90,10 +91,14 @@ class CupIntegrationTest {
         val cupDate = farMatchday(9402)
         try {
             val cup = drawCup(2026, clubs, Random(2))
-            leagueRepo.saveRound(Round(cupDate, 2026, matches = cupMatches(cupDate, cup, clubs)))
+            val matches = cupMatches(cupDate, cup, clubs)
+            // A volta carrega o placar da ida no `stage_json` (issue #131).
+            val secondLeg = RoundStage.Cup("Quartas de final", CupLeg.Second(LegScore(2, 1)))
+            leagueRepo.saveRound(Round(cupDate, 2026, matches = matches.dropLast(1) + matches.last().copy(stage = secondLeg)))
             val reloaded = assertNotNull(leagueRepo.findRound(cupDate))
             assertTrue(reloaded.matches.isNotEmpty())
-            assertTrue(reloaded.matches.all { it.stage == RoundStage.Cup(KnockoutPhase.ROUND_OF_16) })
+            assertTrue(reloaded.matches.dropLast(1).all { it.stage == RoundStage.Cup("Primeira fase", CupLeg.Single) })
+            assertEquals(secondLeg, reloaded.matches.last().stage)
             assertTrue(reloaded.matches.all { it.competition == SeasonCompetitions.CUP_ID })
         } finally {
             roundJpa.deleteById(cupDate.toKey())

@@ -162,7 +162,7 @@ describe('RoundSummary (issue #112)', () => {
     renderSummary({
       outcome: {
         ...outcome,
-        played: { ...played, matches: [{ ...myMatch, ...matchCompetition({ type: 'Cup', phase: 'ROUND_OF_16' }) }] },
+        played: { ...played, matches: [{ ...myMatch, ...matchCompetition({ type: 'Cup', stageName: 'Oitavas de final', leg: 'SINGLE' }) }] },
         training: null,
       },
       myMatchState: { homeGoals: 1, awayGoals: 1, minute: 90, status: 'Finished', penalties: { home: 5, away: 4 } },

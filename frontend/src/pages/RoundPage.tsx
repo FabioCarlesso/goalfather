@@ -86,7 +86,7 @@ export function RoundPage() {
           <h1 className="text-3xl font-bold text-slate-100">{roundTitle(round)}</h1>
           <p className="text-sm text-slate-400">
             Temporada {round.season} · {formatMatchday(round.matchday)} · {round.matches.length} partidas
-            {hasKnockout(round) && ' · copa em jogo único, empate vai aos pênaltis'}
+            {hasKnockout(round) && ' · copa: empate no jogo único ou no agregado da volta vai aos pênaltis'}
           </p>
         </div>
         {/* Com o resumo na tela, o "Próxima rodada" mora nele (issue #112). */}

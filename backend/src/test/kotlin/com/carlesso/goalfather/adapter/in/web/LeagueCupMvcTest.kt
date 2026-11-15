@@ -6,7 +6,7 @@ import com.carlesso.goalfather.adapter.out.persistence.mapper.toKey
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.ClubId
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
@@ -69,25 +69,24 @@ class LeagueCupMvcTest {
         val cup = json.parseToJsonElement(response.contentAsString).jsonObject
 
         assertEquals(2026, cup.getValue("season").jsonPrimitive.int)
-        assertEquals("ROUND_OF_16", cup.getValue("currentPhase").jsonPrimitive.content)
+        assertEquals("Primeira fase", cup.getValue("currentStage").jsonPrimitive.content)
         assertTrue("champion" !in cup, "copa em andamento omite o campeão")
 
         val phases = cup.getValue("phases").jsonArray.map { it.jsonObject }
         assertEquals(
-            listOf("ROUND_OF_16", "QUARTER_FINALS", "SEMI_FINALS", "FINAL"),
-            phases.map { it.getValue("phase").jsonPrimitive.content },
+            listOf("Primeira fase", "Quartas de final", "Semifinal", "Final"),
+            phases.map { it.getValue("name").jsonPrimitive.content },
         )
         assertTrue(phases.all { it.getValue("prizeCents").jsonPrimitive.content.toLong() > 0 })
+        assertEquals(listOf(8, 4, 0, 0), phases.map { it.getValue("entrants").jsonArray.size })
 
         val ties = cup.getValue("stages").jsonArray.single().jsonObject.getValue("ties").jsonArray.map { it.jsonObject }
-        assertEquals(8, ties.size)
-        val types = ties.map { it.getValue("type").jsonPrimitive.content }
-        assertEquals(4, types.count { it == "Bye" })
-        assertEquals(4, types.count { it == "Fixture" })
+        assertEquals(4, ties.size)
+        assertTrue(ties.all { it.getValue("type").jsonPrimitive.content == "Single" })
         // ClubId sai como número puro, e confronto em aberto não tem resultado.
-        val fixture = ties.first { it.getValue("type").jsonPrimitive.content == "Fixture" }
-        fixture.getValue("home").jsonObject.getValue("id").jsonPrimitive.int
-        assertTrue("result" !in fixture && "winnerId" !in fixture)
+        val tie = ties.first()
+        tie.getValue("home").jsonObject.getValue("id").jsonPrimitive.int
+        assertTrue("result" !in tie && "winnerId" !in tie)
     }
 
     @Test
@@ -104,7 +103,7 @@ class LeagueCupMvcTest {
     fun `cada partida do encaixe corrente traz o stage com o discriminador do contrato`() {
         // Encaixe próprio "lá na frente": outras suítes gravam encaixes no mesmo H2.
         val matchday = farMatchday(9990)
-        val match = leagueMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup(KnockoutPhase.FINAL))
+        val match = leagueMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup("Final", CupLeg.Single))
         runBlocking { leagueRepo.saveRound(Round(matchday, 2026, matches = listOf(match))) }
         try {
             val response = get("/api/league/round/current", token())

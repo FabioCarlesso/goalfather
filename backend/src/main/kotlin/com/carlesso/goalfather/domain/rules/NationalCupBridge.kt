@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
+import com.carlesso.goalfather.domain.model.CompetitionFormat
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.GameCompetition
@@ -13,9 +14,9 @@ import kotlin.random.Random
  * motor da copa (issue #131). O resto do código só conhece estas funções — trocar o motor (a Copa do Brasil 2026 com fases nomeadas, ida e
  * volta e entrantes por fase) é trocar o corpo delas, não caçar chamadas.
  *
- * Hoje implementadas sobre o motor ATUAL (`drawCup` + `cup.phases`, jogo
- * único, chave de até [MAX_CUP_CLUBS] clubes): com mais inscritos que isso a
- * copa não é sorteada (`null`) e o país joga só as ligas.
+ * O formato (fases, entrantes, ida e volta) vem da competição do catálogo; o
+ * motor ([drawCup], [Cup.calendarRounds], [cupMatches]) é o da Copa do Brasil
+ * 2026.
  */
 
 /**
@@ -42,14 +43,14 @@ fun nationalCupDrawSeed(season: Int, competition: CompetitionId): Long =
 
 /**
  * Sorteia a copa [competition] da temporada [season] entre [clubs] (os clubes
- * das ligas do país). `null` quando o motor não comporta os inscritos.
+ * das ligas do país). `null` quando o número de inscritos não fecha com os
+ * entrantes do formato — pack E2E ou catálogo sem todos os clubes da copa: o
+ * país joga só as ligas, em vez de derrubar a virada.
  */
 fun drawNationalCup(season: Int, competition: GameCompetition, clubs: Collection<Club>, rng: Random): Cup? {
-    val seeded = seededForCup(clubs)
-    // #131 integrador: trocar pela API da frente C —
-    // `drawCup(season, competition.competition, seeded, rng)`, sem o `canHoldCup`.
-    if (!canHoldCup(seeded)) return null
-    return drawCup(season, seeded, rng)
+    val format = competition.competition.format as? CompetitionFormat.Knockout ?: return null
+    if (clubs.size != format.entrants) return null
+    return drawCup(season, competition.competition, seededForCup(clubs), rng)
 }
 
 /**
@@ -57,17 +58,14 @@ fun drawNationalCup(season: Int, competition: GameCompetition, clubs: Collection
  * clubes das ligas do país (ver `countryPlan`): os confrontos das fases
  * seguintes só existem depois dos resultados.
  */
-// #131 integrador: trocar pela API da frente C — `cup.calendarRounds`.
-fun cupRounds(cup: Cup): Int = cup.phases.size
+fun cupRounds(cup: Cup): Int = cup.calendarRounds
 
 /**
  * Os jogos da copa [competition] no encaixe [matchday]: os confrontos em aberto
  * da fase corrente, com a competição do CATÁLOGO na partida (é por ela que a
  * suspensão, o limite de estrangeiros e a tabela distinguem os jogos).
  */
+@Suppress("UNUSED_PARAMETER")
 fun nationalCupMatches(matchday: Matchday, cup: Cup, competition: GameCompetition, clubs: Collection<Club>): List<RoundMatch> =
-    // #131 integrador: com o motor da frente C a partida já sai com o
-    // `competitionId` da copa; o `copy` some.
-    cupMatches(matchday, cup, clubs).map {
-        it.copy(competition = competition.id, competitionName = competition.competition.name)
-    }
+    // A partida já sai do motor com o `competitionId` e o nome da copa.
+    cupMatches(matchday, cup, clubs)
