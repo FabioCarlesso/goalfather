@@ -121,26 +121,27 @@ private fun drawStage(phase: CupPhase, clubs: List<CupClub>, rng: Random): CupSt
 // ─── Prêmios ──────────────────────────────────────────────────────────────
 
 /** Cheque de quem vence a final — o campeão leva o maior prêmio da copa. */
-val CUP_FINAL_PRIZE: Money = Money.dollars(10_000_000)
+val CUP_FINAL_PRIZE: Money = Money.dollars(1_000_000)
 
 /** Vencer a semifinal. Cada fase antes dela paga a METADE da seguinte. */
-val CUP_SEMI_FINAL_PRIZE: Money = Money.dollars(2_000_000)
+val CUP_SEMI_FINAL_PRIZE: Money = Money.dollars(400_000)
 
 /** Piso: a escada de metades não desce disto, por mais fases que o formato tenha. */
-val CUP_MIN_PRIZE: Money = Money.dollars(50_000)
+val CUP_MIN_PRIZE: Money = Money.dollars(10_000)
 
 /**
  * Prêmio por confronto VENCIDO numa fase que fica a [phasesToFinal] fases da
  * final (0 = a própria final). A regra é por ORDEM, não por nome, para valer
- * para qualquer formato do pack: final US$ 10 mi; semifinal US$ 2 mi; cada fase
- * anterior, metade da seguinte (quartas 1 mi, oitavas 500 mil, 5ª fase 250 mil,
- * 4ª fase 125 mil), com piso de US$ 50 mil.
+ * para qualquer formato do pack: final US$ 1 mi; semifinal US$ 400 mil; cada
+ * fase anterior, metade da seguinte (quartas 200 mil, oitavas 100 mil, 5ª fase
+ * 50 mil, 4ª fase 25 mil), com piso de US$ 10 mil.
  *
- * Escala de clube grande (issue #131: o mundo do pack tem caixas bem maiores
- * que o seed antigo): a campanha inteira do campeão que entra na 5ª fase soma
- * US$ 13,75 mi — receita que pesa, inspirada na premiação real da Copa do
- * Brasil (o campeão leva várias vezes o que paga a semifinal), sem decidir a
- * temporada sozinha. Premiar a vitória (e não a participação, como a CBF) é
+ * Calibrada contra o CAIXA (revisão da PR #154), na mesma proporção do jogo
+ * antes da #131: lá, a campanha do campeão somava US$ 215 mil para um caixa
+ * de US$ 160 mil (~1,3×). Aqui, a do campeão que entra na 5ª fase soma
+ * US$ 1,75 mi, ~1,3× o caixa do Flamengo (US$ 1,33 mi) e ~17 folhas dele.
+ * A escala anterior (final US$ 10 mi) pagava 7× o caixa do maior clube do
+ * Brasil numa partida e tirava do jogo a restrição financeira. Premiar a vitória (e não a participação, como a CBF) é
  * herança da issue #61: o prêmio é "por fase avançada".
  */
 fun cupPhasePrize(phasesToFinal: Int): Money {

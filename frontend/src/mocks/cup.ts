@@ -54,9 +54,9 @@ export const cupEntrants = (format: readonly KnockoutStageFormat[]): number =>
 
 // ─── Prêmios — espelha `cupPhasePrize` ───────────────────────────────────
 
-const CUP_FINAL_PRIZE_CENTS = 10_000_000_00
-const CUP_SEMI_FINAL_PRIZE_CENTS = 2_000_000_00
-const CUP_MIN_PRIZE_CENTS = 50_000_00
+const CUP_FINAL_PRIZE_CENTS = 1_000_000_00
+const CUP_SEMI_FINAL_PRIZE_CENTS = 400_000_00
+const CUP_MIN_PRIZE_CENTS = 10_000_00
 
 /** Prêmio por confronto vencido numa fase a `phasesToFinal` fases da final. */
 export function cupPhasePrize(phasesToFinal: number): number {

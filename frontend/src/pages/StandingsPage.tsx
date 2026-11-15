@@ -81,12 +81,14 @@ function LeagueSelect({
   onChange: (competitionId: string) => void
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm text-slate-400">
+    // `w-full` no celular: o <select> mede a MAIOR opção ("… Série A (sua
+    // liga)") e estourava 360px; de `sm` para cima volta à largura natural.
+    <label className="flex w-full flex-col gap-1 text-sm text-slate-400 sm:w-auto">
       Liga
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100"
+        className="w-full max-w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 sm:w-auto"
       >
         {byCountry(tables).map(({ country, tables: leagues }) => (
           <optgroup key={country.code} label={`${country.flag} ${country.name}`}>

@@ -43,7 +43,7 @@ class ClubPersistenceAdapter(
 
     override suspend fun findById(id: ClubId): Club? = withContext(Dispatchers.IO) {
         val entity = clubRepo.findById(id.value).orElse(null) ?: return@withContext null
-        val players = playerRepo.findAllByClubId(id.value)
+        val players = playerRepo.findAllByClubIdOrderById(id.value)
         entity.toDomain(players, json)
     }
 
@@ -52,7 +52,7 @@ class ClubPersistenceAdapter(
         // Uma só query para o elenco de todos os clubes, agrupado em memória —
         // antes era 1 query de players por clube (N+1, issue #23).
         val playersByClub = playerRepo
-            .findAllByClubIdIn(entities.map { it.id })
+            .findAllByClubIdInOrderById(entities.map { it.id })
             .groupBy { it.clubId }
         entities.map { entity ->
             entity.toDomain(playersByClub[entity.id].orEmpty(), json)
@@ -65,7 +65,7 @@ class ClubPersistenceAdapter(
         // (issue #131, ~136 clubes livres) o N+1 virava 137 consultas por
         // abertura da tela de escolha.
         val playersByClub = playerRepo
-            .findAllByClubIdIn(entities.map { it.id })
+            .findAllByClubIdInOrderById(entities.map { it.id })
             .groupBy { it.clubId }
         entities.map { entity -> entity.toDomain(playersByClub[entity.id].orEmpty(), json) }
     }
@@ -155,7 +155,7 @@ class ClubSaveTransaction(
         // própria consulta do elenco atual (estão no contexto de persistência,
         // sem releitura), e os `saveAll` deixam o Hibernate agrupar os UPDATEs
         // em batches JDBC (`hibernate.jdbc.batch_size` no application.yml).
-        val currentPlayers = playerRepo.findAllByClubId(id)
+        val currentPlayers = playerRepo.findAllByClubIdOrderById(id)
         val newPlayerIds = club.squad.mapTo(HashSet()) { it.id.value }
 
         val removed = currentPlayers.filter { it.id !in newPlayerIds }
@@ -181,6 +181,6 @@ class ClubSaveTransaction(
     private fun reloadIfUpdated(id: Long, updatedRows: Int): Club? {
         if (updatedRows == 0) return null
         val entity = clubRepo.findById(id).orElse(null) ?: return null
-        return entity.toDomain(playerRepo.findAllByClubId(id), json)
+        return entity.toDomain(playerRepo.findAllByClubIdOrderById(id), json)
     }
 }

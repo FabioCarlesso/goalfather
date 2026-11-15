@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.domain.model
 
 import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
+import com.carlesso.goalfather.domain.rules.inStartingOrder
 import com.carlesso.goalfather.domain.rules.isForeignAt
 import com.carlesso.goalfather.domain.serialization.ClubIdSerializer
 import kotlinx.serialization.Serializable
@@ -98,10 +99,16 @@ data class Club(
      *    vaga vai para um reserva que não estoure o limite. É o que faz a
      *    escalação AUTOMÁTICA (clube da IA, sem `lineup`) respeitar a regra.
      *
-     * As vagas abertas são preenchidas por reservas aptos, na ordem do elenco
-     * — substituição simples e determinística, não uma auto-escalação
-     * inteligente (não tenta casar posição: a validação posicional segue fora
-     * do domínio, como no `SaveLineupService`). Sem reservas aptos suficientes
+     * Sem escalação salva (clube da IA, técnico que nunca salvou), o time é o
+     * melhor 4-4-2 dos aptos ([inStartingOrder]), e não os 11 primeiros do
+     * elenco: a ordem do elenco é a da persistência, e um jogador comprado
+     * (id baixo do mercado) ou relido do banco em outra ordem punha dois
+     * goleiros em campo (revisão da PR #154).
+     *
+     * Com escalação salva, as vagas abertas são preenchidas por reservas aptos,
+     * na ordem do elenco — substituição simples e determinística, não uma
+     * auto-escalação inteligente (não tenta casar posição: a validação
+     * posicional segue fora do domínio, como no `SaveLineupService`). Sem reservas aptos suficientes
      * o time entra desfalcado, com menos de 11 — que é o resultado correto para
      * um elenco dizimado.
      *
@@ -118,7 +125,8 @@ data class Club(
         val onField = starters.map { it.id }.toSet()
         // Titulares primeiro, depois reservas: o filtro de estrangeiros corta
         // sempre do fim, então quem o técnico escalou tem prioridade.
-        val candidates = starters + eligible.filterNot { it.id in onField }
+        val reserves = eligible.filterNot { it.id in onField }
+        val candidates = starters + if (saved == null) reserves.inStartingOrder() else reserves
         val players = candidates.withinForeignLimit(foreignPlayerLimit).take(11)
 
         return saved?.copy(players = players) ?: Lineup(formation = Formation.F_4_4_2, players = players)

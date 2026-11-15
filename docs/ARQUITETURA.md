@@ -867,8 +867,10 @@ O mundo do jogo vem de um pack versionado em `data/world/v1/`, lido **como se fo
   serviços preenchem com `match::decidesOnPenalties`: jogo único empatado sim,
   ida nunca, volta só com o agregado empatado (sem gol fora, como a CBF).
   `Cup.calendarRounds` soma uma perna por encaixe (10 no formato do MVP, 69
-  jogos). Prêmio por ordem da fase (`cupPhasePrize`): final US$ 10 mi, semifinal
-  US$ 2 mi e metade a cada fase anterior, com piso de US$ 50 mil.
+  jogos). Prêmio por ordem da fase (`cupPhasePrize`): final US$ 1 mi, semifinal
+  US$ 400 mil e metade a cada fase anterior, com piso de US$ 10 mil — a
+  campanha do campeão (~US$ 1,75 mi) fica em ~1,3× o caixa de um grande, a
+  mesma proporção do jogo antes da #131 (revisão da PR #154).
 
   **Achado de infraestrutura.** `ResponseEntity<Any>` faz o Spring procurar o
   serializer do kotlinx pelo tipo DECLARADO (`Object`), não achar, e cair no

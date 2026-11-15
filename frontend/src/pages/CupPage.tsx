@@ -53,8 +53,17 @@ export function CupPage() {
         </div>
       )}
 
-      {/* Rola na horizontal no celular: a chave inteira não cabe em 360px. */}
-      <div className="overflow-x-auto pb-2">
+      {/* Rola na horizontal: a chave da Copa do Brasil (6 fases) não cabe na
+          tela. `tabIndex` + `role="region"` + rótulo deixam quem usa só o
+          teclado focar e rolar a chave (axe: scrollable-region-focusable). */}
+      <div
+        role="region"
+        aria-label="Chave da copa"
+        // Mesmo caso do `MatchEventFeed`: região rolável precisa de foco.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        className="overflow-x-auto pb-2"
+      >
         <div className="flex min-w-max gap-4">
           {cup.phases.map((phase, i) => (
             <PhaseColumn

@@ -96,12 +96,19 @@ interface UserJpaRepository : JpaRepository<UserEntity, Long> {
 }
 
 interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {
-    fun findAllByClubId(clubId: Long): List<PlayerEntity>
+    /**
+     * Elenco de um clube na ordem do id (revisão da PR #154). Sem `ORDER BY`,
+     * o Postgres devolve a linha atualizada em outra posição (MVCC grava uma
+     * tupla nova a cada UPDATE) e o elenco voltava embaralhado depois de cada
+     * rodada; o H2 devolve na ordem da PK e mascarava isso. O `OrderById` no
+     * nome do método é o Spring Data derivando o `ORDER BY` da query.
+     */
+    fun findAllByClubIdOrderById(clubId: Long): List<PlayerEntity>
     fun findAllByClubIdIsNullAndPosition(position: PositionEnum): List<PlayerEntity>
     fun findAllByClubIdIsNull(): List<PlayerEntity>
 
     /** Busca o elenco de vários clubes numa só query — evita o N+1 do `findAll`. */
-    fun findAllByClubIdIn(clubIds: Collection<Long>): List<PlayerEntity>
+    fun findAllByClubIdInOrderById(clubIds: Collection<Long>): List<PlayerEntity>
 }
 
 /**

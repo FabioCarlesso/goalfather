@@ -70,8 +70,8 @@ describe('copa do mock (issues #61 e #131)', () => {
   it('prêmio dobra a cada fase até a semifinal e a final paga o maior cheque', () => {
     expect(draw().phases.map((p) => p.prizeCents)).toEqual([cupPhasePrize(3), cupPhasePrize(2), cupPhasePrize(1), cupPhasePrize(0)])
     expect([cupPhasePrize(3), cupPhasePrize(2), cupPhasePrize(1), cupPhasePrize(0)])
-      .toEqual([500_000_00, 1_000_000_00, 2_000_000_00, 10_000_000_00])
-    expect(cupPhasePrize(30)).toBe(50_000_00)
+      .toEqual([100_000_00, 200_000_00, 400_000_00, 1_000_000_00])
+    expect(cupPhasePrize(30)).toBe(10_000_00)
   })
 
   it('rodada de copa tem só as pernas em aberto, com matchId do encaixe', () => {

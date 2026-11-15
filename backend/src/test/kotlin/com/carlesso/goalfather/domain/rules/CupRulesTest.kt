@@ -335,7 +335,7 @@ class CupRulesTest {
         val cup = drawMvp()
         val prizes = cup.phases.indices.map { cup.prizeOf(it) }
         assertEquals(
-            listOf(125_000L, 250_000L, 500_000L, 1_000_000L, 2_000_000L, 10_000_000L).map { Money.dollars(it) },
+            listOf(25_000L, 50_000L, 100_000L, 200_000L, 400_000L, 1_000_000L).map { Money.dollars(it) },
             prizes,
         )
         assertEquals(prizes.max(), prizes.last())

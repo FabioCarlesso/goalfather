@@ -127,6 +127,13 @@ class LeagueHistoryMvcTest {
         // Cada país tem o seu record (issue #131): record antigo, sem país, é do Brasil.
         assertEquals(200, getResponse("/api/league/history/$season?country=BRA", token).status)
         assertEquals(404, getResponse("/api/league/history/$season?country=ENG", token).status)
+        // Minúsculas valem; trigrama malformado é 400, não o fallback 500 (revisão da PR #154).
+        assertEquals(200, getResponse("/api/league/history/$season?country=bra", token).status)
+        val malformed = getResponse("/api/league/history/$season?country=xx1", token)
+        assertEquals(400, malformed.status)
+        val error = json.parseToJsonElement(malformed.contentAsString).jsonObject
+        assertEquals("INVALID_PARAMETER", error.getValue("code").jsonPrimitive.content)
+        assertEquals("country", error.getValue("details").jsonObject.getValue("parameter").jsonPrimitive.content)
 
         val missing = getResponse("/api/league/history/9399", token)
         assertEquals(404, missing.status)

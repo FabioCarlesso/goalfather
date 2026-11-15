@@ -98,7 +98,22 @@ class LeagueController(
         @PathVariable season: Int,
         @RequestParam(required = false) country: String?,
     ): ResponseEntity<Any> {
-        val record = history.season(season, country?.takeIf { it.isNotBlank() }?.let { CountryCode(it.uppercase()) })
+        val raw = country?.takeIf { it.isNotBlank() }
+        // O `init` do `CountryCode` recusa trigrama malformado com exception,
+        // que cairia no fallback 500 (revisão da PR #154). `runCatching` +
+        // `getOrNull` transforma a exception em `null` num valor só: entrada
+        // ruim do cliente é 400 `INVALID_PARAMETER`, como no contrato.
+        val code = raw?.let { runCatching { CountryCode(it.uppercase()) }.getOrNull() }
+        if (raw != null && code == null) {
+            return ResponseEntity.status(400).body(
+                ErrorResponse(
+                    code = "INVALID_PARAMETER",
+                    message = "Parâmetro 'country' inválido",
+                    details = mapOf("parameter" to "country", "value" to raw),
+                ),
+            )
+        }
+        val record = history.season(season, code)
         return if (record == null) {
             ResponseEntity.status(404).body(
                 ErrorResponse(

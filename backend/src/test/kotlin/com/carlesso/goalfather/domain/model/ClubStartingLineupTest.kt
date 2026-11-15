@@ -207,4 +207,28 @@ class ClubStartingLineupTest {
         assertEquals(11, onField.size)
         assertEquals(expected, onField.first().id)
     }
+
+    @Test
+    fun `sem escalacao salva o time e o melhor 4-4-2, seja qual for a ordem do elenco`() {
+        // Regressão da revisão da PR #154: o Postgres devolve o elenco em
+        // outra ordem depois de cada UPDATE, e um comprado do mercado tem id
+        // baixo. Com "os 11 primeiros", o clube da IA entrava com 2-3 goleiros.
+        val positions = listOf(
+            Position.GK, Position.GK, Position.GK,
+            Position.CB, Position.CB, Position.CB, Position.CB, Position.CB,
+            Position.MF, Position.MF, Position.MF, Position.MF, Position.MF,
+            Position.FW, Position.FW, Position.FW,
+        )
+        val squad = positions.mapIndexed { i, position -> makePlayer(id = i + 1L, position = position, overall = 70 + i % 5) }
+        val club = makeClub(squadSize = 0).copy(squad = squad, lineup = null)
+
+        // Várias ordens do elenco, inclusive goleiros na frente: o time é sempre o mesmo.
+        val orders = listOf(squad, squad.reversed()) + (1..5).map { squad.shuffled(kotlin.random.Random(it)) }
+        val teams = orders.map { club.copy(squad = it).startingLineup().players }
+
+        teams.forEach { team ->
+            assertEquals(Formation.F_4_4_2.slots, team.map { it.position }, "um goleiro, 4-4-2")
+        }
+        assertEquals(1, teams.map { team -> team.map { it.id }.toSet() }.toSet().size, "mesmo time em qualquer ordem")
+    }
 }
