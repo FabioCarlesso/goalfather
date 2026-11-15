@@ -26,14 +26,14 @@ class ClubBoardPersistenceIntegrationTest {
     fun `seed nasce com a meta da diretoria de todos os clubes`() = runBlocking {
         val clubs = clubRepo.findAll()
 
-        // Uma meta de título por divisão de 6 (o favorito de cada uma).
+        // Uma meta de título por divisão (o favorito de cada uma).
         val boards = clubs.map { assertNotNull(it.board, "clube ${it.id.value} sem meta") }
         assertEquals(clubs.map { it.division }.distinct().size, boards.count { it.objective == BoardObjective.TITLE })
     }
 
     @Test
     fun `meta e confianca atravessam o save e a releitura`() = runBlocking {
-        // Clube da 2ª divisão (ids 7..12): fora do caminho dos testes de claim.
+        // Clube da Série B (ids 7..12 no pack do E2E): fora do caminho dos testes de claim.
         val club = assertNotNull(clubRepo.findById(ClubId(12)))
         val board = BoardExpectation(season = 2031, objective = BoardObjective.TOP_HALF, targetPosition = 3, confidence = 17)
 

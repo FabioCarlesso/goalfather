@@ -6,7 +6,6 @@ import com.carlesso.goalfather.adapter.`in`.web.dto.ExpandStadiumRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.LineupRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.TicketPriceRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.TrainingFocusRequest
-import com.carlesso.goalfather.adapter.`in`.web.dto.toAvailableDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.port.`in`.BoardUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
@@ -15,9 +14,11 @@ import com.carlesso.goalfather.application.port.`in`.SaveLineupUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
+import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Tactics
 import com.carlesso.goalfather.domain.model.UserId
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -52,6 +54,7 @@ class ClubController(
     // Catálogo do save (issue #131): a liga do clube dá o limite de
     // estrangeiros da escalação efetiva e os nomes das competições.
     private val catalog: CompetitionCatalogRepository,
+    private val onboarding: WorldOnboardingUseCase,
     // `ClubDto` carrega o `availability` (sealed) de cada jogador: as respostas
     // de sucesso saem pelo kotlinx via `okJson` para manter o `type` do
     // contrato — `ResponseEntity<Any>` sozinho cairia no Jackson.
@@ -59,12 +62,20 @@ class ClubController(
 ) {
 
     /**
-     * Clubes sem dono — fluxo de seleção (issue #19). Mapeado em `/available`
-     * (literal): o Spring casa antes de `/{id}`, então não há ambiguidade.
+     * Clubes sem dono — fluxo de seleção (issue #19), filtrável pela liga
+     * (`?competitionId=`, último passo do onboarding da #131). Mapeado em
+     * `/available` (literal): o Spring casa antes de `/{id}`, então não há
+     * ambiguidade. Um id fora do padrão do contrato não casa com liga
+     * nenhuma e devolve lista vazia, como uma liga inexistente.
      */
     @GetMapping("/available")
-    suspend fun listAvailable(): List<AvailableClubDto> =
-        clubRepo.findAvailable().map { it.toAvailableDto() }
+    suspend fun listAvailable(@RequestParam(required = false) competitionId: String?): List<AvailableClubDto> {
+        // `takeUnless` + `?.let`: parâmetro ausente OU vazio = sem filtro (o
+        // `CompetitionId` recusaria o vazio no `init`). `::CompetitionId` é a
+        // referência ao construtor, usada como função `(String) -> CompetitionId`.
+        val filter = competitionId?.takeUnless { it.isBlank() }?.let(::CompetitionId)
+        return onboarding.availableClubs(filter).map { it.toDto() }
+    }
 
     @GetMapping("/{id}")
     suspend fun getClub(@PathVariable id: Long): ResponseEntity<Any> {

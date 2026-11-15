@@ -98,7 +98,7 @@ docker compose up --build
 
 > **Contexto de build do frontend é a raiz do repo**, não `frontend/` — a imagem precisa de `contract/openapi.yaml` para rodar o `gen:api` durante o build. Ou seja: `docker build -f frontend/Dockerfile .` (a partir da raiz), nunca `docker build ./frontend`. Assim os tipos TS saem **sempre** do contrato; o `src/api/generated.d.ts` é um artefato derivado e gitignorado, e nunca entra na imagem (issue #65).
 
-> **O backend também precisa do contrato**, que vira o Swagger UI em `/swagger-ui.html`. Ele entra como contexto nomeado (o compose já faz isso via `additional_contexts`). À mão: `docker build --build-context contract=./contract ./backend`.
+> **O backend também precisa do contrato**, que vira o Swagger UI em `/swagger-ui.html`. Ele entra como contexto nomeado (o compose já faz isso via `additional_contexts`), assim como o pack do mundo `data/world/v1`, de onde o seed monta o jogo com o banco vazio (issue #131). À mão: `docker build --build-context contract=./contract --build-context world=./data/world/v1 ./backend`.
 
 ### 3.2. Swagger UI
 

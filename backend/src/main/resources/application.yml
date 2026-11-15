@@ -70,10 +70,11 @@ app:
   # dev/E2E (ex.: 30s) para não esperar; premissa: instância única.
   round-readiness:
     timeout: ${ROUND_READINESS_TIMEOUT:2m}
-  # ─── Pack de dados do mundo (issue #126) ──────────────────────────────────
+  # ─── Pack de dados do mundo (issues #126 e #131) ─────────────────────────
   # Diretório do pack lido pelo FileWorldDataProvider (ver docs/WORLD_DATA.md).
-  # Relativo ao diretório de trabalho: `backend/` no bootRun. Lido só quando
-  # alguém pede o mundo — pack ausente não impede o boot.
+  # Relativo ao diretório de trabalho: `backend/` no bootRun. Lido no boot só
+  # quando o banco está vazio (o seed monta o mundo a partir dele); pack
+  # ausente ou inválido com o banco vazio derruba o boot listando os erros.
   world-data:
     path: ${WORLD_DATA_PATH:../data/world/v1}
 
@@ -129,6 +130,12 @@ spring:
   datasource:
     url: jdbc:h2:mem:goalfather-e2e;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
 app:
+  # Pack REDUZIDO (issue #131): 6+6 clubes do Brasil, a Copa do Brasil com
+  # eles e 4 da Premier League. O reset recria o mundo a cada teste; com o
+  # pack completo (~3.500 jogadores) cada reset custaria segundos. Gerado pelo
+  # `./gradlew worldImport` a partir de data/world/v1 (docs/WORLD_DATA.md).
+  world-data:
+    path: ${WORLD_DATA_PATH:../data/world/e2e/v1}
   rate-limit:
     register:
       # Cada teste cadastra um técnico do mesmo IP; 3 runs seguidos da suíte

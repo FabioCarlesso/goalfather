@@ -17,6 +17,7 @@ import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.`in`.TransferOfferUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
+import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
@@ -47,6 +48,7 @@ import com.carlesso.goalfather.application.service.SetTicketPriceService
 import com.carlesso.goalfather.application.service.SetTrainingFocusService
 import com.carlesso.goalfather.application.service.TransferOfferService
 import com.carlesso.goalfather.application.service.TreatSquadService
+import com.carlesso.goalfather.application.service.WorldOnboardingService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -180,6 +182,14 @@ class BeanConfig {
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
     ): BoardUseCase = BoardService(clubRepo, leagueRepo)
+
+    /** Onboarding país → liga → clube sobre o mundo do save (issue #131). */
+    @Bean
+    fun worldOnboardingUseCase(
+        catalog: CompetitionCatalogRepository,
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+    ): WorldOnboardingUseCase = WorldOnboardingService(catalog, clubRepo, leagueRepo)
 
     /** Leitura do histórico de temporadas e da carreira do técnico (issue #60). */
     @Bean

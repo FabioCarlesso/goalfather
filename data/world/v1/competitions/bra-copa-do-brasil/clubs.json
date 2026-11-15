@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "bra-athletico-paranaense"
+    },
+    {
+      "id": "bra-atletico-mineiro"
+    },
+    {
+      "id": "bra-bahia"
+    },
+    {
+      "id": "bra-botafogo"
+    },
+    {
+      "id": "bra-chapecoense"
+    },
+    {
+      "id": "bra-corinthians"
+    },
+    {
+      "id": "bra-coritiba"
+    },
+    {
+      "id": "bra-cruzeiro"
+    },
+    {
+      "id": "bra-flamengo"
+    },
+    {
+      "id": "bra-fluminense"
+    },
+    {
+      "id": "bra-gremio"
+    },
+    {
+      "id": "bra-internacional"
+    },
+    {
+      "id": "bra-mirassol"
+    },
+    {
+      "id": "bra-palmeiras"
+    },
+    {
+      "id": "bra-red-bull-bragantino"
+    },
+    {
+      "id": "bra-remo"
+    },
+    {
+      "id": "bra-santos"
+    },
+    {
+      "id": "bra-sao-paulo"
+    },
+    {
+      "id": "bra-vasco-da-gama"
+    },
+    {
+      "id": "bra-vitoria"
+    },
+    {
+      "id": "bra-america-mg"
+    },
+    {
+      "id": "bra-athletic-club"
+    },
+    {
+      "id": "bra-atletico-goianiense"
+    },
+    {
+      "id": "bra-avai"
+    },
+    {
+      "id": "bra-botafogo-sp"
+    },
+    {
+      "id": "bra-ceara"
+    },
+    {
+      "id": "bra-crb"
+    },
+    {
+      "id": "bra-criciuma"
+    },
+    {
+      "id": "bra-cuiaba"
+    },
+    {
+      "id": "bra-fortaleza"
+    },
+    {
+      "id": "bra-goias"
+    },
+    {
+      "id": "bra-juventude"
+    },
+    {
+      "id": "bra-londrina"
+    },
+    {
+      "id": "bra-nautico"
+    },
+    {
+      "id": "bra-novorizontino"
+    },
+    {
+      "id": "bra-operario-ferroviario"
+    },
+    {
+      "id": "bra-ponte-preta"
+    },
+    {
+      "id": "bra-sao-bernardo"
+    },
+    {
+      "id": "bra-sport"
+    },
+    {
+      "id": "bra-vila-nova"
+    }
+  ]
+}

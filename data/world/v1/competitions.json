@@ -23,7 +23,9 @@
         "FEWER_RED_CARDS",
         "FEWER_YELLOW_CARDS",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "foreignPlayerLimit": 9,
+      "pausesOnFifaWindows": false
     },
     {
       "id": "bra-serie-b",
@@ -44,7 +46,57 @@
         "FEWER_RED_CARDS",
         "FEWER_YELLOW_CARDS",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "foreignPlayerLimit": 9,
+      "pausesOnFifaWindows": false
+    },
+    {
+      "id": "bra-copa-do-brasil",
+      "name": "Copa do Brasil",
+      "country": "BRA",
+      "format": {
+        "type": "knockout",
+        "stages": [
+          {
+            "name": "Quarta fase",
+            "teams": 16,
+            "legs": 1,
+            "newEntrants": 16
+          },
+          {
+            "name": "Quinta fase",
+            "teams": 32,
+            "legs": 2,
+            "newEntrants": 24
+          },
+          {
+            "name": "Oitavas de final",
+            "teams": 16,
+            "legs": 2,
+            "newEntrants": 0
+          },
+          {
+            "name": "Quartas de final",
+            "teams": 8,
+            "legs": 2,
+            "newEntrants": 0
+          },
+          {
+            "name": "Semifinal",
+            "teams": 4,
+            "legs": 2,
+            "newEntrants": 0
+          },
+          {
+            "name": "Final",
+            "teams": 2,
+            "legs": 1,
+            "newEntrants": 0
+          }
+        ]
+      },
+      "foreignPlayerLimit": 9,
+      "pausesOnFifaWindows": true
     },
     {
       "id": "eng-premier-league",
@@ -62,7 +114,8 @@
         "GOALS_FOR",
         "HEAD_TO_HEAD",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "pausesOnFifaWindows": true
     },
     {
       "id": "esp-la-liga",
@@ -81,7 +134,8 @@
         "GOAL_DIFFERENCE",
         "GOALS_FOR",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "pausesOnFifaWindows": true
     },
     {
       "id": "ita-serie-a",
@@ -100,7 +154,8 @@
         "GOAL_DIFFERENCE",
         "GOALS_FOR",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "pausesOnFifaWindows": true
     },
     {
       "id": "ger-bundesliga",
@@ -118,7 +173,8 @@
         "GOALS_FOR",
         "HEAD_TO_HEAD",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "pausesOnFifaWindows": true
     },
     {
       "id": "fra-ligue-1",
@@ -136,7 +192,8 @@
         "GOALS_FOR",
         "HEAD_TO_HEAD",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "pausesOnFifaWindows": true
     },
     {
       "id": "conmebol-libertadores",
@@ -184,7 +241,8 @@
         "FEWER_RED_CARDS",
         "FEWER_YELLOW_CARDS",
         "DRAWING_OF_LOTS"
-      ]
+      ],
+      "pausesOnFifaWindows": true
     }
   ]
 }

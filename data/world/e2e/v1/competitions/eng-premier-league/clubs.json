@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml; recorte e2e de data/world/v1 (issue #131)",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "eng-arsenal",
+      "name": "Arsenal",
+      "country": "ENG",
+      "reputation": 90,
+      "stadium": {
+        "name": "Emirates Stadium",
+        "capacity": 60338
+      }
+    },
+    {
+      "id": "eng-chelsea",
+      "name": "Chelsea",
+      "country": "ENG",
+      "reputation": 86,
+      "stadium": {
+        "name": "Stamford Bridge",
+        "capacity": 41875
+      }
+    },
+    {
+      "id": "eng-liverpool",
+      "name": "Liverpool",
+      "country": "ENG",
+      "reputation": 92,
+      "stadium": {
+        "name": "Anfield",
+        "capacity": 61276
+      }
+    },
+    {
+      "id": "eng-manchester-city",
+      "name": "Manchester City",
+      "country": "ENG",
+      "reputation": 92,
+      "stadium": {
+        "name": "Etihad Stadium",
+        "capacity": 52900
+      }
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml; recorte e2e de data/world/v1 (issue #131)",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "bra-serie-a",
+      "name": "Campeonato Brasileiro Série A",
+      "country": "BRA",
+      "tier": 1,
+      "strength": 70,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "WINS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "FEWER_RED_CARDS",
+        "FEWER_YELLOW_CARDS",
+        "DRAWING_OF_LOTS"
+      ],
+      "foreignPlayerLimit": 9,
+      "pausesOnFifaWindows": false
+    },
+    {
+      "id": "bra-serie-b",
+      "name": "Campeonato Brasileiro Série B",
+      "country": "BRA",
+      "tier": 2,
+      "strength": 62,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "WINS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "FEWER_RED_CARDS",
+        "FEWER_YELLOW_CARDS",
+        "DRAWING_OF_LOTS"
+      ],
+      "foreignPlayerLimit": 9,
+      "pausesOnFifaWindows": false
+    },
+    {
+      "id": "bra-copa-do-brasil",
+      "name": "Copa do Brasil",
+      "country": "BRA",
+      "format": {
+        "type": "knockout",
+        "stages": [
+          {
+            "name": "Primeira fase",
+            "teams": 8,
+            "legs": 1,
+            "newEntrants": 8
+          },
+          {
+            "name": "Quartas de final",
+            "teams": 8,
+            "legs": 2,
+            "newEntrants": 4
+          },
+          {
+            "name": "Semifinal",
+            "teams": 4,
+            "legs": 2,
+            "newEntrants": 0
+          },
+          {
+            "name": "Final",
+            "teams": 2,
+            "legs": 1,
+            "newEntrants": 0
+          }
+        ]
+      },
+      "foreignPlayerLimit": 9,
+      "pausesOnFifaWindows": true
+    },
+    {
+      "id": "eng-premier-league",
+      "name": "Premier League",
+      "country": "ENG",
+      "tier": 1,
+      "strength": 78,
+      "format": {
+        "type": "roundRobin",
+        "legs": 2
+      },
+      "tiebreakers": [
+        "POINTS",
+        "GOAL_DIFFERENCE",
+        "GOALS_FOR",
+        "HEAD_TO_HEAD",
+        "DRAWING_OF_LOTS"
+      ],
+      "pausesOnFifaWindows": true
+    }
+  ]
+}

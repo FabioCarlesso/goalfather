@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml; recorte e2e de data/world/v1 (issue #131)",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "bra-america-mg",
+      "name": "América Mineiro",
+      "country": "BRA",
+      "reputation": 58,
+      "stadium": {
+        "name": "Estádio Raimundo Sampaio",
+        "capacity": 23018
+      }
+    },
+    {
+      "id": "bra-atletico-goianiense",
+      "name": "Atlético Goianiense",
+      "country": "BRA",
+      "reputation": 55,
+      "stadium": {
+        "name": "Estádio Serra Dourada",
+        "capacity": 54084
+      }
+    },
+    {
+      "id": "bra-ceara",
+      "name": "Ceará",
+      "country": "BRA",
+      "reputation": 62,
+      "stadium": {
+        "name": "Estádio Presidente Vargas",
+        "capacity": 20600
+      }
+    },
+    {
+      "id": "bra-fortaleza",
+      "name": "Fortaleza",
+      "country": "BRA",
+      "reputation": 66,
+      "stadium": {
+        "name": "Estádio Governador Plácido Castelo",
+        "capacity": 57876
+      }
+    },
+    {
+      "id": "bra-goias",
+      "name": "Goiás",
+      "country": "BRA",
+      "reputation": 60,
+      "stadium": {
+        "name": "Estádio Serra Dourada",
+        "capacity": 54084
+      }
+    },
+    {
+      "id": "bra-sport",
+      "name": "Sport",
+      "country": "BRA",
+      "reputation": 65,
+      "stadium": {
+        "name": "Estádio Adelmar da Costa Carvalho",
+        "capacity": 35020
+      }
+    }
+  ]
+}

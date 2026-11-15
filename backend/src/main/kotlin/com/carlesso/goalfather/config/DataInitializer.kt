@@ -1,98 +1,63 @@
 package com.carlesso.goalfather.config
 
+import com.carlesso.goalfather.adapter.out.persistence.SavedCountryCatalog
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
-import com.carlesso.goalfather.application.port.out.ClubRepository
-import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
-import com.carlesso.goalfather.application.port.out.CupRepository
-import com.carlesso.goalfather.application.port.out.LeagueRepository
-import com.carlesso.goalfather.application.seed.initialLeague
-import com.carlesso.goalfather.domain.rules.boardExpectations
-import com.carlesso.goalfather.domain.rules.startWorld
-import kotlinx.coroutines.runBlocking
+import com.carlesso.goalfather.adapter.out.persistence.repository.CompetitionCatalogJpaRepository
+import org.slf4j.LoggerFactory
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Configuration
+import kotlin.time.measureTime
 
 /**
- * Seed inicial — espelha `frontend/src/mocks/seed.ts`.
+ * Seed do jogo (issue #131): com o banco vazio, monta o mundo do MVP a partir
+ * do pack (`data/world/`, via [NewWorldFactory]) e o grava ([SeedWriter]).
+ * Este runner só decide QUANDO gravar. O que o mundo tem — competições,
+ * clubes, elencos, economia inicial — é o seed puro de
+ * `application/seed/WorldSeed.kt`, testado sem Spring.
  *
- * 12 clubes em 2 divisões (issue #47): divisão 1 com o clube do usuário +
- * 5 IA, divisão 2 com 6 clubes IA. 4 entradas iniciais no mercado, rodada 1
- * com 3 pareamentos POR divisão (Berger round-robin), standings vazias da
- * temporada 2026 (uma tabela por divisão) e a copa da temporada já sorteada
- * (issue #61) — 12 clubes numa chave de 16, com 4 folgas.
+ * Três estados possíveis do banco no boot:
+ * - **vazio:** grava o mundo novo;
+ * - **com mundo** (clubes + catálogo de competições): segue o jogo;
+ * - **save antigo** (clubes SEM catálogo — o mundo de 12 clubes de antes da
+ *   #131): incompatível com o mundo novo (ids, ligas e calendário mudaram), e
+ *   não há migração possível que faça sentido. O boot FALHA dizendo como
+ *   zerar o banco. Falhar alto é melhor que subir com um mundo pela metade.
  *
- * A descrição do estado vive em [initialLeague] (`application/seed`, escrita
- * com a DSL de seed), que produz um `League` imutável — e por ser pura dá
- * para testá-la sem Spring (issue #88). A tradução `domínio → entidades JPA`
- * mora em [SeedWriter], que o reset do E2E (issue #101) também usa; este
- * runner só decide QUANDO gravar. Idempotente: só insere se o DB estiver vazio.
- *
- * Nota: os atributos secundários (pace/shooting/passing/defending) passam a
- * herdar o `overall` por padrão na DSL — antes havia uma variação cosmética
- * por jogador que nada lia (a engine usa só o `overall`). Simplificação
- * deliberada da refatoração (issue #10).
+ * Por isso morreram os remendos de save antigo (`restartSeasonWithoutMatchday`,
+ * da #125, e `backfillBoards`, da #62): um save anterior à #131 nem passa
+ * daqui, e o seed atual já grava encaixe e metas.
  */
 @Configuration
 class DataInitializer(
     private val clubRepo: ClubJpaRepository,
+    private val catalogRepo: CompetitionCatalogJpaRepository,
+    private val newWorld: NewWorldFactory,
     private val seed: SeedWriter,
-    private val clubs: ClubRepository,
-    private val league: LeagueRepository,
-    private val cups: CupRepository,
-    private val catalog: CompetitionCatalogRepository,
+    private val countries: SavedCountryCatalog,
 ) : CommandLineRunner {
 
     override fun run(vararg args: String?) {
         if (clubRepo.count() > 0L) {
-            backfillBoards()
-            restartSeasonWithoutMatchday()
+            check(catalogRepo.count() > 0L) { LEGACY_SAVE_MESSAGE }
+            countries.reload()
             return
         }
-        seed.write(initialLeague())
+        val total = measureTime {
+            val (world, start) = newWorld.create()
+            val written = measureTime { seed.write(world, start) }
+            log.info("Mundo novo gravado em {} ms ({} clubes)", written.inWholeMilliseconds, world.clubs.size)
+        }
+        countries.reload()
+        log.info("Seed do mundo concluído em {} ms (carga do pack + seed + gravação)", total.inWholeMilliseconds)
     }
 
-    /**
-     * Save anterior ao calendário semanal (issue #125): a migration V17 recria
-     * `rounds` (um número de rodada não diz em que semana ela cai), então o
-     * banco sobe com clubes e tabela, mas sem encaixe corrente — e a liga
-     * ficaria parada para sempre.
-     *
-     * A saída pragmática é REINICIAR a temporada corrente no calendário novo:
-     * tabelas zeradas, copa sorteada de novo (mesma seed por temporada) e o
-     * primeiro encaixe do plano. Caixa, elencos e história ficam como estão.
-     * Reaproveitar a tabela pela metade jogaria de novo rodadas já contadas.
-     * Só roda uma vez: depois dela sempre há encaixe.
-     */
-    private fun restartSeasonWithoutMatchday() = runBlocking {
-        if (league.findLatest() != null) return@runBlocking
-        val season = league.currentStandings().firstOrNull()?.season ?: return@runBlocking
-        val all = clubs.findAll()
-        // #131 integrador (frente B): ponte mínima sobre `startWorld`; a frente A
-        // reescreve este runner (seed pelo pack + catálogo gravado).
-        val world = startWorld(season, all, catalog.findAll())
-        world.cups.forEach { cups.save(it) }
-        world.standings.forEach { league.saveStandings(it) }
-        world.firstRound?.let { league.saveRound(it) }
-    }
+    companion object {
+        private val log = LoggerFactory.getLogger(DataInitializer::class.java)
 
-    /**
-     * Save anterior à issue #62: fixa uma vez, no boot, a meta da temporada
-     * corrente de quem ainda não tem. Sem isto o `GET /board` derivaria a meta
-     * da liga inteira a cada chamada até a primeira rodada — e ela poderia
-     * mudar entre chamadas se o mercado mexesse nos elencos.
-     *
-     * Passa pelos PORTS (não pelas entidades) porque a meta é regra de domínio
-     * sobre o `Club` completo, com elenco. `runBlocking` faz a ponte para os
-     * ports `suspend` — aceitável aqui: é o boot, não há thread de request a
-     * bloquear. O `save` respeita o lock otimista; um `Conflict` (alguém gravou
-     * o clube no meio) é ignorado, porque a rodada ainda fixa a meta que faltar.
-     */
-    private fun backfillBoards() = runBlocking {
-        val season = league.currentStandings().firstOrNull()?.season ?: return@runBlocking
-        val all = clubs.findAll()
-        val missing = all.filter { it.board?.season != season }
-        if (missing.isEmpty()) return@runBlocking
-        val boards = boardExpectations(season, all)
-        for (club in missing) clubs.save(club.copy(board = boards[club.id]))
+        const val LEGACY_SAVE_MESSAGE: String =
+            "O banco tem um save anterior ao mundo do MVP (issue #131): há clubes, mas nenhum catálogo de " +
+                "competições. Esse save não é compatível com o mundo montado a partir do pack. Para começar um " +
+                "jogo novo, zere o banco e suba de novo: no H2 de desenvolvimento, `rm -rf backend/data/`; no " +
+                "Postgres, recrie o schema (ex.: `docker compose down -v`). Ver docs/WORLD_DATA.md, seção \"Seed\"."
     }
 }

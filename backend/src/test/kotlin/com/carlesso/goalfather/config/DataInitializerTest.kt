@@ -1,75 +1,108 @@
 package com.carlesso.goalfather.config
 
-import com.carlesso.goalfather.domain.rules.startWorld
-import com.carlesso.goalfather.application.seed.interimBrazilCatalog
-import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.adapter.out.persistence.SavedCountryCatalog
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
-import com.carlesso.goalfather.application.port.out.ClubRepository
-import com.carlesso.goalfather.application.port.out.CupRepository
-import com.carlesso.goalfather.application.port.out.LeagueRepository
-import com.carlesso.goalfather.application.seed.initialLeague
-import com.carlesso.goalfather.domain.model.Cup
-import com.carlesso.goalfather.domain.model.Round
-import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.Standings
+import com.carlesso.goalfather.adapter.out.persistence.repository.CompetitionCatalogJpaRepository
+import com.carlesso.goalfather.application.port.out.PackLoadError
+import com.carlesso.goalfather.application.port.out.PackLoadResult
+import com.carlesso.goalfather.application.port.out.WorldDataProvider
+import com.carlesso.goalfather.application.seed.InitialWorld
+import com.carlesso.goalfather.domain.model.world.WorldPack
+import com.carlesso.goalfather.domain.rules.WorldStart
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
+import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
- * Boot sobre um save anterior ao calendário semanal (issue #125, revisão da
- * PR #150): a V17 recria `rounds` vazia, e o [DataInitializer] precisa
- * reiniciar a temporada corrente no calendário novo — senão a liga fica sem
- * encaixe e parada para sempre. Sem Spring: os ports são mocks do MockK.
+ * Quando o boot grava o mundo (issue #131). Sem Spring: repositórios, seed e
+ * fábrica do mundo são mocks do MockK — o que interessa aqui é a decisão
+ * (banco vazio, mundo existente, save antigo), não a gravação.
  */
 class DataInitializerTest {
 
-    private val league = initialLeague()
-    private val clubRepo = mockk<ClubJpaRepository> { every { count() } returns league.clubs.size.toLong() }
-    private val clubs = mockk<ClubRepository>(relaxed = true) { coEvery { findAll() } returns league.clubs }
-    private val leagueRepo = mockk<LeagueRepository>(relaxed = true)
-    private val cups = mockk<CupRepository>(relaxed = true)
-    private val initializer = DataInitializer(clubRepo, mockk(relaxed = true), clubs, leagueRepo, cups, InMemoryCatalogRepository(interimBrazilCatalog()))
+    private val clubRepo = mockk<ClubJpaRepository>()
+    private val catalogRepo = mockk<CompetitionCatalogJpaRepository>()
+    private val newWorld = mockk<NewWorldFactory>()
+    private val seed = mockk<SeedWriter>(relaxed = true)
+    private val countries = mockk<SavedCountryCatalog>(relaxed = true)
+    private val initializer = DataInitializer(clubRepo, catalogRepo, newWorld, seed, countries)
 
-    /** Tabela no meio da temporada: alguém já jogou, como num save antigo. */
-    private fun midSeasonStandings(): List<Standings> = league.initialStandings().map { s ->
-        s.copy(round = 2, rows = s.rows.map { it.copy(played = 2, points = 3) })
-    }
+    private val world = InitialWorld(year = 2026, countries = emptyList(), competitions = emptyList(), clubs = emptyList(), market = emptyList())
+    private val start = WorldStart(firstRound = null, standings = emptyList(), cups = emptyList())
 
     @Test
-    fun `save sem encaixe corrente reinicia a temporada no primeiro encaixe do plano`() {
-        coEvery { leagueRepo.findLatest() } returns null
-        coEvery { leagueRepo.currentStandings() } returns midSeasonStandings()
-        val savedRound = slot<Round>()
-        val savedCup = slot<Cup>()
-        coEvery { leagueRepo.saveRound(capture(savedRound)) } returns Unit
-        coEvery { cups.save(capture(savedCup)) } returns Unit
-        val savedStandings = mutableListOf<Standings>()
-        coEvery { leagueRepo.saveStandings(capture(savedStandings)) } returns Unit
+    fun `banco vazio grava o mundo montado do pack e carrega os paises do save`() {
+        every { clubRepo.count() } returns 0
+        every { newWorld.create() } returns NewWorld(world, start)
 
         initializer.run()
 
-        val expectedFirst = startWorld(league.season, league.clubs, interimBrazilCatalog()).firstRound?.matchday
-        assertEquals(expectedFirst, savedRound.captured.matchday)
-        assertEquals(RoundStatus.Scheduled, savedRound.captured.status)
-        assertEquals(league.season, savedCup.captured.season)
-        assertTrue(savedStandings.isNotEmpty() && savedStandings.all { st -> st.rows.all { it.played == 0 } }, "tabelas zeradas")
+        // `verifyOrder`: os países só são recarregados DEPOIS da gravação.
+        verifyOrder {
+            seed.write(world, start)
+            countries.reload()
+        }
     }
 
     @Test
-    fun `save que ja tem encaixe corrente nao e reiniciado`() {
-        coEvery { leagueRepo.findLatest() } returns mockk<Round>()
-        coEvery { leagueRepo.currentStandings() } returns midSeasonStandings()
+    fun `mundo existente nao e regravado`() {
+        every { clubRepo.count() } returns 136
+        every { catalogRepo.count() } returns 8
 
         initializer.run()
 
-        coVerify(exactly = 0) { leagueRepo.saveRound(any()) }
-        coVerify(exactly = 0) { cups.save(any()) }
-        coVerify(exactly = 0) { leagueRepo.saveStandings(any()) }
+        verify(exactly = 0) { seed.write(any(), any()) }
+        verify(exactly = 0) { newWorld.create() }
+        verify { countries.reload() }
+    }
+
+    @Test
+    fun `save antigo sem catalogo derruba o boot dizendo como zerar o banco`() {
+        every { clubRepo.count() } returns 12
+        every { catalogRepo.count() } returns 0
+
+        val error = assertFailsWith<IllegalStateException> { initializer.run() }
+
+        assertTrue("rm -rf backend/data/" in error.message.orEmpty(), error.message)
+        verify(exactly = 0) { seed.write(any(), any()) }
+    }
+}
+
+/** A fábrica do mundo: pack inválido derruba o boot listando os erros; o mundo fica em cache. */
+class NewWorldFactoryTest {
+
+    private val provider = mockk<WorldDataProvider>()
+    private val factory = NewWorldFactory(provider, WorldDataProperties(path = "/pack/de/teste"))
+
+    @Test
+    fun `pack invalido vira excecao com todos os erros`() {
+        coEvery { provider.load() } returns PackLoadResult.Invalid(
+            listOf(PackLoadError.MissingResource("countries.json"), PackLoadError.MissingResource("competitions.json")),
+        )
+
+        val error = assertFailsWith<IllegalStateException> { factory.create() }
+
+        val message = error.message.orEmpty()
+        assertTrue("/pack/de/teste" in message, message)
+        assertTrue("countries.json" in message && "competitions.json" in message, message)
+    }
+
+    @Test
+    fun `o mundo e montado uma vez so e reaproveitado (reset do e2e)`() {
+        val pack = WorldPack(emptyList(), emptyList(), emptyList(), emptyList())
+        coEvery { provider.load() } returns PackLoadResult.Loaded(pack)
+
+        val first = factory.create()
+        val second = factory.create()
+
+        assertEquals(first, second)
+        coVerify(exactly = 1) { provider.load() }
     }
 }

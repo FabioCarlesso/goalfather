@@ -66,6 +66,7 @@ class ClubWriteConflictResponseTest {
         expandStadium = expandStadium,
         board = mockk(),
         catalog = mockk(),
+        onboarding = mockk(),
         json = json,
     )
 

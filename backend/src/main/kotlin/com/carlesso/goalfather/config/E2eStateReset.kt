@@ -1,6 +1,6 @@
 package com.carlesso.goalfather.config
 
-import com.carlesso.goalfather.application.seed.initialLeague
+import com.carlesso.goalfather.adapter.out.persistence.SavedCountryCatalog
 import com.carlesso.goalfather.application.service.RoundFinalizationGate
 import kotlinx.coroutines.runBlocking
 import org.springframework.cache.Cache
@@ -28,6 +28,8 @@ import org.springframework.stereotype.Component
 class E2eStateReset(
     private val jdbc: JdbcTemplate,
     private val seed: SeedWriter,
+    private val newWorld: NewWorldFactory,
+    private val countries: SavedCountryCatalog,
     private val caches: CacheManager,
     private val finalizationGate: RoundFinalizationGate,
 ) {
@@ -69,7 +71,12 @@ class E2eStateReset(
             jdbc.execute("SET REFERENTIAL_INTEGRITY TRUE")
         }
 
-        seed.write(initialLeague())
+        // O mundo vem do pack do profile (`data/world/e2e/v1`, reduzido: 16
+        // clubes) e fica em memória na [NewWorldFactory] — o reset só regrava,
+        // sem reler o disco nem recalcular o seed a cada teste (issue #131).
+        val (world, start) = newWorld.create()
+        seed.write(world, start)
+        countries.reload()
 
         // O TRUNCATE passa por fora do JPA: nenhum `@CacheEvict` dispara. Hoje
         // os `save` da seed já despejam `market` e `standings`, mas um cache
