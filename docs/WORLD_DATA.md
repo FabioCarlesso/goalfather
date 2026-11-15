@@ -313,4 +313,17 @@ Um pack inválido com o banco vazio também derruba o boot, listando **todos** o
 
 O boot loga o tempo de cada etapa do seed: carga do pack, seed puro e abertura da temporada (`NewWorldFactory`), gravação (`DataInitializer`) e o total. Para medir, apague o banco (`rm -rf backend/data/`), rode `./gradlew bootRun` e procure as linhas `Mundo montado do pack`, `Mundo novo gravado` e `Seed do mundo concluído`, além do `Started GoalfatherApplication in N seconds` do Spring.
 
-**Ainda não medido.** Na sessão que implementou a #131, o Gradle não conseguiu resolver as dependências do Maven Central, então nada compilou nem subiu. Os números (pack completo, banco H2 vazio, com a máquina) entram aqui na integração da #131. O critério é que só o seed fique abaixo de ~15 s. O seed já grava com `EntityManager.persist` em lote (batch JDBC de 50, `flush`/`clear` a cada 20 clubes), sem o SELECT por linha do `save` com id atribuído.
+**Medido (novembro de 2026)** — pack completo `data/world/v1`, H2 em arquivo vazio, perfil padrão, container Linux de 4 vCPUs / 15 GB, JDK 21:
+
+| Etapa | Tempo |
+|---|---|
+| Spring até `Started GoalfatherApplication` | 6,5 s |
+| Carga do pack (8 competições, 136 clubes, 3.031 jogadores) | 97 ms |
+| Seed puro | 36 ms |
+| Abertura da temporada (`startWorld`: calendário, tabelas, Copa do Brasil) | 39 ms |
+| Gravação no banco | 267 ms |
+| **Seed total** | **445 ms** |
+
+O seed é ~7% do boot: o custo é o do Spring, não o do mundo. O pack do E2E (16 clubes, 368 jogadores) sobe em ~6,1 s, com a carga em 61 ms. O plano do calendário do mundo inteiro, recalculado a cada encaixe, sai em ~5 ms (medido pela frente de calendário).
+
+**Escalação automática.** O seed ordena cada elenco para que os 11 primeiros sejam o melhor 4-4-2 (`domain/rules/SquadOrder.kt`, `inStartingOrder`) e só depois numera os ids dos jogadores. A escalação automática (`Club.startingLineup`, a de todo clube da IA) usa os 11 primeiros, e o pack lista os goleiros primeiro; sem a ordem, um clube real entraria em campo com dois ou três goleiros. Os ids saem depois da ordem porque o elenco é relido do banco pelo id.
