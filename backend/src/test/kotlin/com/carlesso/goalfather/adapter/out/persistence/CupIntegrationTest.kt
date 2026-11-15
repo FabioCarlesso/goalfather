@@ -13,7 +13,8 @@ import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
+import com.carlesso.goalfather.test.COPA_DO_BRASIL
+import com.carlesso.goalfather.test.testCup
 import com.carlesso.goalfather.domain.rules.cupMatches
 import com.carlesso.goalfather.domain.rules.drawCup
 import com.carlesso.goalfather.domain.rules.recordRound
@@ -60,7 +61,7 @@ class CupIntegrationTest {
     fun `copa sobrevive ao round-trip com resultados, penaltis e a fase seguinte`() = runBlocking {
         val season = 9401
         try {
-            val cup = drawCup(season, clubs, Random(1))
+            val cup = testCup(season, clubs, Random(1))
             val round = Round(md(2), season, matches = cupMatches(md(2), cup, clubs))
             val played = cup.recordRound(
                 round.copy(
@@ -90,7 +91,7 @@ class CupIntegrationTest {
     fun `stage de cada partida persiste dentro do encaixe`() = runBlocking {
         val cupDate = farMatchday(9402)
         try {
-            val cup = drawCup(2026, clubs, Random(2))
+            val cup = testCup(2026, clubs, Random(2))
             val matches = cupMatches(cupDate, cup, clubs)
             // A volta carrega o placar da ida no `stage_json` (issue #131).
             val secondLeg = RoundStage.Cup("Quartas de final", CupLeg.Second(LegScore(2, 1)))
@@ -99,7 +100,7 @@ class CupIntegrationTest {
             assertTrue(reloaded.matches.isNotEmpty())
             assertTrue(reloaded.matches.dropLast(1).all { it.stage == RoundStage.Cup("Primeira fase", CupLeg.Single) })
             assertEquals(secondLeg, reloaded.matches.last().stage)
-            assertTrue(reloaded.matches.all { it.competition == SeasonCompetitions.CUP_ID })
+            assertTrue(reloaded.matches.all { it.competition == COPA_DO_BRASIL })
         } finally {
             roundJpa.deleteById(cupDate.toKey())
         }

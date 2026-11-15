@@ -23,7 +23,10 @@ import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.Tiebreaker
 import com.carlesso.goalfather.domain.model.WorldQualificationRules
-import com.carlesso.goalfather.domain.rules.cupFormat
+import com.carlesso.goalfather.domain.model.Cup
+import com.carlesso.goalfather.domain.rules.drawCup
+import com.carlesso.goalfather.domain.rules.squadRating
+import kotlin.random.Random
 
 /**
  * Catálogo e tabelas de teste do mundo do save (issue #131). Os ids são os do
@@ -223,4 +226,43 @@ internal fun leagueMatch(
 ): RoundMatch = RoundMatch(
     matchId, homeClubId, awayClubId, homeClubName, awayClubName, status, homeGoals, awayGoals, minute,
     division, penalties, stage, competition, competitionName,
+)
+
+/**
+ * Formato de copa pequeno para os testes de serviço (o antigo `cupFormat` da
+ * copa genérica, que saiu do código de produção na #131): jogo único, a menor
+ * potência de 2 que comporta os clubes, e quem antes "folgava" ENTRA na 2ª
+ * fase — 12 clubes viram 8 na Primeira fase + 4 entrantes nas quartas.
+ */
+internal fun cupFormat(clubCount: Int): CompetitionFormat.Knockout {
+    require(clubCount in 4..32) { "Copa de teste exige de 4 a 32 clubes: $clubCount" }
+    // `takeHighestOneBit` (stdlib) — potência de 2 imediatamente abaixo; com
+    // `(n - 1)` e `shl 1`, a menor potência de 2 que é >= n.
+    val bracket = (clubCount - 1).takeHighestOneBit() shl 1
+    val byes = bracket - clubCount
+    val sizes = generateSequence(bracket) { (it / 2).takeIf { half -> half >= 2 } }.toList()
+    val stages = if (byes == 0) {
+        sizes.mapIndexed { i, teams -> KnockoutStage(stageName(teams), teams, Legs.SINGLE, if (i == 0) teams else 0) }
+    } else {
+        val opening = bracket - 2 * byes
+        listOf(KnockoutStage("Primeira fase", opening, Legs.SINGLE, opening)) +
+            sizes.drop(1).mapIndexed { i, teams -> KnockoutStage(stageName(teams), teams, Legs.SINGLE, if (i == 0) byes else 0) }
+    }
+    return CompetitionFormat.Knockout(stages)
+}
+
+private fun stageName(teams: Int): String = when (teams) {
+    2 -> "Final"
+    4 -> "Semifinal"
+    8 -> "Quartas de final"
+    16 -> "Oitavas de final"
+    else -> "Primeira fase"
+}
+
+/** Copa do Brasil de teste com [clubs] (formato [cupFormat]), os mais fortes entrando por último. */
+internal fun testCup(season: Int, clubs: Collection<Club>, rng: Random): Cup = drawCup(
+    season,
+    Competition(COPA_DO_BRASIL, "Copa do Brasil", cupFormat(clubs.size), foreignPlayerLimit = 9),
+    clubs.sortedWith(compareByDescending<Club> { it.squadRating() }.thenBy { it.id.value }),
+    rng,
 )

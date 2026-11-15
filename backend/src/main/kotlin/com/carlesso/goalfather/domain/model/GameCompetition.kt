@@ -3,7 +3,7 @@ package com.carlesso.goalfather.domain.model
 /**
  * Uma competição do mundo DO SAVE (issue #131): o formato e as regras
  * ([competition]) + onde e quando ela se joga. É o que substitui o catálogo
- * interino [SeasonCompetitions] (`liga-d1`, `copa`): as competições passam a
+ * interino de antes da #131 (`liga-d1`, `copa`): as competições passam a
  * vir do pack do mundo, são gravadas no save quando o jogo nasce e, dali em
  * diante, são lidas do save — mudar o pack não mexe num jogo em andamento.
  *

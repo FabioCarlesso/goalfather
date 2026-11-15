@@ -18,7 +18,6 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.TieResult
 import com.carlesso.goalfather.test.cupRound
 import com.carlesso.goalfather.test.makeClub
@@ -377,7 +376,7 @@ class CupRulesTest {
         val leagueGames = cupGames.matches.map {
             it.copy(
                 stage = RoundStage.League(1),
-                competition = SeasonCompetitions.leagueId(Division.FIRST),
+                competition = CompetitionId("bra-serie-a"),
                 status = RoundStatus.Finished,
                 homeGoals = 2,
             )
@@ -424,18 +423,5 @@ class CupRulesTest {
         listOf(finished, halfway).forEach {
             assertEquals(it, Json.decodeFromString(Cup.serializer(), Json.encodeToString(Cup.serializer(), it)))
         }
-    }
-
-    // ─── Ponte do mundo antigo (#131 integrador: remover com a ponte) ─────
-
-    @Test
-    fun `ponte de 12 clubes monta primeira fase com 8 e quartas com 4 entrantes`() {
-        val cup = drawCup(2026, twelve, Random(cupDrawSeed(2026)))
-        assertEquals(listOf("Primeira fase", "Quartas de final", "Semifinal", "Final"), cup.phases.map { it.name })
-        assertEquals(listOf(8, 4, 0, 0), cup.phases.map { it.entrants.size })
-        assertTrue(cup.phases.all { it.legs == Legs.SINGLE })
-        assertEquals(SeasonCompetitions.CUP_ID, cup.competitionId)
-        assertTrue(canHoldCup(twelve))
-        assertFalse(canHoldCup(twelve.take(2)))
     }
 }

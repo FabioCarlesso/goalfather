@@ -40,6 +40,7 @@ import com.carlesso.goalfather.domain.rules.worldPlan
 import com.carlesso.goalfather.test.COPA_DO_BRASIL
 import com.carlesso.goalfather.test.brazilCatalog
 import com.carlesso.goalfather.test.InMemoryCupRepository
+import com.carlesso.goalfather.test.testCup
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -72,7 +73,7 @@ class CupRoundFlowTest {
     private val historyRepo: SeasonHistoryRepository = mockk(relaxed = true)
 
     private val clubs: List<Club> = (1L..4L).map { makeClub(id = it, name = "C$it", overall = 70 + it.toInt()) }
-    private val cup: Cup = drawCup(2026, clubs, Random(cupDrawSeed(2026)))
+    private val cup: Cup = testCup(2026, clubs, Random(cupDrawSeed(2026)))
     private val cupRepo = InMemoryCupRepository(cup)
 
     // O Brasil do catálogo de teste (issue #131): Série A em turno único e a

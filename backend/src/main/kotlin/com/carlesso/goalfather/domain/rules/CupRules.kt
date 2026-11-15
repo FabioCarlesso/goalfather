@@ -20,7 +20,6 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.TieResult
 import kotlin.random.Random
 
@@ -312,67 +311,4 @@ fun CupLeg.needsShootout(homeGoals: Int, awayGoals: Int): Boolean = when (this) 
 fun RoundMatch.decidesOnPenalties(homeGoals: Int, awayGoals: Int): Boolean = when (val stage = stage) {
     is RoundStage.League -> false
     is RoundStage.Cup -> stage.leg.needsShootout(homeGoals, awayGoals)
-}
-
-// ─── Ponte para o mundo antigo ────────────────────────────────────────────
-// #131 integrador: remover após a junção com a frente B (o plano da temporada
-// passa a sortear a Copa do Brasil do catálogo com `drawCup(season,
-// competition, seeded, rng)`). Tudo daqui para baixo só existe para o seed de
-// 12 clubes e o `seasonPlan` atual continuarem compilando neste worktree.
-
-/** Menos que isso a "copa" seria só uma final repetindo um jogo da liga. */
-const val MIN_CUP_CLUBS: Int = 4
-
-/** Maior chave que a ponte monta (32 clubes na abertura). */
-const val MAX_CUP_CLUBS: Int = 32
-
-/** A liga comporta a copa da ponte? Fora da faixa a temporada é só de pontos corridos. */
-fun canHoldCup(clubs: Collection<Club>): Boolean = clubs.size in MIN_CUP_CLUBS..MAX_CUP_CLUBS
-
-/**
- * Assinatura antiga do sorteio: monta a copa interina (`SeasonCompetitions.CUP_ID`)
- * em jogo único com [bridgeCupFormat] e semeia os clubes pela força do elenco.
- */
-fun drawCup(season: Int, clubs: Collection<Club>, rng: Random): Cup {
-    require(canHoldCup(clubs)) { "Copa exige de $MIN_CUP_CLUBS a $MAX_CUP_CLUBS clubes: ${clubs.size}" }
-    val competition = Competition(
-        SeasonCompetitions.CUP_ID,
-        SeasonCompetitions.CUP_NAME,
-        bridgeCupFormat(clubs.size),
-        discipline = SeasonCompetitions.disciplineOf(SeasonCompetitions.CUP_ID),
-        foreignPlayerLimit = SeasonCompetitions.foreignPlayerLimitOf(SeasonCompetitions.CUP_ID),
-    )
-    val seeded = clubs.sortedWith(compareByDescending<Club> { it.squadRating() }.thenBy { it.id.value })
-    return drawCup(season, competition, seeded, rng)
-}
-
-/**
- * O formato da copa antiga para [clubCount] clubes, em jogo único: a menor
- * potência de 2 que comporta os clubes; quem "folgava" agora ENTRA na 2ª fase.
- * 12 clubes: 8 jogam a Primeira fase e 4 entram nas quartas.
- */
-private fun bridgeCupFormat(clubCount: Int): CompetitionFormat.Knockout {
-    // `takeHighestOneBit` (stdlib Kotlin) — potência de 2 imediatamente
-    // abaixo; `(n - 1)` + `shl 1` dá a menor potência de 2 que é >= n.
-    val bracket = (clubCount - 1).takeHighestOneBit() shl 1
-    val byes = bracket - clubCount
-    val sizes = generateSequence(bracket) { (it / 2).takeIf { half -> half >= 2 } }.toList()
-    val stages = if (byes == 0) {
-        sizes.mapIndexed { i, teams -> KnockoutStage(bridgeStageName(teams), teams, Legs.SINGLE, if (i == 0) teams else 0) }
-    } else {
-        val opening = bracket - 2 * byes
-        listOf(KnockoutStage("Primeira fase", opening, Legs.SINGLE, opening)) +
-            sizes.drop(1).mapIndexed { i, teams ->
-                KnockoutStage(bridgeStageName(teams), teams, Legs.SINGLE, if (i == 0) byes else 0)
-            }
-    }
-    return CompetitionFormat.Knockout(stages)
-}
-
-private fun bridgeStageName(teams: Int): String = when (teams) {
-    2 -> "Final"
-    4 -> "Semifinal"
-    8 -> "Quartas de final"
-    16 -> "Oitavas de final"
-    else -> "Primeira fase"
 }
