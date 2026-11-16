@@ -48,12 +48,13 @@ class InitialEconomyRulesTest {
     }
 
     @Test
-    fun `ingresso fica sempre na faixa permitida e em multiplos de 50 centavos`() {
+    fun `ingresso fica sempre na faixa permitida e em dolar inteiro`() {
         for (strength in listOf(1, 50, 99)) {
             for (rep in listOf(1, 50, 100)) {
                 val price = initialTicketPrice(LeagueStrength(strength), Reputation(rep))
                 assertTrue(price in TICKET_PRICE_RANGE, "liga $strength, rep $rep: $price")
-                assertEquals(0L, price.cents % 50)
+                // Dólar inteiro: o passo do input da UI (revisão da PR #154).
+                assertEquals(0L, price.cents % 100, "liga $strength, rep $rep: $price")
             }
         }
     }

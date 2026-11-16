@@ -262,7 +262,7 @@ Tudo em USD (`Money`, centavos), por regra pura, sem `Random`. A escala é a do 
 | Salário (por folha) | `US$ 1.500 × 2^((overall − 60) / 10)`, arredondado a US$ 10, piso US$ 500 | 60 → 1,5 mil; 70 → 3 mil; 80 → 6 mil; 90 → 12 mil |
 | Caixa | `(4 + reputação / 10)` folhas salariais do elenco gerado, arredondado a US$ 1.000 | rep 20 → 6 folhas; rep 50 → 9; rep 90 → 13 |
 | Estádio | capacidade **real** do pack (Wikidata + `overrides.yaml`) | Maracanã 78.838 |
-| Ingresso | preço justo da curva de demanda (`fairTicketPriceCents`) para a força esperada do clube (`strength` da liga + `(rep − 50) / 5`), × `1 + (rep − 50) / 250` (−20% a +20%), arredondado a US$ 0,50, dentro de `TICKET_PRICE_RANGE` | liga 70, rep 50 → US$ 9,00 |
+| Ingresso | preço justo da curva de demanda (`fairTicketPriceCents`) para a força esperada do clube (`strength` da liga + `(rep − 50) / 5`), × `1 + (rep − 50) / 250` (−20% a +20%), arredondado ao dólar inteiro (o passo do input da UI), dentro de `TICKET_PRICE_RANGE` | liga 70, rep 50 → US$ 9,00 |
 
 Por que a caixa depende da folha: a força da liga já está no overall (o gerador parte dela) e, portanto, na folha. Um clube grande da Premier League e um pequeno da Série B nascem com o mesmo fôlego relativo, e o grande nasce mais rico em dólares. Por que o ingresso parte do preço justo: a IA nunca mexe no ingresso, e um preço longe do justo esvaziaria (ou lotaria de graça) o estádio dela a temporada inteira.
 

@@ -231,4 +231,53 @@ class ClubStartingLineupTest {
         }
         assertEquals(1, teams.map { team -> team.map { it.id }.toSet() }.toSet().size, "mesmo time em qualquer ordem")
     }
+
+    /** Elenco do seed: 4-4-2 titular e reservas por posição, goleiros primeiro. */
+    private fun seededClubWithSavedLineup(): Club {
+        val positions = Formation.F_4_4_2.slots +
+            listOf(Position.GK, Position.GK, Position.CB, Position.CB, Position.MF, Position.MF, Position.FW, Position.FW)
+        val squad = positions.mapIndexed { i, position -> makePlayer(id = i + 1L, position = position, overall = 80 - i) }
+        return makeClub(squadSize = 0).copy(
+            squad = squad,
+            lineup = Lineup(players = squad.take(11), formation = Formation.F_4_4_2),
+        )
+    }
+
+    @Test
+    fun `atacante lesionado numa escalacao salva da lugar a um atacante, nao ao goleiro reserva`() {
+        // Regressão da revisão da PR #154: a vaga ia para o 1º reserva do
+        // elenco, que no seed é sempre um goleiro — o time entrava com dois.
+        val club = seededClubWithSavedLineup()
+        val striker = club.squad[10]
+        assertEquals(Position.FW, striker.position)
+
+        val onField = club.injure(striker.id.value).startingLineup().players
+
+        assertEquals(11, onField.size)
+        assertEquals(1, onField.count { it.position == Position.GK }, "um goleiro só")
+        assertEquals(2, onField.count { it.position == Position.FW }, "o reserva de ataque entra")
+    }
+
+    @Test
+    fun `cada vaga pega o melhor reserva da posicao de quem saiu`() {
+        val club = seededClubWithSavedLineup()
+        // Sai um zagueiro (id 2) e um meia (id 6).
+        val onField = club.injure(2L, 6L).startingLineup().players
+
+        assertEquals(Formation.F_4_4_2.slots.sorted(), onField.map { it.position }.sorted(), "segue 4-4-2")
+        // Reservas por overall decrescente: o zagueiro 14 e o meia 16.
+        assertTrue(onField.any { it.id == PlayerId(14) } && onField.any { it.id == PlayerId(16) })
+    }
+
+    @Test
+    fun `sem reserva da posicao a vaga fica com o melhor reserva que sobrou`() {
+        val club = seededClubWithSavedLineup()
+        // Os dois atacantes reservas (18 e 19) também estão fora.
+        val onField = club.injure(11L, 18L, 19L).startingLineup().players
+
+        assertEquals(11, onField.size)
+        // O melhor reserva apto é o goleiro 12 (overall 69): sem atacante, é ele
+        // quem completa o time — é o melhor que sobrou, não o primeiro da lista.
+        assertEquals(PlayerId(12), onField.last().id)
+    }
 }

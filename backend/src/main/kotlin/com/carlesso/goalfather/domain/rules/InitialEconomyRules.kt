@@ -68,19 +68,26 @@ private const val CASH_REPUTATION_PER_PAYROLL: Double = 10.0
  * longe dele esvaziaria (ou lotaria de graça) o estádio do clube pela
  * temporada inteira. A força esperada é a do titular típico no auge
  * ([AttributeGenerator.expectedOverall] aos 27 anos): liga + reputação.
- * Arredondado a US$ 0,50 e dentro da faixa permitida ([TICKET_PRICE_RANGE]).
+ * Arredondado ao dólar inteiro e dentro da faixa permitida ([TICKET_PRICE_RANGE]).
+ * Dólar inteiro, e não US$ 0,50: é o passo do preço que o técnico digita na
+ * UI (`TicketPricePanel`, `step={1}`) e o que o `formatMoney` exibe. Um
+ * US$ 11,50 aparecia como "US$ 12" e a conta da bilheteria na tela não
+ * fechava (revisão da PR #154).
  */
 fun initialTicketPrice(leagueStrength: LeagueStrength, reputation: Reputation): Money {
     val strength = AttributeGenerator.expectedOverall(Position.MF, PEAK_AGE, leagueStrength, reputation).toDouble()
     val premium = 1.0 + (reputation.value - Reputation.AVERAGE.value) / TICKET_REPUTATION_DIVISOR
     val raw = fairTicketPriceCents(strength).cents * premium
-    return Money(roundTo(raw, 50)).coerceIn(TICKET_PRICE_RANGE)
+    return Money(roundTo(raw, CENTS_PER_DOLLAR)).coerceIn(TICKET_PRICE_RANGE)
 }
 
 private const val PEAK_AGE: Int = 27
 
 /** `(rep − 50) / 250`: de −20% (rep 1) a +20% (rep 100). */
 private const val TICKET_REPUTATION_DIVISOR: Double = 250.0
+
+/** Passo do ingresso inicial: dólar inteiro, o mesmo da UI. */
+private const val CENTS_PER_DOLLAR: Long = 100
 
 /** Arredonda [value] (centavos) ao múltiplo mais próximo de [step] centavos. */
 private fun roundTo(value: Double, step: Long): Long = (value / step).roundToLong() * step
