@@ -17,9 +17,8 @@ enum class RoundStatus { Scheduled, InProgress, Finished }
  * O nome da competição é uma FOTO, como os nomes dos clubes: a partida
  * continua legível na história mesmo que a competição mude de nome.
  *
- * Os defaults de [stage]/[competition] descrevem a liga da divisão — o que
- * toda partida era antes da copa (issue #61). Produção sempre os preenche
- * pelos geradores; o default só poupa os testes de liga de repeti-los.
+ * O default de [stage] descreve uma rodada de liga — o que toda partida era
+ * antes da copa (issue #61). Produção sempre o preenche pelos geradores.
  */
 @Serializable
 data class RoundMatch(
@@ -35,16 +34,22 @@ data class RoundMatch(
     // Divisão da partida (issue #47). Default = elite.
     val division: Division = Division.FIRST,
     // Disputa de pênaltis (issue #61) — só existe em jogo de copa que
-    // terminou empatado. Nulo no resto.
+    // terminou empatado no jogo único ou no AGREGADO da volta. Nulo no resto.
     val penalties: PenaltyScore? = null,
     val stage: RoundStage = RoundStage.League(1),
-    // Um default pode ler os parâmetros ANTERIORES do mesmo construtor: a
-    // competição padrão é a liga da [division] declarada acima.
+    // Sem default desde a issue #131: a competição sai do catálogo do save
+    // (`bra-serie-a`, `eng-premier-league`…), e não existe mais uma "liga da
+    // divisão" que sirva de palpite — a Série A e a Premier League são ambas
+    // divisão 1.
     @Serializable(with = CompetitionIdSerializer::class)
-    val competition: CompetitionId = SeasonCompetitions.leagueId(division),
-    val competitionName: String = SeasonCompetitions.leagueName(division),
+    val competition: CompetitionId,
+    val competitionName: String,
 ) {
-    /** Jogo de mata-mata? Empate nele não existe: decide nos pênaltis. */
+    /**
+     * Jogo de copa? Desde a ida e volta (issue #131) isso NÃO quer dizer "empate
+     * vai aos pênaltis" — a ida pode empatar. Quem decide os pênaltis é
+     * `decidesOnPenalties` (`CupRules.kt`), pela perna do [stage].
+     */
     val isKnockout: Boolean
         get() = when (stage) {
             is RoundStage.League -> false
@@ -84,10 +89,14 @@ sealed interface RoundStage {
         }
     }
 
-    /** Fase da copa disputada nesta data — jogo único, empate vai aos pênaltis. */
+    /**
+     * Jogo de copa (issue #131): a fase pelo NOME (`"Quinta fase"`, `"Final"`
+     * — as fases vêm do formato da competição, não de um enum) e a perna do
+     * confronto, que carrega o que é preciso para decidir os pênaltis.
+     */
     @Serializable
     @SerialName("Cup")
-    data class Cup(val phase: KnockoutPhase) : RoundStage
+    data class Cup(val stageName: String, val leg: CupLeg) : RoundStage
 }
 
 /**
@@ -100,8 +109,11 @@ sealed interface RoundStage {
  * como o jogo a apresenta. A identidade, porém, é o [matchday] — semana +
  * encaixe —, que nunca se repete entre temporadas (a rodada "1" se repetia).
  *
- * [season] é o ano da temporada do mundo que o encaixe disputa (o ano civil
- * no Brasil).
+ * [season] é o ANO CIVIL do encaixe (issue #131). Com o mundo do MVP várias
+ * temporadas convivem no mesmo encaixe — a Europa de 2026/27 joga no mesmo
+ * domingo que o Brasil de 2027 —, então a rodada não pertence a uma temporada:
+ * a temporada de cada jogo é a da competição dele (ver `SeasonPlan`). O ano
+ * civil é o rótulo honesto do relógio do jogo.
  */
 @Serializable
 data class Round(

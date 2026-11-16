@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.application.port.`in`.MatchStream
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -9,7 +11,7 @@ import com.carlesso.goalfather.domain.engine.MatchSimulator
 import com.carlesso.goalfather.domain.engine.QuickMatchSimulator
 import com.carlesso.goalfather.domain.engine.kickOff
 import com.carlesso.goalfather.domain.model.ClubId
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -32,7 +34,7 @@ class PlayMatchServiceTest {
 
     private val clubRepo: ClubRepository = mockk()
     private val leagueRepo: LeagueRepository = mockk()
-    private val service = PlayMatchService(clubRepo, leagueRepo)
+    private val service = PlayMatchService(clubRepo, leagueRepo, InMemoryCatalogRepository())
 
     /** `matchId` pela fórmula real (`serial * 1000 + n`): o service acha o encaixe por ele. */
     private fun matchIdIn(matchday: Matchday, n: Int = 101): Long = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY + n
@@ -45,7 +47,7 @@ class PlayMatchServiceTest {
         season = 2026,
         status = RoundStatus.InProgress,
         matches = listOf(
-            RoundMatch(matchId, ClubId(1), ClubId(2), "Home FC", "Away FC"),
+            leagueMatch(matchId, ClubId(1), ClubId(2), "Home FC", "Away FC"),
         ),
     )
 
@@ -116,7 +118,7 @@ class PlayMatchServiceTest {
         val cupId = matchIdIn(md(2), n = 1)
         val cupDate = round.copy(
             matchday = md(2),
-            matches = round.matches.map { it.copy(matchId = cupId, stage = RoundStage.Cup(KnockoutPhase.FINAL)) },
+            matches = round.matches.map { it.copy(matchId = cupId, stage = RoundStage.Cup("Final", CupLeg.Single)) },
         )
         // Com dono: jogo de técnico humano passa pela engine completa (issue #129).
         val home = makeClub(id = 1, overall = 75, ownerId = 9)
@@ -131,7 +133,7 @@ class PlayMatchServiceTest {
                 away.startingLineup(),
                 "Home FC",
                 "Away FC",
-                knockout = true,
+                decidesOnPenalties = { h, a -> h == a },
                 homeClubId = home.id,
                 awayClubId = away.id,
             ),

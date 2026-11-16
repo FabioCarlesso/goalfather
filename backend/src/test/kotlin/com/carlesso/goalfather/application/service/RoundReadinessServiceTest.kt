@@ -22,6 +22,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.BeforeTest
+import com.carlesso.goalfather.test.leagueMatch
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -285,5 +286,39 @@ class RoundReadinessServiceTest {
         val notReady = assertIs<StartRoundResult.NotReady>(result)
         assertEquals(60, notReady.status.secondsRemaining)
         coVerify(exactly = 0) { leagueRepo.startRound(any()) }
+    }
+
+    // ─── Prontidão de quem joga (issue #131) ──────────────────────────────
+
+    /** Encaixe só da liga do técnico 1 (o 2 é de outra liga e folga). */
+    private val onlyAnaPlays = scheduled.copy(
+        matches = listOf(leagueMatch(md(5).serial * 1000L + 101, ClubId(1), ClubId(3), "Ana FC", "IA FC")),
+    )
+
+    @Test
+    fun `so os tecnicos com jogo no encaixe contam para a prontidao (issue 131)`() = runTest {
+        coEvery { leagueRepo.findLatest() } returns onlyAnaPlays
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
+        coEvery { leagueRepo.startRound(md(5)) } returns true
+
+        val status = service.status()
+        assertEquals(1, status.totalCount)
+        assertTrue(status.allReady, "bruno não joga neste encaixe e não o segura")
+        assertIs<StartRoundResult.Started>(service.start())
+    }
+
+    @Test
+    fun `encaixe sem nenhum tecnico em campo espera todos como antes (issue 131)`() = runTest {
+        val noManagers = scheduled.copy(
+            matches = listOf(leagueMatch(md(5).serial * 1000L + 101, ClubId(3), ClubId(4), "IA 3", "IA 4")),
+        )
+        coEvery { leagueRepo.findLatest() } returns noManagers
+        coEvery { userRepo.findManagers() } returns listOf(manager(1, "ana"), manager(2, "bruno"))
+        coEvery { readinessRepo.readyUserIds(md(5)) } returns setOf(UserId(1))
+
+        val status = service.status()
+        assertEquals(2, status.totalCount)
+        assertEquals(listOf("bruno"), status.pendingUsernames)
     }
 }

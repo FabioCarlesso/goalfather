@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml; recorte e2e de data/world/v1 (issue #131)",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "code": "ARG",
+      "name": "Argentina",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "AR"
+    },
+    {
+      "code": "BEL",
+      "name": "Bélgica",
+      "confederation": "UEFA",
+      "isoAlpha2": "BE"
+    },
+    {
+      "code": "BRA",
+      "name": "Brasil",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "BR"
+    },
+    {
+      "code": "CHI",
+      "name": "Chile",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "CL"
+    },
+    {
+      "code": "COL",
+      "name": "Colômbia",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "CO"
+    },
+    {
+      "code": "CRO",
+      "name": "Croácia",
+      "confederation": "UEFA",
+      "isoAlpha2": "HR"
+    },
+    {
+      "code": "ECU",
+      "name": "Equador",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "EC"
+    },
+    {
+      "code": "ENG",
+      "name": "Inglaterra",
+      "confederation": "UEFA",
+      "isoAlpha2": "GB-ENG"
+    },
+    {
+      "code": "ESP",
+      "name": "Espanha",
+      "confederation": "UEFA",
+      "isoAlpha2": "ES"
+    },
+    {
+      "code": "FRA",
+      "name": "França",
+      "confederation": "UEFA",
+      "isoAlpha2": "FR"
+    },
+    {
+      "code": "GEO",
+      "name": "Geórgia",
+      "confederation": "UEFA",
+      "isoAlpha2": "GE"
+    },
+    {
+      "code": "GER",
+      "name": "Alemanha",
+      "confederation": "UEFA",
+      "isoAlpha2": "DE"
+    },
+    {
+      "code": "GHA",
+      "name": "Gana",
+      "confederation": "CAF",
+      "isoAlpha2": "GH"
+    },
+    {
+      "code": "GRE",
+      "name": "Grécia",
+      "confederation": "UEFA",
+      "isoAlpha2": "GR"
+    },
+    {
+      "code": "HUN",
+      "name": "Hungria",
+      "confederation": "UEFA",
+      "isoAlpha2": "HU"
+    },
+    {
+      "code": "IRL",
+      "name": "Irlanda",
+      "confederation": "UEFA",
+      "isoAlpha2": "IE"
+    },
+    {
+      "code": "ITA",
+      "name": "Itália",
+      "confederation": "UEFA",
+      "isoAlpha2": "IT"
+    },
+    {
+      "code": "MAR",
+      "name": "Marrocos",
+      "confederation": "CAF",
+      "isoAlpha2": "MA"
+    },
+    {
+      "code": "NED",
+      "name": "Países Baixos",
+      "confederation": "UEFA",
+      "isoAlpha2": ""
+    },
+    {
+      "code": "NOR",
+      "name": "Noruega",
+      "confederation": "UEFA",
+      "isoAlpha2": "NO"
+    },
+    {
+      "code": "PAR",
+      "name": "Paraguai",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "PY"
+    },
+    {
+      "code": "PER",
+      "name": "Peru",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "PE"
+    },
+    {
+      "code": "POR",
+      "name": "Portugal",
+      "confederation": "UEFA",
+      "isoAlpha2": "PT"
+    },
+    {
+      "code": "SEN",
+      "name": "Senegal",
+      "confederation": "CAF",
+      "isoAlpha2": "SN"
+    },
+    {
+      "code": "SRB",
+      "name": "Sérvia",
+      "confederation": "UEFA",
+      "isoAlpha2": "RS"
+    },
+    {
+      "code": "SWE",
+      "name": "Suécia",
+      "confederation": "UEFA",
+      "isoAlpha2": "SE"
+    },
+    {
+      "code": "URU",
+      "name": "Uruguai",
+      "confederation": "CONMEBOL",
+      "isoAlpha2": "UY"
+    },
+    {
+      "code": "UZB",
+      "name": "Usbequistão",
+      "confederation": "AFC",
+      "isoAlpha2": "UZ"
+    }
+  ]
+}

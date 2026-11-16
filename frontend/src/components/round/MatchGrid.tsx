@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { KNOCKOUT_PHASE_LABEL } from '../../domain/cup'
+import { cupStageLabel } from '../../domain/cup'
 import type { RoundMatch } from '../../domain/types'
 import type { LiveMatchState } from '../../api/queries/useRoundStream'
 
@@ -12,7 +12,7 @@ function groupLabel(match: RoundMatch): string {
     case 'League':
       return match.competitionName
     case 'Cup':
-      return `${match.competitionName} · ${KNOCKOUT_PHASE_LABEL[match.stage.phase]}`
+      return `${match.competitionName} · ${cupStageLabel(match.stage)}`
   }
 }
 

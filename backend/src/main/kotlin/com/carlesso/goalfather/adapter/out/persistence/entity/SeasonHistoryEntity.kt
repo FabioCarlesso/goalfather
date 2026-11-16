@@ -3,12 +3,14 @@ package com.carlesso.goalfather.adapter.out.persistence.entity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.IdClass
 import jakarta.persistence.Table
 import org.springframework.data.domain.Persistable
+import java.io.Serializable
 
 /**
- * Uma temporada encerrada (issue #60). 1 linha por temporada — a PK por
- * `season` é o que torna a tabela **append-only na prática**: a segunda
+ * Uma temporada encerrada de um país (issues #60/#131). 1 linha por
+ * temporada + país — a PK é o que torna a tabela **append-only na prática**: a segunda
  * tentativa de gravar a mesma temporada colide, mesmo vinda de outra réplica.
  *
  * `record_json` carrega o `SeasonRecord` inteiro serializado, mesmo trade-off
@@ -35,18 +37,30 @@ import org.springframework.data.domain.Persistable
  */
 @Entity
 @Table(name = "season_history")
+@IdClass(SeasonHistoryId::class)
 class SeasonHistoryEntity(
     @Id
     @Column(name = "season")
     var season: Int = 0,
 
+    // Issue #131: cada país vira no seu tempo, então a PK é temporada + país.
+    @Id
+    @Column(name = "country_code", length = 3)
+    var countryCode: String = "BRA",
+
     @Column(name = "record_json", columnDefinition = "TEXT", nullable = false)
     var recordJson: String = "{}",
-) : Persistable<Int> {
+) : Persistable<SeasonHistoryId> {
 
-    override fun getId(): Int = season
+    override fun getId(): SeasonHistoryId = SeasonHistoryId(season, countryCode)
 
     // Não precisa de @Transient: `@Id` está no CAMPO, então o access type é
     // FIELD e o Hibernate ignora métodos ao mapear a entidade.
     override fun isNew(): Boolean = true
 }
+
+/** Chave composta (season, country_code) — `data class` dá o equals/hashCode que o JPA exige. */
+data class SeasonHistoryId(
+    var season: Int = 0,
+    var countryCode: String = "BRA",
+) : Serializable

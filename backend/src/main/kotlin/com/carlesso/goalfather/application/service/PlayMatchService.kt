@@ -4,6 +4,7 @@ import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
 import com.carlesso.goalfather.application.port.`in`.MatchStream
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.engine.MatchSetup
 import com.carlesso.goalfather.domain.engine.MatchSimulator
@@ -12,6 +13,8 @@ import com.carlesso.goalfather.domain.engine.kickOff
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Matchday
+import com.carlesso.goalfather.domain.rules.decidesOnPenalties
+import com.carlesso.goalfather.domain.rules.matchRulesOf
 import com.carlesso.goalfather.domain.rules.startingLineupIn
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
@@ -38,6 +41,8 @@ import kotlin.random.Random
 class PlayMatchService(
     private val clubRepo: ClubRepository,
     private val leagueRepo: LeagueRepository,
+    // Regras da competição da partida (limite de estrangeiros) — issue #131.
+    private val catalogRepo: CompetitionCatalogRepository,
     private val simulator: MatchSimulator = MatchSimulator(),
     // Injetável para métricas; default isolado preserva os construtores dos testes.
     private val meterRegistry: MeterRegistry = SimpleMeterRegistry(),
@@ -66,17 +71,18 @@ class PlayMatchService(
 
         val home = clubRepo.findById(match.homeClubId)
         val away = clubRepo.findById(match.awayClubId)
+        val rules = catalogRepo.findAll().matchRulesOf(match.competition)
         val setup = MatchSetup(
             // Mesma escalação da rodada (issue #130): sem os suspensos daquela
             // competição e dentro do limite de estrangeiros dela. Com a
             // simulação rápida (#129), divergir aqui mostraria outro placar.
-            home = home?.startingLineupIn(match.competition) ?: emptyLineup(),
-            away = away?.startingLineupIn(match.competition) ?: emptyLineup(),
+            home = home?.startingLineupIn(rules) ?: emptyLineup(),
+            away = away?.startingLineupIn(rules) ?: emptyLineup(),
             homeName = match.homeClubName,
             awayName = match.awayClubName,
             // Mesmo modo da rodada: jogo de copa reproduz a mesma disputa de
-            // pênaltis no drill-down (issue #61).
-            knockout = match.isKnockout,
+            // pênaltis no drill-down (issue #61) — pela perna (#131).
+            decidesOnPenalties = match::decidesOnPenalties,
             homeClubId = match.homeClubId,
             awayClubId = match.awayClubId,
         )

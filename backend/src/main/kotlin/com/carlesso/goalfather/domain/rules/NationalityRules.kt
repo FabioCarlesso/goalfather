@@ -2,8 +2,9 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.Country
+import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Player
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
+import com.carlesso.goalfather.domain.model.leagueOf
 
 /**
  * Regras de nacionalidade (issue #123). Funções PURAS, sem Spring.
@@ -29,10 +30,11 @@ fun Club.foreignersAmong(players: List<Player>): List<Player> = players.filter {
 
 /**
  * Limite de estrangeiros que vale para a escalação SALVA do clube (issue #130):
- * o da liga dele. A escalação não é por competição — o técnico salva uma só —,
- * e no mundo atual todas as competições do clube são nacionais, com o mesmo
- * limite. No apito inicial cada jogo reaplica o limite da própria competição
- * (`startingLineupIn`).
+ * o da liga dele no catálogo do save ([competitions], issue #131). A escalação
+ * não é por competição — o técnico salva uma só —, e no MVP todas as
+ * competições de um clube são do país dele, com o mesmo limite (9 no Brasil,
+ * nenhum na Europa). No apito inicial cada jogo reaplica o limite da própria
+ * competição (`startingLineupIn`). `null` = sem limite (ou clube sem liga).
  */
-fun Club.foreignPlayerLimit(): Int? =
-    SeasonCompetitions.foreignPlayerLimitOf(SeasonCompetitions.leagueId(division))
+fun Club.foreignPlayerLimitIn(competitions: List<GameCompetition>): Int? =
+    competitions.leagueOf(this)?.competition?.foreignPlayerLimit

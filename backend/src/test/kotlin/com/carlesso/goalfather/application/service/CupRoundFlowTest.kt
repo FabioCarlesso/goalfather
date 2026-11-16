@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -8,9 +10,15 @@ import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
+import com.carlesso.goalfather.domain.model.CompetitionFormat
+import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.Competition
 import com.carlesso.goalfather.domain.model.Cup
+import com.carlesso.goalfather.domain.model.KnockoutStage
+import com.carlesso.goalfather.domain.model.Legs
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.CupTie
-import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Round
@@ -23,12 +31,15 @@ import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TieResult
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.cupDrawSeed
-import com.carlesso.goalfather.domain.rules.cupMatches
+import com.carlesso.goalfather.domain.rules.nationalCupMatches
 import com.carlesso.goalfather.domain.rules.drawCup
-import com.carlesso.goalfather.domain.rules.generateRound
+import com.carlesso.goalfather.domain.rules.prizeOf
 import com.carlesso.goalfather.domain.rules.recordRound
-import com.carlesso.goalfather.domain.rules.seasonPlan
+import com.carlesso.goalfather.domain.rules.worldPlan
+import com.carlesso.goalfather.test.COPA_DO_BRASIL
+import com.carlesso.goalfather.test.brazilCatalog
 import com.carlesso.goalfather.test.InMemoryCupRepository
+import com.carlesso.goalfather.test.testCup
 import com.carlesso.goalfather.test.makeClub
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -61,11 +72,17 @@ class CupRoundFlowTest {
     private val historyRepo: SeasonHistoryRepository = mockk(relaxed = true)
 
     private val clubs: List<Club> = (1L..4L).map { makeClub(id = it, name = "C$it", overall = 70 + it.toInt()) }
-    private val cup: Cup = drawCup(2026, clubs, Random(cupDrawSeed(2026)))
+    private val cup: Cup = testCup(2026, clubs, Random(cupDrawSeed(2026)))
     private val cupRepo = InMemoryCupRepository(cup)
 
+    // O Brasil do catálogo de teste (issue #131): Série A em turno único e a
+    // Copa do Brasil — os 4 clubes são todos da Série A.
+    private val catalog = brazilCatalog(legs = 1, cupClubs = 4)
+    private val copa = catalog.single { it.id == COPA_DO_BRASIL }
+    private val plan = worldPlan(catalog, clubs, mapOf(Countries.BRAZIL.code to 2026), mapOf(COPA_DO_BRASIL to cup))
+
     /** Os 5 encaixes da temporada, na ordem: L1, Semi, L2, Final, L3. */
-    private val slots = seasonPlan(2026, clubs, cup).schedule.matchdays
+    private val slots = plan.schedule.matchdays
 
     private val service = PlayRoundService(
         clubRepo,
@@ -77,16 +94,17 @@ class CupRoundFlowTest {
         cupRepo,
         mockk(relaxed = true),
         mockk(relaxed = true),
+        InMemoryCatalogRepository(catalog),
     )
 
-    private val table = Standings(
+    private val table = testStandings(
         season = 2026,
         round = 0,
         rows = clubs.mapIndexed { i, c -> StandingRow(i + 1, c.id, c.name) },
     )
 
     /** O encaixe [matchday] só com os jogos de copa da fase corrente de [cup]. */
-    private fun cupAt(matchday: Matchday, cup: Cup) = Round(matchday, 2026, matches = cupMatches(matchday, cup, clubs))
+    private fun cupAt(matchday: Matchday, cup: Cup) = Round(matchday, 2026, matches = nationalCupMatches(matchday, cup, copa, clubs))
 
     private val savedRounds = mutableListOf<Round>()
     private val claimed = slot<Round>()
@@ -114,14 +132,14 @@ class CupRoundFlowTest {
     @Test
     fun `depois da rodada de liga 1 o encaixe seguinte e a semifinal da copa no meio de semana`() = runTest {
         assertEquals(5, slots.size)
-        stubLeague(generateRound(slots[0], 2026, clubs))
+        stubLeague(plan.roundAt(slots[0], clubs))
 
         service.stream(slots[0]).toList()
 
         val next = savedRounds.single()
         assertEquals(slots[1], next.matchday)
         assertEquals(Slot.MIDWEEK, next.matchday.slot)
-        assertTrue(next.matches.all { it.stage == RoundStage.Cup(KnockoutPhase.SEMI_FINALS) })
+        assertTrue(next.matches.all { it.stage == RoundStage.Cup("Semifinal", CupLeg.Single) })
         assertEquals(2, next.matches.size)
     }
 
@@ -148,18 +166,19 @@ class CupRoundFlowTest {
 
         // Chave avançou: semis decididas e final sorteada com os vencedores.
         val updated = assertNotNull(cupRepo.cups[2026])
-        val semis = updated.stages.first().ties.filterIsInstance<CupTie.Fixture>()
+        val semis = updated.stages.first().ties.filterIsInstance<CupTie.Single>()
         assertTrue(semis.all { it.result != null })
         val final = updated.stages.last()
-        assertEquals(KnockoutPhase.FINAL, final.phase)
-        val finalTie = assertIs<CupTie.Fixture>(final.ties.single())
-        assertEquals(semis.map { it.winner }, listOf(finalTie.home, finalTie.away))
+        assertEquals("Final", final.name)
+        val finalTie = assertIs<CupTie.Single>(final.ties.single())
+        // A final é sorteada entre os vencedores (issue #131: sorteio fase a fase).
+        assertEquals(semis.map { it.winner }.toSet(), setOf(finalTie.home, finalTie.away))
 
         // Prêmio da fase para os dois classificados, no extrato E no caixa; sem folha.
         val roundFinished = events.filterIsInstance<RoundEvent.RoundFinished>().single()
         val winners = semis.mapNotNull { it.winner?.id }.toSet()
         for (finance in roundFinished.finances) {
-            val expectedPrize = if (finance.clubId in winners) KnockoutPhase.SEMI_FINALS.prizeCents else Money.ZERO
+            val expectedPrize = if (finance.clubId in winners) updated.prizeOf(0) else Money.ZERO
             assertEquals(expectedPrize, finance.cupPrize, "prêmio de ${finance.clubId}")
             assertEquals(0.cents, finance.salariesPaid, "data de copa não cobra folha")
         }
@@ -174,7 +193,7 @@ class CupRoundFlowTest {
         assertEquals(slots[2], next.matchday)
         assertTrue(next.matches.all { it.stage == RoundStage.League(2) })
         assertEquals(
-            generateRound(slots[2], 2026, clubs, leagueRound = 2).matches.map { it.homeClubId to it.awayClubId },
+            plan.roundAt(slots[2], clubs).matches.map { it.homeClubId to it.awayClubId },
             next.matches.map { it.homeClubId to it.awayClubId },
         )
     }
@@ -186,7 +205,7 @@ class CupRoundFlowTest {
         cupRepo.cups[2026] = cup.recordRound(
             semi.copy(matches = semi.matches.map { it.copy(status = RoundStatus.Finished, homeGoals = 1) }),
         ).cup
-        val league2 = generateRound(slots[2], 2026, clubs, leagueRound = 2)
+        val league2 = plan.roundAt(slots[2], clubs)
         stubLeague(league2)
 
         service.stream(slots[2]).toList()
@@ -196,7 +215,7 @@ class CupRoundFlowTest {
         assertEquals(4, table.rows.sumOf { it.played })
         // Depois da liga 2 vem a final da copa.
         assertEquals(slots[3], savedRounds.single().matchday)
-        assertTrue(savedRounds.single().matches.all { it.stage == RoundStage.Cup(KnockoutPhase.FINAL) })
+        assertTrue(savedRounds.single().matches.all { it.stage == RoundStage.Cup("Final", CupLeg.Single) })
     }
 
     @Test
@@ -215,7 +234,7 @@ class CupRoundFlowTest {
         val record = slot<SeasonRecord>()
         coEvery { historyRepo.append(capture(record)) } returns true
         // Último encaixe = rodada de liga 3, a última da temporada.
-        stubLeague(generateRound(slots[4], 2026, clubs, leagueRound = 3))
+        stubLeague(plan.roundAt(slots[4], clubs))
 
         val events = service.stream(slots[4]).toList()
 
@@ -225,7 +244,7 @@ class CupRoundFlowTest {
 
         // Temporada nova: copa sorteada com a seed de 2027 e rodada 1 de liga em janeiro.
         val nextCup = assertNotNull(cupRepo.cups[2027])
-        assertEquals(KnockoutPhase.SEMI_FINALS, nextCup.stages.single().phase)
+        assertEquals("Semifinal", nextCup.stages.single().name)
         assertTrue(savedRounds.single().matches.all { it.stage == RoundStage.League(1) })
         assertEquals(2027, savedRounds.single().season)
         assertEquals(2027, savedRounds.single().matchday.date.year)
@@ -234,7 +253,7 @@ class CupRoundFlowTest {
     @Test
     fun `liga sem copa segue so de pontos corridos`() = runTest {
         cupRepo.cups.clear()
-        stubLeague(generateRound(slots[0], 2026, clubs))
+        stubLeague(plan.roundAt(slots[0], clubs))
 
         service.stream(slots[0]).toList()
 
@@ -260,11 +279,63 @@ class CupRoundFlowTest {
         service.stream(slots[1]).toList()
 
         val byPair = claimed.captured.matches.associateBy { it.homeClubId to it.awayClubId }
-        val semis = assertNotNull(cupRepo.cups[2026]).stages.first().ties.filterIsInstance<CupTie.Fixture>()
+        val semis = assertNotNull(cupRepo.cups[2026]).stages.first().ties.filterIsInstance<CupTie.Single>()
         for (tie in semis) {
             val match = byPair.getValue(tie.home.id to tie.away.id)
             assertEquals(TieResult(match.homeGoals, match.awayGoals, match.penalties), tie.result)
         }
         assertTrue(semis.none { it.home.id == ClubId(0) })
+    }
+
+    // ─── Ida e volta (issue #131) ─────────────────────────────────────────
+
+    /** Semifinal em ida e volta + final em jogo único; os 4 clubes entram na semi. */
+    private val twoLeggedCup: Cup = drawCup(
+        2026,
+        Competition(
+            CompetitionId("bra-copa-do-brasil"),
+            "Copa do Brasil",
+            CompetitionFormat.Knockout(
+                listOf(
+                    KnockoutStage("Semifinal", 4, Legs.TWO_LEGGED, newEntrants = 4),
+                    KnockoutStage("Final", 2, Legs.SINGLE),
+                ),
+            ),
+        ),
+        clubs.reversed(),
+        Random(cupDrawSeed(2026)),
+    )
+
+    @Test
+    fun `ida nao vai aos penaltis e a volta so vai com o agregado empatado`() = runTest {
+        cupRepo.cups[2026] = twoLeggedCup
+        // 3 rodadas de liga + 3 encaixes de copa (ida, volta e final): uma perna por encaixe.
+        val schedule = worldPlan(catalog, clubs, mapOf(Countries.BRAZIL.code to 2026), mapOf(COPA_DO_BRASIL to twoLeggedCup)).schedule
+        assertEquals(6, schedule.matchdays.size)
+        val cupSlots = schedule.rounds.filter { it.competition == twoLeggedCup.competitionId }.map { it.matchday }
+        assertEquals(twoLeggedCup.calendarRounds, cupSlots.size)
+
+        // Ida: empate é só placar.
+        stubLeague(cupAt(cupSlots[0], twoLeggedCup))
+        service.stream(cupSlots[0]).toList()
+        val firstLeg = claimed.captured
+        assertTrue(firstLeg.matches.all { it.stage == RoundStage.Cup("Semifinal", CupLeg.First) && it.penalties == null })
+        val afterFirst = assertNotNull(cupRepo.cups[2026])
+        val ties = afterFirst.stages.single().ties.map { assertIs<CupTie.TwoLegged>(it) }
+        assertTrue(ties.all { it.firstLeg != null && it.winner == null })
+
+        // Volta: mando invertido; pênaltis se e só se o agregado empatou.
+        stubLeague(cupAt(cupSlots[1], afterFirst))
+        service.stream(cupSlots[1]).toList()
+        val secondLeg = claimed.captured
+        for (tie in ties) {
+            val match = secondLeg.matches.single { it.homeClubId == tie.away.id && it.awayClubId == tie.home.id }
+            val first = assertNotNull(tie.firstLeg)
+            val aggregateTied = first.homeGoals + match.awayGoals == first.awayGoals + match.homeGoals
+            assertEquals(aggregateTied, match.penalties != null, "volta ${match.homeClubId} × ${match.awayClubId}")
+        }
+        val afterSecond = assertNotNull(cupRepo.cups[2026])
+        assertTrue(afterSecond.stages.first().isComplete)
+        assertEquals("Final", afterSecond.currentStage?.name)
     }
 }

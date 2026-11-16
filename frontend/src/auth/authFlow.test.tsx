@@ -38,7 +38,10 @@ describe('Fluxo de auth + seleção de clube', () => {
     // Autenticado mas sem clube → seleção de clube.
     expect(await screen.findByRole('heading', { name: 'Escolha seu clube' })).toBeInTheDocument()
 
-    // Reivindica o primeiro clube (Goal Father FC).
+    // País → liga → clube (issue #131): Brasil, Série A e o primeiro clube
+    // livre, o mais forte da liga (Flamengo, no mock).
+    await user.click(await screen.findByRole('button', { name: /Brasil/ }))
+    await user.click(await screen.findByRole('button', { name: /Campeonato Brasileiro Série A/ }))
     const claimButtons = await screen.findAllByRole('button', { name: /treinar este clube/i })
     await user.click(claimButtons[0]!)
 
@@ -47,12 +50,12 @@ describe('Fluxo de auth + seleção de clube', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard/visao-geral'))
     // A rota muda antes do DOM: o React Router 7 navega dentro de
     // `startTransition`, então a seleção de clube ainda pode estar na tela, com o
-    // card "Goal Father FC" (um h2). Procurar só pelo nome achava esse card, que
+    // card "Flamengo" (um heading). Procurar só pelo nome achava esse card, que
     // saía do DOM logo depois, e o `toBeInTheDocument` falhava (intermitente no
     // CI). Por isso esperamos a navegação das abas, que só existe na Dashboard
     // montada, e conferimos o nome do clube no h1.
     expect(await screen.findByRole('navigation', { name: 'Seções do clube' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Goal Father FC' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Flamengo' })).toBeInTheDocument()
   })
 
   it('técnico demitido cai na tela de game over e recomeça pela seleção (issue #62)', async () => {
@@ -64,7 +67,7 @@ describe('Fluxo de auth + seleção de clube', () => {
       password: 'secret123',
       clubId: null,
       dismissal: {
-        clubId: 1, clubName: 'Goal Father FC', season: 2026,
+        clubId: 1, clubName: 'Flamengo', season: 2026,
         objective: 'TITLE' as const, targetPosition: 1, finalPosition: 6,
       },
     }

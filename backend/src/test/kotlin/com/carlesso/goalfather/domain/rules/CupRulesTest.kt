@@ -1,23 +1,34 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Competition
+import com.carlesso.goalfather.domain.model.CompetitionFormat
+import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Cup
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.CupTie
 import com.carlesso.goalfather.domain.model.Division
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.KnockoutStage
+import com.carlesso.goalfather.domain.model.LegScore
+import com.carlesso.goalfather.domain.model.Legs
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.TieResult
 import com.carlesso.goalfather.test.cupRound
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.md
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.assertThrows
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -26,194 +37,350 @@ import kotlin.test.assertTrue
 
 class CupRulesTest {
 
-    /** Liga do seed: 12 clubes, metade em cada divisão. */
-    private val twelve = (1L..12L).map {
-        makeClub(id = it, name = "Club $it", division = Division(if (it <= 6) 1 else 2))
-    }
-    private val eight = (1L..8L).map { makeClub(id = it, name = "Club $it") }
+    // ─── Formatos do pack (issue #131) ────────────────────────────────────
 
-    private fun draw(clubs: List<com.carlesso.goalfather.domain.model.Club>, season: Int = 2026) =
-        drawCup(season, clubs, Random(cupDrawSeed(season)))
-
-    // ─── Sorteio ──────────────────────────────────────────────────────────
-
-    @Test
-    fun `mesma seed sorteia a mesma chave, em qualquer ordem de entrada`() {
-        assertEquals(draw(twelve), draw(twelve))
-        assertEquals(draw(twelve), draw(twelve.shuffled(Random(99))))
-    }
-
-    @Test
-    fun `temporadas diferentes sorteiam chaves diferentes`() {
-        assertNotEquals(draw(twelve, 2026).stages, draw(twelve, 2027).stages)
-    }
-
-    @Test
-    fun `12 clubes viram oitavas com 4 folgas e todo clube aparece uma vez`() {
-        val stage = draw(twelve).stages.single()
-        assertEquals(KnockoutPhase.ROUND_OF_16, stage.phase)
-        assertEquals(8, stage.ties.size)
-        assertEquals(4, stage.ties.count { it is CupTie.Bye })
-
-        val clubs = stage.ties.flatMap { tie ->
-            when (tie) {
-                is CupTie.Bye -> listOf(tie.club.id)
-                is CupTie.Fixture -> listOf(tie.home.id, tie.away.id)
-            }
-        }
-        assertEquals(twelve.map { it.id }.toSet(), clubs.toSet())
-        assertEquals(12, clubs.size)
-    }
-
-    @Test
-    fun `folgas ficam nos indices pares e nunca se cruzam na fase seguinte`() {
-        val stage = draw(twelve).stages.single()
-        val byeIndexes = stage.ties.filterIsInstance<CupTie.Bye>().map { it.index }
-        assertEquals(listOf(0, 2, 4, 6), byeIndexes)
-        // Pares (0,1), (2,3)… da fase seguinte: no máximo uma folga em cada.
-        assertTrue(stage.ties.chunked(2).all { pair -> pair.count { it is CupTie.Bye } <= 1 })
-    }
-
-    @Test
-    fun `potencia de 2 nao gera folga`() {
-        val stage = draw(eight).stages.single()
-        assertEquals(KnockoutPhase.QUARTER_FINALS, stage.phase)
-        assertTrue(stage.ties.all { it is CupTie.Fixture })
-    }
-
-    @Test
-    fun `liga pequena demais nao tem copa`() {
-        val two = eight.take(2)
-        assertTrue(!canHoldCup(two))
-        assertThrows<IllegalArgumentException> { draw(two) }
-    }
-
-    @Test
-    fun `fases da copa vao da abertura a final`() {
-        assertEquals(
+    /** Corte do MVP da Copa do Brasil 2026: da 4ª fase (entrada da Série B) à final. */
+    private val copaDoBrasil = Competition(
+        CompetitionId("bra-copa-do-brasil"),
+        "Copa do Brasil",
+        CompetitionFormat.Knockout(
             listOf(
-                KnockoutPhase.ROUND_OF_16,
-                KnockoutPhase.QUARTER_FINALS,
-                KnockoutPhase.SEMI_FINALS,
-                KnockoutPhase.FINAL,
+                KnockoutStage("Quarta fase", 16, Legs.SINGLE, newEntrants = 16),
+                KnockoutStage("Quinta fase", 32, Legs.TWO_LEGGED, newEntrants = 24),
+                KnockoutStage("Oitavas de final", 16, Legs.TWO_LEGGED),
+                KnockoutStage("Quartas de final", 8, Legs.TWO_LEGGED),
+                KnockoutStage("Semifinal", 4, Legs.TWO_LEGGED),
+                KnockoutStage("Final", 2, Legs.SINGLE),
             ),
-            draw(twelve).phases,
-        )
+        ),
+    )
+
+    /** Pack reduzido do E2E: 12 clubes. */
+    private val e2eCup = Competition(
+        CompetitionId("bra-copa-do-brasil"),
+        "Copa do Brasil",
+        CompetitionFormat.Knockout(
+            listOf(
+                KnockoutStage("Primeira fase", 8, Legs.SINGLE, newEntrants = 8),
+                KnockoutStage("Quartas de final", 8, Legs.TWO_LEGGED, newEntrants = 4),
+                KnockoutStage("Semifinal", 4, Legs.TWO_LEGGED),
+                KnockoutStage("Final", 2, Legs.SINGLE),
+            ),
+        ),
+    )
+
+    /** 40 clubes do pack, JÁ em ordem de força: id 1 é o mais forte; 1..20 Série A. */
+    private val forty: List<Club> = (1L..40L).map {
+        makeClub(id = it, name = "Club $it", division = Division(if (it <= 20) 1 else 2))
     }
+    private val twelve: List<Club> = forty.take(12)
 
-    // ─── Avanço da chave ──────────────────────────────────────────────────
+    private fun drawMvp(seed: Long = cupDrawSeed(2026)) = drawCup(2026, copaDoBrasil, forty, Random(seed))
 
-    /** Rodada de copa encerrada em que o mandante de cada jogo vence por 1×0. */
-    private fun homeWins(cup: Cup, number: Int = 2): Round {
-        val round = cupRound(number, cup.season, cup.currentStage!!.phase, cup, twelve)
+    private fun drawE2e() = drawCup(2026, e2eCup, twelve, Random(cupDrawSeed(2026)))
+
+    /**
+     * Encerra o encaixe de copa da semana [week]: cada jogo termina com o placar
+     * de [score]; se a perna for aos pênaltis (`decidesOnPenalties`), o
+     * mandante vence a disputa 4 × 3.
+     */
+    private fun play(cup: Cup, week: Int, clubs: List<Club>, score: (RoundMatch) -> Pair<Int, Int>): Round {
+        val round = cupRound(week, cup.season, cup, clubs)
         return round.copy(
             status = RoundStatus.Finished,
-            matches = round.matches.map { it.copy(status = RoundStatus.Finished, homeGoals = 1, awayGoals = 0) },
+            matches = round.matches.map { match ->
+                val (home, away) = score(match)
+                match.copy(
+                    status = RoundStatus.Finished,
+                    homeGoals = home,
+                    awayGoals = away,
+                    penalties = PenaltyScore(4, 3).takeIf { match.decidesOnPenalties(home, away) },
+                )
+            },
         )
     }
 
-    @Test
-    fun `rodada de copa tem so os confrontos em aberto da fase corrente`() {
-        val cup = draw(twelve)
-        val round = cupRound(2, 2026, KnockoutPhase.ROUND_OF_16, cup, twelve)
+    /** O mais forte (menor id) vence CADA jogo por 1 × 0 — em casa ou fora. */
+    private val strongerWins: (RoundMatch) -> Pair<Int, Int> = { m ->
+        if (m.homeClubId.value < m.awayClubId.value) 1 to 0 else 0 to 1
+    }
 
-        assertTrue(round.matches.all { it.stage == RoundStage.Cup(KnockoutPhase.ROUND_OF_16) })
-        assertTrue(round.matches.all { it.isKnockout && it.competition == SeasonCompetitions.CUP_ID })
-        // 4 jogos (as folgas não entram em campo), matchId = encaixe × 1000 + índice + 1.
-        val fixtures = cup.stages.single().ties.filterIsInstance<CupTie.Fixture>()
-        assertEquals(fixtures.map { md(2).serial * 1000L + it.index + 1 }, round.matches.map { it.matchId })
+    /** Joga a copa até o fim; devolve a copa final, os jogos e os encaixes usados. */
+    private fun playToTheEnd(start: Cup, clubs: List<Club>): Triple<Cup, List<RoundMatch>, Int> {
+        var cup = start
+        val matches = mutableListOf<RoundMatch>()
+        var slots = 0
+        while (cup.currentStage != null) {
+            val round = play(cup, week = 2 + slots, clubs = clubs, score = strongerWins)
+            matches += round.matches
+            slots++
+            cup = cup.recordRound(round).cup
+        }
+        return Triple(cup, matches, slots)
+    }
+
+    // ─── Sorteio e entrantes ──────────────────────────────────────────────
+
+    @Test
+    fun `os 24 mais fortes entram na quinta fase e os 16 mais fracos jogam a quarta`() {
+        val cup = drawMvp()
+
+        assertEquals(listOf(16, 24, 0, 0, 0, 0), cup.phases.map { it.entrants.size })
+        assertEquals((25L..40L).map(::ClubId), cup.phases[0].entrants.map { it.id })
+        assertEquals((1L..24L).map(::ClubId), cup.phases[1].entrants.map { it.id })
+
+        val opening = cup.stages.single()
+        assertEquals("Quarta fase", opening.name)
+        assertEquals(8, opening.ties.size)
+        assertTrue(opening.ties.all { it is CupTie.Single })
+        val inOpening = opening.ties.flatMap { listOf(it.home.id, it.away.id) }
+        assertEquals((25L..40L).map(::ClubId).toSet(), inOpening.toSet())
+        assertEquals(16, inOpening.size)
     }
 
     @Test
-    fun `vencedores avancam pela chave e a fase seguinte nasce sorteada`() {
-        val cup = draw(twelve)
-        val outcome = cup.recordRound(homeWins(cup))
+    fun `no formato do E2E os 4 mais fortes entram nas quartas`() {
+        val cup = drawE2e()
+        assertEquals((5L..12L).map(::ClubId), cup.phases[0].entrants.map { it.id })
+        assertEquals((1L..4L).map(::ClubId), cup.phases[1].entrants.map { it.id })
+        assertEquals("Primeira fase", cup.stages.single().name)
+        assertEquals(4, cup.stages.single().ties.size)
+    }
 
-        assertEquals(2, outcome.cup.stages.size)
-        val quarters = outcome.cup.stages.last()
-        assertEquals(KnockoutPhase.QUARTER_FINALS, quarters.phase)
-        assertEquals(4, quarters.ties.size)
+    @Test
+    fun `mesma seed sorteia a mesma copa e seeds diferentes mudam o sorteio`() {
+        assertEquals(drawMvp(), drawMvp())
+        assertNotEquals(drawMvp(cupDrawSeed(2026)).stages, drawMvp(cupDrawSeed(2027)).stages)
+        // Determinismo vale para a copa inteira, inclusive os sorteios das fases seguintes.
+        assertEquals(playToTheEnd(drawMvp(), forty).first, playToTheEnd(drawMvp(), forty).first)
+    }
 
-        // Confronto k das quartas = vencedor de 2k × vencedor de 2k+1, nessa ordem.
-        val r16 = outcome.cup.stages.first()
-        quarters.ties.forEachIndexed { k, tie ->
-            assertIs<CupTie.Fixture>(tie)
-            assertEquals(r16.ties[2 * k].winner, tie.home)
-            assertEquals(r16.ties[2 * k + 1].winner, tie.away)
+    @Test
+    fun `sorteio recusa formato que nao e mata-mata e numero de clubes que nao fecha`() {
+        val league = copaDoBrasil.copy(format = CompetitionFormat.RoundRobin(legs = 2))
+        assertThrows<IllegalArgumentException> { drawCup(2026, league, forty, Random(1)) }
+        assertThrows<IllegalArgumentException> { drawCup(2026, copaDoBrasil, forty.drop(1), Random(1)) }
+        assertThrows<IllegalArgumentException> {
+            drawCup(2026, copaDoBrasil, forty.dropLast(1) + forty.first(), Random(1))
         }
     }
 
     @Test
-    fun `vencedor do confronto leva o premio da fase e folga nao premia`() {
-        val cup = draw(twelve)
-        val outcome = cup.recordRound(homeWins(cup))
+    fun `encaixes do calendario somam uma perna por encaixe`() {
+        assertEquals(1 + 2 + 2 + 2 + 2 + 1, drawMvp().calendarRounds)
+        assertEquals(1 + 2 + 2 + 1, drawE2e().calendarRounds)
+    }
 
-        val fixtures = outcome.cup.stages.first().ties.filterIsInstance<CupTie.Fixture>()
-        assertEquals(fixtures.map { it.home.id }.toSet(), outcome.prizes.keys)
-        assertTrue(outcome.prizes.values.all { it == KnockoutPhase.ROUND_OF_16.prizeCents })
-        val byeClubs = outcome.cup.stages.first().ties.filterIsInstance<CupTie.Bye>().map { it.club.id }
-        assertTrue(byeClubs.none { it in outcome.prizes })
+    // ─── Copa inteira ─────────────────────────────────────────────────────
+
+    @Test
+    fun `copa do brasil do MVP tem 69 jogos em 10 encaixes e termina com campeao`() {
+        val (cup, matches, slots) = playToTheEnd(drawMvp(), forty)
+
+        assertEquals(8 + 32 + 16 + 8 + 4 + 1, matches.size)
+        assertEquals(69, matches.size)
+        assertEquals(cup.calendarRounds, slots)
+        assertEquals(
+            listOf("Quarta fase", "Quinta fase", "Oitavas de final", "Quartas de final", "Semifinal", "Final"),
+            cup.stages.map { it.name },
+        )
+        // Com o mais forte vencendo todo jogo, o campeão é o 1º da lista.
+        assertEquals(ClubId(1), assertNotNull(cup.champion).id)
+        assertNull(cup.currentStage)
+        assertTrue(matches.all { it.competition == copaDoBrasil.id && it.competitionName == "Copa do Brasil" })
+        // Nenhum clube aparece duas vezes no mesmo encaixe.
+        matches.groupBy { it.matchId / 1000 }.values.forEach { slot ->
+            val clubs = slot.flatMap { listOf(it.homeClubId, it.awayClubId) }
+            assertEquals(clubs.size, clubs.toSet().size)
+        }
     }
 
     @Test
-    fun `reaplicar a mesma rodada nao premia de novo nem muda a chave`() {
-        val cup = draw(twelve)
-        val round = homeWins(cup)
+    fun `copa do E2E tem 4 + 8 + 4 + 1 jogos em 6 encaixes`() {
+        val (cup, matches, slots) = playToTheEnd(drawE2e(), twelve)
+        assertEquals(4 + 8 + 4 + 1, matches.size)
+        assertEquals(6, slots)
+        assertEquals(ClubId(1), cup.champion?.id)
+    }
+
+    @Test
+    fun `fase completa sorteia a seguinte com os vencedores mais os entrantes dela`() {
+        val cup = drawMvp()
+        val outcome = cup.recordRound(play(cup, 2, forty, strongerWins))
+
+        val winners = outcome.cup.stages.first().ties.map { assertNotNull(it.winner).id }
+        val fifth = outcome.cup.stages.last()
+        assertEquals("Quinta fase", fifth.name)
+        assertEquals(16, fifth.ties.size)
+        assertTrue(fifth.ties.all { it is CupTie.TwoLegged })
+        val inFifth = fifth.ties.flatMap { listOf(it.home.id, it.away.id) }.toSet()
+        assertEquals(winners.toSet() + (1L..24L).map(::ClubId), inFifth)
+        assertEquals(32, inFifth.size)
+    }
+
+    // ─── Ida e volta ──────────────────────────────────────────────────────
+
+    /** A copa do E2E com a 1ª fase jogada: as quartas (ida e volta) em disputa. */
+    private fun quarterFinals(): Cup {
+        val cup = drawE2e()
+        return cup.recordRound(play(cup, 2, twelve, strongerWins)).cup.also {
+            assertEquals("Quartas de final", it.currentStage?.name)
+        }
+    }
+
+    @Test
+    fun `ida empatada nao vai aos penaltis e so guarda o placar`() {
+        val cup = quarterFinals()
+        val firstLeg = cupRound(3, 2026, cup, twelve)
+        assertTrue(firstLeg.matches.all { it.stage == RoundStage.Cup("Quartas de final", CupLeg.First) })
+        assertTrue(firstLeg.matches.none { it.decidesOnPenalties(1, 1) })
+
+        val outcome = cup.recordRound(play(cup, 3, twelve) { 1 to 1 })
+        assertTrue(outcome.prizes.isEmpty())
+        assertNotNull(outcome.cup.currentStage).ties.forEach { tie ->
+            val twoLegged = assertIs<CupTie.TwoLegged>(tie)
+            assertEquals(LegScore(1, 1), twoLegged.firstLeg)
+            assertNull(twoLegged.winner)
+            assertNull(twoLegged.penalties)
+        }
+    }
+
+    @Test
+    fun `volta tem o mando invertido e carrega o placar da ida`() {
+        val cup = quarterFinals()
+        val afterFirst = cup.recordRound(play(cup, 3, twelve) { 2 to 1 }).cup
+        val secondLeg = cupRound(4, 2026, afterFirst, twelve)
+
+        assertNotNull(afterFirst.currentStage).ties.forEach { tie ->
+            val match = secondLeg.matches.single { it.matchId % 1000 == tie.index + 1L }
+            assertEquals(tie.away.id, match.homeClubId)
+            assertEquals(tie.home.id, match.awayClubId)
+            assertEquals(RoundStage.Cup("Quartas de final", CupLeg.Second(LegScore(2, 1))), match.stage)
+        }
+    }
+
+    @Test
+    fun `volta com agregado empatado vai aos penaltis e decide por eles`() {
+        val cup = quarterFinals()
+        // Ida 2 × 1 para o mandante; volta 1 × 0 para o outro: agregado 2 × 2.
+        val afterFirst = cup.recordRound(play(cup, 3, twelve) { 2 to 1 }).cup
+        val secondLeg = cupRound(4, 2026, afterFirst, twelve)
+        assertTrue(secondLeg.matches.all { it.decidesOnPenalties(1, 0) })
+        assertTrue(secondLeg.matches.none { it.decidesOnPenalties(2, 0) || it.decidesOnPenalties(0, 0) })
+
+        val outcome = afterFirst.recordRound(play(afterFirst, 4, twelve) { 1 to 0 })
+        // Pênaltis 4 × 3 para o mandante da VOLTA — o `away` do confronto.
+        outcome.cup.stages[1].ties.forEach { tie ->
+            val twoLegged = assertIs<CupTie.TwoLegged>(tie)
+            assertEquals(2, twoLegged.homeAggregate)
+            assertEquals(2, twoLegged.awayAggregate)
+            assertEquals(PenaltyScore(4, 3), twoLegged.penalties)
+            assertEquals(tie.away, tie.winner)
+        }
+        assertEquals(outcome.cup.stages[1].ties.map { it.away.id }.toSet(), outcome.prizes.keys)
+        assertEquals("Semifinal", outcome.cup.currentStage?.name)
+    }
+
+    @Test
+    fun `volta com agregado empatado sem penaltis deixa o confronto em aberto`() {
+        val cup = quarterFinals()
+        val afterFirst = cup.recordRound(play(cup, 3, twelve) { 2 to 1 }).cup
+        val round = cupRound(4, 2026, afterFirst, twelve)
+        val noShootout = round.copy(matches = round.matches.map { it.copy(status = RoundStatus.Finished, homeGoals = 1) })
+
+        val outcome = afterFirst.recordRound(noShootout)
+        assertEquals(afterFirst, outcome.cup)
+        assertTrue(outcome.prizes.isEmpty())
+    }
+
+    @Test
+    fun `volta decidida no agregado passa quem fez mais gols nos dois jogos`() {
+        val cup = quarterFinals()
+        // Ida 3 × 0; volta 1 × 0 para o outro: agregado 3 × 1 — passa o mandante da ida.
+        val afterFirst = cup.recordRound(play(cup, 3, twelve) { 3 to 0 }).cup
+        val outcome = afterFirst.recordRound(play(afterFirst, 4, twelve) { 1 to 0 })
+        outcome.cup.stages[1].ties.forEach { tie ->
+            assertEquals(tie.home, tie.winner)
+            assertNull(assertIs<CupTie.TwoLegged>(tie).penalties)
+        }
+    }
+
+    @Test
+    fun `final e jogo unico e o empate dela vai aos penaltis`() {
+        var cup = drawE2e()
+        var week = 2
+        while (cup.currentStage?.name != "Final") cup = cup.recordRound(play(cup, week++, twelve, strongerWins)).cup
+
+        val final = cupRound(week, 2026, cup, twelve).matches.single()
+        assertEquals(RoundStage.Cup("Final", CupLeg.Single), final.stage)
+        assertTrue(final.decidesOnPenalties(0, 0))
+        assertFalse(final.decidesOnPenalties(1, 0))
+
+        val outcome = cup.recordRound(play(cup, week, twelve) { 0 to 0 })
+        val champion = assertNotNull(outcome.cup.champion)
+        assertEquals(final.homeClubId, champion.id)
+        assertEquals(mapOf(champion.id to CUP_FINAL_PRIZE), outcome.prizes)
+    }
+
+    @Test
+    fun `jogo de liga nunca vai aos penaltis`() {
+        val league = leagueMatch(1, ClubId(1), ClubId(2), "A", "B")
+        assertFalse(league.decidesOnPenalties(0, 0))
+    }
+
+    // ─── Prêmios ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `premio dobra a cada fase ate a semifinal e o campeao leva o maior cheque`() {
+        val cup = drawMvp()
+        val prizes = cup.phases.indices.map { cup.prizeOf(it) }
+        assertEquals(
+            listOf(25_000L, 50_000L, 100_000L, 200_000L, 400_000L, 1_000_000L).map { Money.dollars(it) },
+            prizes,
+        )
+        assertEquals(prizes.max(), prizes.last())
+        assertEquals(CUP_MIN_PRIZE, cupPhasePrize(20))
+        assertEquals(CUP_MIN_PRIZE, cupPhasePrize(Int.MAX_VALUE))
+        assertThrows<IllegalArgumentException> { cupPhasePrize(-1) }
+    }
+
+    @Test
+    fun `quem passa de fase leva o premio dela e reaplicar a perna nao premia de novo`() {
+        val cup = drawMvp()
+        val round = play(cup, 2, forty, strongerWins)
         val once = cup.recordRound(round)
-        // Mesma rodada contra a copa já atualizada: a fase corrente agora é a
-        // seguinte, onde esses pares não existem.
+        val winners = once.cup.stages.first().ties.map { assertNotNull(it.winner).id }.toSet()
+        assertEquals(winners, once.prizes.keys)
+        assertTrue(once.prizes.values.all { it == cupPhasePrize(5) })
+
         val twice = once.cup.recordRound(round)
         assertEquals(once.cup, twice.cup)
         assertTrue(twice.prizes.isEmpty())
     }
 
-    @Test
-    fun `empate com penaltis classifica quem venceu a disputa`() {
-        val cup = draw(eight)
-        val round = cupRound(2, 2026, KnockoutPhase.QUARTER_FINALS, cup, eight)
-        val finished = round.copy(
-            matches = round.matches.map {
-                it.copy(status = RoundStatus.Finished, homeGoals = 1, awayGoals = 1, penalties = PenaltyScore(3, 4))
-            },
-        )
-        val stage = cup.recordRound(finished).cup.stages.first()
-        stage.ties.filterIsInstance<CupTie.Fixture>().forEach { tie ->
-            assertEquals(tie.away, tie.winner)
-            assertEquals(TieResult(1, 1, PenaltyScore(3, 4)), tie.result)
-        }
-    }
+    // ─── Robustez ─────────────────────────────────────────────────────────
 
     @Test
-    fun `empate sem penaltis deixa o confronto em aberto em vez de estourar`() {
-        val cup = draw(eight)
-        val round = cupRound(2, 2026, KnockoutPhase.QUARTER_FINALS, cup, eight)
+    fun `jogo unico empatado sem penaltis deixa o confronto em aberto`() {
+        val cup = drawE2e()
+        val round = cupRound(2, 2026, cup, twelve)
         val drawn = round.copy(matches = round.matches.map { it.copy(status = RoundStatus.Finished) })
-
         val outcome = cup.recordRound(drawn)
         assertEquals(cup, outcome.cup)
         assertTrue(outcome.prizes.isEmpty())
     }
 
     @Test
-    fun `copa jogada ate o fim tem campeao e nenhuma fase em disputa`() {
-        var cup = draw(twelve)
-        var date = 2
-        while (cup.currentStage != null) {
-            cup = cup.recordRound(homeWins(cup, date++)).cup
-        }
-        assertEquals(KnockoutPhase.FINAL, cup.stages.last().phase)
-        assertEquals(4, cup.stages.size)
-        val champion = assertNotNull(cup.champion)
-        assertEquals(cup.stages.last().ties.single().winner, champion)
-    }
-
-    @Test
     fun `jogo de liga no mesmo encaixe nao decide confronto de copa (issue 125)`() {
-        val cup = draw(eight)
-        val cupGames = cupRound(2, 2026, KnockoutPhase.QUARTER_FINALS, cup, eight)
-        // Mesmos pares, mas como jogo de LIGA e com o mandante vencendo: não pode contar.
+        val cup = drawE2e()
+        val cupGames = cupRound(2, 2026, cup, twelve)
         val leagueGames = cupGames.matches.map {
-            it.copy(stage = RoundStage.League(1), status = RoundStatus.Finished, homeGoals = 2, awayGoals = 0)
+            it.copy(
+                stage = RoundStage.League(1),
+                competition = CompetitionId("bra-serie-a"),
+                status = RoundStatus.Finished,
+                homeGoals = 2,
+            )
         }
         val outcome = cup.recordRound(cupGames.copy(matches = leagueGames))
         assertEquals(cup, outcome.cup)
@@ -221,25 +388,41 @@ class CupRulesTest {
     }
 
     @Test
-    fun `copa em andamento nao tem campeao`() {
-        assertNull(draw(twelve).champion)
+    fun `partidas da copa usam a divisao do mandante e nao colidem com a liga`() {
+        val cup = drawMvp()
+        val round = cupRound(2, 2026, cup, forty)
+        val divisionOf = forty.associate { it.id to it.division }
+        round.matches.forEach { assertEquals(divisionOf.getValue(it.homeClubId), it.division) }
+        assertEquals(
+            cup.stages.single().ties.map { md(2).serial * 1000L + it.index + 1 },
+            round.matches.map { it.matchId },
+        )
+        assertTrue(round.matches.all { it.matchId % 1000 in 1L..99L })
     }
 
     @Test
-    fun `resultado de mata-mata nao admite empate sem penaltis`() {
+    fun `resultados de mata-mata nao admitem confronto sem classificado`() {
         assertThrows<IllegalArgumentException> { TieResult(2, 2) }
         assertThrows<IllegalArgumentException> { TieResult(2, 1, PenaltyScore(5, 4)) }
-        assertThrows<IllegalArgumentException> { TieResult(0, 0, PenaltyScore(4, 4)) }
+        val tie = assertIs<CupTie.TwoLegged>(assertNotNull(quarterFinals().currentStage).ties.first())
+        // Volta sem ida; agregado empatado sem pênaltis; pênaltis antes da volta.
+        assertThrows<IllegalArgumentException> { tie.copy(secondLeg = LegScore(1, 0)) }
+        assertThrows<IllegalArgumentException> { tie.copy(firstLeg = LegScore(1, 0), secondLeg = LegScore(1, 0)) }
+        assertThrows<IllegalArgumentException> { tie.copy(firstLeg = LegScore(1, 0), penalties = PenaltyScore(4, 3)) }
     }
 
     @Test
-    fun `mandante e divisao da partida vem do clube da casa`() {
-        val cup = draw(twelve)
-        val round = cupRound(2, 2026, KnockoutPhase.ROUND_OF_16, cup, twelve)
-        val divisionOf = twelve.associate { it.id to it.division }
-        round.matches.forEach { assertEquals(divisionOf.getValue(it.homeClubId), it.division) }
-        // Nenhuma partida de copa colide com a fórmula das de liga (× 1000 + 101..).
-        assertTrue(round.matches.all { it.matchId % 1000 in 1L..99L })
-        assertTrue(round.matches.map { it.homeClubId }.none { it == ClubId(0) })
+    fun `copa em andamento nao tem campeao`() {
+        assertNull(drawMvp().champion)
+        assertEquals("Quarta fase", drawMvp().currentPhase?.name)
+    }
+
+    @Test
+    fun `copa vai e volta do JSON sem perder nada`() {
+        val finished = playToTheEnd(drawE2e(), twelve).first
+        val halfway = drawE2e().let { it.recordRound(play(it, 2, twelve, strongerWins)).cup }
+        listOf(finished, halfway).forEach {
+            assertEquals(it, Json.decodeFromString(Cup.serializer(), Json.encodeToString(Cup.serializer(), it)))
+        }
     }
 }

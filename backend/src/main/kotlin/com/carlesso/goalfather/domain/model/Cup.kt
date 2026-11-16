@@ -1,43 +1,9 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.serialization.CompetitionIdSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
-
-/**
- * Fase de um mata-mata (issue #61), da mais larga para a final.
- *
- * Como `Posture` e `TrainingFocus`, o comportamento mora no próprio valor:
- * `teams` diz quantos clubes a fase comporta e `prizeCents` quanto ganha
- * quem VENCE um confronto dela — a premiação "por fase avançada" da issue.
- * Uma fase nova (32-avos) entra aqui e o resto do código a enxerga sem caça
- * a `when` espalhado.
- *
- * A escada de prêmios é crescente de propósito: chegar longe paga mais, e o
- * campeão (vencedor da final) leva o maior cheque. O caixa da IA é US$ 100 mil
- * e uma bilheteria cheia rende ~US$ 150 mil; a copa inteira (US$ 210 mil para
- * quem joga as 4 fases e vence) pesa como receita sem virar a única que importa.
- */
-@Serializable
-enum class KnockoutPhase(val teams: Int, val prizeCents: Money) {
-    ROUND_OF_32(32, 15_000_00.cents),
-    ROUND_OF_16(16, 20_000_00.cents),
-    QUARTER_FINALS(8, 30_000_00.cents),
-    SEMI_FINALS(4, 50_000_00.cents),
-    FINAL(2, 100_000_00.cents),
-    ;
-
-    /** Fase seguinte do chaveamento; `null` depois da final. */
-    val next: KnockoutPhase? get() = entries.getOrNull(ordinal + 1)
-
-    companion object {
-        /** Fase de abertura de uma chave com [bracketSize] vagas (potência de 2). */
-        fun opening(bracketSize: Int): KnockoutPhase =
-            requireNotNull(entries.firstOrNull { it.teams == bracketSize }) {
-                "Chave de $bracketSize vagas não suportada (use 2..32, potência de 2)"
-            }
-    }
-}
 
 /**
  * Clube como a copa o enxerga: id + nome. O nome é COPIADO (não buscado pelo
@@ -56,13 +22,14 @@ data class PenaltyScore(val home: Int, val away: Int) {
 }
 
 /**
- * Resultado de um confronto de mata-mata.
+ * Resultado de um confronto em JOGO ÚNICO.
  *
  * O `init` torna irrepresentável o que o mata-mata não admite: um empate SEM
  * pênaltis (não haveria classificado) e pênaltis depois de um jogo que já
  * tinha vencedor. Diferente da faixa de preço do ingresso (regra de
  * balanceamento, issue #59), aqui é invariante estrutural — um `TieResult`
- * sem vencedor não tem significado, então o `require` é o lugar certo.
+ * sem vencedor não tem significado, então o `require` é o lugar certo. O par
+ * de ida e volta é o `TwoLeggedTieResult` (issue #124), com a mesma lição.
  */
 @Serializable
 data class TieResult(
@@ -86,106 +53,236 @@ data class TieResult(
 }
 
 /**
- * Um confronto da chave — `sealed` porque há DOIS tipos de vaga, e cada um
- * carrega só o que faz sentido para ele:
+ * Qual jogo de um confronto uma partida de copa é (issue #131) — e, com isso,
+ * quando o empate dela vai aos pênaltis (`decidesOnPenalties`, `CupRules.kt`):
  *
- * - [Bye]: o clube passa sem jogar. Existe quando o nº de clubes não é
- *   potência de 2 (12 clubes numa chave de 16 deixam 4 folgas). Não tem
- *   adversário nem placar — e o tipo nem permite escrevê-los.
- * - [Fixture]: jogo único. `result` nulo = ainda não disputado.
+ * - [Single]: jogo único. Empate no placar → pênaltis.
+ * - [First]: a ida. Empate é só um placar; ninguém cobra pênalti.
+ * - [Second]: a volta. Pênaltis só se o AGREGADO empatar — por isso ela
+ *   carrega o placar da ida ([firstLeg], na orientação da ida).
  *
- * Com um único data class e `away: CupClub?` + `result: TieResult?`, "folga
- * com placar" seria um estado possível. A soma de tipos é a mesma lição de
- * `Availability` (issue #54): estados inválidos irrepresentáveis.
+ * `sealed` e não um `enum` + `firstLeg: LegScore?` solto: "volta sem placar
+ * da ida" seria um estado possível, e a decisão dos pênaltis precisaria de um
+ * `!!` para lê-lo. Aqui o placar só existe onde ele tem significado. As duas
+ * pernas sem dado são `data object` — o singleton do Kotlin com `toString`/
+ * `equals` legíveis, serializável como qualquer outra variante.
+ */
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+@Serializable
+@JsonClassDiscriminator("type")
+sealed interface CupLeg {
+    @Serializable
+    @SerialName("Single")
+    data object Single : CupLeg
+
+    @Serializable
+    @SerialName("First")
+    data object First : CupLeg
+
+    @Serializable
+    @SerialName("Second")
+    data class Second(val firstLeg: LegScore) : CupLeg
+}
+
+/**
+ * Um confronto da chave — `sealed` porque há DOIS formatos de confronto, e
+ * cada um carrega só o que faz sentido para ele:
  *
- * `index` é a posição na chave da fase. Os vencedores de `2k` e `2k+1` se
- * enfrentam na fase seguinte — é ela que faz o sorteio inicial definir o
- * caminho inteiro até a final.
+ * - [Single]: jogo único, um [TieResult] (com pênaltis se empatou).
+ * - [TwoLegged]: ida e volta, o placar de cada perna e os pênaltis da volta.
+ *
+ * Com um data class só e campos opcionais para tudo, "jogo único com placar
+ * de volta" seria representável. É a mesma lição de `Availability` (#54).
+ *
+ * [home] é o mandante do jogo único ou da IDA; na volta o mando se inverte.
+ * As folgas da copa antiga (issue #61) deixaram de existir: quem pula fases
+ * agora ENTRA numa fase mais tardia (`CupPhase.entrants`), como a Série A
+ * na 5ª fase da Copa do Brasil.
  */
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
 sealed interface CupTie {
     val index: Int
+    val home: CupClub
+    val away: CupClub
 
     /** Quem passou de fase, ou `null` se o confronto ainda não foi decidido. */
     val winner: CupClub?
 
-    @Serializable
-    @SerialName("Bye")
-    data class Bye(
-        override val index: Int,
-        val club: CupClub,
-    ) : CupTie {
-        // Propriedade sem backing field: o kotlinx.serialization não a
-        // serializa — é derivada, não estado.
-        override val winner: CupClub get() = club
-    }
+    /** O jogo que falta disputar; `null` quando o confronto está decidido. */
+    val openLeg: CupLeg?
+
+    /** Jogo único ou ida e volta — tem que bater com o da fase. */
+    val legs: Legs
 
     @Serializable
-    @SerialName("Fixture")
-    data class Fixture(
+    @SerialName("Single")
+    data class Single(
         override val index: Int,
-        val home: CupClub,
-        val away: CupClub,
+        override val home: CupClub,
+        override val away: CupClub,
         val result: TieResult? = null,
     ) : CupTie {
         init {
             require(home.id != away.id) { "Clube não enfrenta a si mesmo: ${home.id.value}" }
         }
 
+        // Propriedades sem backing field: o kotlinx.serialization não as
+        // serializa — são derivadas, não estado.
         override val winner: CupClub?
             get() = result?.let { if (it.homeWon) home else away }
+
+        override val openLeg: CupLeg? get() = if (result == null) CupLeg.Single else null
+
+        override val legs: Legs get() = Legs.SINGLE
+    }
+
+    /**
+     * Ida e volta. [firstLeg] na orientação da ida ([home] recebe); [secondLeg]
+     * e [penalties] na orientação da volta ([away] recebe). O `init` delega ao
+     * `TwoLeggedTieResult` a invariante do confronto decidido (agregado
+     * empatado exige pênaltis; decidido no placar não admite) e recusa uma
+     * volta sem ida.
+     */
+    @Serializable
+    @SerialName("TwoLegged")
+    data class TwoLegged(
+        override val index: Int,
+        override val home: CupClub,
+        override val away: CupClub,
+        val firstLeg: LegScore? = null,
+        val secondLeg: LegScore? = null,
+        val penalties: PenaltyScore? = null,
+    ) : CupTie {
+        init {
+            require(home.id != away.id) { "Clube não enfrenta a si mesmo: ${home.id.value}" }
+            require(secondLeg == null || firstLeg != null) { "Volta registrada sem a ida: ${home.id.value} × ${away.id.value}" }
+            require(secondLeg != null || penalties == null) { "Pênaltis só depois da volta: ${home.id.value} × ${away.id.value}" }
+            result // constrói o resultado só para validar a invariante dele
+        }
+
+        /** O confronto decidido, ou `null` enquanto falta a volta. */
+        val result: TwoLeggedTieResult?
+            get() = secondLeg?.let { second ->
+                TwoLeggedTieResult(home.id, away.id, requireNotNull(firstLeg), second, penalties)
+            }
+
+        /** Gols de [home] nos jogos já disputados (0 antes da ida). */
+        val homeAggregate: Int get() = (firstLeg?.homeGoals ?: 0) + (secondLeg?.awayGoals ?: 0)
+
+        /** Gols de [away] nos jogos já disputados. */
+        val awayAggregate: Int get() = (firstLeg?.awayGoals ?: 0) + (secondLeg?.homeGoals ?: 0)
+
+        override val winner: CupClub?
+            get() = result?.let { if (it.winner == home.id) home else away }
+
+        override val openLeg: CupLeg?
+            get() = when {
+                firstLeg == null -> CupLeg.First
+                secondLeg == null -> CupLeg.Second(firstLeg)
+                else -> null
+            }
+
+        override val legs: Legs get() = Legs.TWO_LEGGED
     }
 }
 
-/** Uma fase da copa já sorteada, com seus confrontos na ordem da chave. */
+/**
+ * Uma fase do PLANO da copa (issue #131): o `KnockoutStage` do formato com os
+ * clubes que ENTRAM nela já definidos no sorteio inicial ([entrants]) — os
+ * mais fortes nas fases mais tardias. As fases seguintes à primeira só são
+ * SORTEADAS quando a anterior termina, mas quem entra em cada uma já se sabe.
+ */
 @Serializable
-data class CupStage(
-    val phase: KnockoutPhase,
-    val ties: List<CupTie>,
+data class CupPhase(
+    val name: String,
+    val teams: Int,
+    val legs: Legs,
+    val entrants: List<CupClub>,
 ) {
     init {
-        require(ties.size == phase.teams / 2) {
-            "Fase $phase tem ${phase.teams / 2} confrontos, recebeu ${ties.size}"
-        }
+        require(name.isNotBlank()) { "Fase de copa sem nome" }
+        require(teams >= 2 && teams % 2 == 0) { "Fase $name precisa de nº par de clubes >= 2: $teams" }
+        require(entrants.size <= teams) { "Fase $name: ${entrants.size} entrantes para $teams vagas" }
     }
 
-    /** Todos os confrontos decididos (folgas já nascem decididas). */
+    val ties: Int get() = teams / 2
+}
+
+/** Uma fase da copa já sorteada, com seus confrontos na ordem do sorteio. */
+@Serializable
+data class CupStage(
+    val name: String,
+    val ties: List<CupTie>,
+) {
+    /** Todos os confrontos decididos. */
     val isComplete: Boolean get() = ties.all { it.winner != null }
 }
 
 /**
- * A copa de uma temporada (issue #61): mata-mata em jogo único com os mesmos
- * clubes da liga, paralelo ao campeonato.
+ * A copa de uma temporada (issues #61 e #131): mata-mata em fases nomeadas,
+ * cada uma em jogo único ou ida e volta, com clubes ENTRANDO em fases
+ * diferentes — o formato da Copa do Brasil.
  *
- * `stages` guarda só as fases JÁ SORTEADAS, em ordem — a fase N+1 nasce
- * quando a N termina (avanço dos vencedores). A sequência completa sai da
- * chave da primeira fase em [phases], o que é tudo que o calendário precisa
- * para reservar as datas da copa logo no início da temporada.
+ * - [phases] é o plano inteiro (o formato `Knockout` da competição + quem
+ *   entra em cada fase), fixado no sorteio inicial.
+ * - [stages] guarda só as fases JÁ SORTEADAS, alinhadas por índice com
+ *   [phases] — a fase N+1 é sorteada quando a N termina, com os vencedores
+ *   + os entrantes dela.
+ * - [drawSeed] é a semente desses sorteios futuros. Sai do `Random` do
+ *   sorteio inicial, então a copa inteira é função da seed da temporada —
+ *   sem guardar o `Random` (que não é serializável) nem depender de quando
+ *   cada fase termina.
  *
  * Diferente do `SeasonRecord`, a `Cup` muda ao longo da temporada (cada
- * fase disputada produz uma cópia com os resultados) — mas sempre via
+ * perna disputada produz uma cópia com os resultados) — mas sempre via
  * `copy()`, como o resto do domínio.
  */
 @Serializable
 data class Cup(
     val season: Int,
+    @Serializable(with = CompetitionIdSerializer::class)
+    val competitionId: CompetitionId,
+    val competitionName: String,
+    val phases: List<CupPhase>,
     val stages: List<CupStage>,
+    val drawSeed: Long,
 ) {
     init {
-        require(stages.isNotEmpty()) { "Copa sem fase sorteada" }
+        require(competitionName.isNotBlank()) { "Copa sem nome: ${competitionId.value}" }
+        require(phases.isNotEmpty()) { "Copa sem fases" }
+        require(stages.size in 1..phases.size) { "Copa com ${stages.size} fases sorteadas de ${phases.size}" }
+        format // valida a aritmética das fases (vencedores + entrantes = vagas)
+        // `zip` dá os pares (fase sorteada, fase do plano) sem índice manual.
+        stages.zip(phases).forEach { (stage, phase) ->
+            require(stage.name == phase.name) { "Fase sorteada ${stage.name} fora do plano (${phase.name})" }
+            require(stage.ties.size == phase.ties) { "Fase ${phase.name} tem ${phase.ties} confrontos: ${stage.ties.size}" }
+            require(stage.ties.all { it.legs == phase.legs }) { "Fase ${phase.name} é ${phase.legs}" }
+        }
+        require(stages.dropLast(1).all { it.isComplete }) { "Só a última fase sorteada pode estar em aberto" }
     }
 
-    /** Fases que a copa terá, da abertura à final. */
-    val phases: List<KnockoutPhase>
-        get() = KnockoutPhase.entries.filter { it.teams <= stages.first().phase.teams }
+    /** O plano no formato genérico da issue #124 — o que o calendário enxerga. */
+    val format: CompetitionFormat.Knockout
+        get() = CompetitionFormat.Knockout(phases.map { KnockoutStage(it.name, it.teams, it.legs, it.entrants.size) })
+
+    /**
+     * Quantos encaixes do calendário a copa ocupa: UMA perna por encaixe —
+     * jogo único conta 1, ida e volta conta 2 —, somando as fases. O formato
+     * da Copa do Brasil do MVP dá 1 + 2 + 2 + 2 + 2 + 1 = 10.
+     */
+    val calendarRounds: Int get() = phases.sumOf { it.legs.matches }
 
     /** Fase em disputa — a última sorteada, enquanto não estiver completa. */
     val currentStage: CupStage?
         get() = stages.last().takeUnless { it.isComplete }
 
+    /** O plano da fase em disputa; `null` quando a copa acabou. */
+    val currentPhase: CupPhase?
+        get() = currentStage?.let { phases[stages.lastIndex] }
+
     /** Vencedor da final; `null` enquanto a copa não acabou. */
     val champion: CupClub?
-        get() = stages.last().takeIf { it.phase == KnockoutPhase.FINAL }?.ties?.single()?.winner
+        get() = stages.takeIf { it.size == phases.size }?.last()?.ties?.singleOrNull()?.winner
 }

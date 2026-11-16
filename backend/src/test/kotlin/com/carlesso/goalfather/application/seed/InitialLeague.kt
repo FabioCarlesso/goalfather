@@ -9,11 +9,14 @@ import com.carlesso.goalfather.domain.model.Position
 import kotlin.random.Random
 
 /**
- * Estado inicial do jogo descrito declarativamente via DSL de seed.
+ * FIXTURE DE TESTE: a liga de 12 clubes em 2 divisões que foi o seed do jogo
+ * até a issue #131, descrita com a DSL de seed.
  *
- * Vivia dentro do `DataInitializer` (config/Spring); foi extraído para cá
- * (issue #88) por ser puro — assim o seed REAL pode ser testado sem subir
- * contexto Spring (ver `InitialLeagueTest`). O runner só persiste o [League].
+ * Desde a #131 o jogo nasce do pack do mundo (`application/seed/WorldSeed.kt`);
+ * esta liga pequena e totalmente conhecida (ids, nomes, overalls) ficou no
+ * source set de teste para os testes de regra que precisam de um cenário
+ * fixo — calendário, copa, metas — sem depender do pack. Mesmo pacote de
+ * antes, para os testes que a importam não mudarem.
  */
 fun initialLeague(): League {
     // Nomes já usados na liga: compartilhado entre os clubes de IA para que

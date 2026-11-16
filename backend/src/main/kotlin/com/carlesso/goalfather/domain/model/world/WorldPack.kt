@@ -125,11 +125,14 @@ sealed interface CompetitionOwner {
 }
 
 /**
- * Uma competição do mundo: o [Competition] de domínio (formato e desempate,
- * issue #124) mais o que o pack sabe sobre ela.
+ * Uma competição do mundo: o [Competition] de domínio (formato, desempate e
+ * limite de estrangeiros, issues #124/#130) mais o que o pack sabe sobre ela.
  *
  * [tier] é a divisão em ligas nacionais (1 = Série A); `null` em copas e
  * continentais. [strength] é `null` onde não faz sentido (copas, continentais).
+ * [pausesOnFifaWindows] é regra de calendário (issue #131): o Brasileirão
+ * segue jogando nas datas FIFA; a Europa e as copas param. Default `true`
+ * porque é o caso comum.
  */
 data class WorldCompetition(
     val competition: Competition,
@@ -137,6 +140,7 @@ data class WorldCompetition(
     val tier: Int?,
     val strength: LeagueStrength?,
     val clubIds: List<WorldClubId>,
+    val pausesOnFifaWindows: Boolean = true,
 ) {
     val id: CompetitionId get() = competition.id
 

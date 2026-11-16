@@ -1,104 +1,68 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
-import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CompetitionKind
+import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Matchday
-import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.Pairing
 import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
-import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 
 /**
- * Gera os jogos de liga de um encaixe via algoritmo de Berger (round-robin
- * de turno único), UMA vez por divisão (issue #47). Função PURA — mesmo
- * input produz exatamente o mesmo schedule (critério de determinismo da
- * issue #1).
+ * Os jogos de uma rodada de LIGA marcada num encaixe (issues #47, #125, #131).
+ * Função PURA — mesmo input produz exatamente os mesmos jogos (critério de
+ * determinismo da issue #1).
  *
- * Ideia do Berger: o primeiro clube da divisão (o de menor `id`) fica FIXO
- * e os demais rotacionam a cada rodada. Para `N` clubes (par) o turno tem
- * `N-1` rodadas distintas, cada uma com `N/2` partidas, e nenhum par se
- * repete dentro do turno.
+ * Os pareamentos vêm prontos do formato da liga (`roundRobinSchedule`, Berger
+ * com turno e returno); aqui só se transformam em [RoundMatch] com os nomes
+ * dos clubes e a competição do catálogo.
  *
- * Com divisões de tamanhos diferentes, uma divisão menor "folga" nas
- * rodadas além do seu turno (ver [seasonRounds]).
- *
- * Espelha `generateRound` em `frontend/src/mocks/seed.ts`.
- *
- * [matchday] é o ENCAIXE do calendário (issue #125) e [leagueRound] a rodada
- * da LIGA: o Berger gira pela rodada (é ela que define quem enfrenta quem) e o
- * `matchId` usa o encaixe, que é único no jogo inteiro.
+ * `matchId = encaixe × 1000 + slot × 100 + índice`: [slot] (1..9) é a posição
+ * da liga no catálogo do save — a Série A e a Premier League são ambas
+ * divisão 1, então a divisão já não distingue as ligas de um mesmo encaixe. A
+ * copa usa `encaixe × 1000 + índice` (< 100), que nenhuma liga usa: todas
+ * podem dividir o encaixe sem colidir. O id é também a seed da simulação.
  *
  * Idioma Kotlin: função top-level pura em `domain/rules` (sem classe
- * utilitária estática à la Java) e `data class` imutáveis montadas via
- * `map`/`flatMap` — nenhuma mutação de estado.
+ * utilitária estática à la Java) e `data class` imutáveis montadas via `map`.
  */
-fun generateRound(matchday: Matchday, season: Int, clubs: List<Club>, leagueRound: Int = 1): Round {
-    // `toSortedMap` garante ordem estável (divisão 1, 2, ...) para o
-    // determinismo do schedule e da numeração das partidas.
-    val byDivision = clubs.groupBy { it.division }.toSortedMap()
-    require(byDivision.isNotEmpty()) { "Liga precisa de ao menos 1 divisão" }
-
-    val matches = byDivision.flatMap { (division, divisionClubs) ->
-        leagueMatches(matchday, leagueRound, division, divisionClubs)
-    }
-    require(matches.isNotEmpty()) {
-        "Nenhuma divisão tem partidas na rodada $leagueRound — temporada já encerrada"
-    }
-
-    return Round(matchday = matchday, season = season, status = RoundStatus.Scheduled, matches = matches)
-}
-
-/**
- * Os jogos da rodada [leagueRound] da liga de UMA divisão, marcados no
- * encaixe [matchday]. Lista vazia quando o turno da divisão já acabou (folga).
- */
-fun leagueMatches(matchday: Matchday, leagueRound: Int, division: Division, clubs: List<Club>): List<RoundMatch> {
+fun leagueMatches(
+    matchday: Matchday,
+    leagueRound: Int,
+    league: GameCompetition,
+    slot: Int,
+    pairings: List<Pairing>,
+    clubsById: Map<ClubId, Club>,
+): List<RoundMatch> {
     require(leagueRound >= 1) { "leagueRound deve ser >= 1: $leagueRound" }
-    require(clubs.size >= 2) { "Divisão ${division.value} precisa de ao menos 2 clubes: ${clubs.size}" }
-    require(clubs.size % 2 == 0) { "Número de clubes da divisão ${division.value} deve ser par: ${clubs.size}" }
-    require(division.value <= 9) { "Fórmula de matchId suporta no máximo 9 divisões: ${division.value}" }
-    // Turno encerrado para esta divisão → ela folga nesta rodada.
-    if (leagueRound > turnRounds(clubs.size)) return emptyList()
-
-    // O pareamento é o Berger genérico dos formatos de competição (issue #124),
-    // que ordena por id e mantém o "clube fixo" de menor id — mesmos jogos de antes.
-    val byId = clubs.associateBy { it.id }
-    val pairings = roundRobinMatchday(clubs.map { it.id }, leagueRound)
-
+    require(slot in 1..MAX_LEAGUE_SLOTS) { "Slot de liga fora de 1..$MAX_LEAGUE_SLOTS: $slot (${league.id.value})" }
+    require(pairings.size < LEAGUE_MATCHES_PER_SLOT) { "Jogos demais numa rodada de ${league.id.value}: ${pairings.size}" }
+    val division = when (val kind = league.kind) {
+        is CompetitionKind.League -> kind.tier
+        CompetitionKind.NationalCup ->
+            error("${league.id.value} é copa, não liga")
+    }
     return pairings.mapIndexed { i, pairing ->
-        val home = byId.getValue(pairing.home)
-        val away = byId.getValue(pairing.away)
+        val home = clubsById.getValue(pairing.home)
+        val away = clubsById.getValue(pairing.away)
         RoundMatch(
-            // encaixe × 1000 + divisão × 100 + índice: único no jogo inteiro (o
-            // serial do encaixe não se repete entre temporadas) e é a seed do RNG
-            // da simulação. Mesma fórmula do mock em frontend/src/mocks/seed.ts.
-            matchId = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY + division.value * 100L + i + 1,
+            matchId = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY +
+                slot * LEAGUE_MATCHES_PER_SLOT + i + 1,
             homeClubId = home.id,
             awayClubId = away.id,
             homeClubName = home.name,
             awayClubName = away.name,
             division = division,
             stage = RoundStage.League(leagueRound),
-            competition = SeasonCompetitions.leagueId(division),
-            competitionName = SeasonCompetitions.leagueName(division),
+            competition = league.id,
+            competitionName = league.competition.name,
         )
     }
 }
 
-/**
- * Nº de rodadas da temporada: o turno da maior divisão (N-1 rodadas para N
- * clubes). Divisões menores encerram antes e folgam no fim do calendário.
- */
-fun seasonRounds(clubs: List<Club>): Int {
-    require(clubs.isNotEmpty()) { "Liga sem clubes não tem temporada" }
-    return clubs.groupBy { it.division }.values.maxOf { turnRounds(it.size) }
-}
+/** Quantas ligas cabem na faixa de `matchId` de um encaixe (os slots 1..9). */
+const val MAX_LEAGUE_SLOTS: Int = 9
 
-/**
- * A liga consegue gerar calendário? Toda divisão precisa de nº par (Berger
- * de turno único) e ao menos 2 clubes.
- */
-fun canScheduleSeason(clubs: List<Club>): Boolean =
-    clubs.isNotEmpty() &&
-        clubs.groupBy { it.division }.values.all { it.size >= 2 && it.size % 2 == 0 }
+/** Largura da faixa de `matchId` de cada liga dentro do encaixe. */
+private const val LEAGUE_MATCHES_PER_SLOT: Long = 100

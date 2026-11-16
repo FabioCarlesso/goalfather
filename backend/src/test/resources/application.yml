@@ -51,6 +51,12 @@ app:
   # Rate limit (issue #43): login apertado para o teste de 429; register
   # afrouxado para não interferir nos demais testes que registram vários
   # usuários do mesmo IP (127.0.0.1) dentro do contexto Spring compartilhado.
+  # Mundo dos testes de integração (issue #131): o pack REDUZIDO do E2E
+  # (16 clubes), não o completo — cada contexto Spring com banco vazio monta
+  # o mundo, e o pack completo custaria segundos por contexto. Relativo a
+  # `backend/`, o diretório de trabalho do `./gradlew test`.
+  world-data:
+    path: ../data/world/e2e/v1
   rate-limit:
     login:
       max-attempts: 5

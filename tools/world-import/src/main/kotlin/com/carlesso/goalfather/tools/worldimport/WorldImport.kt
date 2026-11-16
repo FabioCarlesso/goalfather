@@ -5,6 +5,7 @@ import com.carlesso.goalfather.application.port.out.PackLoadResult
 import com.carlesso.goalfather.tools.worldimport.assemble.AssemblyResult
 import com.carlesso.goalfather.tools.worldimport.assemble.PackAssembler
 import com.carlesso.goalfather.tools.worldimport.config.CuratedInputs
+import com.carlesso.goalfather.tools.worldimport.e2e.E2ePack
 import com.carlesso.goalfather.tools.worldimport.output.PackWriter
 import com.carlesso.goalfather.tools.worldimport.output.Provenance
 import com.carlesso.goalfather.tools.worldimport.wikidata.CacheMode
@@ -27,7 +28,9 @@ const val IMPORTER_VERSION = "1.0.0"
  * 2. consulta o Wikidata (ou o cache em `tools/world-import/cache/`);
  * 3. monta o pack ([PackAssembler], puro) e o escreve em `data/world/v1/`;
  * 4. carrega o resultado com o MESMO adapter do backend e falha se ele
- *    não for um pack válido.
+ *    não for um pack válido;
+ * 5. recorta o pack reduzido do profile `e2e` em `data/world/e2e/v1/`
+ *    (issue #131, [E2ePack]) e o valida do mesmo jeito.
  *
  * Argumentos: `--offline` (só cache: reprodutível, sem rede) e `--refresh`
  * (ignora o cache e consulta tudo de novo).
@@ -43,16 +46,21 @@ fun main(args: Array<String>) {
         worldDir = worldDir,
         packDir = worldDir.resolve("v1"),
         client = SparqlClient(Path.of("tools/world-import/cache"), mode),
+        e2ePackDir = worldDir.resolve("e2e/v1"),
     ).run()
     exitProcess(if (result) 0 else 1)
 }
 
-/** O fluxo do importador, separado do `main` para o teste rodar com cache e diretórios temporários. */
+/**
+ * O fluxo do importador, separado do `main` para o teste rodar com cache e
+ * diretórios temporários. [e2ePackDir] `null` pula o recorte do E2E.
+ */
 class WorldImport(
     private val worldDir: Path,
     private val packDir: Path,
     private val client: SparqlClient,
     private val log: (String) -> Unit = ::println,
+    private val e2ePackDir: Path? = null,
 ) {
     fun run(): Boolean {
         val inputs = CuratedInputs.read(worldDir)
@@ -93,12 +101,17 @@ class WorldImport(
             dropped.forEach { (reason, count) -> log("  descartados ($reason): $count") }
             warnings.forEach { log("  aviso: $it") }
         }
-        return validate()
+        if (!validate(packDir)) return false
+        // `?: return true`: sem diretório do E2E, o trabalho acabou aqui.
+        val e2eDir = e2ePackDir ?: return true
+        E2ePack.write(packDir, e2eDir)
+        log("Pack do E2E recortado em $e2eDir")
+        return validate(e2eDir)
     }
 
     /** O pack gerado tem que carregar sem erro no adapter do backend (#126). */
-    private fun validate(): Boolean = when (val loaded = runBlocking { FileWorldDataProvider(packDir).load() }) {
-        is PackLoadResult.Loaded -> true.also { log("Validação: pack carregado pelo FileWorldDataProvider sem erros") }
+    private fun validate(dir: Path): Boolean = when (val loaded = runBlocking { FileWorldDataProvider(dir).load() }) {
+        is PackLoadResult.Loaded -> true.also { log("Validação: $dir carregado pelo FileWorldDataProvider sem erros") }
         is PackLoadResult.Invalid -> false.also {
             log("Validação FALHOU:")
             loaded.errors.forEach { log("  - ${it.message}") }

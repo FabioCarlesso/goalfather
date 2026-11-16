@@ -1,10 +1,10 @@
 import { formatMoney, formatSeats } from '../../domain/formatters'
-import { KNOCKOUT_PHASE_LABEL } from '../../domain/cup'
+import { cupStageLabel } from '../../domain/cup'
 import { ordinal } from '../../domain/board'
 import type { RoundFinance, RoundStage, Standings } from '../../domain/types'
 
 /**
- * Posição do técnico na divisão e o caixa da rodada (antigo `FinalBanner`,
+ * Posição do técnico na liga e o caixa da rodada (antigo `FinalBanner`,
  * issues #4, #59 e #61). A tabela chega pronta no `RoundFinished`: o card só
  * localiza a linha do clube e soma o extrato para exibir o saldo.
  */
@@ -19,7 +19,7 @@ export function StandingsFinanceCard({
   const top3 = stage.type === 'League' ? table.rows.slice(0, 3) : []
   const title = stage.type === 'League'
     ? `Pontuações atualizadas após a rodada ${stage.matchday}`
-    : `Copa — ${KNOCKOUT_PHASE_LABEL[stage.phase]} encerrada`
+    : `Copa — ${cupStageLabel(stage)} encerrada`
   const mine = table.rows.find((r) => r.clubId === myClubId)
   const income = finance ? finance.ticketRevenue + finance.cupPrize : 0
 
@@ -28,8 +28,8 @@ export function StandingsFinanceCard({
       <h3 className="text-sm font-semibold text-emerald-200">{title}</h3>
       {mine && (
         <p className="mt-1 text-sm text-slate-100">
-          Você está em <span className="font-semibold">{ordinal(mine.position)}</span> na Divisão{' '}
-          {table.division} · <span className="font-mono">{mine.points} pts</span>
+          Você está em <span className="font-semibold">{ordinal(mine.position)}</span> —{' '}
+          {table.competitionName} · <span className="font-mono">{mine.points} pts</span>
         </p>
       )}
       {finance && (
@@ -58,7 +58,7 @@ export function StandingsFinanceCard({
         </div>
       )}
       {top3.length > 0 && (
-        <ul className="mt-2 text-sm space-y-0.5" aria-label="Três primeiros da divisão">
+        <ul className="mt-2 text-sm space-y-0.5" aria-label="Três primeiros da liga">
           {top3.map((r) => (
             <li key={r.clubId} className={`flex justify-between ${r.clubId === myClubId ? 'text-emerald-200 font-semibold' : 'text-slate-300'}`}>
               <span>{r.position}. {r.clubName}</span>

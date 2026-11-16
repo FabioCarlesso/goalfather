@@ -52,18 +52,20 @@ test.describe('Round flow', () => {
     await summary.getByRole('button', { name: 'Ver detalhes da partida' }).click()
     await expect(page.getByRole('heading', { name: /Detalhes da sua partida/ })).toBeInViewport()
 
-    // Tabela por divisao (issue #47): as duas divisoes aparecem, com a zona
-    // de promocao/rebaixamento indicada na legenda.
+    // Tabela por liga (issue #131): abre na liga do tecnico, com a temporada
+    // no titulo; o seletor troca para outra liga do mesmo pais.
     await page.getByRole('link', { name: 'Tabela' }).click()
-    await expect(page.getByRole('heading', { name: 'Tabela' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Divisão 1' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Divisão 2' })).toBeVisible()
-    await expect(page.getByText(/Rebaixamento/i)).toBeVisible()
-    await expect(page.getByText(/Promoção/i)).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Tabela', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: /^Campeonato Brasileiro Série A \d{4}$/ })).toBeVisible()
+    await expect(page.locator('tbody tr[aria-current="true"]')).toHaveCount(1)
     // Pelo menos uma linha tem pontos > 0 (vencedor de algum jogo)
     await expect(page.locator('tbody tr td:nth-child(8)')
       .filter({ hasText: /^[1-9]\d*$/ })
       .first()).toBeVisible()
+
+    await page.getByLabel('Liga').selectOption({ label: 'Campeonato Brasileiro Série B' })
+    await expect(page.getByRole('heading', { level: 2, name: /^Campeonato Brasileiro Série B \d{4}$/ })).toBeVisible()
+    await expect(page.locator('tbody tr[aria-current="true"]')).toHaveCount(0)
   })
 
   // Issue #115: "Pular para o fim" abre uma conexão INSTANT e a antiga só fecha

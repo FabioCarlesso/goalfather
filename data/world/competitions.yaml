@@ -43,6 +43,10 @@ competitions:
       strength: 70
       format: { type: roundRobin, legs: 2 }
       tiebreakers: [POINTS, WINS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, FEWER_RED_CARDS, FEWER_YELLOW_CARDS, DRAWING_OF_LOTS]
+      # Regras da CBF 2026: até 9 estrangeiros por jogo e o Brasileirão NÃO para
+      # nas datas FIFA (ver docs/WORLD_DATA.md).
+      foreignPlayerLimit: 9
+      pausesOnFifaWindows: false
     reference: https://en.wikipedia.org/wiki/2026_Campeonato_Brasileiro_S%C3%A9rie_A
     clubs:
       - { id: bra-athletico-paranaense, name: Athletico Paranaense, wikidata: Q506832 }
@@ -74,6 +78,10 @@ competitions:
       strength: 62
       format: { type: roundRobin, legs: 2 }
       tiebreakers: [POINTS, WINS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, FEWER_RED_CARDS, FEWER_YELLOW_CARDS, DRAWING_OF_LOTS]
+      # Regras da CBF 2026: até 9 estrangeiros por jogo e o Brasileirão NÃO para
+      # nas datas FIFA (ver docs/WORLD_DATA.md).
+      foreignPlayerLimit: 9
+      pausesOnFifaWindows: false
     reference: https://en.wikipedia.org/wiki/2026_Campeonato_Brasileiro_S%C3%A9rie_B
     clubs:
       - { id: bra-america-mg, name: América Mineiro, wikidata: Q338285 }
@@ -96,6 +104,71 @@ competitions:
       - { id: bra-sao-bernardo, name: São Bernardo, wikidata: Q557103 }
       - { id: bra-sport, name: Sport, wikidata: Q219098 }
       - { id: bra-vila-nova, name: Vila Nova, wikidata: Q1513287 }
+
+  # Copa do Brasil 2026 (formato da CBF): jogo único até a 4ª fase, ida e volta
+  # da 5ª fase à semifinal, final em jogo único. A Série A entra na 5ª fase.
+  # CORTE DO MVP: só os clubes do pack (Séries A e B, 40) e só as fases a partir
+  # da entrada deles. Os 16 mais fracos da Série B jogam a 4ª fase; os 20 da
+  # Série A + os 4 mais fortes da Série B entram na 5ª (quem distribui é o motor
+  # da copa, por ranking de força). Ver docs/WORLD_DATA.md.
+  - competition:
+      id: bra-copa-do-brasil
+      name: Copa do Brasil
+      country: BRA
+      format:
+        type: knockout
+        stages:
+          - { name: Quarta fase, teams: 16, legs: 1, newEntrants: 16 }
+          - { name: Quinta fase, teams: 32, legs: 2, newEntrants: 24 }
+          - { name: Oitavas de final, teams: 16, legs: 2, newEntrants: 0 }
+          - { name: Quartas de final, teams: 8, legs: 2, newEntrants: 0 }
+          - { name: Semifinal, teams: 4, legs: 2, newEntrants: 0 }
+          - { name: Final, teams: 2, legs: 1, newEntrants: 0 }
+      # Copa nacional da CBF: mesmo limite de estrangeiros; para nas datas FIFA.
+      foreignPlayerLimit: 9
+      pausesOnFifaWindows: true
+    reference: https://en.wikipedia.org/wiki/2026_Copa_do_Brasil
+    clubs:
+      - { id: bra-athletico-paranaense }
+      - { id: bra-atletico-mineiro }
+      - { id: bra-bahia }
+      - { id: bra-botafogo }
+      - { id: bra-chapecoense }
+      - { id: bra-corinthians }
+      - { id: bra-coritiba }
+      - { id: bra-cruzeiro }
+      - { id: bra-flamengo }
+      - { id: bra-fluminense }
+      - { id: bra-gremio }
+      - { id: bra-internacional }
+      - { id: bra-mirassol }
+      - { id: bra-palmeiras }
+      - { id: bra-red-bull-bragantino }
+      - { id: bra-remo }
+      - { id: bra-santos }
+      - { id: bra-sao-paulo }
+      - { id: bra-vasco-da-gama }
+      - { id: bra-vitoria }
+      - { id: bra-america-mg }
+      - { id: bra-athletic-club }
+      - { id: bra-atletico-goianiense }
+      - { id: bra-avai }
+      - { id: bra-botafogo-sp }
+      - { id: bra-ceara }
+      - { id: bra-crb }
+      - { id: bra-criciuma }
+      - { id: bra-cuiaba }
+      - { id: bra-fortaleza }
+      - { id: bra-goias }
+      - { id: bra-juventude }
+      - { id: bra-londrina }
+      - { id: bra-nautico }
+      - { id: bra-novorizontino }
+      - { id: bra-operario-ferroviario }
+      - { id: bra-ponte-preta }
+      - { id: bra-sao-bernardo }
+      - { id: bra-sport }
+      - { id: bra-vila-nova }
 
   - competition:
       id: eng-premier-league

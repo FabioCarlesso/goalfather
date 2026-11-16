@@ -1,9 +1,15 @@
 package com.carlesso.goalfather.domain.rules
 
-import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.domain.model.Countries
+import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Division
-import com.carlesso.goalfather.domain.model.RoundStatus
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
+import com.carlesso.goalfather.domain.model.Matchday
+import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.test.SERIE_A
+import com.carlesso.goalfather.test.SERIE_A_NAME
+import com.carlesso.goalfather.test.SERIE_B
+import com.carlesso.goalfather.test.SERIE_B_NAME
+import com.carlesso.goalfather.test.leagueCompetition
 import com.carlesso.goalfather.test.makeClub
 import com.carlesso.goalfather.test.md
 import org.junit.jupiter.api.assertThrows
@@ -11,129 +17,65 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Os jogos de uma rodada de liga num encaixe (issues #47/#125/#131): nomes,
+ * competição do catálogo, divisão = tier da liga e `matchId` pelo slot da liga.
+ */
 class RoundFixturesGeneratorTest {
 
-    private val sixClubs = (1L..6L).map { makeClub(id = it, name = "Club $it") }
+    private val serieA = leagueCompetition(SERIE_A, SERIE_A_NAME, Countries.BRAZIL, 1)
+    private val serieB = leagueCompetition(SERIE_B, SERIE_B_NAME, Countries.BRAZIL, 2)
+    private val premier = leagueCompetition(CompetitionId("eng-premier-league"), "Premier League", Countries.ENGLAND, 1)
+
+    private val sixClubs = (1L..6L).map { makeClub(id = it, name = "C$it") }
+    private val byId = sixClubs.associateBy { it.id }
+    private val berger = roundRobinSchedule(sixClubs.map { it.id }, legs = 2)
 
     @Test
-    fun `6 clubes geram 3 partidas por rodada`() {
-        val round = generateRound(matchday = md(1), season = 2026, clubs = sixClubs)
-        assertEquals(3, round.matches.size)
-        assertEquals(RoundStatus.Scheduled, round.status)
-        assertEquals(md(1), round.matchday)
-        assertEquals(2026, round.season)
+    fun `rodada vira partidas com a competicao do catalogo e a rodada da liga`() {
+        val matches = leagueMatches(md(1), 3, serieA, slot = 1, pairings = berger[2], clubsById = byId)
+
+        assertEquals(3, matches.size)
+        assertTrue(matches.all { it.competition == SERIE_A && it.competitionName == SERIE_A_NAME })
+        assertTrue(matches.all { it.stage == RoundStage.League(3) && it.division == Division(1) })
+        assertEquals(berger[2].map { it.home to it.away }, matches.map { it.homeClubId to it.awayClubId })
+        assertEquals(matches.map { "C${it.homeClubId.value}" }, matches.map { it.homeClubName })
     }
 
     @Test
-    fun `turno de 5 rodadas cobre cada confronto exatamente uma vez`() {
-        // Round-robin de turno único: C(6,2) = 15 confrontos em 5 rodadas de 3 jogos.
-        val seenPairs = mutableSetOf<Set<Long>>()
-        for (n in 1..5) {
-            val round = generateRound(md(n), season = 2026, clubs = sixClubs, leagueRound = n)
-            for (m in round.matches) {
-                val pair = setOf(m.homeClubId.value, m.awayClubId.value)
-                assertTrue(seenPairs.add(pair), "Par repetido no turno: $pair (rodada $n)")
-                assertTrue(m.homeClubId != m.awayClubId, "Clube enfrentando a si mesmo")
-            }
-        }
-        assertEquals(15, seenPairs.size, "Turno deve ter 15 confrontos distintos")
+    fun `divisao da partida e o tier da liga`() {
+        val matches = leagueMatches(md(1), 1, serieB, slot = 2, pairings = berger[0], clubsById = byId)
+        assertTrue(matches.all { it.division == Division(2) })
     }
 
     @Test
-    fun `clube de menor id permanece fixo (Berger)`() {
-        // O clube 1 aparece em todas as rodadas (nunca folga num turno par).
-        for (n in 1..5) {
-            val round = generateRound(md(n), season = 2026, clubs = sixClubs, leagueRound = n)
-            val clubsInRound = round.matches.flatMap { listOf(it.homeClubId.value, it.awayClubId.value) }
-            assertTrue(1L in clubsInRound, "Clube 1 deveria jogar na rodada $n")
-        }
+    fun `matchId segue o padrao encaixe 1000 + slot 100 + indice`() {
+        val matches = leagueMatches(md(2), 1, serieA, slot = 4, pairings = berger[0], clubsById = byId)
+        val base = md(2).serial * Matchday.MATCH_IDS_PER_MATCHDAY + 400
+        assertEquals(listOf(base + 1, base + 2, base + 3), matches.map { it.matchId })
+        assertTrue(matches.all { Matchday.ofMatchId(it.matchId) == md(2) })
     }
 
     @Test
-    fun `mesmo input produz exatamente o mesmo schedule (determinismo)`() {
-        val a = generateRound(md(3), 2026, sixClubs, leagueRound = 3)
-        val b = generateRound(md(3), 2026, sixClubs.shuffled(), leagueRound = 3) // ordem de entrada não importa
-        assertEquals(a, b)
+    fun `ligas de divisao 1 de paises diferentes nao colidem no mesmo encaixe (issue 131)`() {
+        val a = leagueMatches(md(3), 1, serieA, slot = 1, pairings = berger[0], clubsById = byId)
+        val p = leagueMatches(md(3), 1, premier, slot = 4, pairings = berger[0], clubsById = byId)
+        assertTrue((a.map { it.matchId } intersect p.map { it.matchId }.toSet()).isEmpty())
     }
 
     @Test
-    fun `matchId segue o padrao encaixe 1000 + divisao 100 + indice`() {
-        val round = generateRound(md(2), 2026, sixClubs)
-        val base = md(2).serial * 1000L
-        assertEquals(listOf(base + 101, base + 102, base + 103), round.matches.map { it.matchId })
-    }
-
-    @Test
-    fun `numero impar de clubes e rejeitado`() {
-        val fiveClubs = (1L..5L).map { makeClub(id = it) }
-        assertThrows<IllegalArgumentException> { generateRound(md(1), 2026, fiveClubs) }
-    }
-
-    // ─── Múltiplas divisões (issue #47) ──────────────────────────────────
-
-    private val twoDivisions =
-        (1L..6L).map { makeClub(id = it, name = "D1 Club $it") } +
-            (7L..12L).map { makeClub(id = it, name = "D2 Club $it", division = Division(2)) }
-
-    @Test
-    fun `cada divisao gera as proprias partidas na mesma rodada`() {
-        val round = generateRound(md(1), 2026, twoDivisions)
-
-        assertEquals(6, round.matches.size)
-        val byDivision = round.matches.groupBy { it.division }
-        assertEquals(setOf(Division(1), Division(2)), byDivision.keys)
-        assertEquals(3, byDivision.getValue(Division(1)).size)
-        assertEquals(3, byDivision.getValue(Division(2)).size)
-        // Partidas nunca cruzam divisões: os 6 clubes de cada bloco jogam entre si.
-        for (m in byDivision.getValue(Division(2))) {
-            assertTrue(m.homeClubId.value in 7L..12L && m.awayClubId.value in 7L..12L)
+    fun `slot fora da faixa de matchId e rejeitado`() {
+        assertThrows<IllegalArgumentException> { leagueMatches(md(1), 1, serieA, slot = 0, pairings = berger[0], clubsById = byId) }
+        assertThrows<IllegalArgumentException> {
+            leagueMatches(md(1), 1, serieA, slot = MAX_LEAGUE_SLOTS + 1, pairings = berger[0], clubsById = byId)
         }
     }
 
     @Test
-    fun `matchId nao colide entre divisoes da mesma rodada`() {
-        val round = generateRound(md(3), 2026, twoDivisions, leagueRound = 3)
-        assertEquals(round.matches.size, round.matches.map { it.matchId }.toSet().size)
-        val base = md(3).serial * 1000L
-        assertEquals(listOf(101L, 102L, 103L, 201L, 202L, 203L).map { base + it }, round.matches.map { it.matchId })
-    }
-
-    @Test
-    fun `divisao menor folga quando o proprio turno termina`() {
-        // Divisão 1 com 6 clubes (5 rodadas), divisão 2 com 4 (3 rodadas):
-        // na rodada 4 só a divisão 1 tem jogos.
-        val unbalanced =
-            (1L..6L).map { makeClub(id = it) } +
-                (7L..10L).map { makeClub(id = it, division = Division(2)) }
-
-        assertEquals(5, seasonRounds(unbalanced))
-        val round4 = generateRound(md(4), 2026, unbalanced, leagueRound = 4)
-        assertEquals(3, round4.matches.size)
-        assertTrue(round4.matches.all { it.division == Division(1) })
-    }
-
-    @Test
-    fun `divisao com numero impar de clubes e rejeitada`() {
-        val clubs = (1L..6L).map { makeClub(id = it) } +
-            (7L..9L).map { makeClub(id = it, division = Division(2)) }
-        assertThrows<IllegalArgumentException> { generateRound(md(1), 2026, clubs) }
-        assertTrue(!canScheduleSeason(clubs))
-    }
-
-    @Test
-    fun `encaixe do calendario e rodada da liga se descolam (issues 61 e 125)`() {
-        // Encaixe da semana 9, rodada de liga 3: os pareamentos são os da rodada
-        // 3; o matchId (seed da simulação) é o do encaixe, único no jogo.
-        val round = generateRound(md(9), season = 2026, clubs = sixClubs, leagueRound = 3)
-        val berger3 = generateRound(md(3), season = 2026, clubs = sixClubs, leagueRound = 3)
-
-        assertEquals(md(9), round.matchday)
-        assertTrue(round.matches.all { it.stage == RoundStage.League(3) })
-        assertTrue(round.matches.all { it.competition == SeasonCompetitions.leagueId(Division.FIRST) })
-        assertEquals(
-            berger3.matches.map { it.homeClubId to it.awayClubId },
-            round.matches.map { it.homeClubId to it.awayClubId },
-        )
-        assertTrue(round.matches.zip(berger3.matches).all { (a, b) -> a.matchId != b.matchId })
+    fun `turno e returno cobre cada confronto uma vez em cada mando`() {
+        val all = berger.flatten()
+        assertEquals(30, all.size) // 6 × 5
+        assertEquals(30, all.map { it.home to it.away }.toSet().size)
+        assertTrue(all.all { p -> all.count { it.home == p.away && it.away == p.home } == 1 })
     }
 }

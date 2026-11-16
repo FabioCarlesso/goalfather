@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.test.brazilCatalog
+import com.carlesso.goalfather.test.mvpCatalog
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Division
@@ -8,7 +11,6 @@ import com.carlesso.goalfather.domain.model.Legs
 import com.carlesso.goalfather.domain.model.Pairing
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.QualificationRule
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TableZone
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Vagas, acesso, rebaixamento e playoff (issue #128) — testes PUROS de domínio
@@ -34,7 +37,7 @@ import kotlin.test.assertIs
 class QualificationRulesTest {
 
     /** Tabela de divisão com clubes já na ordem final (posição 1..N). */
-    private fun table(division: Int, vararg clubIds: Long) = Standings(
+    private fun table(division: Int, vararg clubIds: Long) = testStandings(
         season = 2026,
         round = 5,
         division = Division(division),
@@ -48,115 +51,97 @@ class QualificationRulesTest {
 
     private fun resolved(transition: SeasonTransition): SeasonTransition.Resolved = assertIs(transition)
 
-    // ─── Pirâmide do jogo (casos da issue #47) ────────────────────────────
+    // ─── O mundo do save (issue #131) ─────────────────────────────────────
+
+    private val catalog = brazilCatalog(legs = 2)
+
+    /** As regras do mundo para Série A e Série B de [size] clubes cada. */
+    private fun rulesFor(size: Int) = worldQualificationRules(catalog, mapOf(BRA_SERIE_A to size, BRA_SERIE_B to size))
 
     @Test
-    fun `ultimos da divisao de cima trocam com os primeiros da de baixo`() {
-        val next = applyPromotionRelegation(
+    fun `com 20 clubes valem as regras do Brasileirao - G-4, G-6, Z-4 e acesso de 4`() {
+        val rules = rulesFor(20)
+        assertEquals(
             listOf(
-                table(1, 1, 2, 3, 4, 5, 6),
-                table(2, 7, 8, 9, 10, 11, 12),
+                QualificationRule.Champion(BRA_COPA_DO_BRASIL, CONMEBOL_LIBERTADORES, LIBERTADORES_GROUP_STAGE),
+                QualificationRule.TopN(BRA_SERIE_A, 4, CONMEBOL_LIBERTADORES, LIBERTADORES_GROUP_STAGE),
+                QualificationRule.TopN(BRA_SERIE_A, 2, CONMEBOL_LIBERTADORES, LIBERTADORES_SECOND_STAGE),
+                QualificationRule.Relegation(BRA_SERIE_A, 4, BRA_SERIE_B),
+                QualificationRule.Promotion(BRA_SERIE_B, 4, BRA_SERIE_A),
             ),
+            rules,
         )
-
-        // 5 e 6 caem; 7 e 8 sobem; os demais ficam onde estão.
-        assertEquals(Division(2), next[ClubId(5)])
-        assertEquals(Division(2), next[ClubId(6)])
-        assertEquals(Division(1), next[ClubId(7)])
-        assertEquals(Division(1), next[ClubId(8)])
-        assertEquals(Division(1), next[ClubId(1)])
-        assertEquals(Division(2), next[ClubId(9)])
-        assertEquals(Division(2), next[ClubId(12)])
-
-        // Balanceado: cada divisão continua com 6 clubes.
-        assertEquals(6, next.values.count { it == Division(1) })
-        assertEquals(6, next.values.count { it == Division(2) })
     }
 
     @Test
-    fun `tres divisoes encadeiam as trocas entre pares adjacentes`() {
-        val next = applyPromotionRelegation(
+    fun `tabelas pequenas encolhem as faixas para um terco - acesso igual ao rebaixamento`() {
+        val rules = rulesFor(6) // o pack de E2E: Série A e B de 6
+        assertEquals(
             listOf(
-                table(1, 1, 2, 3, 4),
-                table(2, 5, 6, 7, 8),
-                table(3, 9, 10, 11, 12),
+                QualificationRule.Champion(BRA_COPA_DO_BRASIL, CONMEBOL_LIBERTADORES, LIBERTADORES_GROUP_STAGE),
+                QualificationRule.TopN(BRA_SERIE_A, 2, CONMEBOL_LIBERTADORES, LIBERTADORES_GROUP_STAGE),
+                QualificationRule.Relegation(BRA_SERIE_A, 2, BRA_SERIE_B),
+                QualificationRule.Promotion(BRA_SERIE_B, 2, BRA_SERIE_A),
             ),
+            rules,
         )
-
-        assertEquals(Division(2), next[ClubId(3)]) // caiu da 1ª
-        assertEquals(Division(2), next[ClubId(4)])
-        assertEquals(Division(1), next[ClubId(5)]) // subiu para a 1ª
-        assertEquals(Division(1), next[ClubId(6)])
-        assertEquals(Division(3), next[ClubId(7)]) // caiu da 2ª
-        assertEquals(Division(3), next[ClubId(8)])
-        assertEquals(Division(2), next[ClubId(9)]) // subiu para a 2ª
-        assertEquals(Division(2), next[ClubId(10)])
-        assertEquals(Division(3), next[ClubId(11)])
+        // As faixas cabem sem sobrepor (o `tableZones` rejeitaria).
+        assertEquals(6, tableZones(BRA_SERIE_A, 6, rules).size)
     }
 
     @Test
-    fun `divisao unica nao move ninguem`() {
-        val next = applyPromotionRelegation(listOf(table(1, 1, 2, 3, 4)))
+    fun `sem a Serie B no mundo nao ha rebaixamento nem acesso`() {
+        val rules = worldQualificationRules(catalog, mapOf(BRA_SERIE_A to 20))
+        assertTrue(rules.none { it is QualificationRule.Relegation || it is QualificationRule.Promotion })
+    }
+
+    @Test
+    fun `virada do Brasil troca os 4 ultimos da A com os 4 primeiros da B`() {
+        val a = table(1, *(1L..20L).toList().toLongArray())
+        val b = table(2, *(21L..40L).toList().toLongArray())
+        val next = applyPromotionRelegation(listOf(a, b), rulesFor(20), catalog)
+
+        assertEquals((17L..20L).map { ClubId(it) }.toSet(), next.filterValues { it == Division(2) }.keys intersect a.rows.map { it.clubId }.toSet())
+        assertEquals((21L..24L).map { ClubId(it) }.toSet(), next.filterValues { it == Division(1) }.keys intersect b.rows.map { it.clubId }.toSet())
+        assertEquals(20, next.values.count { it == Division(1) })
+        assertEquals(20, next.values.count { it == Division(2) })
+    }
+
+    @Test
+    fun `liga europeia fechada - a virada nao move ninguem`() {
+        val premier = testStandings(
+            competitionId = CompetitionId("eng-premier-league"),
+            competitionName = "Premier League",
+            rows = (1L..20L).mapIndexed { i, id -> StandingRow(i + 1, ClubId(id), "C$id") },
+        )
+        val europe = mvpCatalog()
+        val next = applyPromotionRelegation(listOf(premier), europe.rulesFor(listOf(premier)), europe)
         assertEquals(setOf(Division.FIRST), next.values.toSet())
+        assertEquals(20, next.size)
     }
 
     @Test
     fun `mesma tabela final produz sempre a mesma recomposicao (determinismo)`() {
         val tables = listOf(table(1, 1, 2, 3, 4, 5, 6), table(2, 7, 8, 9, 10, 11, 12))
-        // Ordem de entrada das tabelas não importa.
-        assertEquals(applyPromotionRelegation(tables), applyPromotionRelegation(tables.reversed()))
-    }
-
-    @Test
-    fun `divisao duplicada e rejeitada`() {
-        assertThrows<IllegalArgumentException> {
-            applyPromotionRelegation(listOf(table(1, 1, 2), table(1, 3, 4)))
-        }
-    }
-
-    @Test
-    fun `buraco na piramide (tiers nao contiguos) e rejeitado`() {
-        // Divisões 1 e 3 sem a 2: erro de seed — a regra não deve "pontear".
-        assertThrows<IllegalArgumentException> {
-            applyPromotionRelegation(listOf(table(1, 1, 2), table(3, 3, 4)))
-        }
-    }
-
-    @Test
-    fun `a piramide vira um par Relegation + Promotion por degrau`() {
-        val d1 = SeasonCompetitions.leagueId(Division(1))
-        val d2 = SeasonCompetitions.leagueId(Division(2))
         assertEquals(
-            listOf(
-                QualificationRule.Relegation(from = d1, bottomN = 2, to = d2),
-                QualificationRule.Promotion(from = d2, topN = 2, to = d1),
-            ),
-            pyramidRules(listOf(table(2, 7, 8, 9), table(1, 1, 2, 3))),
+            applyPromotionRelegation(tables, rulesFor(6), catalog),
+            applyPromotionRelegation(tables.reversed(), rulesFor(6), catalog),
         )
-        // Divisão menor que as vagas: troca só o que cabe, como a regra antiga.
-        assertEquals(1, assertIs<QualificationRule.Relegation>(pyramidRules(listOf(table(1, 1), table(2, 2)))[0]).bottomN)
     }
 
     @Test
-    fun `vagas e faixas da zona seguem a posicao da divisao na piramide`() {
-        val (elite, second) = listOf(table(1, 1, 2, 3, 4, 5, 6), table(2, 7, 8, 9, 10, 11, 12)).withPyramidZones()
+    fun `faixas da Serie A e B de 6 - Z-2 e G-2 nas tabelas zeradas`() {
+        val (elite, second) = listOf(table(1, 1, 2, 3, 4, 5, 6), table(2, 7, 8, 9, 10, 11, 12)).withWorldZones(rulesFor(6))
 
         assertEquals(0, elite.promotionSpots)
-        assertEquals(PROMOTION_RELEGATION_SPOTS, elite.relegationSpots)
-        assertEquals(PROMOTION_RELEGATION_SPOTS, second.promotionSpots)
+        assertEquals(2, elite.relegationSpots)
+        assertEquals(2, second.promotionSpots)
         assertEquals(0, second.relegationSpots)
         assertEquals(
-            List(4) { TableZone.NONE } + List(2) { TableZone.RELEGATION },
+            List(2) { TableZone.QUALIFICATION } + List(2) { TableZone.NONE } + List(2) { TableZone.RELEGATION },
             elite.rows.map { it.zone },
         )
-        assertEquals(
-            List(2) { TableZone.PROMOTION } + List(4) { TableZone.NONE },
-            second.rows.map { it.zone },
-        )
-        // Divisão única: sem zona nenhuma.
-        val (alone) = listOf(table(1, 1, 2, 3, 4)).withPyramidZones()
-        assertEquals(0, alone.relegationSpots)
-        assertEquals(setOf(TableZone.NONE), alone.rows.map { it.zone }.toSet())
+        assertEquals(List(2) { TableZone.PROMOTION } + List(4) { TableZone.NONE }, second.rows.map { it.zone })
     }
 
     // ─── Brasil: Série A/B e Libertadores ─────────────────────────────────

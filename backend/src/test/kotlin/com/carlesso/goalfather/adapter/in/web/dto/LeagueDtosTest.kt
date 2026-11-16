@@ -1,11 +1,15 @@
 package com.carlesso.goalfather.adapter.`in`.web.dto
 
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.model.CareerCampaign
 import com.carlesso.goalfather.domain.model.ClubCareer
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
+import com.carlesso.goalfather.domain.model.LegScore
 import com.carlesso.goalfather.domain.model.PenaltyScore
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.ReadinessStatus
@@ -73,17 +77,24 @@ class LeagueDtosTest {
 
     @Test
     fun `standings achata divisao e clubId em numero e expoe so os campos do contrato`() {
-        val standings = Standings(
+        val standings = testStandings(
             season = 2026, round = 3, rows = listOf(row),
             division = Division(2), promotionSpots = 2, relegationSpots = 0,
         )
         val encoded = encode(StandingsDto.serializer(), standings.toDto())
 
         assertEquals(
-            setOf("season", "division", "round", "promotionSpots", "relegationSpots", "rows"),
+            setOf(
+                "season", "division", "round", "promotionSpots", "relegationSpots", "rows",
+                // Liga do mundo (issue #131).
+                "competitionId", "competitionName", "country", "seasonLabel",
+            ),
             encoded.keys,
         )
         assertEquals("2", encoded.string("division"))
+        assertEquals("bra-serie-b", encoded.string("competitionId"))
+        assertEquals("2026", encoded.string("seasonLabel"))
+        assertEquals("BRA", encoded.obj("country").string("code"))
         val rowJson = encoded.getValue("rows").jsonArray.single().jsonObject
         assertEquals(standingRowKeys, rowJson.keys)
         assertEquals("1", rowJson.string("clubId"))
@@ -141,6 +152,17 @@ class LeagueDtosTest {
         assertEquals(setOf("season", "champion", "finalStandings"), encoded.keys)
     }
 
+    @Test
+    fun `season record de um pais traz o pais e o rotulo da temporada (issue 131)`() {
+        val encoded = encode(
+            SeasonRecordDto.serializer(),
+            record.copy(country = Countries.ENGLAND, seasonLabel = "2026/27").toDto(),
+        )
+
+        assertEquals("ENG", encoded.obj("country").string("code"))
+        assertEquals("2026/27", encoded.string("seasonLabel"))
+    }
+
     // ─── ClubCareer ───────────────────────────────────────────────────────
 
     @Test
@@ -182,7 +204,7 @@ class LeagueDtosTest {
         matchday = md(5),
         season = 2026,
         matches = listOf(
-            RoundMatch(501, ClubId(1), ClubId(2), "Alfa", "Beta", division = Division(2), stage = RoundStage.League(matchday = 3)),
+            leagueMatch(501, ClubId(1), ClubId(2), "Alfa", "Beta", division = Division(2), stage = RoundStage.League(matchday = 3)),
         ),
     )
 
@@ -204,7 +226,7 @@ class LeagueDtosTest {
         assertEquals(matchKeys, match.keys)
         assertEquals("2", match.string("division"))
         assertEquals("2", match.string("awayClubId"))
-        assertEquals("liga-d2", match.string("competitionId"))
+        assertEquals("bra-serie-b", match.string("competitionId"))
 
         val stage = match.obj("stage")
         assertEquals(setOf("type", "matchday"), stage.keys)
@@ -220,7 +242,7 @@ class LeagueDtosTest {
                 leagueRound.matches.single().copy(
                     status = RoundStatus.Finished, homeGoals = 1, awayGoals = 1, minute = 90,
                     penalties = PenaltyScore(home = 4, away = 3),
-                    stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS),
+                    stage = RoundStage.Cup("Semifinal", CupLeg.Second(LegScore(2, 1))),
                 ),
             ),
         )
@@ -228,9 +250,19 @@ class LeagueDtosTest {
 
         val match = encoded.getValue("matches").jsonArray.single().jsonObject
         val stage = match.obj("stage")
-        assertEquals(setOf("type", "phase"), stage.keys)
+        assertEquals(setOf("type", "stageName", "leg", "firstLeg"), stage.keys)
         assertEquals("Cup", stage.string("type"))
-        assertEquals("SEMI_FINALS", stage.string("phase"))
+        assertEquals("Semifinal", stage.string("stageName"))
+        assertEquals("SECOND", stage.string("leg"))
+        assertEquals("2", stage.obj("firstLeg").string("homeGoals"))
+
+        // Jogo único: sem `firstLeg` (ausente, não `null`).
+        val single = encode(
+            RoundDto.serializer(),
+            cupRound.copy(matches = cupRound.matches.map { it.copy(stage = RoundStage.Cup("Final", CupLeg.Single)) }).toDto(),
+        ).getValue("matches").jsonArray.single().jsonObject.obj("stage")
+        assertEquals(setOf("type", "stageName", "leg"), single.keys)
+        assertEquals("SINGLE", single.string("leg"))
 
         assertEquals(matchKeys + "penalties", match.keys)
         assertEquals(setOf("home", "away"), match.obj("penalties").keys)

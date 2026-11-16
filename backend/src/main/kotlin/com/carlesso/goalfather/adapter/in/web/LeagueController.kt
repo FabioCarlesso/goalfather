@@ -9,6 +9,7 @@ import com.carlesso.goalfather.application.port.`in`.SeasonHistoryUseCase
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CountryCode
 import com.carlesso.goalfather.domain.model.UserId
 import com.carlesso.goalfather.domain.result.StartRoundResult
 import kotlinx.serialization.json.Json
@@ -87,10 +88,32 @@ class LeagueController(
     suspend fun getHistory(): ResponseEntity<Any> =
         json.okJson(history.history().map { it.toDto() })
 
-    /** Uma temporada do histórico, com a classificação final de cada divisão. */
+    /**
+     * Uma temporada do histórico, com a classificação final de cada divisão.
+     * Cada país vira no seu tempo (issue #131): `country` escolhe o país; sem
+     * ele, o primeiro encerrado naquele ano (o Brasil, quando já virou).
+     */
     @GetMapping("/history/{season}")
-    suspend fun getSeasonRecord(@PathVariable season: Int): ResponseEntity<Any> {
-        val record = history.season(season)
+    suspend fun getSeasonRecord(
+        @PathVariable season: Int,
+        @RequestParam(required = false) country: String?,
+    ): ResponseEntity<Any> {
+        val raw = country?.takeIf { it.isNotBlank() }
+        // O `init` do `CountryCode` recusa trigrama malformado com exception,
+        // que cairia no fallback 500 (revisão da PR #154). `runCatching` +
+        // `getOrNull` transforma a exception em `null` num valor só: entrada
+        // ruim do cliente é 400 `INVALID_PARAMETER`, como no contrato.
+        val code = raw?.let { runCatching { CountryCode(it.uppercase()) }.getOrNull() }
+        if (raw != null && code == null) {
+            return ResponseEntity.status(400).body(
+                ErrorResponse(
+                    code = "INVALID_PARAMETER",
+                    message = "Parâmetro 'country' inválido",
+                    details = mapOf("parameter" to "country", "value" to raw),
+                ),
+            )
+        }
+        val record = history.season(season, code)
         return if (record == null) {
             ResponseEntity.status(404).body(
                 ErrorResponse(
@@ -127,7 +150,8 @@ class LeagueController(
     @GetMapping("/standings")
     suspend fun getStandings(@RequestParam(required = false) season: Int?): ResponseEntity<Any> {
         if (season == null) {
-            // Uma tabela por divisão, da elite para baixo (issue #47).
+            // Uma tabela por liga do mundo, cada uma na sua temporada corrente
+            // (issue #131); Brasil primeiro, elite primeiro.
             return json.okJson(leagueRepo.currentStandings().map { it.toDto() })
         }
         // Histórico: tabelas finais de uma temporada já encerrada (issue #11).

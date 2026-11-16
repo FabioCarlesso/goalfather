@@ -42,7 +42,7 @@ data class SeasonTopScorer(
 )
 
 /**
- * Snapshot IMUTÁVEL de uma temporada encerrada (issue #60). Diferente do
+ * Snapshot IMUTÁVEL da temporada encerrada de UM país (issues #60 e #131). Diferente do
  * resto do domínio, este agregado nunca sofre `copy()` depois de criado — é
  * append-only tanto no tipo quanto na tabela (PK por `season`).
  *
@@ -70,4 +70,13 @@ data class SeasonRecord(
     val finalStandings: List<SeasonStanding>,
     val topScorer: SeasonTopScorer? = null,
     val cupChampion: CupClub? = null,
+    /**
+     * País da temporada (issue #131): cada país vira no seu tempo, então a
+     * história é por (temporada, país) — o Brasil de 2026 e a Europa de
+     * 2026/27 são dois records de `season = 2026`. Nulo só nos records
+     * gravados antes do mundo do MVP (o mundo antigo era só o Brasil).
+     */
+    val country: Country? = null,
+    /** `2026` ou `2026/27` (issue #131); nulo nos records antigos. */
+    val seasonLabel: String? = null,
 )

@@ -3,11 +3,15 @@
 // que é o critério de aceite da issue: snapshot ANTES do reset das estatísticas.
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { careerOf, seasonRecordOf, startNewSeason, state } from './seed'
+import { COUNTRIES, careerOf, seasonRecordOf, startNewSeason, state } from './seed'
 import type { SeasonRecord, Standings } from '../domain/types'
 
 const table = (division: number, clubIds: number[], points: number[]): Standings => ({
   season: 2026,
+  seasonLabel: '2026',
+  competitionId: division === 1 ? 'bra-serie-a' : 'bra-serie-b',
+  competitionName: division === 1 ? 'Campeonato Brasileiro Série A' : 'Campeonato Brasileiro Série B',
+  country: COUNTRIES.BRA,
   division,
   round: 5,
   promotionSpots: division === 1 ? 0 : 2,
@@ -111,11 +115,11 @@ describe('mock de histórico (issue #60)', () => {
 
   it('a virada leva o campeão da copa para a história e sorteia a copa nova', () => {
     const cup = state.cup!
-    state.cup = { ...cup, champion: { id: 4, name: 'Tupinambás FC' } }
+    state.cup = { ...cup, champion: { id: 4, name: 'Atlético Mineiro' } }
 
     startNewSeason(2027, finalTables)
 
-    expect(state.history[0]!.cupChampion).toEqual({ id: 4, name: 'Tupinambás FC' })
+    expect(state.history[0]!.cupChampion).toEqual({ id: 4, name: 'Atlético Mineiro' })
     expect(state.cup?.season).toBe(2027)
     expect(state.cup?.champion).toBeUndefined()
   })

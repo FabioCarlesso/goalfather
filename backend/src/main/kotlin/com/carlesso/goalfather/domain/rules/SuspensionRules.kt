@@ -2,13 +2,13 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Competition
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.DisciplineRules
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Round
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.Suspension
 
 /**
@@ -102,12 +102,12 @@ fun Round.competitionByClub(): Map<ClubId, CompetitionId> =
  * dentro do limite de estrangeiros dela. Único ponto que liga o apito inicial
  * às regras da competição — engine, bilheteria e desgaste usam a MESMA conta.
  */
-fun Club.startingLineupIn(competition: CompetitionId): Lineup =
-    startingLineup(competition, SeasonCompetitions.foreignPlayerLimitOf(competition))
+fun Club.startingLineupIn(competition: Competition): Lineup =
+    startingLineup(competition.id, competition.foreignPlayerLimit)
 
 /** Efeito disciplinar de um jogo de [competition], com a regra dela. */
-fun List<Player>.afterMatchIn(competition: CompetitionId, cards: Map<PlayerId, MatchCards>): List<Player> =
-    afterMatchIn(competition, SeasonCompetitions.disciplineOf(competition), cards)
+fun List<Player>.afterMatchIn(competition: Competition, cards: Map<PlayerId, MatchCards>): List<Player> =
+    afterMatchIn(competition.id, competition.discipline, cards)
 
 /** Zera amarelos pendentes e suspensões: a pré-temporada começa limpa. */
 fun Player.withCleanRecord(): Player = copy(pendingYellows = emptyMap(), suspensions = emptyList())

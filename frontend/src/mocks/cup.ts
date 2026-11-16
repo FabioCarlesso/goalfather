@@ -1,88 +1,70 @@
-// Copa mata-mata do mock (issue #61) — espelha domain/rules/CupRules.kt e
-// SeasonCalendar.kt do backend. Como todo `mocks/`, é código descartável: a
-// regra mora no Kotlin e a app real só lê a chave pronta de `/api/league/cup`.
+// Copa mata-mata do mock (issues #61 e #131) — espelha domain/rules/CupRules.kt
+// e o calendário do backend. Como todo `mocks/`, é código descartável: a regra
+// mora no Kotlin e a app real só lê a chave pronta de `/api/league/cup`.
+//
+// O formato é o do pack do E2E (Copa do Brasil reduzida, 12 clubes):
+// 1ª fase em jogo único com os 8 mais fracos → quartas em ida e volta com os
+// 4 mais fortes entrando → semifinal em ida e volta → final em jogo único.
 
 import type {
   Cup,
   CupClub,
+  CupLeg,
+  CupLegs,
+  CupPhaseInfo,
   CupStage,
   CupTie,
-  KnockoutPhase,
   Matchday,
-  PenaltyScore,
   Round,
   RoundMatch,
   RoundStage,
 } from '../domain/types'
-import type { MulberryRng } from './engine'
+import { MulberryRng } from './engine'
 import { matchdaySerial } from './calendar'
 
-/** Fases na ordem da chave, da mais larga para a final. */
-export const KNOCKOUT_PHASES: readonly KnockoutPhase[] =
-  ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL']
+type CupSingleTie = Extract<CupTie, { type: 'Single' }>
+type CupTwoLeggedTie = Extract<CupTie, { type: 'TwoLegged' }>
+type CupMatchStage = Extract<RoundStage, { type: 'Cup' }>
 
-export const PHASE_TEAMS: Record<KnockoutPhase, number> = {
-  ROUND_OF_32: 32,
-  ROUND_OF_16: 16,
-  QUARTER_FINALS: 8,
-  SEMI_FINALS: 4,
-  FINAL: 2,
+/** Uma fase do formato `Knockout` do pack (o `KnockoutStage` do backend). */
+export interface KnockoutStageFormat {
+  name: string
+  teams: number
+  legs: CupLegs
+  newEntrants: number
 }
 
-/** Prêmio por confronto vencido em cada fase — mesmos valores de `KnockoutPhase.prizeCents`. */
-export const CUP_PRIZE_CENTS: Record<KnockoutPhase, number> = {
-  ROUND_OF_32: 15_000_00,
-  ROUND_OF_16: 20_000_00,
-  QUARTER_FINALS: 30_000_00,
-  SEMI_FINALS: 50_000_00,
-  FINAL: 100_000_00,
+/** Formato da Copa do Brasil do pack do E2E (12 clubes) — o que o mock joga. */
+export const E2E_CUP_FORMAT: readonly KnockoutStageFormat[] = [
+  { name: 'Primeira fase', teams: 8, legs: 'SINGLE', newEntrants: 8 },
+  { name: 'Quartas de final', teams: 8, legs: 'TWO_LEGGED', newEntrants: 4 },
+  { name: 'Semifinal', teams: 4, legs: 'TWO_LEGGED', newEntrants: 0 },
+  { name: 'Final', teams: 2, legs: 'SINGLE', newEntrants: 0 },
+]
+
+/** Id e nome da copa do mundo do MVP — o `GameCompetition` da Copa do Brasil no pack. */
+export const CUP_COMPETITION_ID = 'bra-copa-do-brasil'
+export const CUP_COMPETITION_NAME = 'Copa do Brasil'
+export const leagueCompetitionId = (division: number): string => `liga-d${division}`
+export const leagueCompetitionName = (division: number): string => `Liga — Divisão ${division}`
+
+/** Clubes que o formato comporta: soma dos entrantes de todas as fases. */
+export const cupEntrants = (format: readonly KnockoutStageFormat[]): number =>
+  format.reduce((sum, s) => sum + s.newEntrants, 0)
+
+// ─── Prêmios — espelha `cupPhasePrize` ───────────────────────────────────
+
+const CUP_FINAL_PRIZE_CENTS = 1_000_000_00
+const CUP_SEMI_FINAL_PRIZE_CENTS = 400_000_00
+const CUP_MIN_PRIZE_CENTS = 10_000_00
+
+/** Prêmio por confronto vencido numa fase a `phasesToFinal` fases da final. */
+export function cupPhasePrize(phasesToFinal: number): number {
+  if (phasesToFinal === 0) return CUP_FINAL_PRIZE_CENTS
+  return Math.max(CUP_MIN_PRIZE_CENTS, Math.floor(CUP_SEMI_FINAL_PRIZE_CENTS / 2 ** (phasesToFinal - 1)))
 }
 
-export const MIN_CUP_CLUBS = 4
-export const MAX_CUP_CLUBS = 32
-
-export const canHoldCup = (clubCount: number): boolean =>
-  clubCount >= MIN_CUP_CLUBS && clubCount <= MAX_CUP_CLUBS
-
-/** Vencedor de um confronto: a folga passa direto; o jogo, por placar ou pênaltis. */
-export function tieWinner(tie: CupTie): CupClub | null {
-  switch (tie.type) {
-    case 'Bye':
-      return tie.club
-    case 'Fixture': {
-      if (!tie.result) return null
-      const { homeGoals, awayGoals, penalties } = tie.result
-      const homeWon = penalties ? penalties.home > penalties.away : homeGoals > awayGoals
-      return homeWon ? tie.home : tie.away
-    }
-  }
-}
-
-const isComplete = (stage: CupStage): boolean => stage.ties.every((t) => tieWinner(t) != null)
-
-const phasesFrom = (opening: KnockoutPhase): KnockoutPhase[] =>
-  KNOCKOUT_PHASES.filter((p) => PHASE_TEAMS[p] <= PHASE_TEAMS[opening])
-
-/**
- * Recalcula os campos que o backend deriva no `CupDto` (`phases`,
- * `currentPhase`, `champion`) a partir das fases sorteadas.
- */
-function withDerived(season: number, stages: CupStage[]): Cup {
-  const last = stages[stages.length - 1]!
-  const lastFinal = last.phase === 'FINAL' && isComplete(last) ? tieWinner(last.ties[0]!) : null
-  return {
-    season,
-    phases: phasesFrom(stages[0]!.phase).map((phase) => ({ phase, prizeCents: CUP_PRIZE_CENTS[phase] })),
-    stages,
-    ...(isComplete(last) ? {} : { currentPhase: last.phase }),
-    ...(lastFinal ? { champion: lastFinal } : {}),
-  }
-}
-
-export const currentStage = (cup: Cup): CupStage | null => {
-  const last = cup.stages[cup.stages.length - 1]!
-  return isComplete(last) ? null : last
-}
+// ─── Sorteio ─────────────────────────────────────────────────────────────
 
 /** Fisher–Yates com o RNG seedável — mesmo seed, mesma ordem. */
 function shuffled<T>(items: T[], rng: MulberryRng): T[] {
@@ -94,84 +76,210 @@ function shuffled<T>(items: T[], rng: MulberryRng): T[] {
   return out
 }
 
-/**
- * Sorteia a chave: menor potência de 2 que comporta os clubes, folgas nos
- * confrontos de índice par primeiro (quem folga estreia contra quem venceu um
- * jogo). Clubes ordenados por id antes do embaralhamento.
- */
-export function drawCup(season: number, clubs: CupClub[], rng: MulberryRng): Cup {
-  if (!canHoldCup(clubs.length)) throw new Error(`Copa exige ${MIN_CUP_CLUBS}..${MAX_CUP_CLUBS} clubes`)
-  let bracket = 2
-  while (bracket < clubs.length) bracket *= 2
-  const tieCount = bracket / 2
-  const byes = bracket - clubs.length
-  const evens = Array.from({ length: tieCount }, (_, i) => i).filter((i) => i % 2 === 0)
-  const odds = Array.from({ length: tieCount }, (_, i) => i).filter((i) => i % 2 === 1)
-  const byeSlots = new Set([...evens, ...odds].slice(0, byes))
+/** Sorteio da fase `index`: seed da temporada + índice (o backend usa a `drawSeed` da copa). */
+const stageRng = (season: number, index: number): MulberryRng => new MulberryRng(season * 7 + 61 + index)
 
+/** Sorteia os confrontos de uma fase; o primeiro de cada par tem o mando (da ida). */
+function drawStage(phase: CupPhaseInfo, clubs: CupClub[], rng: MulberryRng): CupStage {
+  if (clubs.length !== phase.teams) throw new Error(`${phase.name} espera ${phase.teams} clubes`)
   const drawn = shuffled([...clubs].sort((a, b) => a.id - b.id), rng)
-  let next = 0
-  const ties: CupTie[] = Array.from({ length: tieCount }, (_, index) =>
-    byeSlots.has(index)
-      ? { type: 'Bye', index, club: drawn[next++]! }
-      : { type: 'Fixture', index, home: drawn[next++]!, away: drawn[next++]! },
-  )
-  const opening = KNOCKOUT_PHASES.find((p) => PHASE_TEAMS[p] === bracket)!
-  return withDerived(season, [{ phase: opening, ties }])
+  const ties = Array.from({ length: phase.teams / 2 }, (_, index): CupTie => {
+    const home = drawn[2 * index]!
+    const away = drawn[2 * index + 1]!
+    return phase.legs === 'SINGLE'
+      ? { type: 'Single', index, home, away }
+      : { type: 'TwoLegged', index, home, away }
+  })
+  return { name: phase.name, legs: phase.legs, ties }
 }
 
 /**
- * Registra os placares de uma rodada de copa encerrada na fase corrente e,
- * se ela fechou, cruza os vencedores (2k × 2k+1) na fase seguinte. Devolve o
- * prêmio de quem venceu EM CAMPO — folga não premia.
+ * Sorteia a copa: `seeded` vem do mais forte ao mais fraco; da última fase
+ * para a primeira, cada uma tira do topo os seus entrantes. Só a abertura é
+ * sorteada agora — as seguintes, quando a anterior termina.
+ */
+export function drawCup(season: number, format: readonly KnockoutStageFormat[], seeded: CupClub[]): Cup {
+  if (seeded.length !== cupEntrants(format)) throw new Error(`Copa espera ${cupEntrants(format)} clubes`)
+  const phases: CupPhaseInfo[] = format.map((stage, i) => {
+    const start = format.slice(i + 1).reduce((sum, s) => sum + s.newEntrants, 0)
+    return {
+      name: stage.name,
+      teams: stage.teams,
+      legs: stage.legs,
+      entrants: seeded.slice(start, start + stage.newEntrants),
+      prizeCents: cupPhasePrize(format.length - 1 - i),
+    }
+  })
+  const opening = phases[0]!
+  return withDerived({
+    season,
+    competitionId: CUP_COMPETITION_ID,
+    competitionName: CUP_COMPETITION_NAME,
+    phases,
+    stages: [drawStage(opening, opening.entrants, stageRng(season, 0))],
+  })
+}
+
+const isComplete = (stage: CupStage): boolean => stage.ties.every((t) => t.winnerId != null)
+
+const winnerOf = (tie: CupTie): CupClub | null =>
+  tie.winnerId == null ? null : tie.winnerId === tie.home.id ? tie.home : tie.away
+
+type CupCore = Omit<Cup, 'currentStage' | 'champion'>
+
+/** Recalcula o que o backend deriva no `CupDto`: `currentStage` e `champion`. */
+function withDerived({ season, competitionId, competitionName, phases, stages }: CupCore): Cup {
+  const last = stages[stages.length - 1]!
+  const finalTie = stages.length === phases.length && isComplete(last) ? last.ties[0] : undefined
+  const champion = finalTie ? winnerOf(finalTie) : null
+  return {
+    season,
+    competitionId,
+    competitionName,
+    phases,
+    stages,
+    ...(isComplete(last) ? {} : { currentStage: last.name }),
+    ...(champion ? { champion } : {}),
+  }
+}
+
+export const currentStage = (cup: Cup): CupStage | null => {
+  const last = cup.stages[cup.stages.length - 1]!
+  return isComplete(last) ? null : last
+}
+
+// ─── Pernas e pênaltis ───────────────────────────────────────────────────
+
+/** A perna em aberto de um confronto; `null` se ele já foi decidido. */
+function openLeg(tie: CupTie): CupLeg | null {
+  if (tie.winnerId != null) return null
+  switch (tie.type) {
+    case 'Single': return 'SINGLE'
+    case 'TwoLegged': return tie.firstLeg ? 'SECOND' : 'FIRST'
+  }
+}
+
+/**
+ * Esta partida, terminando `homeGoals × awayGoals`, vai aos pênaltis? Espelha
+ * `RoundMatch.decidesOnPenalties`: liga nunca; jogo único se empatou; ida
+ * nunca; volta só com o agregado empatado (sem gol fora).
+ */
+export function decidesOnPenalties(stage: RoundStage, homeGoals: number, awayGoals: number): boolean {
+  switch (stage.type) {
+    case 'League':
+      return false
+    case 'Cup':
+      switch (stage.leg) {
+        case 'SINGLE': return homeGoals === awayGoals
+        case 'FIRST': return false
+        // Na volta, o mandante é o visitante da ida.
+        case 'SECOND': {
+          const first = stage.firstLeg
+          return first != null && first.homeGoals + awayGoals === first.awayGoals + homeGoals
+        }
+      }
+  }
+}
+
+// ─── Avanço da chave ─────────────────────────────────────────────────────
+
+/** Grava a perna jogada; o confronto segue em aberto se o resultado não decide ninguém. */
+function recordTie(tie: CupTie, played: Map<string, RoundMatch>): CupTie {
+  switch (tie.type) {
+    case 'Single': return recordSingle(tie, played)
+    case 'TwoLegged': return recordTwoLegged(tie, played)
+  }
+}
+
+function recordSingle(tie: CupSingleTie, played: Map<string, RoundMatch>): CupTie {
+  const match = tie.result ? undefined : played.get(`${tie.home.id}-${tie.away.id}`)
+  if (!match) return tie
+  const { homeGoals, awayGoals, penalties } = match
+  if (homeGoals !== awayGoals) {
+    return { ...tie, result: { homeGoals, awayGoals }, winnerId: homeGoals > awayGoals ? tie.home.id : tie.away.id }
+  }
+  // Empate sem pênaltis não decide ninguém — confronto segue em aberto.
+  if (!penalties || penalties.home === penalties.away) return tie
+  return {
+    ...tie,
+    result: { homeGoals, awayGoals, penalties },
+    winnerId: penalties.home > penalties.away ? tie.home.id : tie.away.id,
+  }
+}
+
+function recordTwoLegged(tie: CupTwoLeggedTie, played: Map<string, RoundMatch>): CupTie {
+  if (tie.winnerId != null) return tie
+  if (!tie.firstLeg) {
+    const match = played.get(`${tie.home.id}-${tie.away.id}`)
+    if (!match) return tie
+    const firstLeg = { homeGoals: match.homeGoals, awayGoals: match.awayGoals }
+    return { ...tie, firstLeg, aggregate: { home: firstLeg.homeGoals, away: firstLeg.awayGoals } }
+  }
+  // Volta: mando invertido.
+  const match = played.get(`${tie.away.id}-${tie.home.id}`)
+  if (!match) return tie
+  const secondLeg = { homeGoals: match.homeGoals, awayGoals: match.awayGoals }
+  const aggregate = {
+    home: tie.firstLeg.homeGoals + secondLeg.awayGoals,
+    away: tie.firstLeg.awayGoals + secondLeg.homeGoals,
+  }
+  if (aggregate.home !== aggregate.away) {
+    return { ...tie, secondLeg, aggregate, winnerId: aggregate.home > aggregate.away ? tie.home.id : tie.away.id }
+  }
+  const shootout = match.penalties
+  if (!shootout || shootout.home === shootout.away) return tie
+  // Pênaltis da súmula (mandante da volta = `away`) → orientação do confronto.
+  const penalties = { home: shootout.away, away: shootout.home }
+  return {
+    ...tie,
+    secondLeg,
+    aggregate,
+    penalties,
+    winnerId: penalties.home > penalties.away ? tie.home.id : tie.away.id,
+  }
+}
+
+/**
+ * Registra a perna em aberto de cada confronto da fase corrente e, se a fase
+ * fechou, sorteia a seguinte com os vencedores + os entrantes dela. Devolve o
+ * prêmio de quem passou de fase NESTA perna.
  */
 export function recordCupRound(cup: Cup, round: Round): { cup: Cup; prizes: Map<number, number> } {
   const stage = currentStage(cup)
   const prizes = new Map<number, number>()
   if (!stage) return { cup, prizes }
+  const stageIndex = cup.stages.length - 1
+  const prize = cup.phases[stageIndex]!.prizeCents
 
   const played = new Map(
-    // Só jogos de COPA (issue #125): liga e copa podem dividir o encaixe.
+    // Só jogos DESTA copa (issue #125): liga e copa podem dividir o encaixe.
     round.matches
-      .filter((m) => m.status === 'Finished' && m.stage.type === 'Cup')
+      .filter((m) => m.status === 'Finished' && m.stage.type === 'Cup' && m.competitionId === cup.competitionId)
       .map((m) => [`${m.homeClubId}-${m.awayClubId}`, m]),
   )
-  const ties: CupTie[] = stage.ties.map((tie) => {
-    if (tie.type === 'Bye' || tie.result) return tie
-    const match = played.get(`${tie.home.id}-${tie.away.id}`)
-    if (!match) return tie
-    const penalties: PenaltyScore | undefined = match.penalties
-    // Empate sem pênaltis não decide ninguém — confronto segue em aberto.
-    if (match.homeGoals === match.awayGoals && (!penalties || penalties.home === penalties.away)) return tie
-    const result = {
-      homeGoals: match.homeGoals,
-      awayGoals: match.awayGoals,
-      ...(match.homeGoals === match.awayGoals && penalties ? { penalties } : {}),
-    }
-    const decided: CupTie = { ...tie, result }
-    const winner = tieWinner(decided)!
-    prizes.set(winner.id, CUP_PRIZE_CENTS[stage.phase])
-    return { ...decided, winnerId: winner.id }
+  const ties = stage.ties.map((tie) => {
+    const recorded = recordTie(tie, played)
+    if (tie.winnerId == null && recorded.winnerId != null) prizes.set(recorded.winnerId, prize)
+    return recorded
   })
 
   const recorded: CupStage = { ...stage, ties }
   const stages = [...cup.stages.slice(0, -1), recorded]
-  const nextPhase = KNOCKOUT_PHASES[KNOCKOUT_PHASES.indexOf(stage.phase) + 1]
+  const nextPhase = cup.phases[stageIndex + 1]
   if (isComplete(recorded) && nextPhase) {
-    const winners = [...ties].sort((a, b) => a.index - b.index).map((t) => tieWinner(t)!)
-    const nextTies: CupTie[] = []
-    for (let i = 0; i < winners.length; i += 2) {
-      nextTies.push({ type: 'Fixture', index: i / 2, home: winners[i]!, away: winners[i + 1]! })
-    }
-    stages.push({ phase: nextPhase, ties: nextTies })
+    const winners = ties.flatMap((t) => winnerOf(t) ?? [])
+    stages.push(drawStage(nextPhase, [...winners, ...nextPhase.entrants], stageRng(cup.season, stageIndex + 1)))
   }
-  return { cup: withDerived(cup.season, stages), prizes }
+  return { cup: withDerived({ ...cup, stages }), prizes }
 }
 
+// ─── Jogos do encaixe e calendário ───────────────────────────────────────
+
 /**
- * Jogos de copa do encaixe `matchday` (issue #125): os confrontos em aberto da
- * fase corrente. Mesma fórmula de matchId do backend: serial do encaixe ×
- * 1000 + índice + 1. Cada partida carrega o `stage` e a competição.
+ * Jogos de copa do encaixe `matchday`: a perna em aberto de cada confronto da
+ * fase corrente — a ida (ou jogo único) e depois a volta, de mando invertido,
+ * carregando o placar da ida. Mesma fórmula de matchId do backend: serial do
+ * encaixe × 1000 + índice + 1.
  */
 export function cupRound(
   matchday: Matchday,
@@ -180,48 +288,56 @@ export function cupRound(
   divisionOf: (clubId: number) => number,
 ): Round {
   const stage = currentStage(cup)
-  const pending = (stage?.ties ?? []).filter(
-    (t): t is Extract<CupTie, { type: 'Fixture' }> => t.type === 'Fixture' && !t.result,
-  )
-  const phase = stage?.phase ?? cup.phases[cup.phases.length - 1]!.phase
-  const matches: RoundMatch[] = pending.map((tie) => ({
-    matchId: matchdaySerial(matchday) * 1000 + tie.index + 1,
-    homeClubId: tie.home.id,
-    awayClubId: tie.away.id,
-    homeClubName: tie.home.name,
-    awayClubName: tie.away.name,
-    status: 'Scheduled',
-    homeGoals: 0,
-    awayGoals: 0,
-    minute: 0,
-    division: divisionOf(tie.home.id),
-    stage: { type: 'Cup', phase },
-    competitionId: CUP_COMPETITION_ID,
-    competitionName: CUP_COMPETITION_NAME,
-  }))
+  const matches: RoundMatch[] = (stage?.ties ?? []).flatMap((tie): RoundMatch[] => {
+    const leg = openLeg(tie)
+    if (!leg || !stage) return []
+    const firstLeg = leg === 'SECOND' && tie.type === 'TwoLegged' ? tie.firstLeg : undefined
+    const [home, away] = leg === 'SECOND' ? [tie.away, tie.home] : [tie.home, tie.away]
+    const matchStage: CupMatchStage = { type: 'Cup', stageName: stage.name, leg, ...(firstLeg ? { firstLeg } : {}) }
+    return [{
+      matchId: matchdaySerial(matchday) * 1000 + tie.index + 1,
+      homeClubId: home.id,
+      awayClubId: away.id,
+      homeClubName: home.name,
+      awayClubName: away.name,
+      status: 'Scheduled',
+      homeGoals: 0,
+      awayGoals: 0,
+      minute: 0,
+      division: divisionOf(home.id),
+      stage: matchStage,
+      competitionId: cup.competitionId,
+      competitionName: cup.competitionName,
+    }]
+  })
   return { matchday, season, status: 'Scheduled', matches }
 }
 
-/** Ids e nomes das competições do mundo atual — os mesmos de `SeasonCompetitions.kt`. */
-export const CUP_COMPETITION_ID = 'copa'
-export const CUP_COMPETITION_NAME = 'Copa'
-export const leagueCompetitionId = (division: number): string => `liga-d${division}`
-export const leagueCompetitionName = (division: number): string => `Liga — Divisão ${division}`
+/** As pernas da copa em ordem (espelha `Cup.calendarRounds`): jogo único = uma; ida e volta = duas. */
+export function cupLegSlots(cup: Pick<Cup, 'phases'>): CupMatchStage[] {
+  return cup.phases.flatMap((p): CupMatchStage[] =>
+    p.legs === 'SINGLE'
+      ? [{ type: 'Cup', stageName: p.name, leg: 'SINGLE' }]
+      : [{ type: 'Cup', stageName: p.name, leg: 'FIRST' }, { type: 'Cup', stageName: p.name, leg: 'SECOND' }])
+}
 
 /**
- * Calendário da temporada — espelha `seasonCalendar` do backend: a fase `i`
- * entra logo após a rodada de liga ⌊i·L/(C+1)⌋ (no mínimo a 1ª).
+ * Calendário da temporada: o encaixe de copa `i` entra logo após a rodada de
+ * liga ⌊(i+1)·L/(C+1)⌋ (no mínimo a 1ª) — uma perna de copa por encaixe,
+ * espalhadas entre as rodadas, com a final antes da última rodada. Os
+ * estágios de copa aqui são só MARCADORES do encaixe (sem o placar da ida):
+ * os jogos de verdade saem de `cupRound`, com a copa como ela estiver.
  */
-export function seasonCalendar(leagueMatchdays: number, cupPhases: KnockoutPhase[]): RoundStage[] {
-  const gaps = cupPhases.length + 1
-  const after = cupPhases.map((phase, i) => ({
-    phase,
+export function seasonCalendar(leagueMatchdays: number, cupLegs: readonly CupMatchStage[]): RoundStage[] {
+  const gaps = cupLegs.length + 1
+  const after = cupLegs.map((stage, i) => ({
+    stage,
     matchday: Math.min(leagueMatchdays, Math.max(1, Math.floor(((i + 1) * leagueMatchdays) / gaps))),
   }))
   const calendar: RoundStage[] = []
   for (let matchday = 1; matchday <= leagueMatchdays; matchday++) {
     calendar.push({ type: 'League', matchday })
-    for (const c of after) if (c.matchday === matchday) calendar.push({ type: 'Cup', phase: c.phase })
+    for (const c of after) if (c.matchday === matchday) calendar.push(c.stage)
   }
   return calendar
 }

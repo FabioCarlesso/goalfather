@@ -1,5 +1,12 @@
 package com.carlesso.goalfather.domain.engine
 
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CupLeg
+import com.carlesso.goalfather.domain.model.LegScore
+import com.carlesso.goalfather.domain.model.RoundMatch
+import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.domain.rules.decidesOnPenalties
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.matchStats
 import com.carlesso.goalfather.domain.model.Formation
@@ -69,6 +76,9 @@ class MatchSimulatorTest {
         homeName = "Goal Father FC",
         awayName = "Atlético Bonsucesso",
     )
+
+    /** Jogo único de copa: empate no placar vai aos pênaltis. */
+    private val singleLeg: (Int, Int) -> Boolean = { home, away -> home == away }
 
     @Test
     fun `primeiro evento sempre eh KickOff com metadata dos times`() = runTest {
@@ -395,7 +405,7 @@ class MatchSimulatorTest {
         // pênaltis): depois de sair de campo, o id não aparece em evento algum.
         var playersSentOff = 0
         for (seed in 1L..200L) {
-            val events = MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+            val events = MatchSimulator().simulate(setup.copy(decidesOnPenalties = singleLeg), Random(seed)).toList()
             val offPitch = mutableSetOf<PlayerId>()
             for (event in events) {
                 // `when` como expressão sobre o sealed: o compilador exige
@@ -461,7 +471,7 @@ class MatchSimulatorTest {
     /** Seeds de 0 a 199 com o jogo de copa: amostra larga com empates e não-empates. */
     private suspend fun knockoutSample(): List<List<MatchEvent>> =
         (0L until 200L).map { seed ->
-            MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+            MatchSimulator().simulate(setup.copy(decidesOnPenalties = singleLeg), Random(seed)).toList()
         }
 
     @Test
@@ -495,6 +505,24 @@ class MatchSimulatorTest {
     }
 
     @Test
+    fun `ida e volta - a engine so cobra penaltis quando a regra da perna pede (issue 131)`() = runTest {
+        // Ida: nunca. Volta depois de uma ida 1 × 0 do visitante desta partida
+        // (que era o mandante da ida): pênaltis só se o mandante da volta vencer
+        // por exatamente um gol — agregado empatado.
+        val firstLeg = leagueMatch(1, ClubId(1), ClubId(2), "A", "B", stage = RoundStage.Cup("Semifinal", CupLeg.First))
+        val secondLeg = firstLeg.copy(stage = RoundStage.Cup("Semifinal", CupLeg.Second(LegScore(1, 0))))
+        for (seed in 0L until 200L) {
+            val ida = MatchSimulator().simulate(setup.copy(decidesOnPenalties = firstLeg::decidesOnPenalties), Random(seed)).toList()
+            assertTrue(ida.none { it is MatchEvent.PenaltyShootout }, "seed $seed: ida não vai aos pênaltis")
+
+            val volta = MatchSimulator().simulate(setup.copy(decidesOnPenalties = secondLeg::decidesOnPenalties), Random(seed)).toList()
+            val ft = volta.filterIsInstance<MatchEvent.FullTime>().single()
+            val aggregateTied = ft.homeGoals - ft.awayGoals == 1
+            assertEquals(aggregateTied, volta.any { it is MatchEvent.PenaltyShootout }, "seed $seed: $ft")
+        }
+    }
+
+    @Test
     fun `jogo de liga empatado continua empatado`() = runTest {
         val leagueEvents = (0L until 200L).map { MatchSimulator().simulate(setup, Random(it)).toList() }
         assertTrue(leagueEvents.none { events -> events.any { it is MatchEvent.PenaltyShootout } })
@@ -504,11 +532,11 @@ class MatchSimulatorTest {
     fun `penaltis nao alteram o tempo normal e repetem com a mesma seed`() = runTest {
         for (seed in 0L until 50L) {
             val league = MatchSimulator().simulate(setup, Random(seed)).toList()
-            val cup = MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+            val cup = MatchSimulator().simulate(setup.copy(decidesOnPenalties = singleLeg), Random(seed)).toList()
             // A disputa consome o RNG DEPOIS dos 90': o jogo em si é idêntico.
             assertEquals(league, cup.filterNot { it is MatchEvent.PenaltyShootout })
 
-            val again = MatchSimulator().simulate(setup.copy(knockout = true), Random(seed)).toList()
+            val again = MatchSimulator().simulate(setup.copy(decidesOnPenalties = singleLeg), Random(seed)).toList()
             assertEquals(cup, again, "Mesma seed = mesma disputa (seed $seed)")
         }
     }

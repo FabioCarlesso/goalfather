@@ -57,7 +57,9 @@ export type CupStage      = components['schemas']['CupStage']
 export type CupTie        = components['schemas']['CupTie']
 export type CupClub       = components['schemas']['CupClub']
 export type CupPhaseInfo  = components['schemas']['CupPhaseInfo']
-export type KnockoutPhase = components['schemas']['KnockoutPhase']
+export type CupLeg        = components['schemas']['CupLeg']
+export type CupLegs       = components['schemas']['CupLegs']
+export type CupLegScore   = components['schemas']['CupLegScore']
 export type PenaltyScore  = components['schemas']['PenaltyScore']
 
 // Diretoria — meta da temporada, confiança e demissão (issue #62)
@@ -82,3 +84,7 @@ export type AuthResponse    = components['schemas']['AuthResponse']
 export type RegisterRequest = components['schemas']['RegisterRequest']
 export type LoginRequest    = components['schemas']['LoginRequest']
 export type AvailableClub   = components['schemas']['AvailableClub']
+
+// Mundo do onboarding país → liga → clube (issue #131)
+export type WorldCountry    = components['schemas']['WorldCountry']
+export type WorldLeague     = components['schemas']['WorldLeague']

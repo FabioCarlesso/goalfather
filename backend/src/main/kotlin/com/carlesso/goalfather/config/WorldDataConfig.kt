@@ -24,8 +24,9 @@ data class WorldDataProperties(
  * própria (e não no `BeanConfig`) porque é o ponto de troca: um adapter HTTP
  * futuro seria outro `@Bean` aqui, escolhido por property/profile.
  *
- * **Ainda não é usado pelo seed** — trocar o `InitialLeague` pelo pack é a
- * issue #131. O bean existe para a fiação estar pronta e testada.
+ * Quem consome é o seed (issue #131, [NewWorldFactory]): com o banco vazio, o
+ * mundo do jogo nasce deste pack. O profile `e2e` aponta para o pack
+ * reduzido `data/world/e2e/v1` (ver `application.yml`).
  */
 @Configuration
 @EnableConfigurationProperties(WorldDataProperties::class)

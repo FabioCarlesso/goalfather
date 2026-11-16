@@ -10,6 +10,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.RoundEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryId
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsId
 import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntity
@@ -95,12 +96,19 @@ interface UserJpaRepository : JpaRepository<UserEntity, Long> {
 }
 
 interface PlayerJpaRepository : JpaRepository<PlayerEntity, Long> {
-    fun findAllByClubId(clubId: Long): List<PlayerEntity>
+    /**
+     * Elenco de um clube na ordem do id (revisão da PR #154). Sem `ORDER BY`,
+     * o Postgres devolve a linha atualizada em outra posição (MVCC grava uma
+     * tupla nova a cada UPDATE) e o elenco voltava embaralhado depois de cada
+     * rodada; o H2 devolve na ordem da PK e mascarava isso. O `OrderById` no
+     * nome do método é o Spring Data derivando o `ORDER BY` da query.
+     */
+    fun findAllByClubIdOrderById(clubId: Long): List<PlayerEntity>
     fun findAllByClubIdIsNullAndPosition(position: PositionEnum): List<PlayerEntity>
     fun findAllByClubIdIsNull(): List<PlayerEntity>
 
     /** Busca o elenco de vários clubes numa só query — evita o N+1 do `findAll`. */
-    fun findAllByClubIdIn(clubIds: Collection<Long>): List<PlayerEntity>
+    fun findAllByClubIdInOrderById(clubIds: Collection<Long>): List<PlayerEntity>
 }
 
 /**
@@ -174,7 +182,7 @@ interface RoundReadinessJpaRepository : JpaRepository<RoundReadinessEntity, Roun
  * quando o técnico abre a tela de histórico, não a cada rodada, e o cache só
  * adicionaria um lugar para a temporada recém-gravada não aparecer.
  */
-interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, Int> {
+interface SeasonHistoryJpaRepository : JpaRepository<SeasonHistoryEntity, SeasonHistoryId> {
     /** Da temporada mais recente para a mais antiga — ordem de exibição. */
     fun findAllByOrderBySeasonDesc(): List<SeasonHistoryEntity>
 }
@@ -229,20 +237,30 @@ interface TransferOfferJpaRepository : JpaRepository<TransferOfferEntity, Long> 
 
 interface StandingsJpaRepository : JpaRepository<StandingsEntity, StandingsId> {
     /**
-     * Tabelas da temporada ativa = maior `season`, uma por divisão (issue
-     * #47). Sem parâmetros de propósito: o cache usa `SimpleKey.EMPTY` e a
-     * subquery resolve a temporada ativa na mesma ida ao banco.
+     * A tabela corrente de cada liga do mundo (issue #131): a de maior
+     * `season` DE CADA COMPETIÇÃO — o Brasil pode já estar em 2027 enquanto a
+     * Europa segue em 2026/27. Sem parâmetros de propósito: o cache usa
+     * `SimpleKey.EMPTY` e a subquery correlacionada resolve tudo numa ida ao
+     * banco. Ordem de exibição: Brasil primeiro, depois o código do país e a
+     * divisão (elite primeiro).
      */
     @Cacheable("standings")
     @Query(
         "select s from StandingsEntity s " +
-            "where s.season = (select max(x.season) from StandingsEntity x) " +
-            "order by s.division",
+            "where s.season = (select max(x.season) from StandingsEntity x where x.competitionId = s.competitionId) " +
+            "order by case when s.countryCode = 'BRA' then 0 else 1 end, s.countryCode, s.division",
     )
-    fun findAllForLatestSeason(): List<StandingsEntity>
+    fun findAllCurrent(): List<StandingsEntity>
 
-    /** Tabelas de uma temporada específica (histórico), ordenadas por divisão. */
-    fun findAllBySeasonOrderByDivision(season: Int): List<StandingsEntity>
+    /**
+     * Tabelas das ligas cuja temporada COMEÇOU em [season] (histórico), na
+     * mesma ordem de exibição.
+     */
+    @Query(
+        "select s from StandingsEntity s where s.season = :season " +
+            "order by case when s.countryCode = 'BRA' then 0 else 1 end, s.countryCode, s.division",
+    )
+    fun findAllBySeason(@Param("season") season: Int): List<StandingsEntity>
 
     @CacheEvict("standings", allEntries = true)
     override fun <S : StandingsEntity> save(entity: S): S

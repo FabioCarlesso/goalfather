@@ -6,14 +6,12 @@ import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.Slot
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import com.carlesso.goalfather.domain.model.KnockoutPhase
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.cents
-import com.carlesso.goalfather.domain.rules.PROMOTION_RELEGATION_SPOTS
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -167,8 +165,10 @@ class LeagueDslTest {
         assertEquals(listOf(Division(1), Division(2)), tables.map { it.division })
         // Elite não sobe; última divisão não desce. As demais vagas seguem a regra.
         assertEquals(0, tables[0].promotionSpots)
-        assertEquals(PROMOTION_RELEGATION_SPOTS, tables[0].relegationSpots)
-        assertEquals(PROMOTION_RELEGATION_SPOTS, tables[1].promotionSpots)
+        // Série A ↔ Série B: as faixas cabem até um terço da tabela (issue #131) —
+        // com 2 clubes por divisão, nenhuma (o seed real, de 6, troca 2).
+        assertEquals(0, tables[0].relegationSpots)
+        assertEquals(0, tables[1].promotionSpots)
         assertEquals(0, tables[1].relegationSpots)
     }
 
@@ -180,8 +180,10 @@ class LeagueDslTest {
         val cup = league.initialCup()
         assertNotNull(cup)
         assertEquals(2026, cup.season)
-        // 6 clubes → chave de 8 (quartas) com 2 folgas; o mesmo seed sorteia igual.
-        assertEquals(KnockoutPhase.QUARTER_FINALS, cup.stages.single().phase)
+        // 6 clubes → chave de 8: 4 jogam a 1ª fase e os 2 mais fortes entram na
+        // semifinal; o mesmo seed sorteia igual.
+        assertEquals("Primeira fase", cup.stages.single().name)
+        assertEquals(listOf(4, 2, 0), cup.phases.map { it.entrants.size })
         assertEquals(cup, league.initialCup())
     }
 

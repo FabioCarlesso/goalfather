@@ -61,6 +61,8 @@ tags:
     description: Departamento médico — recuperação de fadiga e lesões
   - name: Training
     description: Treino semanal — foco escolhido pelo técnico entre rodadas
+  - name: World
+    description: Mundo do jogo — países, ligas e clubes para o onboarding (issue #131)
   - name: League
     description: Tabela e calendário do campeonato
   - name: Cup
@@ -145,6 +147,32 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /api/world/countries:
+    get:
+      tags: [World]
+      operationId: listWorldCountries
+      summary: Países do mundo e as ligas de cada um (onboarding, issue #131)
+      description: |
+        Primeiro passo do onboarding (país → liga → clube): os países que têm
+        pelo menos uma liga jogável, cada um com as suas ligas, da elite para
+        baixo. `availableClubCount` conta os clubes sem dono — no multiplayer,
+        cada técnico escolhe um clube livre. Copas e continentais não entram:
+        o clube é escolhido pela LIGA que disputa.
+
+        Ordem: países por nome; ligas por `tier`.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Países com as suas ligas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WorldCountry' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /api/clubs/available:
     get:
       tags: [Club]
@@ -153,8 +181,19 @@ paths:
       description: |
         Lista os clubes com `ownerId == null`, com metadados para o card de
         seleção (caixa, capacidade do estádio, força média do elenco).
+
+        Com `competitionId` (issue #131), só os clubes daquela liga — o último
+        passo do onboarding país → liga → clube. Uma liga inexistente devolve
+        lista vazia, não 404: o filtro é de consulta, não um recurso.
+        Ordem: força média decrescente, depois nome.
       security:
         - bearerAuth: []
+      parameters:
+        - name: competitionId
+          in: query
+          required: false
+          description: Id da liga (`bra-serie-a`, `eng-premier-league`); omitido = todas
+          schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]*$' }
       responses:
         '200':
           description: Clubes disponíveis
@@ -698,11 +737,13 @@ paths:
     get:
       tags: [League]
       operationId: getStandings
-      summary: Tabelas de classificação do campeonato (uma por divisão)
+      summary: Tabelas de classificação (uma por liga do mundo)
       description: |
-        Sem `season`, retorna as tabelas da temporada ativa. Com `season`,
-        retorna as tabelas finais de uma temporada já encerrada (histórico).
-        Uma tabela por divisão, ordenadas da elite (divisão 1) para baixo.
+        Sem `season`, retorna a tabela corrente de cada liga do mundo (issue
+        #131) — cada liga está na sua própria temporada (a europeia de 2026/27
+        convive com a brasileira de 2027). Com `season`, as tabelas finais das
+        ligas cuja temporada COMEÇOU naquele ano (histórico).
+        Ordem: país do mundo (Brasil primeiro), depois `division` (elite primeiro).
       parameters:
         - name: season
           in: query
@@ -732,9 +773,10 @@ paths:
       operationId: getSeasonHistory
       summary: Temporadas encerradas (histórico da liga)
       description: |
-        Snapshot de cada temporada já encerrada — campeão, artilheiro e
-        classificação final de todas as divisões —, da mais recente para a
-        mais antiga. Os records são gravados na virada de temporada, ANTES
+        Snapshot de cada temporada já encerrada de cada país (issue #131) —
+        campeão, artilheiro e classificação final de todas as divisões do
+        país —, da mais recente para a mais antiga; na mesma temporada, o
+        Brasil primeiro e os demais pelo código do país. Os records são gravados na virada de temporada, ANTES
         de a tabela e as estatísticas dos jogadores serem zeradas, e nunca
         são reescritos.
 
@@ -754,12 +796,23 @@ paths:
       tags: [League]
       operationId: getSeasonRecord
       summary: Uma temporada do histórico
+      description: |
+        Cada país vira no seu tempo (issue #131), então o histórico é por
+        temporada + país: o Brasil de 2026 e a Europa de 2026/27 são dois
+        records de `season = 2026`. Sem `country`, devolve o primeiro
+        encerrado naquele ano na ordem de `/history` (o Brasil, quando ele já
+        virou).
       parameters:
         - name: season
           in: path
           required: true
-          description: Ano da temporada encerrada
+          description: Ano (de início) da temporada encerrada
           schema: { type: integer }
+        - name: country
+          in: query
+          required: false
+          description: Código do país (`BRA`, `ENG`…) — issue #131
+          schema: { type: string, example: BRA }
       responses:
         '200':
           description: Snapshot da temporada
@@ -808,15 +861,17 @@ paths:
     get:
       tags: [Cup]
       operationId: getCup
-      summary: Chave da copa mata-mata (issue #61)
+      summary: Chave da copa mata-mata (issues #61 e #131)
       description: |
-        Copa da liga em jogo único, sorteada no início de cada temporada com
-        seed determinística. Sem `season`, devolve a copa da temporada mais
-        recente (a que está em disputa). Os confrontos já trazem quem passou
-        (`winnerId`, pênaltis incluídos) — o cliente não recalcula nada.
+        Copa nacional (a Copa do Brasil no MVP) em fases nomeadas, cada uma em
+        jogo único ou ida e volta, com clubes entrando em fases diferentes
+        (os mais fortes nas mais tardias). Sorteada no início de cada temporada
+        com seed determinística; cada fase seguinte é sorteada quando a anterior
+        termina. Sem `season`, devolve a copa da temporada mais recente (a que
+        está em disputa). Os confrontos já trazem quem passou (`winnerId`,
+        agregado e pênaltis incluídos) — o cliente não recalcula nada.
 
-        404 `CUP_NOT_FOUND` quando a temporada não teve copa (liga com menos
-        de 4 clubes, ou save anterior à copa).
+        404 `CUP_NOT_FOUND` quando a temporada não teve copa.
       parameters:
         - name: season
           in: query
@@ -1204,8 +1259,14 @@ components:
     AvailableClub:
       description: Resumo de um clube sem dono, para o card de seleção.
       type: object
-      required: [id, name, cash, stadiumCapacity, averageOverall, division]
+      required: [id, name, cash, stadiumCapacity, averageOverall, division, country, competitionId, competitionName]
       properties:
+        country:         { $ref: '#/components/schemas/Country' }
+        competitionId:
+          type: string
+          description: Liga que o clube disputa na temporada (issue #131)
+          example: bra-serie-a
+        competitionName: { type: string, example: Campeonato Brasileiro Série A }
         id:              { type: integer, format: int64 }
         name:            { type: string }
         cash:            { type: integer, format: int64, description: Caixa em centavos de USD }
@@ -1219,6 +1280,35 @@ components:
           type: integer
           minimum: 1
           description: 'Divisão em que o clube disputa a temporada (1 = elite)'
+
+    WorldCountry:
+      description: Um país do onboarding com as suas ligas jogáveis (issue #131).
+      type: object
+      required: [country, leagues]
+      properties:
+        country: { $ref: '#/components/schemas/Country' }
+        leagues:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/WorldLeague' }
+
+    WorldLeague:
+      description: Uma liga de pontos corridos do mundo, para o onboarding (issue #131).
+      type: object
+      required: [id, name, tier, clubCount, availableClubCount, seasonLabel]
+      properties:
+        id:   { type: string, example: bra-serie-a }
+        name: { type: string, example: Campeonato Brasileiro Série A }
+        tier:
+          type: integer
+          minimum: 1
+          description: Divisão no país (1 = elite)
+        clubCount:          { type: integer, minimum: 0 }
+        availableClubCount: { type: integer, minimum: 0, description: Clubes sem dono }
+        seasonLabel:
+          type: string
+          description: Temporada corrente da liga — `2026` no Brasil, `2026/27` na Europa
+          example: '2026'
 
     # ─── Enums ─────────────────────────────────────────────────────────────
     Confederation:
@@ -2228,15 +2318,26 @@ components:
 
     Standings:
       description: |
-        Tabela de UMA divisão em uma temporada. A UI pinta as faixas pela
+        Tabela de UMA liga em uma temporada (issue #131: cada liga do mundo —
+        Série A, Série B, Premier League… — tem a sua; `division` é o `tier`
+        da liga no país). A UI pinta as faixas pela
         `zone` de cada linha (issue #128), sem duplicar a regra de negócio no
         cliente. `promotionSpots` / `relegationSpots` contam as posições de
         acesso/rebaixamento das mesmas regras (0 quando não há para onde subir
         ou descer) e ficam por compatibilidade.
       type: object
-      required: [season, division, round, rows, promotionSpots, relegationSpots]
+      required: [season, division, round, rows, promotionSpots, relegationSpots, competitionId, competitionName, country, seasonLabel]
       properties:
-        season:   { type: integer, description: Ano da temporada }
+        season:   { type: integer, description: Ano de INÍCIO da temporada da liga }
+        seasonLabel:
+          type: string
+          description: '`2026` quando a temporada cabe num ano; `2026/27` quando atravessa a virada (issue #131)'
+        competitionId:
+          type: string
+          description: Liga desta tabela (issue #131)
+          example: bra-serie-a
+        competitionName: { type: string, example: Campeonato Brasileiro Série A }
+        country:  { $ref: '#/components/schemas/Country' }
         division: { type: integer, minimum: 1, description: 'Divisão (1 = elite)' }
         round:
           type: integer
@@ -2292,9 +2393,10 @@ components:
 
     SeasonRecord:
       description: |
-        Snapshot imutável de uma temporada encerrada. Gravado na virada,
-        ANTES de a tabela e as estatísticas dos jogadores serem zeradas, e
-        nunca reescrito (append-only, uma linha por temporada).
+        Snapshot imutável da temporada encerrada de UM país. Gravado na
+        virada daquele país, ANTES de a tabela e as estatísticas dos jogadores
+        serem zeradas, e nunca reescrito (append-only, uma linha por
+        temporada + país — issue #131).
 
         `finalStandings` já vem na ordem de exibição: elite primeiro e, dentro
         de cada divisão, da 1ª à última posição. `champion` é a primeira linha
@@ -2316,6 +2418,15 @@ components:
           description: |
             Campeão da copa mata-mata da temporada (issue #61). Omitido quando
             não houve copa ou ela não chegou à final.
+        country:
+          $ref: '#/components/schemas/Country'
+          description: |
+            País da temporada (issue #131): cada país vira no seu tempo e tem o
+            seu record. Omitido nos records anteriores ao mundo do MVP (que
+            eram só do Brasil).
+        seasonLabel:
+          type: string
+          description: '`2026` ou `2026/27` (issue #131); omitido nos records antigos'
 
     CareerCampaign:
       description: Uma temporada da carreira — em que ano foi e como o clube terminou.
@@ -2465,7 +2576,15 @@ components:
           description: Encaixe corrente; ausente sem calendário
         season:
           type: integer
-          description: Temporada do encaixe corrente
+          description: |
+            Com `clubId`, o ano de INÍCIO da temporada da liga do clube (issue
+            #131: o técnico da Premier League vê 2026 em janeiro de 2027); sem
+            ele, o ano civil do encaixe corrente.
+        seasonLabel:
+          type: string
+          description: |
+            Rótulo da temporada da liga do clube — `2026` ou `2026/27` (issue
+            #131). Ausente sem `clubId` (o mundo não tem "a" temporada).
         nextMatch:
           $ref: '#/components/schemas/NextMatch'
           description: Próximo jogo do clube pedido em `clubId`; ausente sem jogo marcado
@@ -2503,11 +2622,18 @@ components:
           description: Rodada DA LIGA (1..N-1 do turno) disputada neste jogo
 
     CupRoundStage:
+      description: |
+        Jogo de copa (issue #131): a fase pelo nome (vem do formato da
+        competição) e qual jogo do confronto ele é. `firstLeg` só vem na volta
+        (`leg: SECOND`) — o placar da ida, na orientação da ida — para a UI
+        mostrar o que está em jogo no agregado.
       type: object
-      required: [type, phase]
+      required: [type, stageName, leg]
       properties:
-        type:  { type: string, enum: [Cup] }
-        phase: { $ref: '#/components/schemas/KnockoutPhase' }
+        type:      { type: string, enum: [Cup] }
+        stageName: { type: string, description: 'Nome da fase, ex.: "Quinta fase", "Final"' }
+        leg:       { $ref: '#/components/schemas/CupLeg' }
+        firstLeg:  { $ref: '#/components/schemas/CupLegScore' }
 
     RoundEvent:
       description: |
@@ -2807,11 +2933,27 @@ components:
         targetPosition: { type: integer, minimum: 1 }
         finalPosition:  { type: integer, minimum: 1 }
 
-    # ─── Copa (issue #61) ────────────────────────────────────────────────
-    KnockoutPhase:
+    # ─── Copa (issues #61 e #131) ────────────────────────────────────────
+    CupLegs:
       type: string
-      description: Fase do mata-mata, da mais larga para a final
-      enum: [ROUND_OF_32, ROUND_OF_16, QUARTER_FINALS, SEMI_FINALS, FINAL]
+      description: Formato dos confrontos de uma fase — jogo único ou ida e volta.
+      enum: [SINGLE, TWO_LEGGED]
+
+    CupLeg:
+      type: string
+      description: |
+        Qual jogo do confronto uma partida de copa é. `SINGLE` (jogo único:
+        empate vai aos pênaltis), `FIRST` (ida: empate é só placar) ou `SECOND`
+        (volta: pênaltis só com o agregado empatado; não há gol fora de casa).
+      enum: [SINGLE, FIRST, SECOND]
+
+    CupLegScore:
+      description: Placar de UM jogo, na orientação mandante × visitante daquele jogo.
+      type: object
+      required: [homeGoals, awayGoals]
+      properties:
+        homeGoals: { type: integer, minimum: 0 }
+        awayGoals: { type: integer, minimum: 0 }
 
     CupClub:
       description: Clube como a copa o registra (nome copiado — é história).
@@ -2840,34 +2982,33 @@ components:
         awayGoals: { type: integer, minimum: 0 }
         penalties: { $ref: '#/components/schemas/PenaltyScore' }
 
+    CupAggregate:
+      description: Gols somados nos jogos já disputados, na orientação do CONFRONTO (`home` = mandante da ida).
+      type: object
+      required: [home, away]
+      properties:
+        home: { type: integer, minimum: 0 }
+        away: { type: integer, minimum: 0 }
+
     CupTie:
       description: |
-        Mapeia o `sealed interface CupTie` do domínio: uma vaga da chave é
-        `Bye` (o clube passa sem jogar — chave que não é potência de 2) ou
-        `Fixture` (jogo único). Os vencedores de `index` 2k e 2k+1 se enfrentam
-        na fase seguinte.
+        Mapeia o `sealed interface CupTie` do domínio: um confronto da chave é
+        `Single` (jogo único) ou `TwoLegged` (ida e volta). `home` é o
+        mandante do jogo único ou da IDA — na volta o mando se inverte.
       oneOf:
-        - $ref: '#/components/schemas/CupByeTie'
-        - $ref: '#/components/schemas/CupFixtureTie'
+        - $ref: '#/components/schemas/CupSingleTie'
+        - $ref: '#/components/schemas/CupTwoLeggedTie'
       discriminator:
         propertyName: type
         mapping:
-          Bye:     '#/components/schemas/CupByeTie'
-          Fixture: '#/components/schemas/CupFixtureTie'
+          Single:    '#/components/schemas/CupSingleTie'
+          TwoLegged: '#/components/schemas/CupTwoLeggedTie'
 
-    CupByeTie:
-      type: object
-      required: [type, index, club]
-      properties:
-        type:  { type: string, enum: [Bye] }
-        index: { type: integer, minimum: 0 }
-        club:  { $ref: '#/components/schemas/CupClub' }
-
-    CupFixtureTie:
+    CupSingleTie:
       type: object
       required: [type, index, home, away]
       properties:
-        type:   { type: string, enum: [Fixture] }
+        type:   { type: string, enum: [Single] }
         index:  { type: integer, minimum: 0 }
         home:   { $ref: '#/components/schemas/CupClub' }
         away:   { $ref: '#/components/schemas/CupClub' }
@@ -2881,42 +3022,83 @@ components:
             Quem passou (pênaltis incluídos), decidido no backend. Omitido
             enquanto o confronto não foi disputado.
 
-    CupStage:
-      description: Uma fase já sorteada, com os confrontos na ordem da chave.
+    CupTwoLeggedTie:
+      description: |
+        Ida e volta. `firstLeg`/`secondLeg` na orientação de CADA jogo (como
+        na súmula: na volta o mandante é `away`); `aggregate` e `penalties` na
+        orientação do confronto. Pênaltis só existem com o agregado empatado.
       type: object
-      required: [phase, ties]
+      required: [type, index, home, away]
       properties:
-        phase: { $ref: '#/components/schemas/KnockoutPhase' }
+        type:      { type: string, enum: [TwoLegged] }
+        index:     { type: integer, minimum: 0 }
+        home:      { $ref: '#/components/schemas/CupClub' }
+        away:      { $ref: '#/components/schemas/CupClub' }
+        firstLeg:
+          $ref: '#/components/schemas/CupLegScore'
+          description: Omitido enquanto a ida não foi disputada
+        secondLeg:
+          $ref: '#/components/schemas/CupLegScore'
+          description: Omitido enquanto a volta não foi disputada
+        aggregate:
+          $ref: '#/components/schemas/CupAggregate'
+          description: Omitido antes da ida
+        penalties:
+          $ref: '#/components/schemas/PenaltyScore'
+          description: Disputa ao fim da volta, na orientação do confronto
+        winnerId:
+          type: integer
+          format: int64
+          description: Quem passou, decidido no backend. Omitido até a volta decidir.
+
+    CupStage:
+      description: Uma fase já sorteada, com os confrontos na ordem do sorteio.
+      type: object
+      required: [name, legs, ties]
+      properties:
+        name: { type: string }
+        legs: { $ref: '#/components/schemas/CupLegs' }
         ties:
           type: array
           items: { $ref: '#/components/schemas/CupTie' }
 
     CupPhaseInfo:
-      description: Uma fase da copa e o prêmio de quem vence um confronto dela.
+      description: |
+        Uma fase do plano da copa (sorteada ou não): quantos clubes, jogo único
+        ou ida e volta, quem ENTRA nela (os mais fortes nas fases mais
+        tardias) e o prêmio de quem vence um confronto dela.
       type: object
-      required: [phase, prizeCents]
+      required: [name, teams, legs, entrants, prizeCents]
       properties:
-        phase:      { $ref: '#/components/schemas/KnockoutPhase' }
+        name:  { type: string }
+        teams: { type: integer, minimum: 2 }
+        legs:  { $ref: '#/components/schemas/CupLegs' }
+        entrants:
+          type: array
+          items: { $ref: '#/components/schemas/CupClub' }
         prizeCents: { type: integer, format: int64, minimum: 0, description: Prêmio por confronto vencido (centavos de USD) }
 
     Cup:
       description: |
-        Copa mata-mata da temporada (issue #61). `phases` lista a copa inteira
-        (com o prêmio de cada fase) para a UI desenhar a chave completa;
-        `stages` só as fases já sorteadas — a seguinte nasce quando a anterior
-        termina. `currentPhase` é omitido quando a copa acabou; `champion`,
-        enquanto ela não acabou.
+        Copa mata-mata da temporada (issues #61 e #131). `phases` lista a copa
+        inteira (com entrantes e prêmio de cada fase) para a UI desenhar a
+        chave completa; `stages` só as fases já sorteadas, alinhadas por
+        índice com `phases` — a seguinte é sorteada quando a anterior termina.
+        `currentStage` (nome da fase em disputa) é omitido quando a copa
+        acabou; `champion`, enquanto ela não acabou.
       type: object
-      required: [season, phases, stages]
+      required: [season, competitionId, competitionName, phases, stages]
       properties:
-        season: { type: integer }
+        season:          { type: integer }
+        competitionId:   { type: string }
+        competitionName: { type: string }
         phases:
           type: array
           items: { $ref: '#/components/schemas/CupPhaseInfo' }
         stages:
           type: array
           items: { $ref: '#/components/schemas/CupStage' }
-        currentPhase: { $ref: '#/components/schemas/KnockoutPhase' }
+        currentStage: { type: string }
         champion:     { $ref: '#/components/schemas/CupClub' }
 
     ReadinessStatus:

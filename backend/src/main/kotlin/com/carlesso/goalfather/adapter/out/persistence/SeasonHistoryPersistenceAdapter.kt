@@ -1,9 +1,11 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryId
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toDomain
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.SeasonHistoryJpaRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
+import com.carlesso.goalfather.domain.model.CountryCode
 import com.carlesso.goalfather.domain.model.SeasonRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,8 +23,8 @@ class SeasonHistoryPersistenceAdapter(
         historyRepo.findAllByOrderBySeasonDesc().map { it.toDomain(json) }
     }
 
-    override suspend fun findBySeason(season: Int): SeasonRecord? = withContext(Dispatchers.IO) {
-        historyRepo.findById(season).orElse(null)?.toDomain(json)
+    override suspend fun findBySeason(season: Int, country: CountryCode): SeasonRecord? = withContext(Dispatchers.IO) {
+        historyRepo.findById(SeasonHistoryId(season, country.value)).orElse(null)?.toDomain(json)
     }
 
     /**
@@ -42,9 +44,10 @@ class SeasonHistoryPersistenceAdapter(
      *   commit, fora deste `try` (aí a violação subiria como erro).
      */
     override suspend fun append(record: SeasonRecord): Boolean = withContext(Dispatchers.IO) {
-        if (historyRepo.existsById(record.season)) return@withContext false
+        val entity = record.toEntity(json)
+        if (historyRepo.existsById(entity.id)) return@withContext false
         try {
-            historyRepo.saveAndFlush(record.toEntity(json))
+            historyRepo.saveAndFlush(entity)
             true
         } catch (_: DataIntegrityViolationException) {
             false

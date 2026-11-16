@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-13T15:30:57Z",
+  "source": "Wikidata (CC0), consulta de 2026-11-13; curadoria em data/world/*.yaml; recorte e2e de data/world/v1 (issue #131)",
+  "generator": "world-import 1.0.0",
+  "data": [
+    {
+      "id": "bra-atletico-mineiro",
+      "name": "Atlético Mineiro",
+      "country": "BRA",
+      "reputation": 78,
+      "stadium": {
+        "name": "Arena MRV",
+        "capacity": 44892
+      }
+    },
+    {
+      "id": "bra-botafogo",
+      "name": "Botafogo",
+      "country": "BRA",
+      "reputation": 78,
+      "stadium": {
+        "name": "Estádio Nilton Santos",
+        "capacity": 46931
+      }
+    },
+    {
+      "id": "bra-corinthians",
+      "name": "Corinthians",
+      "country": "BRA",
+      "reputation": 80,
+      "stadium": {
+        "name": "Neo Química Arena",
+        "capacity": 47252
+      }
+    },
+    {
+      "id": "bra-flamengo",
+      "name": "Flamengo",
+      "country": "BRA",
+      "reputation": 90,
+      "stadium": {
+        "name": "Estádio Jornalista Mário Filho",
+        "capacity": 78838
+      }
+    },
+    {
+      "id": "bra-palmeiras",
+      "name": "Palmeiras",
+      "country": "BRA",
+      "reputation": 88,
+      "stadium": {
+        "name": "Nubank Parque",
+        "capacity": 43713
+      }
+    },
+    {
+      "id": "bra-sao-paulo",
+      "name": "São Paulo",
+      "country": "BRA",
+      "reputation": 78,
+      "stadium": {
+        "name": "Estádio do Morumbi",
+        "capacity": 120000
+      }
+    }
+  ]
+}

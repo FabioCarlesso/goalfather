@@ -66,7 +66,8 @@ goalfather/
 │       │       ├── useClub.ts
 │       │       ├── useMatch.ts
 │       │       ├── useMarket.ts
-│       │       ├── useStandings.ts
+│       │       ├── useStandings.ts       # uma tabela por liga do mundo (issue #131)
+│       │       ├── useWorldCountries.ts  # países → ligas do onboarding (issue #131)
 │       │       ├── useSeasonHistory.ts # histórico + carreira do técnico (issue #60)
 │       │       ├── useCup.ts          # chave da copa mata-mata; 404 vira `null` (issue #61)
 │       │       ├── useBoard.ts        # painel da diretoria: meta + confiança (issue #62)
@@ -76,9 +77,10 @@ goalfather/
 │       │   ├── browser.ts            # setupWorker do MSW
 │       │   ├── handlers.ts           # handlers HTTP
 │       │   ├── ws.ts                 # mock de WebSocket para partida ao vivo
-│       │   ├── seed.ts               # dados iniciais (espelha protótipo)
+│       │   ├── seed.ts               # estado inicial: clubes, tabelas por liga, calendário, auth
+│       │   ├── world.ts              # mundo pequeno com a forma do pack E2E: Série A/B (6+6) e Premier League (4) (issue #131)
 │       │   ├── engine.ts             # simulação local de partida (porta JS da engine Kotlin)
-│       │   ├── cup.ts                # sorteio/avanço da copa + calendário (espelha CupRules.kt, issue #61)
+│       │   ├── cup.ts                # sorteio/avanço da copa, ida e volta + calendário (espelha CupRules.kt, issues #61/#131)
 │       │   ├── board.ts              # meta, confiança e veredito da diretoria (espelha BoardRules.kt, issue #62)
 │       │   └── offers.ts             # regras das propostas entre técnicos (espelha TransferOfferRules.kt, issue #63)
 │       ├── pages/
@@ -89,7 +91,8 @@ goalfather/
 │       │   ├── MatchPage.tsx         # consome WS
 │       │   ├── RoundPage.tsx         # rodada ao vivo: prontidão, grade e feed; stream em useRoundStream (issue #112)
 │       │   ├── MarketPage.tsx
-│       │   ├── StandingsPage.tsx
+│       │   ├── StandingsPage.tsx     # uma liga por vez, seletor agrupado por país; padrão = liga do técnico (issue #131)
+│       │   ├── SelectClubPage.tsx    # onboarding país → liga → clube, passo na URL (issue #131)
 │       │   ├── HistoryPage.tsx       # temporadas encerradas + perfil do técnico (issue #60)
 │       │   ├── CupPage.tsx           # chave (bracket) da copa mata-mata (issue #61)
 │       │   ├── FiredPage.tsx         # game over: demissão + resumo da carreira + recomeçar (issue #62)
@@ -233,7 +236,7 @@ E vale de novo para o **treino semanal (issue #58)**: `TRAINING_FOCUS_EFFECTS` (
 
 A **bilheteria (issues #4 e #59)** mudou de casa por causa dessa mesma regra: a ocupação, o preço justo e a receita viviam soltas em `src/mocks/handlers.ts` enquanto eram uma conta de duas linhas. Com a curva de demanda da issue #59 elas viraram regra de simulação de verdade e foram para `src/mocks/engine.ts` (`attendanceRate`, `fairTicketPriceCents`, `ticketPriceDemandFactor`, `ticketRevenueOf`), espelhando `domain/rules/FinanceRules.kt` e testadas em `src/mocks/ticketing.test.ts` com os mesmos invariantes do `FinanceRulesTest.kt`. Em `handlers.ts` ficaram só os números do cenário mockado (capacidade e folha da IA). O painel da Dashboard **escolhe** o preço; público e receita chegam prontos no `RoundFinance` do `RoundFinished`.
 
-A **copa mata-mata (issue #61)** segue a mesma linha. O sorteio da chave, o avanço dos vencedores, o prêmio por fase (`CUP_PRIZE_CENTS`) e o calendário que intercala fases de copa com rodadas de liga (`seasonCalendar`) espelham `CupRules.kt`/`SeasonCalendar.kt` em `src/mocks/cup.ts`; a disputa de pênaltis (`penaltyShootout`) espelha `PenaltyRules.kt` em `src/mocks/engine.ts`. A app não decide nada disso: a `CupPage` desenha o que chega em `GET /api/league/cup` — quem passou vem em `winnerId` (pênaltis incluídos), o prêmio em `phases[].prizeCents` — e a `RoundPage` lê do `stage` de cada partida (`oneOf` `League`/`Cup`, `switch` exaustivo em `domain/cup.ts`; por partida desde a issue #125) se o jogo é de liga ou de copa. Em `src/domain/cup.ts` moram só os rótulos das fases. A fase de copa usa o MESMO fluxo de prontidão, botão e WebSocket da rodada de liga — não existe "modo copa" na app.
+A **copa mata-mata (issues #61 e #131)** segue a mesma linha. O sorteio com entrantes por força (os mais fortes entram nas fases tardias — formato do pack do E2E em `E2E_CUP_FORMAT`, com os clubes do Brasil derivados do seed por `nationalCupClubs`), a ida e volta decidida pelo agregado, os pênaltis só no jogo único ou no agregado empatado (`decidesOnPenalties`), o prêmio por fase (`cupPhasePrize`) e o calendário que intercala uma perna de copa por encaixe com as rodadas de liga (`seasonCalendar`) espelham `CupRules.kt`/`SeasonCalendar.kt` em `src/mocks/cup.ts`; a disputa de pênaltis (`penaltyShootout`) espelha `PenaltyRules.kt` em `src/mocks/engine.ts`. A app não decide nada disso: a `CupPage` desenha o que chega em `GET /api/league/cup` — quem passou vem em `winnerId` (agregado e pênaltis incluídos), o agregado em `aggregate`, o prêmio e os entrantes em `phases[]` — e a `RoundPage` lê do `stage` de cada partida (`oneOf` `League`/`Cup`, `switch` exaustivo em `domain/cup.ts`; por partida desde a issue #125) se o jogo é de liga ou de copa. Em `src/domain/cup.ts` moram só os rótulos da perna (ida/volta) — o nome da fase chega pronto em `stageName`. A fase de copa usa o MESMO fluxo de prontidão, botão e WebSocket da rodada de liga — não existe "modo copa" na app.
 
 A **diretoria (issue #62)** também. A meta de cada clube (força do elenco contra a própria divisão), o andar da confiança por rodada de liga, o limiar de demissão e o veredito de fim de temporada espelham `BoardRules.kt` em `src/mocks/board.ts`, testados em `src/mocks/board.test.ts` com os invariantes do `BoardRulesTest.kt`. A app não calcula nada disso: o `BoardPanel` desenha o `BoardStatus` de `GET /api/clubs/{id}/board` — humor (`mood`) e limiar (`firingConfidence`) vêm prontos —, a `RoundPage` mostra o `boardReviews` do `SeasonFinished` (`switch` exaustivo sobre `BoardVerdict` em `src/domain/board.ts`, que só guarda rótulos) e a demissão chega como `AuthUser.dismissal`: o guarda `RequireClub` manda quem está sem clube **por demissão** para `/fired`, a tela de game over, que leva à seleção de clube. Reivindicar um clube apaga a demissão no servidor.
 
@@ -358,6 +361,12 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
   until curl -fsS localhost:8080/actuator/health | grep -q UP; do sleep 2; done
   (cd frontend && npm run e2e:real)
   ```
+
+**Mundo do pack no modo real (issue #131):** o backend do profile `e2e` monta o mundo a partir do pack reduzido `data/world/e2e/v1` (Série A e Série B com 6 clubes cada, Copa do Brasil com esses 12, Premier League com 4), e o mundo dos mocks (`src/mocks/world.ts`) tem a mesma forma, com os mesmos nomes de clubes e ligas. Elencos, atributos, salários e preços são GERADOS pelo backend e não batem com os do mock, por isso as specs leem nomes e valores da tela em vez de fixá-los. Duas diferenças de dado que as specs toleram:
+- o calendário real intercala rodadas de liga entre as fases da copa numa ordem que o mock não reproduz (`cup.spec` joga os encaixes até chegar à fase que quer afirmar);
+- o elenco real nasce perto do limite de 25 jogadores, então o `market.spec` trata "Elenco cheio" como fim das compras.
+
+Duas armadilhas de ambiente: a porta do Vite precisa estar em `app.cors.allowed-origins` do backend (padrão `localhost:5173`; um `E2E_PORT` diferente faz todo cadastro falhar com 403). E, se o Node resolver `localhost` para IPv6 e o Spring escutar só em IPv4, aponte o proxy com `E2E_BACKEND_URL=http://127.0.0.1:8080`.
 
 **Isolamento no modo real (issue #101):** as specs foram escritas para o MSW, onde cada teste começa com estado limpo. Contra o backend real todas dividem uma liga só. Antes disso, a suíte falhava até no `main`: clubes esgotavam (12 na seed, um por teste), o calendário andava e o gate de prontidão travava. Hoje:
 - `authenticate` (em `e2e/helpers.ts`) chama `POST /test-support/reset` antes de cadastrar o técnico. O backend apaga todas as tabelas, regrava a seed e esvazia os caches.

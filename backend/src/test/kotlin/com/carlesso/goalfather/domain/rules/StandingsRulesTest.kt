@@ -1,7 +1,9 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.test.leagueMatch
+import com.carlesso.goalfather.test.testStandings
 import com.carlesso.goalfather.domain.model.RoundStage
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundMatch
@@ -9,6 +11,12 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TableZone
+import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.Discipline
+import com.carlesso.goalfather.test.BRASILEIRAO_TIEBREAKERS
+import com.carlesso.goalfather.test.LA_LIGA_TIEBREAKERS
+import com.carlesso.goalfather.test.SERIE_A
+import com.carlesso.goalfather.test.SERIE_B
 import com.carlesso.goalfather.test.md
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,7 +30,7 @@ class StandingsRulesTest {
         points = points,
     )
 
-    private val initialStandings = Standings(
+    private val initialStandings = testStandings(
         season = 2026,
         round = 0,
         rows = listOf(
@@ -39,7 +47,7 @@ class StandingsRulesTest {
         homeGoals: Int,
         awayGoals: Int,
         status: RoundStatus = RoundStatus.Finished,
-    ) = RoundMatch(
+    ) = leagueMatch(
         matchId = id,
         homeClubId = ClubId(homeId),
         awayClubId = ClubId(awayId),
@@ -122,7 +130,7 @@ class StandingsRulesTest {
     fun `tiebreak ordena por pontos, saldo, gols pro, nome`() {
         // A e B empatados em pontos. A tem melhor saldo de gols.
         // C tem mais pontos que ambos.
-        val standings = Standings(
+        val standings = testStandings(
             season = 2026,
             round = 0,
             rows = listOf(
@@ -169,7 +177,7 @@ class StandingsRulesTest {
 
     // ─── Copa (issue #61) ─────────────────────────────────────────────────
 
-    private fun finishedMatch(home: Long, away: Long, homeGoals: Int, awayGoals: Int) = RoundMatch(
+    private fun finishedMatch(home: Long, away: Long, homeGoals: Int, awayGoals: Int) = leagueMatch(
         matchId = 1,
         homeClubId = ClubId(home),
         awayClubId = ClubId(away),
@@ -185,7 +193,7 @@ class StandingsRulesTest {
         val cupRound = Round(
             matchday = md(2),
             season = 2026,
-            matches = listOf(finishedMatch(1, 2, 3, 0).copy(stage = RoundStage.Cup(KnockoutPhase.SEMI_FINALS))),
+            matches = listOf(finishedMatch(1, 2, 3, 0).copy(stage = RoundStage.Cup("Semifinal", CupLeg.Single))),
         )
         assertEquals(initialStandings, applyRoundToStandings(cupRound, initialStandings))
     }
@@ -201,5 +209,72 @@ class StandingsRulesTest {
         val updated = applyRoundToStandings(leagueRound, initialStandings)
         assertEquals(2, updated.round)
         assertEquals(3, updated.rows.first { it.clubId == ClubId(1) }.points)
+    }
+
+    // ─── Desempates de cada liga (issue #131) ─────────────────────────────
+
+    /** Tabela de 4 clubes zerada, na ordem de id. */
+    private fun fourClubs(competition: CompetitionId = SERIE_A) = testStandings(
+        competitionId = competition,
+        rows = (1L..4L).mapIndexed { i, id -> StandingRow(position = i + 1, clubId = ClubId(id), clubName = "C$id") },
+    )
+
+    private fun leagueRound(week: Int, vararg matches: RoundMatch, competition: CompetitionId = SERIE_A) =
+        Round(md(week), 2026, matches = matches.map { it.copy(competition = competition) })
+
+    @Test
+    fun `Brasileirao desempata por vitorias antes do saldo`() {
+        val rounds = listOf(
+            leagueRound(1, match(1, 1, 4, 5, 0), match(2, 2, 3, 0, 0)),
+            leagueRound(2, match(3, 4, 1, 1, 0), match(4, 3, 2, 1, 1)),
+            leagueRound(3, match(5, 2, 4, 1, 0), match(6, 1, 3, 0, 0)),
+        )
+        // 1: V D E = 4 pts | 2: E E V = 5 pts | 3: E E E = 3 pts, 0 vitória, saldo 0
+        // 4: D V D = 3 pts, 1 vitória, saldo -5.
+        val brasileirao = rounds.fold(fourClubs()) { t, r -> applyRoundToStandings(r, t, BRASILEIRAO_TIEBREAKERS) }
+        assertEquals(listOf(2L, 1L, 4L, 3L), brasileirao.rows.map { it.clubId.value }, "vitórias antes do saldo")
+
+        val padrao = rounds.fold(fourClubs()) { t, r -> applyRoundToStandings(r, t) }
+        assertEquals(listOf(2L, 1L, 3L, 4L), padrao.rows.map { it.clubId.value }, "pontos → saldo põe o 3 à frente do 4")
+    }
+
+    @Test
+    fun `La Liga desempata pelo confronto direto antes do saldo`() {
+        val laLiga = CompetitionId("esp-la-liga")
+        val rounds = listOf(
+            leagueRound(1, match(1, 2, 1, 1, 0), match(2, 3, 4, 0, 0), competition = laLiga),
+            leagueRound(2, match(3, 1, 3, 6, 0), match(4, 4, 2, 2, 0), competition = laLiga),
+        )
+        // 1 e 2 com 3 pontos: 1 tem saldo +5, 2 tem -1 — mas 2 venceu o confronto direto.
+        val table = rounds.fold(fourClubs(laLiga)) { t, r -> applyRoundToStandings(r, t, LA_LIGA_TIEBREAKERS) }
+        assertEquals(4, table.results.size, "os placares ficam na tabela para o confronto direto")
+        assertEquals(listOf(4L, 2L, 1L, 3L), table.rows.map { it.clubId.value })
+
+        val padrao = rounds.fold(fourClubs(laLiga)) { t, r -> applyRoundToStandings(r, t) }
+        assertEquals(listOf(4L, 1L, 2L, 3L), padrao.rows.map { it.clubId.value })
+    }
+
+    @Test
+    fun `cartoes do clube entram na linha e desempatam no Brasileirao`() {
+        var table = fourClubs()
+        // Dois 0×0: todos com 1 ponto e saldo zero; 1 leva um vermelho, 2 dois amarelos.
+        val cards = mapOf(ClubId(1) to Discipline(yellowCards = 1, redCards = 1), ClubId(2) to Discipline(yellowCards = 2))
+        table = applyRoundToStandings(leagueRound(1, match(1, 1, 3, 0, 0), match(2, 2, 4, 0, 0)), table, BRASILEIRAO_TIEBREAKERS, cards)
+        assertEquals(1, table.rows.single { it.clubId == ClubId(1) }.redCards)
+        assertEquals(2, table.rows.single { it.clubId == ClubId(2) }.yellowCards)
+        // Os quatro empatados em tudo até o confronto direto: o único com
+        // vermelho (1) é o último; 2 (só amarelos) vem depois de 3 e 4 (limpos).
+        val order = table.rows.map { it.clubId.value }
+        assertEquals(1L, order.last(), "menos vermelhos primeiro: $order")
+        assertEquals(2L, order[2], "depois, menos amarelos: $order")
+    }
+
+    @Test
+    fun `jogo de outra liga no mesmo encaixe nao mexe na tabela`() {
+        val other = applyRoundToStandings(
+            leagueRound(1, match(1, 1, 2, 3, 0), competition = SERIE_B),
+            fourClubs(),
+        )
+        assertEquals(fourClubs(), other)
     }
 }

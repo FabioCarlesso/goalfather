@@ -42,7 +42,8 @@ export interface MockBoard {
 /** O que a diretoria precisa saber de um clube para fixar a meta. */
 export interface BoardClub {
   id: number
-  division: number
+  /** Liga corrente (issue #131): a meta é relativa aos rivais da MESMA liga. */
+  leagueId: string
   /** Força do elenco para a diretoria (`squadRating` no backend). */
   rating: number
 }
@@ -69,14 +70,14 @@ export function targetPositionOf(objective: BoardObjective, divisionSize: number
   return Math.min(Math.max(raw, 1), Math.max(1, divisionSize))
 }
 
-/** Metas da temporada para todos os clubes, divisão por divisão (empate → menor id). */
+/** Metas da temporada para todos os clubes, liga por liga (empate → menor id). */
 export function boardExpectations(season: number, clubs: BoardClub[]): Record<number, MockBoard> {
-  const byDivision = new Map<number, BoardClub[]>()
-  for (const club of clubs) byDivision.set(club.division, [...(byDivision.get(club.division) ?? []), club])
+  const byLeague = new Map<string, BoardClub[]>()
+  for (const club of clubs) byLeague.set(club.leagueId, [...(byLeague.get(club.leagueId) ?? []), club])
 
   const boards: Record<number, MockBoard> = {}
-  for (const divisionClubs of byDivision.values()) {
-    const ranked = [...divisionClubs].sort((a, b) => b.rating - a.rating || a.id - b.id)
+  for (const leagueClubs of byLeague.values()) {
+    const ranked = [...leagueClubs].sort((a, b) => b.rating - a.rating || a.id - b.id)
     ranked.forEach((club, i) => {
       const objective = objectiveFor(i + 1, ranked.length)
       boards[club.id] = {

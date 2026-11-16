@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
 import com.carlesso.goalfather.adapter.`in`.web.dto.BuyPlayerRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
 import com.carlesso.goalfather.adapter.`in`.web.dto.ExpandStadiumRequest
@@ -64,6 +65,8 @@ class ClubWriteConflictResponseTest {
         setTicketPrice = setTicketPrice,
         expandStadium = expandStadium,
         board = mockk(),
+        catalog = mockk(),
+        onboarding = mockk(),
         json = json,
     )
 
@@ -96,6 +99,7 @@ class ClubWriteConflictResponseTest {
             buyUseCase = buy,
             sellUseCase = mockk(),
             meterRegistry = SimpleMeterRegistry(),
+            catalog = InMemoryCatalogRepository(),
             json = json,
         )
 

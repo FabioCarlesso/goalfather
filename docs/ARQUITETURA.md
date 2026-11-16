@@ -853,6 +853,25 @@ O mundo do jogo vem de um pack versionado em `data/world/v1/`, lido **como se fo
   `cupTitles`, e a copa da temporada nova é sorteada com os clubes já nas
   divisões novas. Liga com menos de 4 clubes não tem copa (`canHoldCup`).
 
+  **Copa do Brasil (issue #131).** O motor deixou o enum `KnockoutPhase` (32→final,
+  jogo único, folgas) pelo formato `Knockout` do pack: `drawCup(season,
+  competition, seeded, rng)` distribui os entrantes por força (da última fase
+  para a primeira, cada fase tira do topo da lista os seus `newEntrants` — no
+  MVP os 24 mais fortes entram na 5ª fase e os 16 restantes jogam a 4ª), sorteia
+  só a abertura e fixa uma `drawSeed` para os sorteios das fases seguintes, que
+  acontecem quando a anterior fecha (vencedores + entrantes dela). `CupTie` é
+  `Single` (jogo único) ou `TwoLegged` (placar de cada perna + pênaltis da
+  volta, validados pelo `TwoLeggedTieResult`). `RoundStage.Cup(stageName, leg)`
+  carrega a perna como `sealed CupLeg` — `Single`, `First`, `Second(firstLeg)` —
+  e a engine pergunta no minuto 90 `MatchSetup.decidesOnPenalties(h, a)`, que os
+  serviços preenchem com `match::decidesOnPenalties`: jogo único empatado sim,
+  ida nunca, volta só com o agregado empatado (sem gol fora, como a CBF).
+  `Cup.calendarRounds` soma uma perna por encaixe (10 no formato do MVP, 69
+  jogos). Prêmio por ordem da fase (`cupPhasePrize`): final US$ 1 mi, semifinal
+  US$ 400 mil e metade a cada fase anterior, com piso de US$ 10 mil — a
+  campanha do campeão (~US$ 1,75 mi) fica em ~1,3× o caixa de um grande, a
+  mesma proporção do jogo antes da #131 (revisão da PR #154).
+
   **Achado de infraestrutura.** `ResponseEntity<Any>` faz o Spring procurar o
   serializer do kotlinx pelo tipo DECLARADO (`Object`), não achar, e cair no
   Jackson — que ignora `@JsonClassDiscriminator`. Para tipos planos passava
@@ -1176,7 +1195,7 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   schema desconhecida, referência a clube inexistente, elenco sem goleiro,
   país desconhecido, entre outros. O `AttributeGenerator` gera os atributos
   simulados a partir da força da liga, da reputação, da posição e da idade.
-  O bean existe, mas o seed ainda é o `InitialLeague` (a troca é da #131).
+  O seed do jogo passou a usar o pack na #131 (abaixo).
   Detalhes em [`docs/WORLD_DATA.md`](WORLD_DATA.md) e na seção 7.
 
 - [x] **Calendário semanal com dois encaixes e temporadas por país** — issue #125
@@ -1317,6 +1336,105 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   divisões da #146 e as copas europeias da #145. Agendar os jogos de playoff no
   calendário entra com a primeira liga que tiver playoff (a Bundesliga, na #146);
   a vaga ganha só é consumida pela Libertadores da #132.
+
+- [x] **Mundo do MVP a partir do pack: seed, catálogo e onboarding** — issue #131
+  (frente do seed; calendário e copas das competições do mundo estão nas
+  frentes paralelas da mesma issue)
+
+  **Seed puro** (`application/seed/WorldSeed.kt`): `WorldPack.toInitialWorld()`
+  monta o catálogo do save (`List<GameCompetition>`, as 8 competições nacionais
+  do MVP; a Libertadores fica no pack, fora do save, até a #132), os 136 clubes
+  das ligas, com ids determinísticos (clube `1..N` na ordem do pack; jogador
+  `clube × 1000 + slot`), atributos do `AttributeGenerator` com um `Random` por
+  jogador (seed derivada do id do pack) e um mercado inicial de 16 livres
+  gerados. A economia inicial é regra de domínio (`InitialEconomyRules.kt`):
+  salário exponencial no overall, caixa em folhas salariais pela reputação e
+  ingresso no preço justo da curva de demanda com prêmio de reputação. Tudo é
+  testado sem Spring sobre o pack real (`WorldSeedTest`).
+
+  **Boot:** `DataInitializer` → `NewWorldFactory` (carga do pack + seed +
+  `startWorld`, em memória para o reset do E2E) → `SeedWriter` (uma transação,
+  `EntityManager.persist` em lote). Um pack inválido derruba o boot listando os
+  erros. Um save antigo (clubes sem catálogo) também derruba o boot, com a
+  instrução de zerar o banco. O `InitialLeague` e a DSL de seed viraram fixture
+  de teste. A V19 cria `countries` (os países do pack, resolvidos pelo mapper
+  de persistência no lugar do catálogo fixo `Countries`) e
+  `competition_catalog` (adapter do `CompetitionCatalogRepository`, formato em
+  JSON de um registro próprio).
+
+  **Onboarding:** `GET /api/world/countries` (país → ligas, com contagem de
+  clubes e de livres e o `seasonLabel` da liga) e `GET
+  /api/clubs/available?competitionId=` (com país e liga, ordenado por força
+  média). Caso de uso `WorldOnboardingUseCase`. O claim continua recusando
+  clube com dono.
+
+  **E2E:** o profile `e2e` e os testes de integração usam um pack recortado,
+  gerado pelo importador (`data/world/e2e/v1`: 6+6 clubes do Brasil, a Copa do
+  Brasil com eles e 4 da Premier League). Detalhes, regras e corte da Copa do
+  Brasil em [`docs/WORLD_DATA.md`](WORLD_DATA.md), seção "Seed do jogo".
+
+- [x] **Competições do mundo no calendário, tabelas por liga e virada por país** — issue #131
+
+  O "uma liga por divisão + uma copa + uma temporada global" virou o mundo do
+  **catálogo do save** (`GameCompetition`, lido pelo port
+  `CompetitionCatalogRepository`): uma liga por (país, tier) com o formato, os
+  desempates, a disciplina e o limite de estrangeiros do catálogo, e a copa
+  nacional de cada país. O interino `SeasonCompetitions` saiu (resta só o id da
+  copa que o motor atual da copa grava, até o motor da Copa do Brasil entrar).
+
+  **Uma temporada por país** (`WorldSeasons = Map<CountryCode, Int>`, lida das
+  tabelas correntes): o Brasil de 2027 convive com a Europa de 2026/27. O plano
+  do mundo (`worldPlan`) é a **união dos planos de cada país** (`countryPlan`):
+  como os clubes de dois países nunca se cruzam nas competições domésticas, o
+  encaixe de um não depende do outro — recalcular o plano a cada encaixe (ele
+  nunca é persistido) não mexe no calendário europeu quando o Brasil vira, e a
+  edição nova "por cima do calendário corrente" sai de graça. As janelas de duas
+  edições seguidas do mesmo país não se sobrepõem; o serviço confere que a nova
+  não cai no passado. Ligas com turno e returno do formato (`RoundRobin(legs =
+  2)`), no fim de semana; a copa no meio da semana, reservando todos os clubes
+  das ligas do país. Datas FIFA: ainda as interinas (`interimFifaWindows`) do
+  ano de início e do seguinte — o pack só traz `calendar/2026.json`. **Medido:**
+  o plano do mundo inteiro (136 clubes, 258 rodadas de liga) sai em ~5 ms, sem
+  memoização (índice por encaixe no `Schedule`).
+
+  **`Round.season`** passou a ser o **ano civil** do encaixe: com várias
+  temporadas no mesmo domingo, a temporada é de cada competição, não da rodada.
+  `GET /api/league/calendar` devolve em `season`/`seasonLabel` a temporada da
+  LIGA do clube pedido (sem clube, o ano civil e nenhum rótulo).
+
+  **`matchId`** = `encaixe × 1000 + slot × 100 + índice`, com o slot (1..9) =
+  posição da liga no catálogo — a Série A e a Premier League são ambas divisão 1.
+  A copa segue com `encaixe × 1000 + índice` (< 100). Mais de 9 ligas exige
+  alargar a faixa (`Matchday.MATCH_IDS_PER_MATCHDAY`).
+
+  **Tabelas por competição** (migration V20: PK `competition_id + season`, com
+  nome, país, rótulo e tier como foto, e `results_json` com os placares — o
+  insumo do confronto direto; os cartões de cada clube na competição moram na
+  linha). `applyRoundToStandings` aplica os desempates da liga (Brasileirão:
+  vitórias, saldo, gols, confronto direto, vermelhos, amarelos, sorteio
+  semeado). Zonas pelas `WorldQualificationRules` ajustadas ao mundo
+  (`worldQualificationRules`): só entram regras cujas tabelas existem, e cada
+  faixa cabe em um terço da tabela (G-6/Z-4 com 20 clubes; G-2/Z-2 no pack de
+  E2E com 6), com acesso igual ao rebaixamento.
+
+  **Virada por país:** quando a última rodada de TODAS as competições de um
+  país é a do encaixe, aquele país vira — história (um `SeasonRecord` por
+  temporada + país, PK nova na V20), acesso/rebaixamento (só Brasil),
+  envelhecimento/aposentadoria/zerar estatísticas e diretoria dos clubes DELE,
+  copa e tabelas novas. Um `SeasonFinished` por país, antes do `RoundFinished`.
+  O resto do mundo segue jogando. **Mercado** (global): envelhece uma vez por
+  ano, quando o primeiro país abre a temporada daquele ano (o Brasil em
+  janeiro; a Europa abre a mesma safra em agosto e não envelhece de novo).
+  **Histórico:** `/api/league/history` lista os records de todos os países
+  (mais recente primeiro; Brasil primeiro na mesma temporada) e
+  `/history/{season}` ganhou `?country=` (sem ele, o primeiro na mesma ordem);
+  `SeasonRecord` ganhou `country`/`seasonLabel` opcionais. **Diretoria:** metas
+  por liga (país + divisão), no tamanho dela.
+
+  **Prontidão multiplayer:** só os técnicos cujo clube joga no encaixe contam;
+  encaixe sem nenhum técnico em campo volta à regra antiga (todos). Alguém
+  ainda precisa clicar "jogar" nos encaixes só de outro país — andar o relógio
+  sozinho é trabalho futuro.
 
 ---
 

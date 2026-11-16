@@ -1,5 +1,5 @@
 // Construtores compactos de dados do contrato para testes (issue #125).
-import type { Matchday, RoundMatch, RoundStage } from '../domain/types'
+import type { Matchday, RoundMatch, RoundStage, Standings } from '../domain/types'
 
 /** Encaixe de teste: a semana `week` de 2026, no fim de semana por padrão. */
 export function testMatchday(week: number, slot: Matchday['slot'] = 'WEEKEND'): Matchday {
@@ -25,4 +25,25 @@ export function matchCompetition(
   return stage.type === 'League'
     ? { stage, competitionId: 'liga-d1', competitionName: 'Liga — Divisão 1' }
     : { stage, competitionId: 'copa', competitionName: 'Copa' }
+}
+
+/** Brasil como o backend o manda (bandeira pronta). */
+export const BRAZIL: Standings['country'] = { code: 'BRA', name: 'Brasil', confederation: 'CONMEBOL', flag: '🇧🇷' }
+
+/**
+ * Identidade da liga que o contrato pôs em cada tabela (issue #131). Default =
+ * Série A 2026; sobrescreva o que o teste precisar (outra liga, outro tier).
+ */
+export function leagueOfTable(
+  overrides: Partial<Pick<Standings, 'season' | 'seasonLabel' | 'competitionId' | 'competitionName' | 'country' | 'division'>> = {},
+): Pick<Standings, 'season' | 'seasonLabel' | 'competitionId' | 'competitionName' | 'country' | 'division'> {
+  return {
+    season: 2026,
+    seasonLabel: '2026',
+    competitionId: 'bra-serie-a',
+    competitionName: 'Campeonato Brasileiro Série A',
+    country: BRAZIL,
+    division: 1,
+    ...overrides,
+  }
 }

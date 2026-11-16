@@ -3,7 +3,7 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 import com.carlesso.goalfather.domain.model.CareerCampaign
 import com.carlesso.goalfather.domain.model.ClubCareer
 import com.carlesso.goalfather.domain.model.CalendarView
-import com.carlesso.goalfather.domain.model.KnockoutPhase
+import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.ReadinessStatus
 import com.carlesso.goalfather.domain.model.Round
@@ -33,7 +33,7 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  * `Int`/`Long` crus, que é o que o contrato declara.
  *
  * Reusados do domínio, pelo critério de `Responses.kt` (enum cuja forma JSON já
- * é EXATAMENTE a do contrato): `RoundStatus` e `KnockoutPhase`.
+ * é EXATAMENTE a do contrato): `RoundStatus`.
  *
  * `ReadinessStatus.allReady`/`canStart` são computed properties do domínio
  * (getter sem backing field, que o kotlinx não serializa). O DTO os MATERIALIZA
@@ -59,7 +59,14 @@ data class StandingRowDto(
 
 @Serializable
 data class StandingsDto(
+    /** Liga desta tabela (issue #131): `bra-serie-a`, `eng-premier-league`… */
+    val competitionId: String,
+    val competitionName: String,
+    val country: CountryDto,
+    /** Ano de INÍCIO da temporada da liga. */
     val season: Int,
+    /** `2026` ou `2026/27`. */
+    val seasonLabel: String,
     /** `Int` cru: o contrato declara `division` como `integer`, sem o value class. */
     val division: Int,
     val round: Int,
@@ -95,6 +102,10 @@ data class SeasonRecordDto(
     val topScorer: SeasonTopScorerDto? = null,
     /** Ausente quando não houve copa ou ela não chegou à final. */
     val cupChampion: CupClubDto? = null,
+    /** País da temporada (issue #131); ausente nos records anteriores ao mundo do MVP. */
+    val country: CountryDto? = null,
+    /** `2026` ou `2026/27` (issue #131); ausente nos records antigos. */
+    val seasonLabel: String? = null,
 )
 
 @Serializable
@@ -131,9 +142,18 @@ sealed interface RoundStageDto {
     @SerialName("League")
     data class League(val matchday: Int) : RoundStageDto
 
+    /**
+     * Jogo de copa (issue #131): a fase pelo nome e a perna. `firstLeg` só
+     * vem na volta — o placar da ida, na orientação da ida — para a UI mostrar
+     * o que está em jogo no agregado.
+     */
     @Serializable
     @SerialName("Cup")
-    data class Cup(val phase: KnockoutPhase) : RoundStageDto
+    data class Cup(
+        val stageName: String,
+        val leg: CupLegDto,
+        val firstLeg: LegScoreDto? = null,
+    ) : RoundStageDto
 }
 
 /**
@@ -188,6 +208,8 @@ data class RoundDto(
 data class CalendarDto(
     val current: MatchdayDto? = null,
     val season: Int? = null,
+    /** Rótulo da temporada da liga do clube (issue #131); ausente sem `clubId`. */
+    val seasonLabel: String? = null,
     val nextMatch: NextMatchDto? = null,
 )
 
@@ -231,7 +253,11 @@ fun StandingRow.toDto(): StandingRowDto = StandingRowDto(
 )
 
 fun Standings.toDto(): StandingsDto = StandingsDto(
+    competitionId = competitionId.value,
+    competitionName = competitionName,
+    country = country.toDto(),
     season = season,
+    seasonLabel = seasonLabel,
     division = division.value,
     round = round,
     promotionSpots = promotionSpots,
@@ -256,6 +282,8 @@ fun SeasonRecord.toDto(): SeasonRecordDto = SeasonRecordDto(
     finalStandings = finalStandings.map { it.toDto() },
     topScorer = topScorer?.toDto(),
     cupChampion = cupChampion?.toDto(),
+    country = country?.toDto(),
+    seasonLabel = seasonLabel,
 )
 
 private fun CareerCampaign.toDto(): CareerCampaignDto =
@@ -273,7 +301,11 @@ fun ClubCareer.toDto(): ClubCareerDto = ClubCareerDto(
 /** `when` exaustivo, sem `else`: tipo de data novo no calendário quebra a compilação aqui. */
 private fun RoundStage.toDto(): RoundStageDto = when (this) {
     is RoundStage.League -> RoundStageDto.League(matchday = matchday)
-    is RoundStage.Cup -> RoundStageDto.Cup(phase = phase)
+    is RoundStage.Cup -> RoundStageDto.Cup(
+        stageName = stageName,
+        leg = leg.toDto(),
+        firstLeg = (leg as? CupLeg.Second)?.firstLeg?.toDto(),
+    )
 }
 
 fun RoundMatch.toDto(): RoundMatchDto = RoundMatchDto(
@@ -311,6 +343,7 @@ fun Round.toDto(): RoundDto = RoundDto(
 fun CalendarView.toDto(): CalendarDto = CalendarDto(
     current = current?.toDto(),
     season = season,
+    seasonLabel = seasonLabel,
     nextMatch = nextMatch?.let { NextMatchDto(matchday = it.matchday.toDto(), match = it.match.toDto()) },
 )
 

@@ -31,6 +31,11 @@ WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
 
 COPY --from=build /workspace/build/libs/goalfather.jar app.jar
+# Pack do mundo (issue #131): o seed do banco vazio monta o jogo a partir dele.
+# Fica FORA de ./backend e entra pelo contexto nomeado `world` (compose:
+# `additional_contexts`; à mão: `--build-context world=./data/world/v1`).
+COPY --from=world . /app/world/v1
+ENV WORLD_DATA_PATH=/app/world/v1
 USER app
 
 EXPOSE 8080

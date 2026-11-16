@@ -39,16 +39,16 @@ class LeaguePersistenceAdapter(
     }
 
     override suspend fun currentStandings(): List<Standings> = withContext(Dispatchers.IO) {
-        // Temporada ativa = maior `season`. Ao virar o ano, as tabelas
-        // anteriores permanecem no DB (PK por season+division) e estas passam
-        // a apontar para a nova. Uma tabela por divisão (issue #47).
-        val entities = standingsRepo.findAllForLatestSeason()
+        // A tabela corrente de cada liga = a de maior `season` DELA (issue
+        // #131): cada país vira no seu tempo. As encerradas permanecem no DB
+        // (PK por competição + temporada).
+        val entities = standingsRepo.findAllCurrent()
         check(entities.isNotEmpty()) { "Standings nao inicializada — seed faltando" }
         entities.map { it.toDomain(json) }
     }
 
     override suspend fun findStandings(season: Int): List<Standings> = withContext(Dispatchers.IO) {
-        standingsRepo.findAllBySeasonOrderByDivision(season).map { it.toDomain(json) }
+        standingsRepo.findAllBySeason(season).map { it.toDomain(json) }
     }
 
     override suspend fun saveRound(round: Round) {

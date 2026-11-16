@@ -114,7 +114,7 @@ class QuickMatchSimulatorTest {
 
     @Test
     fun `mata-mata empatado vai aos penaltis e liga nao`() {
-        val knockout = setup.copy(knockout = true)
+        val knockout = setup.copy(decidesOnPenalties = { home, away -> home == away })
         val draws = (0L until 400L).map { it to quick.simulate(knockout, Random(it)) }
             .filter { (_, r) -> r.homeGoals == r.awayGoals }
         assertTrue(draws.isNotEmpty())

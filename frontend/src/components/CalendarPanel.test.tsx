@@ -14,7 +14,7 @@ describe('CalendarPanel (issue #125)', () => {
         match: {
           matchId: 9, homeClubId: 7, awayClubId: 1, homeClubName: 'Rival', awayClubName: 'Goal Father FC',
           status: 'Scheduled', homeGoals: 0, awayGoals: 0, minute: 0, division: 1,
-          ...matchCompetition({ type: 'Cup', phase: 'QUARTER_FINALS' }),
+          ...matchCompetition({ type: 'Cup', stageName: 'Quartas de final', leg: 'SINGLE' }),
         },
       },
     }

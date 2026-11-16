@@ -17,8 +17,10 @@ import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.`in`.TransferOfferUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
+import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
@@ -46,6 +48,7 @@ import com.carlesso.goalfather.application.service.SetTicketPriceService
 import com.carlesso.goalfather.application.service.SetTrainingFocusService
 import com.carlesso.goalfather.application.service.TransferOfferService
 import com.carlesso.goalfather.application.service.TreatSquadService
+import com.carlesso.goalfather.application.service.WorldOnboardingService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -91,7 +94,8 @@ class BeanConfig {
     @Bean
     fun saveLineupUseCase(
         clubRepo: ClubRepository,
-    ): SaveLineupUseCase = SaveLineupService(clubRepo)
+        catalogRepo: CompetitionCatalogRepository,
+    ): SaveLineupUseCase = SaveLineupService(clubRepo, catalogRepo)
 
     /** Departamento médico (issue #54). */
     @Bean
@@ -133,6 +137,8 @@ class BeanConfig {
         claimRepo: ClubClaimRepository,
         // Propostas entre técnicos (issue #63): o prazo anda a cada rodada.
         offerRepo: TransferOfferRepository,
+        // Catálogo de competições do save (issue #131).
+        catalogRepo: CompetitionCatalogRepository,
         simulator: MatchSimulator,
         // MeterRegistry é provido pelo actuator; injetado para o timer da
         // simulação (issue #44). Fora do Spring, o service usa um registry isolado.
@@ -149,6 +155,7 @@ class BeanConfig {
         cupRepo,
         claimRepo,
         offerRepo,
+        catalogRepo,
         simulator,
         meterRegistry,
         finalizationGate = finalizationGate,
@@ -176,6 +183,14 @@ class BeanConfig {
         leagueRepo: LeagueRepository,
     ): BoardUseCase = BoardService(clubRepo, leagueRepo)
 
+    /** Onboarding país → liga → clube sobre o mundo do save (issue #131). */
+    @Bean
+    fun worldOnboardingUseCase(
+        catalog: CompetitionCatalogRepository,
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+    ): WorldOnboardingUseCase = WorldOnboardingService(catalog, clubRepo, leagueRepo)
+
     /** Leitura do histórico de temporadas e da carreira do técnico (issue #60). */
     @Bean
     fun seasonHistoryUseCase(
@@ -198,15 +213,17 @@ class BeanConfig {
         leagueRepo: LeagueRepository,
         clubRepo: ClubRepository,
         cupRepo: CupRepository,
-    ): CalendarUseCase = CalendarService(leagueRepo, clubRepo, cupRepo)
+        catalogRepo: CompetitionCatalogRepository,
+    ): CalendarUseCase = CalendarService(leagueRepo, clubRepo, cupRepo, catalogRepo)
 
     @Bean
     fun streamMatchUseCase(
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
+        catalogRepo: CompetitionCatalogRepository,
         simulator: MatchSimulator,
         meterRegistry: MeterRegistry,
-    ): StreamMatchUseCase = PlayMatchService(clubRepo, leagueRepo, simulator, meterRegistry)
+    ): StreamMatchUseCase = PlayMatchService(clubRepo, leagueRepo, catalogRepo, simulator, meterRegistry)
 
     // ── Auth (issue #18) + seleção de clube (issue #19) ───────────────────
     @Bean

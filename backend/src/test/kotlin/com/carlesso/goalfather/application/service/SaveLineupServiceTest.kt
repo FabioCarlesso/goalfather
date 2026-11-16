@@ -1,12 +1,13 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.COPA_DO_BRASIL
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Countries
-import com.carlesso.goalfather.domain.model.SeasonCompetitions
 import com.carlesso.goalfather.domain.model.Suspension
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -26,7 +27,7 @@ import kotlin.test.assertIs
 class SaveLineupServiceTest {
 
     private val clubRepo: ClubRepository = mockk()
-    private val service = SaveLineupService(clubRepo)
+    private val service = SaveLineupService(clubRepo, InMemoryCatalogRepository())
 
     private val owner = 7L
 
@@ -219,26 +220,26 @@ class SaveLineupServiceTest {
 
     @Test
     fun `escalacao com mais estrangeiros que o limite e recusada como valor (issue 130)`() = runTest {
-        val club = clubWithForeigners(SeasonCompetitions.NATIONAL_FOREIGN_PLAYER_LIMIT + 1)
+        val club = clubWithForeigners(BRAZIL_LIMIT + 1)
         val ids = club.squad.take(11).map { it.id }
         coEvery { clubRepo.findById(ClubId(1)) } returns club
 
         val result = service.execute(ClubId(1), owner, Formation.F_4_4_2, ids)
 
         assertIs<LineupResult.TooManyForeignPlayers>(result)
-        assertEquals(SeasonCompetitions.NATIONAL_FOREIGN_PLAYER_LIMIT, result.limit)
+        assertEquals(BRAZIL_LIMIT, result.limit)
         assertEquals(ids.take(10).map { it.value }, result.playerIds)
         coVerify(exactly = 0) { clubRepo.save(any()) }
     }
 
     @Test
     fun `estrangeiros no limite e suspenso escalado sao aceitos (issue 130)`() = runTest {
-        val base = clubWithForeigners(SeasonCompetitions.NATIONAL_FOREIGN_PLAYER_LIMIT)
+        val base = clubWithForeigners(BRAZIL_LIMIT)
         // Suspensão é por competição: a escalação salva serve a todas, então
         // quem decide é o apito inicial, não o salvamento.
         val club = base.copy(
             squad = base.squad.mapIndexed { i, p ->
-                if (i == 0) p.copy(suspensions = listOf(Suspension(SeasonCompetitions.CUP_ID, 1))) else p
+                if (i == 0) p.copy(suspensions = listOf(Suspension(COPA_DO_BRASIL, 1))) else p
             },
         )
         val ids = club.squad.take(11).map { it.id }
@@ -249,3 +250,6 @@ class SaveLineupServiceTest {
         assertIs<LineupResult.Success>(service.execute(ClubId(1), owner, Formation.F_4_4_2, ids))
     }
 }
+
+/** Limite da Série A no catálogo de teste (CBF 2026: 9 estrangeiros). */
+private const val BRAZIL_LIMIT = 9
