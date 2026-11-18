@@ -6,6 +6,7 @@ import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.time.LocalDate
 
 @Entity
 @Table(name = "players")
@@ -76,6 +77,16 @@ class PlayerEntity(
      */
     @Column(name = "discipline_json", columnDefinition = "TEXT")
     var disciplineJson: String? = null,
+
+    /**
+     * Convocação para a seleção (issue #134): país e último dia da data FIFA.
+     * As duas nulas = não convocado; o mapper remonta o `OnInternationalDuty`.
+     */
+    @Column(name = "duty_country", length = 3)
+    var dutyCountry: String? = null,
+
+    @Column(name = "duty_until")
+    var dutyUntil: LocalDate? = null,
 )
 
 /**

@@ -27,6 +27,9 @@ import kotlinx.serialization.json.Json
 private const val LEAGUE = "LEAGUE"
 private const val NATIONAL_CUP = "NATIONAL_CUP"
 
+/** Continental (issue #132). `country` da linha = o país que hospeda o calendário dela. */
+private const val CONTINENTAL = "CONTINENTAL"
+
 /** [order] é a posição no catálogo (ordem do pack), devolvida na leitura. */
 fun GameCompetition.toEntity(order: Int): CompetitionCatalogEntity = CompetitionCatalogEntity(
     id = id.value,
@@ -38,6 +41,7 @@ fun GameCompetition.toEntity(order: Int): CompetitionCatalogEntity = Competition
     kind = when (kind) {
         is CompetitionKind.League -> LEAGUE
         CompetitionKind.NationalCup -> NATIONAL_CUP
+        CompetitionKind.Continental -> CONTINENTAL
     },
     tier = (kind as? CompetitionKind.League)?.tier?.value,
     seasonSpan = span.name,
@@ -69,6 +73,7 @@ fun CompetitionCatalogEntity.toDomain(): GameCompetition = GameCompetition(
     kind = when (kind) {
         LEAGUE -> CompetitionKind.League(Division(requireNotNull(tier) { "liga $id sem tier no catálogo" }))
         NATIONAL_CUP -> CompetitionKind.NationalCup
+        CONTINENTAL -> CompetitionKind.Continental
         else -> error("Papel de competição desconhecido no catálogo: '$kind' ($id)")
     },
     span = SeasonSpan.valueOf(seasonSpan),

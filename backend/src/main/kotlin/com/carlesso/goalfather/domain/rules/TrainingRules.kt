@@ -101,7 +101,8 @@ private fun Player.trainOneWeek(focus: TrainingFocus, rng: Random): PlayerWeek {
     val rested = copy(stamina = (stamina + focus.staminaRecovery).coerceAtMost(MAX_STAMINA))
 
     val attribute = focus.trains
-    if (attribute == null || injured) return PlayerWeek(rested)
+    // Convocado (issue #134) treina com a seleção, não no CT do clube.
+    if (attribute == null || injured || onInternationalDuty) return PlayerWeek(rested)
 
     val improves = rng.nextDouble() < AgeBand.of(age).trainingUpgradeChance
     val hurts = rng.nextDouble() < focus.injuryRisk

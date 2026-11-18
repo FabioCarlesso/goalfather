@@ -71,6 +71,12 @@ tags:
     description: Diretoria — meta da temporada, confiança no técnico e demissão
   - name: Offers
     description: Propostas de transferência entre técnicos humanos
+  # --- #132 Libertadores ---
+  - name: Libertadores
+    description: Copa Libertadores — fase de grupos, mata-mata e final única (issue #132)
+  # --- #134 Seleções ---
+  - name: NationalTeams
+    description: Seleções nas datas FIFA — convocações, Eliminatórias e ranking (issue #134)
 
 paths:
   /api/auth/register:
@@ -1001,6 +1007,315 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  # --- #132 Libertadores ---
+  /api/libertadores:
+    get:
+      tags: [Libertadores]
+      operationId: getLibertadores
+      summary: Grupos e chave da Libertadores (issue #132)
+      description: |
+        A edição da Copa Libertadores: os 8 grupos sorteados (sem dois clubes
+        do mesmo país no mesmo grupo), a tabela de cada um já ordenada pelos
+        desempates da competição (os 2 primeiros com `zone: QUALIFICATION`),
+        os jogos de cada grupo e, quando os grupos acabam, o mata-mata — na
+        MESMA forma da chave da Copa do Brasil (`Cup`), com a final em jogo
+        único na sede neutra (`finalVenue`). Sem `season`, a edição mais
+        recente (a em disputa).
+
+        Corte do MVP: os 32 entram direto nos grupos (sem fases preliminares)
+        e o 3º do grupo é eliminado.
+
+        404 `LIBERTADORES_NOT_FOUND` quando o mundo não tem Libertadores (o
+        recorte do E2E, por exemplo) ou a temporada não teve.
+      parameters:
+        - name: season
+          in: query
+          required: false
+          description: Ano da edição (omitido = a mais recente)
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Edição da Libertadores
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Libertadores' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Mundo ou temporada sem Libertadores
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # --- #134 Seleções ---
+  /api/national-teams:
+    get:
+      tags: [NationalTeams]
+      operationId: getNationalTeams
+      summary: Datas FIFA, resultados das seleções, Eliminatórias e ranking
+      description: |
+        Painel das seleções (issue #134). `windows` lista as datas FIFA do ano
+        corrente do jogo e do seguinte, com a situação de cada uma — é o que o
+        calendário usa para destacar as pausas. `nextWindow` é a janela em que
+        o relógio está ou a próxima. `lastResults` são os jogos da última
+        janela disputada. A classificação das Eliminatórias da CONMEBOL e o
+        ranking são calculados pelo backend a partir dos placares — a UI só
+        exibe.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Painel das seleções
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NationalTeamsOverview' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/clubs/{id}/call-ups:
+    get:
+      tags: [NationalTeams]
+      operationId: getClubCallUps
+      summary: Convocados do clube na data FIFA corrente ou na próxima
+      description: |
+        Quem do clube vai para a seleção (issue #134). Antes da janela
+        (`window.status = UPCOMING`) a lista é a PRÉVIA, calculada com os
+        elencos de agora — o técnico vê quem perderá. Com a janela em curso
+        (`CALLED`), é a convocação de fato: esses jogadores estão com
+        `availability.type = OnInternationalDuty` e ficam fora de todos os
+        jogos do clube até a janela acabar. `window` ausente só num save sem
+        calendário.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Convocados do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClubCallUps' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Clube inexistente (`CLUB_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # --- #133 Navegação do mundo ---
+  /api/competitions:
+    get:
+      tags: [World]
+      operationId: listCompetitions
+      summary: Competições do mundo do save (issue #133)
+      description: |
+        Todas as competições do catálogo do save — ligas, copas nacionais e,
+        quando existirem, continentais —, cada uma na SUA temporada corrente.
+        A UI agrupa por país (`country`; continentais vêm sem país, com a
+        `confederation` dona).
+
+        Ordem: Brasil primeiro, depois os demais países pelo código; dentro do
+        país, as ligas da elite para baixo e depois as copas; continentais por
+        último.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Competições do mundo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CompetitionSummary' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/competitions/{competitionId}:
+    get:
+      tags: [World]
+      operationId: getCompetition
+      summary: Uma competição, com formato e critérios de desempate (issue #133)
+      description: |
+        O `format` diz quais visões a competição tem (tabela, chave, grupos):
+        a UI faz `switch` exaustivo sobre ele. `tiebreakers` é a ordem dos
+        critérios que o backend aplica na tabela — a UI só os lista.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Competição
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CompetitionDetail' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição fora do catálogo do save (`COMPETITION_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/standings:
+    get:
+      tags: [World]
+      operationId: getCompetitionStandings
+      summary: Tabela corrente de uma liga (issue #133)
+      description: |
+        A tabela da temporada corrente da competição, já ordenada pelos
+        desempates dela e com a faixa (`zone`) de cada posição — o mesmo
+        `Standings` de `/api/league/standings`. Competição sem tabela
+        (mata-mata) ou ainda sem temporada: 404 `STANDINGS_NOT_FOUND`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Tabela da competição
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Standings' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`) ou sem tabela (`STANDINGS_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/matches:
+    get:
+      tags: [World]
+      operationId: listCompetitionMatches
+      summary: Jogos da temporada corrente, por encaixe (issue #133)
+      description: |
+        Os encaixes da temporada corrente da competição, em ordem, cada um
+        com os jogos DELA. Encaixes já jogados trazem os placares gravados;
+        os futuros vêm do calendário do backend. Num mata-mata só a fase em
+        disputa tem confrontos conhecidos: encaixe de fase ainda não
+        sorteada vem com `matches` vazio.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Encaixes da competição
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CompetitionMatchday' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/scorers:
+    get:
+      tags: [World]
+      operationId: listCompetitionScorers
+      summary: Artilharia dos clubes da competição (issue #133)
+      description: |
+        Os artilheiros dos clubes que disputam a competição, do que mais
+        marcou para o que menos (empate pelo nome), até 20, só quem marcou.
+
+        **Corte do MVP:** os gols são os da TEMPORADA do jogador em todas as
+        competições — o jogo ainda não separa gols por competição.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Artilheiros
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CompetitionScorer' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/bracket:
+    get:
+      tags: [World]
+      operationId: getCompetitionBracket
+      summary: Chave de mata-mata da competição (issue #133)
+      description: |
+        A chave da temporada corrente de uma copa — o mesmo `Cup` de
+        `/api/league/cup`, mas da competição pedida. Competição sem chave
+        (liga de pontos corridos) ou copa ainda não sorteada: 404
+        `BRACKET_NOT_FOUND`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Chave da copa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cup' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`) ou sem chave (`BRACKET_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/clubs/{id}/schedule:
+    get:
+      tags: [World]
+      operationId: getClubSchedule
+      summary: Calendário do clube semana a semana (issue #133)
+      description: |
+        As próximas `weeks` semanas a partir da semana do encaixe corrente,
+        cada uma com os jogos do clube (e a competição de cada um) e se é
+        data FIFA. Jogos já disputados na semana corrente vêm com o placar.
+        Semanas além da temporada corrente de cada competição vêm vazias —
+        a edição seguinte só é agendada na virada. Sem calendário, `weeks`
+        vem vazio e `current` ausente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+        - name: weeks
+          in: query
+          required: false
+          description: Quantas semanas (padrão 8, de 1 a 26)
+          schema: { type: integer, minimum: 1, maximum: 26, default: 8 }
+      responses:
+        '200':
+          description: Calendário do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClubSchedule' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Clube inexistente (`CLUB_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  # --- fim #133 ---
+
   /ws/slot/{key}:
     get:
       tags: [League]
@@ -1156,6 +1471,13 @@ components:
       required: true
       description: ID do clube
       schema: { type: integer, format: int64 }
+    # --- #133 Navegação do mundo ---
+    CompetitionIdPath:
+      name: competitionId
+      in: path
+      required: true
+      description: Id da competição no catálogo do save (`bra-serie-a`, `bra-copa-do-brasil`)
+      schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]*$' }
     OfferIdPath:
       name: id
       in: path
@@ -1525,11 +1847,13 @@ components:
       oneOf:
         - $ref: '#/components/schemas/AvailableStatus'
         - $ref: '#/components/schemas/InjuredStatus'
+        - $ref: '#/components/schemas/InternationalDutyStatus'
       discriminator:
         propertyName: type
         mapping:
           Available: '#/components/schemas/AvailableStatus'
           Injured:   '#/components/schemas/InjuredStatus'
+          OnInternationalDuty: '#/components/schemas/InternationalDutyStatus'
 
     AvailableStatus:
       type: object
@@ -2427,6 +2751,13 @@ components:
         seasonLabel:
           type: string
           description: '`2026` ou `2026/27` (issue #131); omitido nos records antigos'
+        continentalChampions:
+          type: array
+          description: |
+            Campeões das continentais que fecharam com a temporada deste país
+            (issue #132): a Libertadores fecha com o Brasil. Omitido quando
+            não houve.
+          items: { $ref: '#/components/schemas/ContinentalTitle' }
 
     CareerCampaign:
       description: Uma temporada da carreira — em que ano foi e como o clube terminou.
@@ -2518,6 +2849,12 @@ components:
         competitionName:
           type: string
           description: Nome da competição, foto do momento como os nomes dos clubes
+        neutralVenue:
+          type: string
+          description: |
+            Sede neutra do jogo (issue #132) — só a final única da
+            Libertadores. Ninguém joga em casa, então ninguém fatura
+            bilheteria. Omitido no estádio do mandante.
 
     Round:
       description: |
@@ -2605,11 +2942,13 @@ components:
       oneOf:
         - $ref: '#/components/schemas/LeagueRoundStage'
         - $ref: '#/components/schemas/CupRoundStage'
+        - $ref: '#/components/schemas/GroupRoundStage'
       discriminator:
         propertyName: type
         mapping:
           League: '#/components/schemas/LeagueRoundStage'
           Cup:    '#/components/schemas/CupRoundStage'
+          Group:  '#/components/schemas/GroupRoundStage'
 
     LeagueRoundStage:
       type: object
@@ -3150,6 +3489,234 @@ components:
             `false`, o play responde 409 `ROUND_NOT_READY`. Calculado pelo
             backend (issue #98) — é o mesmo valor que o servidor usa no gate.
 
+    # --- #132 Libertadores ---
+    GroupRoundStage:
+      description: |
+        Rodada da fase de grupos de uma continental (issue #132): o grupo e a
+        rodada DELE (1..6 na Libertadores). Não mexe na tabela da liga nem
+        decide nada nos pênaltis.
+      type: object
+      required: [type, groupName, matchday]
+      properties:
+        type:      { type: string, enum: [Group] }
+        groupName: { type: string, example: Grupo A }
+        matchday:  { type: integer, minimum: 1 }
+
+    ContinentalTitle:
+      description: Um título continental registrado na história (issue #132).
+      type: object
+      required: [competitionId, competitionName, champion]
+      properties:
+        competitionId:   { type: string, example: conmebol-libertadores }
+        competitionName: { type: string }
+        champion:        { $ref: '#/components/schemas/CupClub' }
+
+    GroupFixture:
+      description: Um jogo de grupo. O placar só vem depois de disputado.
+      type: object
+      required: [round, homeClubId, homeClubName, awayClubId, awayClubName]
+      properties:
+        round:        { type: integer, minimum: 1 }
+        homeClubId:   { type: integer, format: int64 }
+        homeClubName: { type: string }
+        awayClubId:   { type: integer, format: int64 }
+        awayClubName: { type: string }
+        homeGoals:    { type: integer, minimum: 0 }
+        awayGoals:    { type: integer, minimum: 0 }
+
+    ContinentalGroup:
+      type: object
+      required: [name, rows, fixtures]
+      properties:
+        name: { type: string, example: Grupo A }
+        rows:
+          type: array
+          description: 'Tabela do grupo, ordenada; os classificados com `zone: QUALIFICATION`'
+          items: { $ref: '#/components/schemas/StandingRow' }
+        fixtures:
+          type: array
+          description: Os jogos do grupo em ordem de rodada (turno e returno)
+          items: { $ref: '#/components/schemas/GroupFixture' }
+
+    Venue:
+      description: Estádio real do pack (nome e capacidade).
+      type: object
+      required: [name, capacity]
+      properties:
+        name:     { type: string }
+        capacity: { type: integer, minimum: 1 }
+
+    Libertadores:
+      description: |
+        Uma edição da Copa Libertadores (issue #132). `knockout` é omitido
+        enquanto os grupos não acabam; `champion`, enquanto a final não foi
+        disputada. Os prêmios das fases (`knockout.phases[].prizeCents`) são
+        o dobro dos da copa nacional.
+      type: object
+      required: [season, competitionId, competitionName, qualifiersPerGroup, groups]
+      properties:
+        season:             { type: integer }
+        competitionId:      { type: string, example: conmebol-libertadores }
+        competitionName:    { type: string }
+        qualifiersPerGroup: { type: integer, minimum: 1 }
+        groups:
+          type: array
+          items: { $ref: '#/components/schemas/ContinentalGroup' }
+        knockout:   { $ref: '#/components/schemas/Cup' }
+        finalVenue: { $ref: '#/components/schemas/Venue' }
+        champion:   { $ref: '#/components/schemas/CupClub' }
+
+    # --- #133 Navegação do mundo ---
+    CompetitionFormatType:
+      type: string
+      description: |
+        Formato da competição (espelha o `sealed CompetitionFormat` do domínio,
+        issue #124). A UI escolhe as visões por ele, com `switch` exaustivo:
+        `ROUND_ROBIN` tem tabela; `KNOCKOUT` tem chave;
+        `GROUPS_THEN_KNOCKOUT` tem grupos e chave (Libertadores, #132);
+        `SWISS_LEAGUE` tem tabela e chave (Champions, #145).
+      enum: [ROUND_ROBIN, KNOCKOUT, GROUPS_THEN_KNOCKOUT, SWISS_LEAGUE]
+
+    CompetitionKindType:
+      type: string
+      description: |
+        Papel da competição no mundo (espelha o `sealed CompetitionKind`):
+        liga do país, copa nacional ou continental (dona é a confederação).
+      enum: [LEAGUE, NATIONAL_CUP, CONTINENTAL]
+
+    Tiebreaker:
+      type: string
+      description: |
+        Critério de classificação, na ordem em que a competição o aplica
+        (issue #124). A tabela já chega ordenada; a UI só lista os critérios.
+      enum: [POINTS, WINS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, HEAD_TO_HEAD_GOAL_DIFFERENCE, FEWER_RED_CARDS, FEWER_YELLOW_CARDS, DRAWING_OF_LOTS]
+
+    CompetitionSummary:
+      description: Uma competição do catálogo do save, na temporada corrente (issue #133).
+      type: object
+      required: [id, name, format, kind, confederation, clubCount]
+      properties:
+        id:     { type: string, example: bra-serie-a }
+        name:   { type: string, example: Campeonato Brasileiro Série A }
+        format: { $ref: '#/components/schemas/CompetitionFormatType' }
+        kind:   { $ref: '#/components/schemas/CompetitionKindType' }
+        country:
+          $ref: '#/components/schemas/Country'
+          description: País da competição; ausente nas continentais
+        confederation: { $ref: '#/components/schemas/Confederation' }
+        tier:
+          type: integer
+          minimum: 1
+          description: Divisão no país (1 = elite); só nas ligas
+        season:
+          type: integer
+          description: Ano de INÍCIO da temporada corrente; ausente se o país ainda não começou
+        seasonLabel:
+          type: string
+          description: '`2026` ou `2026/27`; ausente junto com `season`'
+        clubCount:
+          type: integer
+          minimum: 0
+          description: Clubes que disputam a temporada corrente
+
+    CompetitionDetail:
+      description: |
+        Uma competição com as regras que a tela mostra (issue #133). Mesmos
+        campos de `CompetitionSummary` + os critérios de desempate e o limite
+        de estrangeiros.
+      type: object
+      required: [id, name, format, kind, confederation, clubCount, tiebreakers]
+      properties:
+        id:     { type: string, example: bra-serie-a }
+        name:   { type: string, example: Campeonato Brasileiro Série A }
+        format: { $ref: '#/components/schemas/CompetitionFormatType' }
+        kind:   { $ref: '#/components/schemas/CompetitionKindType' }
+        country:
+          $ref: '#/components/schemas/Country'
+          description: País da competição; ausente nas continentais
+        confederation: { $ref: '#/components/schemas/Confederation' }
+        tier:
+          type: integer
+          minimum: 1
+          description: Divisão no país (1 = elite); só nas ligas
+        season:
+          type: integer
+          description: Ano de INÍCIO da temporada corrente; ausente se o país ainda não começou
+        seasonLabel:
+          type: string
+          description: '`2026` ou `2026/27`; ausente junto com `season`'
+        clubCount:
+          type: integer
+          minimum: 0
+          description: Clubes que disputam a temporada corrente
+        tiebreakers:
+          type: array
+          description: Critérios de desempate da tabela, em ordem (o primeiro é sempre `POINTS`)
+          items: { $ref: '#/components/schemas/Tiebreaker' }
+        foreignPlayerLimit:
+          type: integer
+          minimum: 0
+          description: Máximo de estrangeiros em campo por jogo; ausente = sem limite
+
+    CompetitionMatchday:
+      description: |
+        Um encaixe da temporada de uma competição e os jogos dela nele
+        (issue #133). `matches` vazio = fase de mata-mata ainda não sorteada.
+      type: object
+      required: [matchday, matches]
+      properties:
+        matchday: { $ref: '#/components/schemas/Matchday' }
+        matches:
+          type: array
+          items: { $ref: '#/components/schemas/RoundMatch' }
+
+    CompetitionScorer:
+      description: |
+        Um artilheiro dos clubes da competição (issue #133). `goals` são os
+        gols da temporada do jogador em TODAS as competições (corte do MVP).
+      type: object
+      required: [playerId, playerName, clubId, clubName, goals]
+      properties:
+        playerId:   { type: integer, format: int64 }
+        playerName: { type: string }
+        clubId:     { type: integer, format: int64 }
+        clubName:   { type: string }
+        goals:      { type: integer, minimum: 1 }
+
+    ScheduleWeek:
+      description: |
+        Uma semana do calendário do clube (issue #133): semana ISO, de
+        segunda a domingo, se é data FIFA e os jogos do clube nela, em ordem.
+      type: object
+      required: [year, week, start, end, fifaWindow, matches]
+      properties:
+        year:  { type: integer, description: Ano da SEMANA ISO }
+        week:  { type: integer, minimum: 1, maximum: 53 }
+        start: { type: string, format: date, description: Segunda-feira }
+        end:   { type: string, format: date, description: Domingo }
+        fifaWindow:
+          type: boolean
+          description: |
+            A semana é (ou toca) uma data FIFA. Ligas que pausam não jogam
+            nela; o Brasileirão segue.
+        matches:
+          type: array
+          items: { $ref: '#/components/schemas/NextMatch' }
+
+    ClubSchedule:
+      description: Calendário do clube nas próximas semanas (issue #133).
+      type: object
+      required: [clubId, weeks]
+      properties:
+        clubId:  { type: integer, format: int64 }
+        current:
+          $ref: '#/components/schemas/Matchday'
+          description: Encaixe corrente do jogo; ausente sem calendário
+        weeks:
+          type: array
+          items: { $ref: '#/components/schemas/ScheduleWeek' }
+    # --- fim #133 ---
+
     # ─── Error ────────────────────────────────────────────────────────────
     ErrorResponse:
       type: object
@@ -3179,3 +3746,151 @@ components:
           type: object
           additionalProperties: true
           description: Dados extras dependentes do código de erro
+
+    # --- #134 Seleções ---
+    InternationalDutyStatus:
+      type: object
+      description: |
+        Convocado pela seleção numa data FIFA (issue #134): fora de TODOS os
+        jogos do clube até `until` (último dia da janela). Volta quando o
+        relógio sai da janela, com a stamina gasta nos jogos da seleção e,
+        às vezes, lesionado.
+      required: [type, country, until]
+      properties:
+        type: { type: string, enum: [OnInternationalDuty] }
+        country:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Trigrama FIFA da seleção que convocou
+          example: BRA
+        until:
+          type: string
+          format: date
+          description: Último dia da data FIFA
+          example: '2026-03-31'
+
+    FifaWindowStatus:
+      type: string
+      description: |
+        Situação de uma data FIFA no save: `UPCOMING` (ainda não chegou — a
+        lista de convocados é só prévia), `CALLED` (convocados com as
+        seleções, jogos por disputar), `PLAYED` (jogada, convocados de volta).
+      enum: [UPCOMING, CALLED, PLAYED]
+
+    FifaWindowSummary:
+      type: object
+      description: Uma data FIFA. As ligas que pausam não jogam nas semanas que ela toca.
+      required: [start, end, status, matchSlots]
+      properties:
+        start: { type: string, format: date, example: '2026-03-23' }
+        end:   { type: string, format: date, example: '2026-03-31' }
+        status: { $ref: '#/components/schemas/FifaWindowStatus' }
+        matchSlots:
+          type: integer
+          description: Jogos de seleção na janela — 4 em setembro/outubro, 2 nas demais
+          example: 2
+
+    CalledUpPlayer:
+      type: object
+      description: |
+        Um convocado. Nome, posição, overall e clube são a foto da convocação
+        (a lista continua legível se o jogador mudar de clube depois).
+      required: [playerId, name, position, overall, clubId, clubName, country]
+      properties:
+        playerId: { type: integer, format: int64 }
+        name:     { type: string }
+        position: { $ref: '#/components/schemas/Position' }
+        overall:  { type: integer, minimum: 0, maximum: 99 }
+        clubId:   { type: integer, format: int64 }
+        clubName: { type: string }
+        country:  { $ref: '#/components/schemas/Country' }
+
+    ClubCallUps:
+      type: object
+      required: [players]
+      properties:
+        window: { $ref: '#/components/schemas/FifaWindowSummary' }
+        players:
+          type: array
+          description: Convocados do clube (vazia quando ninguém foi chamado)
+          items: { $ref: '#/components/schemas/CalledUpPlayer' }
+
+    NationalMatchKind:
+      type: string
+      description: Jogo de Eliminatórias (CONMEBOL) ou amistoso
+      enum: [QUALIFIER, FRIENDLY]
+
+    NationalMatch:
+      type: object
+      description: Jogo de seleção já disputado (simulação rápida).
+      required: [home, away, kind, matchNumber, homeGoals, awayGoals]
+      properties:
+        home: { $ref: '#/components/schemas/Country' }
+        away: { $ref: '#/components/schemas/Country' }
+        kind: { $ref: '#/components/schemas/NationalMatchKind' }
+        matchNumber:
+          type: integer
+          minimum: 1
+          description: Ordem do jogo na janela (1..4)
+        qualifierRound:
+          type: integer
+          minimum: 1
+          maximum: 18
+          description: Rodada das Eliminatórias — ausente nos amistosos
+        homeGoals: { type: integer, minimum: 0 }
+        awayGoals: { type: integer, minimum: 0 }
+
+    NationalTableRow:
+      type: object
+      description: |
+        Linha da classificação das Eliminatórias ou do ranking de seleções.
+        No ranking, jogo de Eliminatórias vale o dobro dos pontos de um
+        amistoso. Ordem: pontos, saldo, gols pró.
+      required: [position, country, played, won, drawn, lost, goalsFor, goalsAgainst, goalDifference, points]
+      properties:
+        position: { type: integer, minimum: 1 }
+        country:  { $ref: '#/components/schemas/Country' }
+        played:   { type: integer }
+        won:      { type: integer }
+        drawn:    { type: integer }
+        lost:     { type: integer }
+        goalsFor: { type: integer }
+        goalsAgainst: { type: integer }
+        goalDifference: { type: integer }
+        points:   { type: integer }
+
+    QualifiersTable:
+      type: object
+      description: |
+        Eliminatórias da CONMEBOL do ciclo corrente: 10 seleções em turno e
+        returno, 18 rodadas distribuídas pelas datas FIFA de dois anos.
+      required: [cycle, roundsPlayed, totalRounds, rows]
+      properties:
+        cycle:
+          type: integer
+          description: Ano de início do ciclo (2026, 2028…)
+        roundsPlayed: { type: integer, minimum: 0 }
+        totalRounds:  { type: integer, example: 18 }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/NationalTableRow' }
+
+    NationalTeamsOverview:
+      type: object
+      required: [windows, lastResults, qualifiers, ranking]
+      properties:
+        windows:
+          type: array
+          description: Datas FIFA do ano corrente do jogo e do seguinte, em ordem
+          items: { $ref: '#/components/schemas/FifaWindowSummary' }
+        nextWindow: { $ref: '#/components/schemas/FifaWindowSummary' }
+        lastWindow: { $ref: '#/components/schemas/FifaWindowSummary' }
+        lastResults:
+          type: array
+          description: Jogos da última data FIFA disputada (vazia antes da primeira)
+          items: { $ref: '#/components/schemas/NationalMatch' }
+        qualifiers: { $ref: '#/components/schemas/QualifiersTable' }
+        ranking:
+          type: array
+          description: Ranking de seleções — só quem já jogou aparece
+          items: { $ref: '#/components/schemas/NationalTableRow' }

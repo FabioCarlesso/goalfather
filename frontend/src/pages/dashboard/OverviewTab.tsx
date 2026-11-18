@@ -1,7 +1,9 @@
 import { useBoard } from '../../api/queries/useBoard'
 import { useCalendar } from '../../api/queries/useCalendar'
 import { useClubOffers, useOfferAction } from '../../api/queries/useOffers'
+import { useClubCallUps } from '../../api/queries/useNationalTeams'
 import { BoardPanel } from '../../components/BoardPanel'
+import { CallUpNotice } from '../../components/CallUpNotice'
 import { CalendarPanel } from '../../components/CalendarPanel'
 import { OffersPanel } from '../../components/OffersPanel'
 import { Stat } from '../../components/ui/Stat'
@@ -19,6 +21,7 @@ export function OverviewTab() {
   const offerAction = useOfferAction(club.id)
   // Data corrente e próximo jogo (issue #125): também à parte.
   const { data: calendar } = useCalendar(club.id)
+  const { data: callUps } = useClubCallUps(club.id)
 
   return (
     <div className="space-y-6">
@@ -30,6 +33,9 @@ export function OverviewTab() {
       </div>
 
       {calendar && <CalendarPanel calendar={calendar} clubId={club.id} />}
+
+      {/* Aviso de convocação (issue #134): também à parte. */}
+      {callUps && <CallUpNotice callUps={callUps} />}
 
       {board && <BoardPanel status={board} />}
 

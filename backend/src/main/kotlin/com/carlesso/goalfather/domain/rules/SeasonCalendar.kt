@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.model.CompetitionFormat
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.CompetitionKind
 import com.carlesso.goalfather.domain.model.CompetitionSeason
+import com.carlesso.goalfather.domain.model.ContinentalCup
 import com.carlesso.goalfather.domain.model.CountryCode
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.FifaWindow
@@ -16,6 +17,7 @@ import com.carlesso.goalfather.domain.model.Pairing
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.SeasonSpan
+import com.carlesso.goalfather.domain.model.Slot
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -69,6 +71,16 @@ sealed interface SeasonCompetition {
         override val game: GameCompetition,
         override val season: CompetitionSeason,
         val cup: Cup,
+    ) : SeasonCompetition
+
+    /**
+     * Continental já sorteada (issue #132): os jogos de grupo são conhecidos de
+     * antemão; os do mata-mata, só a fase corrente — como a copa nacional.
+     */
+    data class Continental(
+        override val game: GameCompetition,
+        override val season: CompetitionSeason,
+        val edition: ContinentalCup,
     ) : SeasonCompetition
 }
 
@@ -126,6 +138,8 @@ data class SeasonPlan(
                     )
                 is SeasonCompetition.NationalCup ->
                     nationalCupMatches(matchday, competition.cup, competition.game, clubs)
+                is SeasonCompetition.Continental ->
+                    continentalMatches(matchday, competition.edition, scheduled.round)
             }
         }
         return Round(matchday = matchday, season = matchday.date.year, status = RoundStatus.Scheduled, matches = matches)
@@ -146,9 +160,11 @@ data class SeasonPlan(
     ): NextMatch? {
         val cupsUnknown = cupsInPlay.toMutableSet()
         for (matchday in schedule.matchdays.filter { it > after }) {
+            // Mata-mata (copa nacional ou o da continental, issue #132): só a
+            // fase corrente é conhecida.
             val cups = schedule.at(matchday)
-                .map { it.competition }
-                .filterTo(HashSet()) { competitions[it] is SeasonCompetition.NationalCup }
+                .filter { dependsOnResults(it) }
+                .mapTo(HashSet()) { it.competition }
             val visible = Round(
                 matchday = matchday,
                 season = matchday.date.year,
@@ -160,6 +176,21 @@ data class SeasonPlan(
         }
         return null
     }
+
+    /**
+     * Os jogos de [scheduled] dependem de resultados anteriores (mata-mata)?
+     * `when` exaustivo sobre o `sealed SeasonCompetition`: um papel novo obriga
+     * a decidir aqui se os jogos dele se conhecem de antemão. A continental
+     * (issue #132) é das duas coisas: os grupos são turno e returno sorteados
+     * (conhecidos), o mata-mata depois deles não. Única fonte da regra, usada
+     * pelo [nextMatchOf] e pelo `visibleRoundsAfter` da navegação (#133).
+     */
+    internal fun dependsOnResults(scheduled: ScheduledRound): Boolean =
+        when (val competition = competitions[scheduled.competition]) {
+            is SeasonCompetition.NationalCup -> true
+            is SeasonCompetition.Continental -> scheduled.round > competition.edition.groupRounds
+            is SeasonCompetition.League, null -> false
+        }
 
     /** O plano com as competições e o calendário de [other] junto (países disjuntos). */
     operator fun plus(other: SeasonPlan): SeasonPlan =
@@ -183,12 +214,16 @@ fun worldPlan(
     clubs: Collection<Club>,
     seasons: WorldSeasons,
     cups: Map<CompetitionId, Cup> = emptyMap(),
+    // A edição corrente de cada continental (issue #132). Ausente = não joga.
+    continentals: Map<CompetitionId, ContinentalCup> = emptyMap(),
 ): SeasonPlan {
     val slots = leagueSlots(competitions)
     return competitions.groupBy { it.country.code }
         .toList()
         .mapNotNull { (code, own) ->
-            seasons[code]?.let { year -> countryPlan(own, year, clubs.filter { it.country.code == code }, cups, slots) }
+            seasons[code]?.let { year ->
+                countryPlan(own, year, clubs.filter { it.country.code == code }, cups, slots, continentals = continentals)
+            }
         }
         .fold(SeasonPlan.EMPTY, SeasonPlan::plus)
 }
@@ -231,13 +266,14 @@ fun countryPlan(
     cups: Map<CompetitionId, Cup>,
     slots: Map<CompetitionId, Int>,
     fifaWindows: List<FifaWindow> = interimFifaWindows(year..year + 1),
+    continentals: Map<CompetitionId, ContinentalCup> = emptyMap(),
 ): SeasonPlan {
     val countryClubs = clubs.sortedBy { it.id.value }
     // `buildList` monta a lista com `add` num bloco e devolve a versão imutável.
     val entries: List<Pair<SeasonCompetition, List<Set<ClubId>>>> = buildList {
         for (game in competitions) {
             // `when` exaustivo sobre o papel da competição: um papel novo
-            // (continental, #132) obriga a decidir aqui como ele entra no plano.
+            // obriga a decidir aqui como ele entra no plano.
             when (val kind = game.kind) {
                 is CompetitionKind.League -> {
                     val ids = countryClubs.filter { it.division == kind.tier }.map { it.id }
@@ -253,12 +289,29 @@ fun countryPlan(
                     val season = CompetitionSeason(game.competition, year, start, end, game.pausesOnFifaWindows)
                     add(SeasonCompetition.NationalCup(game, season, cup) to List(cupRounds(cup)) { everyone })
                 }
+                // Continental hospedada por este país (issue #132): agendada JUNTO
+                // com as competições dele, então nenhum clube brasileiro fica com
+                // dois jogos no encaixe. Cada rodada reserva todos os inscritos —
+                // inclusive os estrangeiros, que só jogam ela. Só no meio de
+                // semana, na mesma janela da copa nacional (fevereiro a novembro).
+                CompetitionKind.Continental -> {
+                    val edition = continentals[game.id]?.takeIf { it.season == year } ?: continue
+                    val everyone = edition.clubs.mapTo(HashSet()) { it.id }
+                    val (start, end) = cupWindow(game.span, year)
+                    val season = CompetitionSeason(game.competition, year, start, end, game.pausesOnFifaWindows)
+                    add(SeasonCompetition.Continental(game, season, edition) to List(edition.calendarRounds) { everyone })
+                }
             }
         }
     }
     if (entries.isEmpty()) return SeasonPlan.EMPTY
 
-    val requests = entries.map { (competition, rounds) -> ScheduleRequest(competition.season, rounds) }
+    val requests = entries.map { (competition, rounds) ->
+        when (competition) {
+            is SeasonCompetition.Continental -> ScheduleRequest(competition.season, rounds, slots = setOf(Slot.MIDWEEK))
+            is SeasonCompetition.League, is SeasonCompetition.NationalCup -> ScheduleRequest(competition.season, rounds)
+        }
+    }
     val schedule = when (val result = scheduleSeasons(requests, fifaWindows)) {
         is ScheduleResult.Scheduled -> result.schedule
         is ScheduleResult.NoRoomLeft -> error("Temporada $year de ${competitions.first().country.name} não cabe no calendário: $result")

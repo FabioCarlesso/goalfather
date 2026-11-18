@@ -1436,6 +1436,191 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   ainda precisa clicar "jogar" nos encaixes só de outro país — andar o relógio
   sozinho é trabalho futuro.
 
+- [x] **Libertadores: fase de grupos, mata-mata e final única** — issue #132
+
+  **No catálogo:** `CompetitionKind.Continental` (terceiro papel do `sealed`, e
+  cada `when` exaustivo sobre ele — calendário, tabela, mapper, onboarding —
+  teve de decidir o que fazer). O `GameCompetition.country` da continental é o
+  país que **hospeda o calendário** dela (o Brasil): a Libertadores entra no
+  `countryPlan` do Brasil junto com o Brasileirão e a Copa do Brasil, e é isso
+  que impede um clube brasileiro de ter dois jogos no mesmo encaixe. Ela
+  também fecha com a virada do Brasil. Um `CompetitionOwner` de verdade fica
+  para quando duas confederações tiverem continental (#145).
+
+  **Domínio** (`domain/model/Continental.kt`, `domain/rules/ContinentalRules.kt`,
+  puro): `ContinentalCup` é a edição — os grupos sorteados, os resultados de
+  grupo, o plano do mata-mata e, quando os grupos acabam, o mata-mata como uma
+  `Cup` (o motor da Copa do Brasil reaproveitado: ida e volta, pênaltis,
+  sorteio fase a fase, prêmio). Os jogos de cada grupo não são guardados: são
+  o turno e returno dele (`roundRobinSchedule`). `RoundStage.Group(grupo,
+  rodada)` é a variante nova do `sealed RoundStage` — não mexe na tabela da
+  liga, não é "mês" de folha, não vai aos pênaltis.
+
+  | Regra | Como |
+  |---|---|
+  | Sorteio | Potes de 8 pela ordem de cabeças de chave (campeão anterior, depois força). `drawGroupsApart` (`CompetitionScheduling.kt`) coloca pote a pote, num grupo sorteado sem compatriota, **voltando atrás** quando o último clube do pote só caberia ao lado de um compatriota. Impossível (país com mais clubes que grupos) é `GroupDraw.Impossible`, valor. |
+  | Grupos | 6 rodadas, tabela por `rankTable` com os desempates do catálogo (pontos, confronto direto, saldo, gols, cartões, sorteio semeado pela edição). 1º e 2º vão às oitavas; **3º eliminado** (a Sul-Americana é da #145). |
+  | Oitavas | 1º × 2º de **outro** grupo, sorteado com volta atrás; o 2º recebe a ida, o 1º decide em casa. Depois, sorteio livre fase a fase (o da `Cup`). |
+  | Final | Jogo único na sede neutra da edição (`RoundMatch.neutralVenue`): ninguém fatura bilheteria. Empate vai **direto aos pênaltis** — corte: a engine joga 90 minutos, sem prorrogação. |
+  | Prêmio | O dobro da escada da copa nacional (`CONTINENTAL_PRIZE_FACTOR`): final US$ 2 mi. |
+  | Folha | Clube **sem liga** no save (os 26 estrangeiros) paga a folha em cada data da continental (`salaryPayers`): elas caem a cada 3–4 semanas, o ritmo do "mês". Clube com liga continua pagando só pela liga. Eliminado da continental, o estrangeiro fica parado (sem jogo, sem receita, sem folha) até a edição seguinte. |
+  | `matchId` | `encaixe × 1000 + 50 + índice` — a copa nacional usa `+ 1..`, as ligas `+ 100..`. |
+
+  **Calendário:** 13 encaixes (6 de grupo + 2+2+2+1), cada um reservando os 32
+  inscritos, **só no meio de semana** — o `ScheduleRequest` ganhou `slots`
+  permitidos (a preferência de encaixe não bastava: a liga apertada desce
+  para a quarta). Janela de fevereiro a novembro (a mesma da copa nacional),
+  com pausa nas datas FIFA. `nextMatchOf` trata o mata-mata dela como o da
+  copa: só a fase corrente é conhecida. O `GET /api/league/calendar` passa a
+  devolver o jogo da Libertadores do clube, com a competição na partida.
+
+  **Virada do Brasil** (`PlayRoundService.startNextSeason`, chamadas a
+  `application/service/CurrentContinentals.kt`): o título entra no
+  `SeasonRecord` do Brasil (`continentalChampions`); os clubes sem liga da
+  confederação **envelhecem e se renovam** pela mesma virada de elenco
+  (`startNextSeasonClubs`); e a edição seguinte é sorteada. Inscritos
+  (`continentalEntrants`): a cota de cada país da edição anterior; o campeão
+  entra sempre e conta na cota do país dele; no Brasil, os classificados pelas
+  regras de vaga da #128 na ordem da cascata (campeão da Copa do Brasil, G-4,
+  5º e 6º — sem preliminar, todos nos grupos), completando com os mais fortes
+  se faltarem; nos países sem liga, os de elenco mais forte (a reputação é do
+  pack, não do save). Sorteio impossível ou inscritos que não fecham: sem
+  edição, o Brasil joga só as nacionais.
+
+  **Persistência e API:** V21 `continental_editions` (PK competição +
+  temporada, edição em JSON, como a copa). `GET /api/libertadores?season=`
+  devolve grupos (tabela ordenada com `zone: QUALIFICATION` e jogos) e o
+  mata-mata no MESMO formato `Cup` da Copa do Brasil (prêmios já com o fator),
+  sede e campeão; 404 `LIBERTADORES_NOT_FOUND` sem Libertadores. No frontend,
+  `LibertadoresPage` (grupos + `KnockoutBracket`, rota `/libertadores`).
+
+  **Cortes:** sem preliminares (32 direto nos grupos), sem prorrogação, sem
+  Sul-Americana para o 3º; o pack do E2E não tem Libertadores (o mundo do E2E
+  e os specs existentes ficam iguais) — o "jogar até a Libertadores" é coberto
+  pelo `LibertadoresFlowTest`, que joga um ano do Brasil com a Libertadores
+  pelo `PlayRoundService`. O mock do frontend serve um retrato estático da
+  fase de grupos.
+
+- [x] **Seleções nas datas FIFA: convocações, Eliminatórias e ranking** — issue #134
+
+  **Convocado é um estado do jogador.** `Availability` ganhou a variante
+  `OnInternationalDuty(country, until)`. Uma variante do `sealed`, e não um
+  booleano ao lado da lesão, porque "convocado e lesionado" não existe, e o
+  `when` exaustivo obrigou cada regra que olha a disponibilidade a decidir o que
+  fazer com o convocado: a lesão não anda com os jogos do clube, o treino não
+  roda e a virada de temporada não o devolve antes da hora. `Player.canPlayIn`
+  passou a exigir `Available`, então `Club.startingLineup` (a escalação de
+  engine, bilheteria e desgaste) tira o convocado de **todos** os jogos do
+  clube. Escalação salva com convocado não é recusada (como a do suspenso): o
+  apito inicial o troca pelo reserva da mesma posição. No banco são duas
+  colunas novas em `players` (V22, `duty_country` e `duty_until`).
+
+  **Regras puras** (`domain/rules/NationalTeamRules.kt`), com seed por janela
+  e país (convocação) ou por janela e jogo (amistosos e placares), para que
+  todo cliente veja a mesma lista:
+
+  | Regra | O que faz |
+  |---|---|
+  | `callUp` / `worldCallUps` | 23 a 26 jogadores aptos por overall, com cota mínima de 3 GK, 7 ZG, 7 MC e 4 AT. O `Random` sorteia o tamanho e desempata overalls iguais (embaralha antes de uma ordenação estável). Tem seleção quem tem 11 aptos no mundo, mais as 10 da CONMEBOL. |
+  | `qualifierSchedule` / `qualifierRoundsOf` | Eliminatórias da CONMEBOL: Berger em turno e returno (o gerador das ligas), 18 rodadas. Ciclo de dois anos civis a partir de 2026: a rodada `k` é o k-ésimo jogo de data FIFA do ciclo (10 por ano: 2 + 2 + 4 + 2), e os 2 últimos jogos (novembro do 2º ano) são amistosos. |
+  | `windowFixtures` / `playWindow` | Em cada jogo da janela: a rodada das Eliminatórias e amistosos sorteados entre as demais seleções. Simulação rápida (#129) com o melhor 4-4-2 da lista. |
+  | `returnFromDuty` | A volta reusa `FitnessRules`: cada jogo começado pela seleção custa o desgaste de um titular, e a lesão sofrida lá (sorteada pela engine) vira `Injured`. |
+  | `nationalTable` / `nationalRanking` | Classificação e ranking (3/1/0, Eliminatórias com peso 2) recalculados dos placares a cada leitura. Nada de tabela persistida que possa divergir. |
+
+  **Relógio** (`application/service/NationalTeamService.kt`, que implementa
+  `NationalTeamClock` e `NationalTeamUseCase`). O `PlayRoundService` chama
+  `advance(encaixe encerrado, próximo encaixe)` num ponto só, depois de agendar
+  o próximo encaixe, dentro do claim (issue #46). A janela que o relógio toca é
+  convocada: a lista vai para `national_windows` (V22, JSON do `sealed
+  NationalWindow`, `Called` → `Played`) e os convocados saem dos clubes. A
+  janela cuja última semana ficou para trás é jogada, e os convocados voltam.
+  Um salto que atravesse a janela inteira faz as duas coisas na mesma virada.
+  O estado gravado é a segunda trava: janela convocada não convoca de novo.
+
+  **Clube do Brasileirão × clube europeu:** nada novo no calendário. O
+  agendador (#125) já não marca jogo das ligas com `pausesOnFifaWindows` nas
+  semanas que a janela toca, e o Brasileirão (sem pausa) joga nelas sem os
+  convocados. O `NationalTeamRulesTest` confere as duas coisas sobre o mundo
+  do MVP.
+
+  **Datas FIFA** (`FifaCalendar.kt`): continuam interinas (o pack só traz
+  março de 2026), mas agora começam na **segunda-feira** da semana do dia de
+  2026 e têm a duração do calendário (9 dias; 16 em setembro/outubro). Em 2026
+  nada muda; em 2027 as datas batem com o calendário publicado (22/03, 20/09,
+  08/11), e junho de 2027 em diante fica a até 6 dias do real.
+  `FifaWindow.matchSlots` deriva da duração: 4 jogos na janela longa, 2 nas
+  demais.
+
+  **API:** `GET /api/clubs/{id}/call-ups` (antes da janela, a prévia calculada
+  com os elencos de agora; durante, a lista gravada) e `GET
+  /api/national-teams` (datas FIFA do ano corrente e do seguinte com a
+  situação de cada uma, últimos resultados, Eliminatórias e ranking). No
+  frontend, o aviso de convocação (`CallUpNotice`) aparece na visão geral do
+  clube e a página `/national-teams` mostra o resto.
+
+  **Cortes:** seleção sem 11 aptos não convoca (o jogador fica no clube); as da
+  CONMEBOL sem jogadores suficientes completam o time com reforços estimados
+  (ver `docs/WORLD_DATA.md`). Jogadores livres do mercado não são convocados.
+  Entre os jogos da mesma janela não há desgaste (a fadiga é cobrada uma vez,
+  na volta). O ciclo das Eliminatórias não está alinhado à Copa do Mundo, e os
+  torneios de seleção ficam para a #144. O mock do frontend não simula datas
+  FIFA: devolve as datas, a tabela vazia e uma prévia fixa (os 3 melhores do
+  elenco).
+
+  **Efeito secundário não trava o encaixe** (revisão da PR #155). O relógio
+  das datas FIFA e o prazo das propostas rodam no `secondaryEffect` do
+  `PlayRoundService`: depois do agendamento do próximo encaixe, e uma falha
+  deles vira log + `goalfather.round.secondary.failures{effect}` em vez de
+  derrubar o `RoundFinished`. Os dois são idempotentes por estado: o efeito
+  anda no encaixe seguinte. A `CancellationException` é relançada (não é erro,
+  é o cancelamento das coroutines), por isso `try` explícito e não `runCatching`.
+
+- [x] **Navegação pelo mundo: competições, calendário do clube e tabelas** — issue #133
+
+  Leituras novas, sem tocar no `PlayRoundService`: caso de uso
+  `CompetitionQueryUseCase` (`CompetitionQueryService`) e dois controllers
+  novos, `CompetitionController` (`/api/competitions`, `/{id}`,
+  `/{id}/standings`, `/{id}/matches`, `/{id}/scorers`, `/{id}/bracket`) e
+  `ClubScheduleController` (`/api/clubs/{id}/schedule?weeks=`). O cabeçalho
+  reaproveita `GET /api/league/calendar`.
+
+  **Uma regra só para "o que vem depois".** Os jogos futuros saem do MESMO
+  plano do mundo que anda o relógio (`worldPlan`) e da mesma regra de
+  visibilidade do `nextMatchOf`, agora extraída como função pura em
+  `domain/rules/WorldNavigation.kt` (`SeasonPlan.visibleRoundsAfter`): a liga
+  é conhecida de antemão (Berger); de um mata-mata só a fase em disputa — a
+  copa aparece no primeiro encaixe dela adiante e os seguintes vêm sem
+  confrontos. O `when` que decide isso (`dependsOnResults`) é exaustivo sobre
+  `SeasonCompetition`: o papel continental da #132 obriga a decidir ali.
+  Encaixes passados vêm das rodadas gravadas (placares); o corrente, como está.
+
+  **Erro como valor de três desfechos.** `CompetitionLookup<out T>` é
+  `Found(value)`, `UnknownCompetition` (404 `COMPETITION_NOT_FOUND`) ou
+  `NotAvailable` (tabela de mata-mata → `STANDINGS_NOT_FOUND`; chave de liga →
+  `BRACKET_NOT_FOUND`). Os dois `data object` são `CompetitionLookup<Nothing>`:
+  com a covariância (`out T`), um objeto só serve a qualquer `T`.
+
+  **Formato achatado na borda.** O `sealed CompetitionFormat` vira o enum
+  `CompetitionFormatType` (`ROUND_ROBIN`, `KNOCKOUT`, `GROUPS_THEN_KNOCKOUT`,
+  `SWISS_LEAGUE`) e o `CompetitionKind` vira `CompetitionKindType` (com
+  `CONTINENTAL` já no contrato); a UI escolhe as abas por ele. Os desempates
+  saem como a lista de `Tiebreaker` da competição — a tabela já chega ordenada
+  e com as faixas, a UI só lista os critérios.
+
+  **Calendário do clube:** `clubScheduleWeeks` agrupa os jogos do clube por
+  semana ISO a partir da semana do encaixe corrente e marca a semana que toca
+  uma data FIFA (`interimFifaWindows`, as mesmas do agendador). Semanas além da
+  temporada corrente de cada país vêm vazias: a edição seguinte só é agendada
+  na virada.
+
+  **Cortes:** a artilharia é dos clubes da competição pelos gols da TEMPORADA
+  (`Player.goals`, todas as competições) — separar gols por competição exige
+  mexer nos efeitos do encaixe (`PlayRoundService`), fora do escopo; o contrato
+  e a tela dizem isso. Sem migration. O `nextMatchOf` continua com a cópia
+  dele da regra de visibilidade (unificar mexeria no `SeasonCalendar.kt`, que a
+  #132 também toca). O relógio ainda não anda sozinho nos encaixes sem técnico
+  humano (pendência conhecida).
+
 ---
 
 ## 9. Stack consolidada

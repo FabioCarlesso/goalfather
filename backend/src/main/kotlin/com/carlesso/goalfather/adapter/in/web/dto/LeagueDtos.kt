@@ -106,6 +106,16 @@ data class SeasonRecordDto(
     val country: CountryDto? = null,
     /** `2026` ou `2026/27` (issue #131); ausente nos records antigos. */
     val seasonLabel: String? = null,
+    /** Campeões continentais da temporada (issue #132); ausente quando não houve. */
+    val continentalChampions: List<ContinentalTitleDto>? = null,
+)
+
+/** Um título continental registrado na história (issue #132). */
+@Serializable
+data class ContinentalTitleDto(
+    val competitionId: String,
+    val competitionName: String,
+    val champion: CupClubDto,
 )
 
 @Serializable
@@ -154,6 +164,11 @@ sealed interface RoundStageDto {
         val leg: CupLegDto,
         val firstLeg: LegScoreDto? = null,
     ) : RoundStageDto
+
+    /** Rodada da fase de grupos de uma continental (issue #132): o grupo e a rodada dele. */
+    @Serializable
+    @SerialName("Group")
+    data class Group(val groupName: String, val matchday: Int) : RoundStageDto
 }
 
 /**
@@ -189,6 +204,8 @@ data class RoundMatchDto(
     val stage: RoundStageDto,
     val competitionId: String,
     val competitionName: String,
+    /** Sede neutra (final única da Libertadores, issue #132); ausente no estádio do mandante. */
+    val neutralVenue: String? = null,
 )
 
 @Serializable
@@ -284,6 +301,10 @@ fun SeasonRecord.toDto(): SeasonRecordDto = SeasonRecordDto(
     cupChampion = cupChampion?.toDto(),
     country = country?.toDto(),
     seasonLabel = seasonLabel,
+    // Lista vazia vira campo ausente: o contrato não tem `[]` para "nenhum título".
+    continentalChampions = continentalChampions
+        .map { ContinentalTitleDto(it.competitionId.value, it.competitionName, it.champion.toDto()) }
+        .ifEmpty { null },
 )
 
 private fun CareerCampaign.toDto(): CareerCampaignDto =
@@ -306,6 +327,7 @@ private fun RoundStage.toDto(): RoundStageDto = when (this) {
         leg = leg.toDto(),
         firstLeg = (leg as? CupLeg.Second)?.firstLeg?.toDto(),
     )
+    is RoundStage.Group -> RoundStageDto.Group(groupName = groupName, matchday = matchday)
 }
 
 fun RoundMatch.toDto(): RoundMatchDto = RoundMatchDto(
@@ -323,6 +345,7 @@ fun RoundMatch.toDto(): RoundMatchDto = RoundMatchDto(
     stage = stage.toDto(),
     competitionId = competition.value,
     competitionName = competitionName,
+    neutralVenue = neutralVenue,
 )
 
 fun Matchday.toDto(): MatchdayDto = MatchdayDto(

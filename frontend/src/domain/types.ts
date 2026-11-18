@@ -62,6 +62,12 @@ export type CupLegs       = components['schemas']['CupLegs']
 export type CupLegScore   = components['schemas']['CupLegScore']
 export type PenaltyScore  = components['schemas']['PenaltyScore']
 
+// --- #132 Libertadores ---
+export type Libertadores       = components['schemas']['Libertadores']
+export type ContinentalGroup   = components['schemas']['ContinentalGroup']
+export type GroupFixture       = components['schemas']['GroupFixture']
+export type ContinentalTitle   = components['schemas']['ContinentalTitle']
+
 // Diretoria — meta da temporada, confiança e demissão (issue #62)
 export type BoardObjective = components['schemas']['BoardObjective']
 export type BoardMood      = components['schemas']['BoardMood']
@@ -88,3 +94,25 @@ export type AvailableClub   = components['schemas']['AvailableClub']
 // Mundo do onboarding país → liga → clube (issue #131)
 export type WorldCountry    = components['schemas']['WorldCountry']
 export type WorldLeague     = components['schemas']['WorldLeague']
+
+// --- #134 Seleções ---
+export type FifaWindowSummary     = components['schemas']['FifaWindowSummary']
+export type FifaWindowStatus      = components['schemas']['FifaWindowStatus']
+export type CalledUpPlayer        = components['schemas']['CalledUpPlayer']
+export type ClubCallUps           = components['schemas']['ClubCallUps']
+export type NationalMatch         = components['schemas']['NationalMatch']
+export type NationalMatchKind     = components['schemas']['NationalMatchKind']
+export type NationalTableRow      = components['schemas']['NationalTableRow']
+export type QualifiersTable       = components['schemas']['QualifiersTable']
+export type NationalTeamsOverview = components['schemas']['NationalTeamsOverview']
+
+// Navegação pelo mundo: competições e calendário do clube (issue #133)
+export type CompetitionSummary    = components['schemas']['CompetitionSummary']
+export type CompetitionDetail     = components['schemas']['CompetitionDetail']
+export type CompetitionFormatType = components['schemas']['CompetitionFormatType']
+export type CompetitionKindType   = components['schemas']['CompetitionKindType']
+export type Tiebreaker            = components['schemas']['Tiebreaker']
+export type CompetitionMatchday   = components['schemas']['CompetitionMatchday']
+export type CompetitionScorer     = components['schemas']['CompetitionScorer']
+export type ScheduleWeek          = components['schemas']['ScheduleWeek']
+export type ClubSchedule          = components['schemas']['ClubSchedule']

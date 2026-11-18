@@ -1,6 +1,9 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Money
+import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.RoundStage
 import com.carlesso.goalfather.domain.model.cents
@@ -173,8 +176,35 @@ fun isSalaryRound(roundNumber: Int): Boolean =
  */
 fun isSalaryDate(stage: RoundStage): Boolean = when (stage) {
     is RoundStage.League -> isSalaryRound(stage.matchday)
-    is RoundStage.Cup -> false
+    // Continental (issue #132) também não: a folha anda com a liga do clube
+    // (clube sem liga paga pelas datas da continental — ver [salaryPayers]).
+    is RoundStage.Cup, is RoundStage.Group -> false
 }
+
+/**
+ * Quem paga a folha no encaixe [round] (issues #4/#125/#132). `when`
+ * exaustivo sobre o estágio de cada jogo:
+ *
+ * - Liga: os dois clubes, quando a rodada é "mês" de salário ([isSalaryDate]).
+ * - Continental: só os clubes SEM liga no save ([leagueless] — Boca, Peñarol…).
+ *   Eles não têm rodada de liga para marcar o mês, então cada data da
+ *   continental vale um: as datas caem a cada 3–4 semanas, o ritmo da folha
+ *   mensal. Clube com liga já paga por ela e não paga de novo aqui.
+ * - Copa nacional: ninguém (issue #61).
+ *
+ * Função pura, testável sem Spring: o serviço só diz quem não tem liga.
+ */
+fun salaryPayers(round: Round, leagueless: Set<ClubId>, continentals: Set<CompetitionId>): Set<ClubId> =
+    round.matches.flatMapTo(HashSet()) { match ->
+        val clubs = listOf(match.homeClubId, match.awayClubId)
+        when (match.stage) {
+            is RoundStage.League -> if (isSalaryDate(match.stage)) clubs else emptyList()
+            // Grupo é sempre continental; o mata-mata dela usa o estágio `Cup`
+            // da Copa do Brasil, então ali o que decide é a competição.
+            is RoundStage.Group -> clubs.filter { it in leagueless }
+            is RoundStage.Cup -> if (match.competition in continentals) clubs.filter { it in leagueless } else emptyList()
+        }
+    }
 
 /**
  * Variação do caixa do clube na rodada: bilheteria + prêmio da copa − folha.

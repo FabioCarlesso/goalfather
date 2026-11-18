@@ -1,5 +1,5 @@
 import { formatMoney, formatSeats } from '../../domain/formatters'
-import { cupStageLabel } from '../../domain/cup'
+import { cupStageLabel, groupStageLabel } from '../../domain/cup'
 import { ordinal } from '../../domain/board'
 import type { RoundFinance, RoundStage, Standings } from '../../domain/types'
 
@@ -19,7 +19,9 @@ export function StandingsFinanceCard({
   const top3 = stage.type === 'League' ? table.rows.slice(0, 3) : []
   const title = stage.type === 'League'
     ? `Pontuações atualizadas após a rodada ${stage.matchday}`
-    : `Copa — ${cupStageLabel(stage)} encerrada`
+    : stage.type === 'Cup'
+      ? `Copa — ${cupStageLabel(stage)} encerrada`
+      : `${groupStageLabel(stage)} encerrada`
   const mine = table.rows.find((r) => r.clubId === myClubId)
   const income = finance ? finance.ticketRevenue + finance.cupPrize : 0
 

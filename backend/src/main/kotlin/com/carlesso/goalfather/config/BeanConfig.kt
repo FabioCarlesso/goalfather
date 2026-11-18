@@ -2,10 +2,13 @@ package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.application.port.`in`.BoardUseCase
 import com.carlesso.goalfather.application.port.`in`.CalendarUseCase
+import com.carlesso.goalfather.application.port.`in`.ContinentalUseCase
+import com.carlesso.goalfather.application.port.`in`.CompetitionQueryUseCase
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.LoginUseCase
+import com.carlesso.goalfather.application.port.`in`.NationalTeamClock
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
@@ -21,6 +24,7 @@ import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
+import com.carlesso.goalfather.application.port.out.ContinentalRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
@@ -33,7 +37,9 @@ import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BoardService
 import com.carlesso.goalfather.application.service.BuyPlayerService
 import com.carlesso.goalfather.application.service.CalendarService
+import com.carlesso.goalfather.application.service.ContinentalService
 import com.carlesso.goalfather.application.service.ClaimClubService
+import com.carlesso.goalfather.application.service.CompetitionQueryService
 import com.carlesso.goalfather.application.service.ExpandStadiumService
 import com.carlesso.goalfather.application.service.LoginService
 import com.carlesso.goalfather.application.service.PlayMatchService
@@ -145,6 +151,10 @@ class BeanConfig {
         meterRegistry: MeterRegistry,
         // Portão entre a finalização de encaixes e o reset do profile e2e.
         finalizationGate: RoundFinalizationGate,
+        // Continentais (issue #132): grupos, mata-mata e o sorteio da edição seguinte.
+        continentalRepo: ContinentalRepository,
+        // Datas FIFA (issue #134): convocações e jogos de seleção.
+        nationalTeams: NationalTeamClock,
     ): PlayRoundUseCase = PlayRoundService(
         clubRepo,
         leagueRepo,
@@ -159,6 +169,8 @@ class BeanConfig {
         simulator,
         meterRegistry,
         finalizationGate = finalizationGate,
+        continentalRepo = continentalRepo,
+        nationalTeams = nationalTeams,
     )
 
     /**
@@ -191,6 +203,16 @@ class BeanConfig {
         leagueRepo: LeagueRepository,
     ): WorldOnboardingUseCase = WorldOnboardingService(catalog, clubRepo, leagueRepo)
 
+    /** Navegação pelo mundo: competições e calendário do clube (issue #133). */
+    @Bean
+    fun competitionQueryUseCase(
+        catalog: CompetitionCatalogRepository,
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+        cupRepo: CupRepository,
+        continentalRepo: ContinentalRepository,
+    ): CompetitionQueryUseCase = CompetitionQueryService(catalog, clubRepo, leagueRepo, cupRepo, continentalRepo)
+
     /** Leitura do histórico de temporadas e da carreira do técnico (issue #60). */
     @Bean
     fun seasonHistoryUseCase(
@@ -214,7 +236,15 @@ class BeanConfig {
         clubRepo: ClubRepository,
         cupRepo: CupRepository,
         catalogRepo: CompetitionCatalogRepository,
-    ): CalendarUseCase = CalendarService(leagueRepo, clubRepo, cupRepo, catalogRepo)
+        continentalRepo: ContinentalRepository,
+    ): CalendarUseCase = CalendarService(leagueRepo, clubRepo, cupRepo, catalogRepo, continentalRepo)
+
+    /** Leitura da Libertadores (issue #132): grupos com tabela e o mata-mata. */
+    @Bean
+    fun continentalUseCase(
+        continentalRepo: ContinentalRepository,
+        catalogRepo: CompetitionCatalogRepository,
+    ): ContinentalUseCase = ContinentalService(continentalRepo, catalogRepo)
 
     @Bean
     fun streamMatchUseCase(

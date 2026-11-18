@@ -147,11 +147,17 @@ private fun Availability.advanceOneRound(rounds: Int = 1): Availability = when (
         (roundsOut - rounds).let { left ->
             if (left >= 1) Availability.Injured(left) else Availability.Available
         }
+    // Convocado (issue #134) não anda com os jogos do clube: volta quando a
+    // data FIFA acaba, não depois de N jogos.
+    is Availability.OnInternationalDuty -> this
 }
 
 /** Aplica a lesão sofrida na rodada, mantendo a mais longa das duas. */
 private fun Availability.withNewInjury(roundsOut: Int?): Availability = when {
     roundsOut == null -> this
+    // Convocado não esteve em campo pelo clube; uma lesão "dele" na súmula do
+    // clube não é possível. Mantém a convocação por segurança.
+    this is Availability.OnInternationalDuty -> this
     this is Availability.Injured -> Availability.Injured(maxOf(this.roundsOut, roundsOut))
     else -> Availability.Injured(roundsOut)
 }

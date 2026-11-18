@@ -11,6 +11,8 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessEnti
 import com.carlesso.goalfather.adapter.out.persistence.entity.RoundReadinessId
 import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.SeasonHistoryId
+import com.carlesso.goalfather.adapter.out.persistence.entity.ContinentalEditionEntity
+import com.carlesso.goalfather.adapter.out.persistence.entity.ContinentalEditionId
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.StandingsId
 import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntity
@@ -145,6 +147,12 @@ interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long> {
 interface CupJpaRepository : JpaRepository<CupEntity, Int> {
     /** Copa da temporada mais recente — a que está em disputa. */
     fun findTopByOrderBySeasonDesc(): CupEntity?
+}
+
+/** Edições das continentais (issue #132). */
+interface ContinentalEditionJpaRepository : JpaRepository<ContinentalEditionEntity, ContinentalEditionId> {
+    /** A edição mais recente da competição — a em disputa. */
+    fun findTopByCompetitionIdOrderBySeasonDesc(competitionId: String): ContinentalEditionEntity?
 }
 
 interface RoundJpaRepository : JpaRepository<RoundEntity, MatchdayKey> {

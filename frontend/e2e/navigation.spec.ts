@@ -136,7 +136,8 @@ for (const width of [1024, 1366]) {
       expect(new Set(tops).size).toBe(1)
 
       // Logo e indicador em uma linha só: a linha do cabeçalho tem a altura dos botões.
-      const row = page.getByRole('banner').locator('> div')
+      // A 1ª linha do cabeçalho; a 2ª é o relógio do jogo (issue #133).
+      const row = page.getByRole('banner').locator('> div').first()
       const fits = await row.evaluate((el) => el.scrollWidth <= el.clientWidth)
       expect(fits, 'conteúdo do cabeçalho cabe na largura').toBe(true)
       const logo = await page.getByRole('banner').getByText('GoalFather').boundingBox()
@@ -150,7 +151,7 @@ for (const width of [1024, 1366]) {
 // `RIVAL_CLUB` vira o id de um rival na hora: os ids do mock e do backend real
 // não coincidem (issue #131).
 const RIVAL_CLUB = '/clubs/:rival'
-const ROUTES = ['/welcome', '/dashboard', '/dashboard/elenco', '/dashboard/financas', '/dashboard/departamento', '/lineup', '/round', '/market', '/standings', '/cup', '/history', RIVAL_CLUB]
+const ROUTES = ['/welcome', '/dashboard', '/dashboard/elenco', '/dashboard/financas', '/dashboard/departamento', '/lineup', '/round', '/market', '/standings', '/cup', '/history', '/world', '/competitions/bra-serie-a', '/competitions/bra-copa-do-brasil', '/calendar', RIVAL_CLUB]
 
 /** `/clubs/{id}` de um clube que não é o do técnico, lido da tabela da API. */
 async function rivalClubPath(page: Page): Promise<string> {

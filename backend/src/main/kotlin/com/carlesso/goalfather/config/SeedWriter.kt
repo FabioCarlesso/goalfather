@@ -6,7 +6,9 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
 import com.carlesso.goalfather.adapter.out.persistence.mapper.applyBoard
 import com.carlesso.goalfather.adapter.out.persistence.mapper.toEntity
+import com.carlesso.goalfather.adapter.out.persistence.repository.ContinentalEditionJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.CupJpaRepository
+import com.carlesso.goalfather.adapter.out.persistence.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.MarketEntryJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.RoundJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.StandingsJpaRepository
@@ -47,6 +49,7 @@ class SeedWriter(
     private val roundRepo: RoundJpaRepository,
     private val standingsRepo: StandingsJpaRepository,
     private val cupRepo: CupJpaRepository,
+    private val continentalRepo: ContinentalEditionJpaRepository,
     private val catalog: CompetitionCatalogTransaction,
     private val countries: SavedCountryCatalog,
     private val json: Json,
@@ -81,6 +84,8 @@ class SeedWriter(
         start.firstRound?.let { roundRepo.save(it.toEntity(json)) }
         start.standings.forEach { standingsRepo.save(it.toEntity(json)) }
         start.cups.forEach { cupRepo.save(it.toEntity(json)) }
+        // 1ª edição das continentais (issue #132), sorteada pelo seed.
+        start.continentals.forEach { continentalRepo.save(it.toEntity(json)) }
 
         // Por último: catálogo presente = mundo completo (ver DataInitializer).
         catalog.replaceAll(world.competitions)

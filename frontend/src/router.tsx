@@ -4,6 +4,8 @@ import { dashboardTabRoutes } from './pages/dashboard/routes'
 import { StandingsPage } from './pages/StandingsPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { CupPage } from './pages/CupPage'
+import { LibertadoresPage } from './pages/LibertadoresPage'
+import { NationalTeamsPage } from './pages/NationalTeamsPage'
 import { MarketPage } from './pages/MarketPage'
 import { LineupPage } from './pages/LineupPage'
 import { RoundPage } from './pages/RoundPage'
@@ -13,6 +15,9 @@ import { LoginPage } from './pages/LoginPage'
 import { SelectClubPage } from './pages/SelectClubPage'
 import { FiredPage } from './pages/FiredPage'
 import { ClubPage } from './pages/ClubPage'
+import { WorldPage } from './pages/WorldPage'
+import { CompetitionPage } from './pages/CompetitionPage'
+import { CalendarPage } from './pages/CalendarPage'
 import { AppLayout } from './components/layout/AppLayout'
 import { RouteErrorPage } from './pages/RouteErrorPage'
 import { BareLayout, PublicOnly, RequireAuth, RequireClub, RootRedirect } from './routeGuards'
@@ -49,7 +54,14 @@ export const router = createBrowserRouter(
             <Route path="/standings" element={<StandingsPage />} />
             <Route path="/clubs/:id" element={<ClubPage />} />
             <Route path="/cup"       element={<CupPage />} />
+            <Route path="/libertadores" element={<LibertadoresPage />} />
             <Route path="/history"   element={<HistoryPage />} />
+            <Route path="/national-teams" element={<NationalTeamsPage />} />
+            {/* Navegação pelo mundo (issue #133). `:tab?` é segmento opcional: sem
+                ele, a competição abre na aba padrão do formato. */}
+            <Route path="/world"     element={<WorldPage />} />
+            <Route path="/competitions/:id/:tab?" element={<CompetitionPage />} />
+            <Route path="/calendar"  element={<CalendarPage />} />
           </Route>
         </Route>
       </Route>

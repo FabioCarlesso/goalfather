@@ -5,7 +5,7 @@
 // `SeasonCalendar.kt`) e chegam prontos pelo contrato — este módulo só
 // transforma em texto o que a API entregou.
 
-import { cupStageLabel, stageTitle } from './cup'
+import { cupStageLabel, groupStageLabel, stageTitle } from './cup'
 import type { Matchday, Round, RoundMatch, RoundStage, Slot } from './types'
 
 export const SLOT_LABEL: Record<Slot, string> = {
@@ -36,10 +36,17 @@ export function roundStages(round: Pick<Round, 'matches'>): RoundStage[] {
   return [...seen.values()]
 }
 
-/** Título do encaixe: "Rodada 3", "Copa — Semifinal" ou os dois juntos. */
+/**
+ * Título do encaixe: "Rodada 3", "Copa — Semifinal" ou os dois juntos. Os 8
+ * grupos da Libertadores jogam a mesma rodada no mesmo encaixe: no título do
+ * ENCAIXE viram uma fase só ("Libertadores — Fase de grupos · Rodada 3"), em
+ * vez de 8 títulos repetidos; o grupo continua no rótulo de cada partida.
+ */
 export function roundTitle(round: Pick<Round, 'matches'>): string {
-  const stages = roundStages(round)
-  return stages.length === 0 ? 'Encaixe sem jogos' : stages.map(stageTitle).join(' + ')
+  const titles = new Set(roundStages(round).map((stage) =>
+    stage.type === 'Group' ? `Libertadores — Fase de grupos · Rodada ${stage.matchday}` : stageTitle(stage),
+  ))
+  return titles.size === 0 ? 'Encaixe sem jogos' : [...titles].join(' + ')
 }
 
 /** O encaixe tem jogo de copa? (Pênaltis: jogo único empatado ou volta com agregado empatado.) */
@@ -63,5 +70,7 @@ export function matchCompetitionLabel(match: Pick<RoundMatch, 'competitionName' 
       return `${match.competitionName} · Rodada ${match.stage.matchday}`
     case 'Cup':
       return `${match.competitionName} · ${cupStageLabel(match.stage)}`
+    case 'Group':
+      return `${match.competitionName} · ${groupStageLabel(match.stage)}`
   }
 }

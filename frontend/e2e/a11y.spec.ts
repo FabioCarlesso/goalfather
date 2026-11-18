@@ -40,6 +40,15 @@ const ROUTES = [
   { name: 'Tabela', path: '/standings' },
   { name: 'Copa', path: '/cup' },
   { name: 'Histórico', path: '/history' },
+  { name: 'Seleções', path: '/national-teams' }, // #134
+  // Navegação pelo mundo (issue #133).
+  { name: 'Mundo', path: '/world' },
+  { name: 'Competição — tabela', path: '/competitions/bra-serie-a' },
+  { name: 'Competição — jogos', path: '/competitions/bra-serie-a/jogos' },
+  { name: 'Competição — artilharia', path: '/competitions/bra-serie-a/artilharia' },
+  { name: 'Competição — chave', path: '/competitions/bra-copa-do-brasil' },
+  { name: 'Competição — Libertadores', path: '/competitions/conmebol-libertadores' }, // #132 × #133
+  { name: 'Calendário', path: '/calendar' },
 ] as const
 
 test.describe('Acessibilidade (axe)', () => {

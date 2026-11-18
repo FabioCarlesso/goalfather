@@ -32,6 +32,7 @@ import {
   type StoredClub,
 } from './seed'
 import { WORLD_LEAGUES, seasonLabelOf } from './world'
+import { mockLibertadores } from './libertadores'
 import {
   simulateMatch,
   averageOverall,
@@ -62,7 +63,9 @@ import {
 } from './engine'
 import { decidesOnPenalties, recordCupRound } from './cup'
 import { matchdaySerial } from './calendar'
+import { mockClubCallUps, mockNationalTeams } from './nationalTeams'
 import { boardStatusOf, forNewManager } from './board'
+import { worldNavigationHandlers } from './worldNavigation'
 import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
 import type {
   TransferResult,
@@ -390,6 +393,21 @@ export const handlers = [
     return club
       ? HttpResponse.json(toClubResponse(club))
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+  }),
+
+  // --- #134 Seleções ---
+  // ─── getClubCallUps / getNationalTeams (datas FIFA, issue #134) ───────
+  http.get('/api/clubs/:id/call-ups', async ({ params }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const club = loadClub(Number(params.id))
+    return club
+      ? HttpResponse.json(mockClubCallUps(club.id, club.name, club.squad))
+      : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+  }),
+
+  http.get('/api/national-teams', async () => {
+    await delay(SIMULATED_LATENCY_MS)
+    return HttpResponse.json(mockNationalTeams())
   }),
 
   // ─── getBoardStatus (diretoria, issue #62) ────────────────────────────
@@ -817,6 +835,20 @@ export const handlers = [
   // ─── getCup (issue #61) ───────────────────────────────────────────────
   // Só a copa da temporada corrente existe no mock; temporada anterior ou
   // liga sem copa → 404, como no backend.
+  // --- #132 Libertadores --- (retrato estático, ver ./libertadores)
+  http.get('/api/libertadores', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const season = new URL(request.url).searchParams.get('season')
+    const edition = mockLibertadores()
+    if (season != null && Number(season) !== edition.season) {
+      return HttpResponse.json(
+        { code: 'LIBERTADORES_NOT_FOUND', message: `Temporada ${season} sem Libertadores` } satisfies ErrorResponse,
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(edition)
+  }),
+
   http.get('/api/league/cup', async ({ request }) => {
     await delay(SIMULATED_LATENCY_MS)
     const season = new URL(request.url).searchParams.get('season')
@@ -996,6 +1028,7 @@ export const handlers = [
           : m
       })
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
+      state.playedRounds.push(state.currentRound)
 
       // Data de copa (issue #61): resultados (com pênaltis) vão para a chave,
       // que avança e devolve o prêmio de quem passou em campo.
@@ -1191,4 +1224,7 @@ export const handlers = [
       client.close(1000, 'Rodada encerrada')
     })()
   }),
+
+  // ─── Navegação pelo mundo (issue #133) ────────────────────────────────
+  ...worldNavigationHandlers,
 ]

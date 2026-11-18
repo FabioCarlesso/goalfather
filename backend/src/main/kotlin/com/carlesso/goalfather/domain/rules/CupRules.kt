@@ -267,7 +267,15 @@ private fun RoundMatch.toTieResult(): TieResult? =
  * A `division` de cada partida é a do mandante — a copa mistura divisões, e é
  * esse o dado que deixa a UI mostrar o "clube pequeno" recebendo o grande.
  */
-fun cupMatches(matchday: Matchday, cup: Cup, clubs: Collection<Club>): List<RoundMatch> {
+fun cupMatches(
+    matchday: Matchday,
+    cup: Cup,
+    clubs: Collection<Club>,
+    // Onde começa a faixa de `matchId` desta copa no encaixe. A continental
+    // (issue #132) usa outra faixa ([CONTINENTAL_FIRST_MATCH_INDEX]) para nunca
+    // colidir com a copa nacional.
+    firstIndex: Int = 1,
+): List<RoundMatch> {
     val stage = cup.currentStage ?: return emptyList()
     val divisionOf = clubs.associate { it.id to it.division }
     return stage.ties.mapNotNull { tie ->
@@ -277,7 +285,7 @@ fun cupMatches(matchday: Matchday, cup: Cup, clubs: Collection<Club>): List<Roun
             CupLeg.Single, CupLeg.First -> tie.home to tie.away
         }
         RoundMatch(
-            matchId = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY + tie.index + 1,
+            matchId = matchday.serial * Matchday.MATCH_IDS_PER_MATCHDAY + tie.index + firstIndex,
             homeClubId = home.id,
             awayClubId = away.id,
             homeClubName = home.name,
@@ -310,6 +318,6 @@ fun CupLeg.needsShootout(homeGoals: Int, awayGoals: Int): Boolean = when (this) 
  * function também vira valor de função com o receptor já "amarrado".
  */
 fun RoundMatch.decidesOnPenalties(homeGoals: Int, awayGoals: Int): Boolean = when (val stage = stage) {
-    is RoundStage.League -> false
+    is RoundStage.League, is RoundStage.Group -> false
     is RoundStage.Cup -> stage.leg.needsShootout(homeGoals, awayGoals)
 }

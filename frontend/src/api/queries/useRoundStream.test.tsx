@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
 import { deriveMatchStates, NOT_STARTED_MESSAGE, useRoundStream } from './useRoundStream'
 import { standingsKey } from './useStandings'
+import { libertadoresKey, libertadoresRootKey } from './useLibertadores'
 import { makeQueryClient } from '../../test/render'
 import { server } from '../../test/setup'
 import { FakeWebSocket as FakeSocket } from '../../test/fakeWebSocket'
@@ -166,6 +167,18 @@ describe('useRoundStream (issue #112)', () => {
       training: { clubId: MY_CLUB, focus: 'DESCANSO' },
       season: null,
     })
+  })
+
+  it('RoundFinished invalida a Libertadores: grupos e chave mudam com o encaixe (#132)', async () => {
+    const { result, queryClient } = renderStream()
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    const socket = await startAndOpen(result)
+
+    socket.emit({ type: 'RoundFinished', standings: [table], finances: [], training: [] } as unknown as RoundEvent)
+
+    // Invalida pelo prefixo: cobre a edição corrente e as de outras temporadas.
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: libertadoresRootKey })
+    expect(libertadoresKey().slice(0, 1)).toEqual(libertadoresRootKey)
   })
 
   it('segue mostrando a data jogada quando a corrente avança para a próxima', async () => {

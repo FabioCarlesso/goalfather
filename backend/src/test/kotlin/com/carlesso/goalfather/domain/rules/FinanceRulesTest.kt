@@ -1,6 +1,11 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.RoundMatch
 import com.carlesso.goalfather.domain.model.RoundStage
+import com.carlesso.goalfather.domain.model.Slot
+import com.carlesso.goalfather.test.md
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.CupLeg
 import com.carlesso.goalfather.domain.model.ClubId
@@ -200,6 +205,42 @@ class FinanceRulesTest {
         assertEquals(isSalaryRound(2), isSalaryDate(RoundStage.League(2)))
         assertEquals(isSalaryRound(3), isSalaryDate(RoundStage.League(3)))
         assertFalse(isSalaryDate(RoundStage.Cup("Final", CupLeg.Single)))
+    }
+
+    @Test
+    fun `clube sem liga paga a folha nas datas da continental, clube com liga so pela liga`() {
+        val libertadores = CompetitionId("conmebol-libertadores")
+        val copa = CompetitionId("bra-copa-do-brasil")
+        val salaryRound = (1..38).first { isSalaryRound(it) }
+        val restRound = (1..38).first { !isSalaryRound(it) }
+        fun game(home: Long, away: Long, stage: RoundStage, competition: CompetitionId) = RoundMatch(
+            matchId = home * 100 + away,
+            homeClubId = ClubId(home),
+            awayClubId = ClubId(away),
+            homeClubName = "C$home",
+            awayClubName = "C$away",
+            stage = stage,
+            competition = competition,
+            competitionName = competition.value,
+        )
+        // 1 e 2 têm liga; 1001 e 1002 (estrangeiros) só jogam a Libertadores.
+        val leagueless = setOf(ClubId(1001), ClubId(1002))
+        val round = Round(
+            matchday = md(7, Slot.MIDWEEK),
+            season = 2026,
+            matches = listOf(
+                game(1, 1001, RoundStage.Group("Grupo A", 1), libertadores),
+                game(1002, 2, RoundStage.Cup("Oitavas de final", CupLeg.Single), libertadores),
+                game(3, 4, RoundStage.Cup("Quarta fase", CupLeg.Single), copa),
+                game(5, 6, RoundStage.League(salaryRound), CompetitionId("bra-serie-a")),
+                game(7, 8, RoundStage.League(restRound), CompetitionId("bra-serie-a")),
+            ),
+        )
+
+        assertEquals(
+            setOf(ClubId(1001), ClubId(1002), ClubId(5), ClubId(6)),
+            salaryPayers(round, leagueless, continentals = setOf(libertadores)),
+        )
     }
 
     @Test
