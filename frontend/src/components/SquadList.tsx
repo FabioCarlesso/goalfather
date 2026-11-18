@@ -39,7 +39,7 @@ export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Prop
                 <ContractInfo player={p} />
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <StaminaBar stamina={p.stamina} />
               <PlayerStats player={p} />
               {/* Valor de mercado no clube (issue #135): vem pronto do backend. */}

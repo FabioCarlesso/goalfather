@@ -15,7 +15,7 @@ export function ContractInfo({ player }: { player: Pick<Player, 'name' | 'salary
     return <span className="text-xs text-text-muted">livre</span>
   }
   return (
-    <span className="flex items-center gap-1.5 text-xs text-text-muted">
+    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted">
       <span className="font-mono" title="Salário mensal do contrato">{formatMoney(player.salary)}/mês</span>
       <span title={`Contrato de ${player.name} até ${formatGameDate(contract.end)}`}>
         até {formatGameDate(contract.end)}
