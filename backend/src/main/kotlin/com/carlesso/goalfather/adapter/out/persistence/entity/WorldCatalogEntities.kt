@@ -73,6 +73,10 @@ class CompetitionCatalogEntity(
     @Column(name = "foreign_player_limit")
     var foreignPlayerLimit: Int? = null,
 
+    /** Força da liga (issue #135); `null` em copa/continental e em save anterior à issue. */
+    @Column(name = "league_strength")
+    var leagueStrength: Int? = null,
+
     @Column(name = "yellows_for_suspension", nullable = false)
     var yellowsForSuspension: Int = 3,
 

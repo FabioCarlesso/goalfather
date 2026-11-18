@@ -34,6 +34,7 @@ import com.carlesso.goalfather.domain.rules.initialCash
 import com.carlesso.goalfather.domain.rules.initialSalary
 import com.carlesso.goalfather.domain.rules.initialTicketPrice
 import com.carlesso.goalfather.domain.rules.marketListingPrice
+import com.carlesso.goalfather.domain.rules.marketReferenceValue
 import com.carlesso.goalfather.domain.rules.startWorld
 import java.time.LocalDate
 import java.time.Month
@@ -231,6 +232,8 @@ private fun WorldCompetition.toGameCompetition(): GameCompetition? = when (val o
                 kind = it,
                 span = SeasonSpan.of(owner.country.confederation),
                 pausesOnFifaWindows = pausesOnFifaWindows,
+                // Força da liga (issue #135): o pack só a informa em liga — copa vem `null`.
+                strength = strength,
             )
         }
     }
@@ -322,7 +325,9 @@ private fun freeAgents(
         val player = AttributeGenerator(random)
             .generate(position, age, strength, Reputation.AVERAGE)
             .toPlayer(PlayerId(slot.toLong()), names[index], position, age, country, secondNationality = null)
-        MarketEntry(player = player, price = marketListingPrice(player))
+        // Valor de referência do mercado (issue #135): contrato pleno, liga de
+        // referência — a mesma régua do anúncio de um jogador vendido.
+        MarketEntry(player = player, price = marketListingPrice(marketReferenceValue(player)))
     }
 }
 

@@ -10,8 +10,13 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.SeasonSpan
 import com.carlesso.goalfather.domain.model.leagueOf
 import com.carlesso.goalfather.domain.model.world.WorldPack
+import com.carlesso.goalfather.domain.model.world.LeagueStrength
+import com.carlesso.goalfather.domain.model.sumOfMoney
+import com.carlesso.goalfather.domain.rules.squadMarketValue
+import java.time.LocalDate
 import com.carlesso.goalfather.domain.rules.TICKET_PRICE_RANGE
 import com.carlesso.goalfather.domain.rules.marketListingPrice
+import com.carlesso.goalfather.domain.rules.marketReferenceValue
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
 import kotlin.test.Test
@@ -175,7 +180,7 @@ class WorldSeedTest {
     fun `mercado inicial tem livres gerados com preco de tabela`() {
         assertEquals(16, world.market.size)
         world.market.forEach { entry ->
-            assertEquals(marketListingPrice(entry.player), entry.price)
+            assertEquals(marketListingPrice(marketReferenceValue(entry.player)), entry.price)
             assertTrue(entry.player.age in 20..32)
         }
         assertEquals(setOf(Position.GK, Position.CB, Position.MF, Position.FW), world.market.map { it.player.position }.toSet())
@@ -198,6 +203,41 @@ class WorldSeedTest {
             val starters = club.squad.take(11)
             assertEquals(1, starters.count { it.position == Position.GK }, club.name)
             assertEquals(club.squad.map { it.id }.sortedBy { it.value }, club.squad.map { it.id }, "ids na ordem do elenco: ${club.name}")
+        }
+    }
+
+    @Test
+    fun `ligas do catalogo carregam a forca do pack e copas nao (issue 135)`() {
+        val byId = world.competitions.associateBy { it.id.value }
+        assertEquals(LeagueStrength(70), byId.getValue("bra-serie-a").strength)
+        assertEquals(LeagueStrength(62), byId.getValue("bra-serie-b").strength)
+        assertEquals(LeagueStrength(78), byId.getValue("eng-premier-league").strength)
+        assertNull(byId.getValue("bra-copa-do-brasil").strength)
+        assertNull(byId.getValue("conmebol-libertadores").strength)
+    }
+
+    @Test
+    fun `valores do mundo inicial na ordem de grandeza real em USD (issue 135)`() {
+        val today = LocalDate.of(world.year, 7, 1)
+        val squadValues = world.clubs.map { club ->
+            club.squad.sumOfMoney { squadMarketValue(it, club, world.competitions, today) }.cents / 100
+        }
+        // O elenco mais caro (um grande da Premier) vale perto de US$ 1 bi; o
+        // mais barato (Série B), alguns milhões — a ordem de grandeza real.
+        assertTrue(squadValues.max() in 500_000_000L..2_000_000_000L, "maior elenco: US$ ${squadValues.max()}")
+        assertTrue(squadValues.min() in 1_000_000L..20_000_000L, "menor elenco: US$ ${squadValues.min()}")
+    }
+
+    @Test
+    fun `todo clube da Serie A consegue comprar o livre mais barato do mercado inicial`() {
+        // Até a #136 derivar salários (e, com eles, o caixa inicial) do valor,
+        // o caixa segue na escala antiga: um pequeno da Série B não compra
+        // ninguém. Esta trava garante que o mercado não nasce inacessível para
+        // a liga padrão do onboarding — o E2E de compra depende disso.
+        for (initial in listOf(world, load("../data/world/e2e/v1").toInitialWorld())) {
+            val cheapest = initial.market.minOf { it.price }
+            val poorest = initial.clubs.filter { initial.competitions.leagueOf(it)?.id?.value == "bra-serie-a" }.minBy { it.cash }
+            assertTrue(cheapest <= poorest.cash, "${poorest.name} tem ${poorest.cash}, o livre mais barato custa $cheapest")
         }
     }
 }

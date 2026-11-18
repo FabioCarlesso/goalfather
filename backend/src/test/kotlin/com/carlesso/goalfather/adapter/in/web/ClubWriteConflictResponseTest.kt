@@ -67,6 +67,7 @@ class ClubWriteConflictResponseTest {
         board = mockk(),
         catalog = mockk(),
         onboarding = mockk(),
+        leagueRepo = mockk { coEvery { findLatest() } returns null },
         json = json,
     )
 
@@ -100,6 +101,7 @@ class ClubWriteConflictResponseTest {
             sellUseCase = mockk(),
             meterRegistry = SimpleMeterRegistry(),
             catalog = InMemoryCatalogRepository(),
+            leagueRepo = mockk { coEvery { findLatest() } returns null },
             json = json,
         )
 

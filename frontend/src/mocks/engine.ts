@@ -170,15 +170,55 @@ export const MEDICAL_STAMINA_RECOVERY = 30
 export const STADIUM_SEAT_COST_CENTS = 20_00
 export const MIN_STADIUM_EXPANSION_SEATS = 1_000
 
+// ─── Valor de mercado — espelha domain/rules/ValuationRules.kt (issue #135) ───
+// valor = base(overall) × idade × contrato × liga. O mock não tem contratos
+// (#136): todo jogador está no contrato padrão provisório do backend (3 anos,
+// fator 1), então só overall, idade e liga entram aqui.
+export const MARKET_REFERENCE_STRENGTH = 70
+const BASE_VALUE_AT_REFERENCE_CENTS = 2_500_000_00
+const OVERALL_DOUBLING_POINTS = 4
+const PEAK_VALUE_AGE_MIN = 24
+const PEAK_VALUE_AGE_MAX = 27
+const YOUTH_FACTOR_PER_YEAR = 0.93
+const VETERAN_FACTOR_PER_YEAR = 0.82
+const LEAGUE_DOUBLING_POINTS = 16
+const LEAGUE_FACTOR_MIN = 0.5
+const LEAGUE_FACTOR_MAX = 1.8
+const MIN_MARKET_VALUE_CENTS = 10_000_00
+const VALUE_ROUNDING_CENTS = 1_000_00
+
+const ageValueFactor = (age: number): number =>
+  age < PEAK_VALUE_AGE_MIN
+    ? YOUTH_FACTOR_PER_YEAR ** (PEAK_VALUE_AGE_MIN - age)
+    : age > PEAK_VALUE_AGE_MAX
+      ? VETERAN_FACTOR_PER_YEAR ** (age - PEAK_VALUE_AGE_MAX)
+      : 1
+
+const leagueValueFactor = (strength: number): number =>
+  Math.min(LEAGUE_FACTOR_MAX, Math.max(LEAGUE_FACTOR_MIN, 2 ** ((strength - MARKET_REFERENCE_STRENGTH) / LEAGUE_DOUBLING_POINTS)))
+
+/** Valor de mercado em centavos; sem liga, o de referência do mercado. */
+export function marketValueOf(
+  player: Pick<Player, 'overall' | 'age'>,
+  leagueStrength: number = MARKET_REFERENCE_STRENGTH,
+): number {
+  const raw =
+    BASE_VALUE_AT_REFERENCE_CENTS *
+    2 ** ((player.overall - 70) / OVERALL_DOUBLING_POINTS) *
+    ageValueFactor(player.age) *
+    leagueValueFactor(leagueStrength)
+  return Math.max(MIN_MARKET_VALUE_CENTS, Math.round(raw / VALUE_ROUNDING_CENTS) * VALUE_ROUNDING_CENTS)
+}
+
 // ─── Mercado — espelham domain/rules/TransferRules.kt ───
-// Venda paga 8 salários; o jogador vendido é anunciado por 12. O pagamento é
-// sempre menor que o anúncio, então comprar e revender não gera dinheiro.
-export const SALE_PAYOUT_SALARY_MULTIPLIER = 8
-export const MARKET_LISTING_SALARY_MULTIPLIER = 12
-export const salePayoutOf = (player: Pick<Player, 'salary'>): number =>
-  player.salary * SALE_PAYOUT_SALARY_MULTIPLIER
-export const marketListingPriceOf = (player: Pick<Player, 'salary'>): number =>
-  player.salary * MARKET_LISTING_SALARY_MULTIPLIER
+// A venda paga 60% do valor no clube; o anúncio cobra 125% do valor de
+// referência. Como o multiplicador de liga tem teto 1,8 (60% × 1,8 < 125%),
+// comprar e revender não gera dinheiro, de liga nenhuma.
+export const SALE_PAYOUT_PERCENT = 60
+export const MARKET_LISTING_PERCENT = 125
+export const salePayoutOf = (squadValue: number): number => Math.trunc((squadValue * SALE_PAYOUT_PERCENT) / 100)
+export const marketListingPriceOf = (referenceValue: number): number =>
+  Math.trunc((referenceValue * MARKET_LISTING_PERCENT) / 100)
 
 /**
  * Gera o fluxo de eventos da partida.

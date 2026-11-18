@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Lineup
 import com.carlesso.goalfather.domain.model.MarketEntry
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Posture
@@ -15,10 +16,13 @@ import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
 import com.carlesso.goalfather.domain.rules.competitionOf
 import com.carlesso.goalfather.domain.rules.isForeignAt
+import com.carlesso.goalfather.domain.rules.marketReferenceValue
+import com.carlesso.goalfather.domain.rules.squadMarketValue
 import com.carlesso.goalfather.domain.rules.startingLineupIn
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
+import java.time.LocalDate
 
 /**
  * DTOs de RESPOSTA — a fronteira que faltava entre o domínio e a API.
@@ -81,6 +85,12 @@ data class PlayerDto(
      * o campo fica ausente (`null` + `explicitNulls = false`).
      */
     val foreign: Boolean? = null,
+    /**
+     * Valor de mercado em centavos de USD (issue #135). No elenco, o do jogador
+     * no clube (contrato e liga dele); fora de elenco (mercado, eventos), o de
+     * referência do mercado — a régua do preço de anúncio.
+     */
+    val marketValue: Long,
 )
 
 /** Suspensão como a API a descreve: com o nome da competição para a UI exibir. */
@@ -186,7 +196,13 @@ sealed interface TransferResultDto {
  * elenco de um clube; o mercado chama sem ele. [competitions] (o catálogo do
  * save, issue #131) dá o nome das competições das suspensões.
  */
-fun Player.toDto(club: Club? = null, competitions: List<GameCompetition> = emptyList()): PlayerDto = PlayerDto(
+fun Player.toDto(
+    club: Club? = null,
+    competitions: List<GameCompetition> = emptyList(),
+    // Um default pode ser uma EXPRESSÃO sobre o receiver (`this`): avaliada a
+    // cada chamada que omite o argumento — em Java seria uma sobrecarga a mais.
+    marketValue: Money = marketReferenceValue(this),
+): PlayerDto = PlayerDto(
     id = id.value,
     name = name,
     position = position,
@@ -214,6 +230,7 @@ fun Player.toDto(club: Club? = null, competitions: List<GameCompetition> = empty
         )
     },
     foreign = club?.let { isForeignAt(it) },
+    marketValue = marketValue.cents,
 )
 
 fun Lineup.toDto(): LineupDto = LineupDto(
@@ -227,7 +244,7 @@ fun Lineup.toDto(): LineupDto = LineupDto(
  * (`effective`) e a última expressão vira o retorno — sem precisar trocar o
  * `= ClubDto(...)` por um corpo com chaves e `return`.
  */
-fun Club.toDto(competitions: List<GameCompetition> = emptyList()): ClubDto = run {
+fun Club.toDto(competitions: List<GameCompetition> = emptyList(), today: LocalDate): ClubDto = run {
     val saved = lineup?.toDto()
     // A escalação efetiva é a do próximo jogo de LIGA (issue #130): sem os
     // suspensos dela e dentro do limite de estrangeiros dela — a liga do clube
@@ -239,7 +256,9 @@ fun Club.toDto(competitions: List<GameCompetition> = emptyList()): ClubDto = run
         name = name,
         cash = cash.cents,
         stadiumCapacity = stadiumCapacity,
-        squad = squad.map { it.toDto(club = this, competitions = competitions) },
+        squad = squad.map {
+            it.toDto(club = this, competitions = competitions, marketValue = squadMarketValue(it, this, competitions, today))
+        },
         lineup = saved,
         effectiveLineup = effective,
         lineupIsDefault = saved == null,
@@ -261,9 +280,9 @@ fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto()
  * `when` exaustivo sobre o sealed de domínio — variante nova em
  * `TransferResult` quebra a compilação aqui, que é o ponto.
  */
-fun TransferResult.toDto(competitions: List<GameCompetition> = emptyList()): TransferResultDto = when (this) {
+fun TransferResult.toDto(competitions: List<GameCompetition> = emptyList(), today: LocalDate): TransferResultDto = when (this) {
     is TransferResult.Success ->
-        TransferResultDto.Success(club = club.toDto(competitions), player = player.toDto())
+        TransferResultDto.Success(club = club.toDto(competitions, today), player = player.toDto())
 
     is TransferResult.InsufficientFunds ->
         TransferResultDto.InsufficientFunds(available = available.cents, required = required.cents)

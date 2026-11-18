@@ -31,6 +31,7 @@ import type {
 import {
   MulberryRng,
   ageSquadOneSeason,
+  marketValueOf,
   DEFAULT_TICKET_PRICE_CENTS,
   type EffectiveLineupFields,
   type PendingYellows,
@@ -105,6 +106,8 @@ const player = (
   star: ovr >= 82,
   nationality,
   ...(secondNationality ? { secondNationality } : {}),
+  // Valor de referência (issue #135); no elenco, o handler o recalcula com a liga do clube.
+  marketValue: marketValueOf({ overall: ovr, age }),
 })
 
 // Elenco escrito à mão do clube 1 (o mais forte da Série A do mock): é o que

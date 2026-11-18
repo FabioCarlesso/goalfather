@@ -561,10 +561,12 @@ paths:
       operationId: sellPlayer
       summary: Vender jogador do elenco
       description: |
-        O clube recebe 8 salários do jogador, e ele vai ao mercado anunciado
-        por 12 salários (`domain/rules/TransferRules`, como no protótipo). O
-        pagamento é sempre menor que o anúncio: comprar e revender o mesmo
-        jogador dá prejuízo, nunca lucro.
+        O clube recebe 60% do valor de mercado do jogador NO CLUBE (issue #135:
+        overall, idade, contrato e força da liga), e ele vai ao mercado
+        anunciado por 125% do valor de referência do mercado
+        (`domain/rules/TransferRules`). O pagamento é sempre menor que o
+        anúncio, de qualquer liga: comprar e revender o mesmo jogador dá
+        prejuízo, nunca lucro.
       requestBody:
         required: true
         content:
@@ -1766,6 +1768,7 @@ components:
         - availability
         - nationality
         - suspensions
+        - marketValue
       properties:
         id:         { type: integer, format: int64 }
         name:       { type: string }
@@ -1825,6 +1828,18 @@ components:
             Ocupa vaga de estrangeiro no clube dele (issue #130) — calculado
             pelo backend a partir das nacionalidades e do país do clube.
             Presente só no `squad` de um `Club`; ausente no mercado.
+        marketValue:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Valor de mercado em centavos de USD (issue #135), calculado pelo
+            backend a partir do overall, da idade, do contrato restante e da
+            força da liga. No `squad` de um `Club`, é o valor do jogador no
+            clube (com o prêmio ou deságio da liga dele); fora de elenco
+            (mercado, eventos de rodada), é o valor de referência do mercado,
+            sobre o qual sai o preço de anúncio. A venda rápida ao mercado paga
+            uma fração do valor no clube. A UI só exibe — nunca recalcula.
 
     Suspension:
       type: object
@@ -2051,7 +2066,9 @@ components:
         price:
           type: integer
           format: int64
-          description: Preço de compra (em centavos de USD)
+          description: |
+            Preço de compra (em centavos de USD). Para quem foi anunciado pelo
+            mercado, 125% do `player.marketValue` de referência (issue #135).
 
     TransferResult:
       description: |

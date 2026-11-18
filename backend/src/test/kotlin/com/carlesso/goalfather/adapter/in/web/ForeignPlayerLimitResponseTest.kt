@@ -37,6 +37,7 @@ class ForeignPlayerLimitResponseTest {
         board = mockk(),
         catalog = mockk(),
         onboarding = mockk(),
+        leagueRepo = mockk { coEvery { findLatest() } returns null },
         json = Json { classDiscriminator = "type" },
     )
 

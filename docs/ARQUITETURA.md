@@ -1621,6 +1621,54 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   #132 também toca). O relógio ainda não anda sozinho nos encaixes sem técnico
   humano (pendência conhecida).
 
+
+### Fase 9 — Mercado de transferências (épico #148)
+
+#### 9.1 Valor de mercado — issue #135
+
+`marketValue(player, employment, leagueStrength, today): Money`
+(`domain/rules/ValuationRules.kt`), função pura em USD, é o produto de quatro
+fatores independentes:
+
+| Fator | Regra | Calibração |
+|---|---|---|
+| Overall | exponencial: `US$ 2,5 mi × 2^((ovr − 70) / 4)` | 60 ≈ US$ 440 mil, 80 ≈ US$ 14 mi, 90 ≈ US$ 80 mi |
+| Idade | 1 dos 24 aos 27; `0,93^anos` antes, `0,82^anos` depois | 18 ≈ 0,65; 30 ≈ 0,55; 33 ≈ 0,30 |
+| Contrato restante | linear 0,15 (vence hoje) → 0,70 (1 ano) → 1 (3 anos ou mais) | `Employment.FreeAgent` vale **zero** de taxa |
+| Liga | `2^((força − 70) / 16)`, preso em 0,5..1,8 | Premier (78) ≈ 1,41×, Série B (62) ≈ 0,71× |
+
+Arredondado a US$ 1 mil, piso de US$ 10 mil para quem tem contrato. As
+constantes são nossas (ordem de grandeza do futebol real, sem copiar fonte); o
+elenco mais caro do mundo inicial fica perto de US$ 1 bi e o mais barato, em
+alguns milhões (trava em `WorldSeedTest`).
+
+- **Força da liga persistida:** `GameCompetition.strength` (nulo em copa e
+  continental), gravado do pack no catálogo do save (migration
+  `V25__league_strength.sql`, coluna `competition_catalog.league_strength`).
+  `List<GameCompetition>.leagueStrengthOf(club)` cai na força de referência
+  (70) para clube sem liga ou save anterior.
+- **Preços derivados do valor** (`TransferRules`): a venda rápida paga **60%**
+  do valor do jogador **no clube** (`squadMarketValue`: contrato e liga dele); o
+  anúncio cobra **125%** do valor de **referência** do mercado
+  (`marketReferenceValue`: contrato pleno, liga 70). O mercado é global, então o
+  anúncio não carrega o prêmio de liga de quem vendeu. O anti-arbitragem é
+  estrutural: `60% × 1,8 (teto da liga) = 108% < 125%` — comprar e revender
+  perde em qualquer liga, idade, overall ou contrato (teste de propriedade em
+  `TransferRulesTest`). O mercado inicial (livres gerados) usa o mesmo preço.
+- **Contrato provisório:** até a #136 pendurar `Employment` no `Player`, todo
+  jogador de elenco usa `provisionalEmployment(...)` (3 anos a partir de hoje,
+  com o salário atual) — um helper único marcado `// #136`. O "hoje" é a data
+  do encaixe corrente (`LeagueRepository.today()`, extension no port).
+- **API:** `Player.marketValue` (centavos, obrigatório) no contrato e no
+  `PlayerDto`: no `squad` de um clube, o valor no clube; fora de elenco
+  (mercado, eventos), o de referência. A UI só exibe — no elenco, no modal de
+  venda e no mercado. O mock (`src/mocks/engine.ts`) espelha a curva.
+- **Corte conhecido:** o caixa inicial e os salários continuam na escala
+  antiga (até a #136 derivar o salário do valor). Até lá, vender um jogador
+  rende mais que o caixa inteiro de um clube pequeno, e só os clubes da Série A
+  têm garantia de comprar o livre mais barato (trava em `WorldSeedTest`, de que
+  o E2E de compra depende).
+
 ---
 
 ## 9. Stack consolidada
