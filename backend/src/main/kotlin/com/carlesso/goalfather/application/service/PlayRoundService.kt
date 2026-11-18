@@ -21,6 +21,7 @@ import com.carlesso.goalfather.domain.rules.rulesFor
 import com.carlesso.goalfather.domain.rules.tiebreakersOf
 import com.carlesso.goalfather.domain.rules.worldPlan
 import com.carlesso.goalfather.domain.rules.worldSeasons
+import com.carlesso.goalfather.application.port.out.ContinentalRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
@@ -41,6 +42,7 @@ import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.ContinentalCup
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
@@ -76,6 +78,7 @@ import com.carlesso.goalfather.domain.rules.gate
 import com.carlesso.goalfather.domain.rules.isSalaryDate
 import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.recordRound
+import com.carlesso.goalfather.domain.rules.title
 import com.carlesso.goalfather.domain.rules.seasonBoardReviews
 import com.carlesso.goalfather.domain.rules.MatchCards
 import com.carlesso.goalfather.domain.rules.afterMatchIn
@@ -190,6 +193,9 @@ class PlayRoundService(
     // reset do profile e2e espera as finalizações em curso antes de apagar a
     // liga. Default próprio para os testes que montam o service à mão.
     private val finalizationGate: RoundFinalizationGate = RoundFinalizationGate(),
+    // Edições das continentais (issue #132). Default = mundo sem continental,
+    // para os testes que montam o service à mão continuarem compilando.
+    private val continentalRepo: ContinentalRepository = ContinentalRepository.NONE,
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
@@ -383,7 +389,16 @@ class PlayRoundService(
         }.toMap()
         cupOutcomes.values.forEach { cupRepo.save(it.cup) }
         val cupsNow = cups + cupOutcomes.mapValues { (_, outcome) -> outcome.cup }
-        val prizes = cupOutcomes.values.flatMap { it.prizes.entries }.associate { it.key to it.value }
+        // Continentais (issue #132): grupos, mata-mata e prêmio, pela mesma
+        // postura da copa — registradas antes das finanças.
+        val continental = continentalRepo.recordRound(
+            continentalRepo.currentContinentals(catalog, seasons),
+            finishedRound,
+            catalog,
+        )
+        val prizes = (cupOutcomes.values.flatMap { it.prizes.entries } + continental.prizes.entries)
+            .groupBy({ it.key }, { it.value })
+            .mapValues { (_, values) -> values.reduce(Money::plus) }
 
         // Regras de cada clube no encaixe: a competição que ele jogou, com o
         // limite de estrangeiros e a disciplina do catálogo (issue #130/#131).
@@ -433,7 +448,7 @@ class PlayRoundService(
         // Os países cujas competições terminaram TODAS neste encaixe viram,
         // cada um no seu tempo: o Brasil em dezembro, a Europa em maio. O resto
         // do mundo segue jogando.
-        val plan = worldPlan(catalog, clubs, seasons, cupsNow)
+        val plan = worldPlan(catalog, clubs, seasons, cupsNow, continental.editions)
         val ending = plan.countriesEndingBy(round.matchday)
 
         val tail = mutableListOf<RoundEvent>()
@@ -448,6 +463,10 @@ class PlayRoundService(
                 finalStandings = newStandings.filter { it.country.code == country },
                 cupChampion = catalog.ofCountry(country).firstNotNullOfOrNull { cupsNow[it.id]?.champion },
                 catalog = catalog,
+                cupChampions = catalog.ofCountry(country)
+                    .mapNotNull { game -> cupsNow[game.id]?.champion?.let { game.id to it.id } }
+                    .toMap(),
+                continentals = continental.editions,
             )
             tail += turnover.event
             turnedClubs += turnover.clubs
@@ -470,7 +489,13 @@ class PlayRoundService(
             // países que viraram saem da própria virada (divisão nova), os
             // demais seguem como lidos acima.
             val world = clubs.filterNot { it.country.code in ending } + turnedClubs
-            worldPlan(catalog, world, nextSeasons, cupRepo.currentCups(catalog, nextSeasons)) to world
+            worldPlan(
+                catalog,
+                world,
+                nextSeasons,
+                cupRepo.currentCups(catalog, nextSeasons),
+                continentalRepo.currentContinentals(catalog, nextSeasons),
+            ) to world
         }
         checkNotInPast(nextPlan, ending, round.matchday)
         nextPlan.nextAfter(round.matchday)?.let { leagueRepo.saveRound(nextPlan.roundAt(it, nextClubs)) }
@@ -527,6 +552,8 @@ class PlayRoundService(
         finalStandings: List<Standings>,
         cupChampion: CupClub?,
         catalog: List<GameCompetition>,
+        cupChampions: Map<CompetitionId, ClubId> = emptyMap(),
+        continentals: Map<CompetitionId, ContinentalCup> = emptyMap(),
     ): CountryTurnover {
         val countryCatalog = catalog.ofCountry(country)
         val clubsAtSeasonEnd = clubRepo.findAll().filter { it.country.code == country }
@@ -536,7 +563,11 @@ class PlayRoundService(
         // propósito: quem chega aqui venceu o claim da rodada (issue #46),
         // então um `false` só pode vir de uma réplica retardatária, e o certo é
         // não sobrescrever a história.
+        // As continentais que o calendário do país hospeda (issue #132) fecham
+        // com ele: o título entra no record do país.
+        val hosted = countryCatalog.filter { it.kind == CompetitionKind.Continental }
         val record = seasonRecordOf(endedSeason, finalStandings, clubsAtSeasonEnd, cupChampion)
+            .copy(continentalChampions = hosted.mapNotNull { continentals[it.id]?.title() })
         historyRepo.append(record)
 
         val nextSeason = endedSeason + 1
@@ -551,6 +582,25 @@ class PlayRoundService(
         // divisões novas — o calendário da temporada reserva os encaixes dela.
         drawNationalCups(nextSeason, countryCatalog, clubs)
         seasonStandings(nextSeason, countryCatalog, clubs).forEach { leagueRepo.saveStandings(it) }
+        if (hosted.isNotEmpty()) {
+            // Clubes sem liga no save (Boca, Peñarol…) só jogam a continental:
+            // envelhecem e se renovam com a virada do país que a hospeda,
+            // reusando a mesma virada de elenco (issue #132).
+            val confederation = countryCatalog.first().country.confederation
+            val orphans = clubRepo.findAll()
+                .filter { catalog.leagueOf(it) == null && it.country.confederation == confederation }
+            val turned = startNextSeasonClubs(nextSeason, emptyMap(), orphans).clubs
+            continentalRepo.drawNextEditions(
+                hosted = hosted,
+                nextSeason = nextSeason,
+                ended = continentals,
+                rules = rules,
+                finalStandings = finalStandings,
+                cupChampions = cupChampions,
+                clubs = clubs + turned,
+                leagueCountries = catalog.filter { it.kind is CompetitionKind.League }.mapTo(HashSet()) { it.country.code },
+            )
+        }
 
         val event = RoundEvent.SeasonFinished(
             season = endedSeason,
@@ -675,7 +725,7 @@ class PlayRoundService(
         val playedLeagues = round.matches.mapNotNullTo(HashSet()) { match ->
             when (match.stage) {
                 is RoundStage.League -> match.competition
-                is RoundStage.Cup -> null
+                is RoundStage.Cup, is RoundStage.Group -> null
             }
         }
         if (playedLeagues.isEmpty()) return Club::board
@@ -860,7 +910,9 @@ class PlayRoundService(
         cupPrizes: Map<ClubId, Money>,
         competitionOf: Map<ClubId, Competition>,
     ): List<RoundFinance> {
-        val homeClubIds = round.matches.map { it.homeClubId.value }.toSet()
+        // Sede neutra (final única da continental, issue #132): ninguém joga em
+        // casa, então ninguém fatura bilheteria.
+        val homeClubIds = round.matches.filter { it.neutralVenue == null }.map { it.homeClubId.value }.toSet()
         // Folha segue as rodadas de LIGA; jogo de copa não cobra (issue #61).
         // Por clube desde o calendário semanal (issue #125): paga quem joga,
         // neste encaixe, uma rodada de liga que é "mês" de salário.

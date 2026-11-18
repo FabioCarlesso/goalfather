@@ -40,7 +40,7 @@ fun leagueMatches(
     require(pairings.size < LEAGUE_MATCHES_PER_SLOT) { "Jogos demais numa rodada de ${league.id.value}: ${pairings.size}" }
     val division = when (val kind = league.kind) {
         is CompetitionKind.League -> kind.tier
-        CompetitionKind.NationalCup ->
+        CompetitionKind.NationalCup, CompetitionKind.Continental ->
             error("${league.id.value} é copa, não liga")
     }
     return pairings.mapIndexed { i, pairing ->

@@ -233,8 +233,8 @@ WorldDataProvider.load() ──► WorldPack ──► toInitialWorld() ──�
 
 ### O que entra no save
 
-- **Competições (catálogo do save):** as **nacionais** do pack, na ordem dele. Liga de pontos corridos com `tier` vira `CompetitionKind.League(tier)`, e mata-mata nacional vira `CompetitionKind.NationalCup`. A janela da temporada sai de `SeasonSpan.of(confederação do país)`: ano civil no Brasil e agosto a maio na UEFA. `pausesOnFifaWindows` e `foreignPlayerLimit` vêm do pack. O MVP tem 8 competições: Série A, Série B, Copa do Brasil, Premier League, La Liga, Serie A, Bundesliga e Ligue 1. **A Libertadores fica no pack, mas fora do save** (continental, #132), e com ela os clubes que só aparecem nela. O catálogo vai para a tabela `competition_catalog` (V19), e o pack não é mais lido depois disso: mudar o pack não mexe num jogo em andamento.
-- **Clubes:** só os das ligas do catálogo (136). Cada clube entra uma vez, na primeira liga em que aparece. `division` = `tier` da liga, `country` = país do clube. A liga de um clube é a do catálogo para (país, divisão) (`List<GameCompetition>.leagueOf`).
+- **Competições (catálogo do save):** as **nacionais** do pack, na ordem dele. Liga de pontos corridos com `tier` vira `CompetitionKind.League(tier)`, e mata-mata nacional vira `CompetitionKind.NationalCup`. A janela da temporada sai de `SeasonSpan.of(confederação do país)`: ano civil no Brasil e agosto a maio na UEFA. `pausesOnFifaWindows` e `foreignPlayerLimit` vêm do pack. O MVP tem 8 competições: Série A, Série B, Copa do Brasil, Premier League, La Liga, Serie A, Bundesliga e Ligue 1. Desde a #132 a Libertadores também entra (ver "Libertadores no save" abaixo). O catálogo vai para a tabela `competition_catalog` (V19), e o pack não é mais lido depois disso: mudar o pack não mexe num jogo em andamento.
+- **Clubes:** os das ligas do catálogo (136) e, desde a #132, os 26 que só jogam a Libertadores. Cada clube entra uma vez, na primeira liga em que aparece. `division` = `tier` da liga, `country` = país do clube. A liga de um clube é a do catálogo para (país, divisão) (`List<GameCompetition>.leagueOf`).
 - **Países:** todos os do pack (97), na tabela `countries` (V19). As nacionalidades dos jogadores reais citam países sem liga (Nigéria, Japão...), e o catálogo fixo `Countries` do domínio (16 países, interino da #123) as transformaria em "Brasil". O mapper de persistência resolve o trigrama primeiro nos países do save (`SavedCountries`, recarregado no boot e depois de cada seed) e só depois no catálogo fixo.
 
 ### Ids (determinísticos)
@@ -286,6 +286,14 @@ A Copa do Brasil 2026 tem 126 clubes: estaduais, Copa do Nordeste e Copa Verde n
 | Final | 2 | jogo único | — |
 
 O formato e a lista de participantes (os 40, como referências) estão no pack. Quem distribui os clubes entre a 4ª e a 5ª fase, pelo ranking de força, é o motor da copa. Desempate omitido = default. Limite de 9 estrangeiros e pausa nas datas FIFA, como uma copa nacional da CBF.
+
+### Libertadores no save (issue #132)
+
+- **Catálogo:** a continental de grupos + mata-mata do pack (`conmebol-libertadores`) vira `CompetitionKind.Continental`, depois das nacionais, na ordem do pack. O `country` dela no catálogo é o país que **hospeda o calendário**: o primeiro país da confederação com liga no catálogo (o Brasil). A janela é a da CONMEBOL (ano civil); `pausesOnFifaWindows` vem do pack.
+- **Clubes só da Libertadores** (Boca, Peñarol, LDU…): entram depois dos 136 clubes de liga, numerados em seguida (137..162), na ordem de `clubs.json`. Divisão 1, mas sem liga (`leagueOf` = `null`): não aparecem no onboarding. Força do `AttributeGenerator`: a da liga mais forte da mesma confederação no pack (a Série A, 70), e a reputação do pack espalha uns acima e outros abaixo. Economia inicial pelas mesmas regras.
+- **1ª edição (2026):** sorteada no seed entre os 32 clubes de `clubs.json` — cabeças de chave pela **reputação do pack** (o dado que só o seed tem), sem dois clubes do mesmo país no grupo, seed `continentalDrawSeed(ano, id)`. A sede da final única é o **maior estádio entre os participantes** (Estadio Monumental U, Lima, 80.093). Vai para `continental_editions` (V21).
+- **Edições seguintes:** sem o pack (ele não é relido), a cota de cada país é a da edição anterior (BRA 6, ARG 6, COL 4, ECU 3, PER 3 e 2 para BOL, CHI, PAR, URU, VEN) e a força dos estrangeiros é a do elenco no save. Detalhes em `docs/ARQUITETURA.md`, seção da #132.
+- **Pack do E2E:** o recorte não tem a Libertadores (nem os clubes estrangeiros). O mundo do E2E segue igual, e `GET /api/libertadores` responde 404 nele.
 
 ### Pack reduzido do E2E (`data/world/e2e/v1`)
 

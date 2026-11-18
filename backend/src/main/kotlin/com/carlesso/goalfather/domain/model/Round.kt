@@ -44,6 +44,13 @@ data class RoundMatch(
     @Serializable(with = CompetitionIdSerializer::class)
     val competition: CompetitionId,
     val competitionName: String,
+    /**
+     * Sede NEUTRA do jogo (issue #132), ou `null` no estádio do mandante — o
+     * caso de todo jogo de liga e de copa. Só a final única da Libertadores tem
+     * sede: ninguém joga em casa, então ninguém fatura bilheteria. Ausência no
+     * tipo em vez de um `Boolean` + nome solto.
+     */
+    val neutralVenue: String? = null,
 ) {
     /**
      * Jogo de copa? Desde a ida e volta (issue #131) isso NÃO quer dizer "empate
@@ -52,7 +59,7 @@ data class RoundMatch(
      */
     val isKnockout: Boolean
         get() = when (stage) {
-            is RoundStage.League -> false
+            is RoundStage.League, is RoundStage.Group -> false
             is RoundStage.Cup -> true
         }
 
@@ -97,6 +104,22 @@ sealed interface RoundStage {
     @Serializable
     @SerialName("Cup")
     data class Cup(val stageName: String, val leg: CupLeg) : RoundStage
+
+    /**
+     * Rodada da fase de grupos de uma continental (issue #132): o grupo
+     * (`"Grupo A"`) e a rodada DELE (1..6 na Libertadores). Variante própria, e
+     * não uma `League` disfarçada: o jogo de grupo não mexe na tabela da liga,
+     * não é "mês" de folha e não decide nada nos pênaltis — e o `when`
+     * exaustivo de cada um desses pontos agora obriga a dizer isso.
+     */
+    @Serializable
+    @SerialName("Group")
+    data class Group(val groupName: String, val matchday: Int) : RoundStage {
+        init {
+            require(groupName.isNotBlank()) { "Rodada de grupo sem nome de grupo" }
+            require(matchday >= 1) { "Rodada de grupo deve ser >= 1: $matchday" }
+        }
+    }
 }
 
 /**

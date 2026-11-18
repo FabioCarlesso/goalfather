@@ -56,7 +56,8 @@ fun applyRoundToStandings(
             is RoundStage.League -> (match to stage.matchday).takeIf {
                 match.competition == current.competitionId && match.homeClubId in byId && match.awayClubId in byId
             }
-            is RoundStage.Cup -> null
+            // Grupo de continental (issue #132) tem a tabela DELE, dentro da edição.
+            is RoundStage.Cup, is RoundStage.Group -> null
         }
     }
     // `maxOfOrNull` + elvis: nenhum jogo de liga desta tabela → nada muda.
@@ -129,7 +130,8 @@ private fun StandingRow.updatedForMatch(ownGoals: Int, againstGoals: Int, cards:
 fun leagueStandings(league: GameCompetition, season: Int, clubs: Collection<Club>): Standings? {
     val tier = when (val kind = league.kind) {
         is CompetitionKind.League -> kind.tier
-        CompetitionKind.NationalCup -> return null
+        // Copa não tem tabela; a continental guarda as dos grupos na edição (#132).
+        CompetitionKind.NationalCup, CompetitionKind.Continental -> return null
     }
     val members = clubs.filter { it.country.code == league.country.code && it.division == tier }
     if (members.isEmpty()) return null

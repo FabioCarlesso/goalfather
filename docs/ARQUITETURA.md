@@ -1436,6 +1436,70 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   ainda precisa clicar "jogar" nos encaixes só de outro país — andar o relógio
   sozinho é trabalho futuro.
 
+- [x] **Libertadores: fase de grupos, mata-mata e final única** — issue #132
+
+  **No catálogo:** `CompetitionKind.Continental` (terceiro papel do `sealed`, e
+  cada `when` exaustivo sobre ele — calendário, tabela, mapper, onboarding —
+  teve de decidir o que fazer). O `GameCompetition.country` da continental é o
+  país que **hospeda o calendário** dela (o Brasil): a Libertadores entra no
+  `countryPlan` do Brasil junto com o Brasileirão e a Copa do Brasil, e é isso
+  que impede um clube brasileiro de ter dois jogos no mesmo encaixe. Ela
+  também fecha com a virada do Brasil. Um `CompetitionOwner` de verdade fica
+  para quando duas confederações tiverem continental (#145).
+
+  **Domínio** (`domain/model/Continental.kt`, `domain/rules/ContinentalRules.kt`,
+  puro): `ContinentalCup` é a edição — os grupos sorteados, os resultados de
+  grupo, o plano do mata-mata e, quando os grupos acabam, o mata-mata como uma
+  `Cup` (o motor da Copa do Brasil reaproveitado: ida e volta, pênaltis,
+  sorteio fase a fase, prêmio). Os jogos de cada grupo não são guardados: são
+  o turno e returno dele (`roundRobinSchedule`). `RoundStage.Group(grupo,
+  rodada)` é a variante nova do `sealed RoundStage` — não mexe na tabela da
+  liga, não é "mês" de folha, não vai aos pênaltis.
+
+  | Regra | Como |
+  |---|---|
+  | Sorteio | Potes de 8 pela ordem de cabeças de chave (campeão anterior, depois força). `drawGroupsApart` (`CompetitionScheduling.kt`) coloca pote a pote, num grupo sorteado sem compatriota, **voltando atrás** quando o último clube do pote só caberia ao lado de um compatriota. Impossível (país com mais clubes que grupos) é `GroupDraw.Impossible`, valor. |
+  | Grupos | 6 rodadas, tabela por `rankTable` com os desempates do catálogo (pontos, confronto direto, saldo, gols, cartões, sorteio semeado pela edição). 1º e 2º vão às oitavas; **3º eliminado** (a Sul-Americana é da #145). |
+  | Oitavas | 1º × 2º de **outro** grupo, sorteado com volta atrás; o 2º recebe a ida, o 1º decide em casa. Depois, sorteio livre fase a fase (o da `Cup`). |
+  | Final | Jogo único na sede neutra da edição (`RoundMatch.neutralVenue`): ninguém fatura bilheteria. Empate vai **direto aos pênaltis** — corte: a engine joga 90 minutos, sem prorrogação. |
+  | Prêmio | O dobro da escada da copa nacional (`CONTINENTAL_PRIZE_FACTOR`): final US$ 2 mi. |
+  | `matchId` | `encaixe × 1000 + 50 + índice` — a copa nacional usa `+ 1..`, as ligas `+ 100..`. |
+
+  **Calendário:** 13 encaixes (6 de grupo + 2+2+2+1), cada um reservando os 32
+  inscritos, **só no meio de semana** — o `ScheduleRequest` ganhou `slots`
+  permitidos (a preferência de encaixe não bastava: a liga apertada desce
+  para a quarta). Janela de fevereiro a novembro (a mesma da copa nacional),
+  com pausa nas datas FIFA. `nextMatchOf` trata o mata-mata dela como o da
+  copa: só a fase corrente é conhecida. O `GET /api/league/calendar` passa a
+  devolver o jogo da Libertadores do clube, com a competição na partida.
+
+  **Virada do Brasil** (`PlayRoundService.startNextSeason`, chamadas a
+  `application/service/CurrentContinentals.kt`): o título entra no
+  `SeasonRecord` do Brasil (`continentalChampions`); os clubes sem liga da
+  confederação **envelhecem e se renovam** pela mesma virada de elenco
+  (`startNextSeasonClubs`); e a edição seguinte é sorteada. Inscritos
+  (`continentalEntrants`): a cota de cada país da edição anterior; o campeão
+  entra sempre e conta na cota do país dele; no Brasil, os classificados pelas
+  regras de vaga da #128 na ordem da cascata (campeão da Copa do Brasil, G-4,
+  5º e 6º — sem preliminar, todos nos grupos), completando com os mais fortes
+  se faltarem; nos países sem liga, os de elenco mais forte (a reputação é do
+  pack, não do save). Sorteio impossível ou inscritos que não fecham: sem
+  edição, o Brasil joga só as nacionais.
+
+  **Persistência e API:** V21 `continental_editions` (PK competição +
+  temporada, edição em JSON, como a copa). `GET /api/libertadores?season=`
+  devolve grupos (tabela ordenada com `zone: QUALIFICATION` e jogos) e o
+  mata-mata no MESMO formato `Cup` da Copa do Brasil (prêmios já com o fator),
+  sede e campeão; 404 `LIBERTADORES_NOT_FOUND` sem Libertadores. No frontend,
+  `LibertadoresPage` (grupos + `KnockoutBracket`, rota `/libertadores`).
+
+  **Cortes:** sem preliminares (32 direto nos grupos), sem prorrogação, sem
+  Sul-Americana para o 3º; o pack do E2E não tem Libertadores (o mundo do E2E
+  e os specs existentes ficam iguais) — o "jogar até a Libertadores" é coberto
+  pelo `LibertadoresFlowTest`, que joga um ano do Brasil com a Libertadores
+  pelo `PlayRoundService`. O mock do frontend serve um retrato estático da
+  fase de grupos.
+
 ---
 
 ## 9. Stack consolidada

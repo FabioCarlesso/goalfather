@@ -107,14 +107,76 @@ fun secondLegNeedsShootout(firstLeg: LegScore, secondLeg: LegScore): Boolean =
  * de cabeças de chave.
  *
  * Aqui a ordem de [seeded] IMPORTA (é o ranking), então ela não é reordenada
- * por id. Restrições extras do sorteio (sem dois clubes do mesmo país no mesmo
- * grupo) entram com a Libertadores, na issue #132.
+ * por id. A restrição "sem dois clubes do mesmo país no mesmo grupo" é o
+ * [drawGroupsApart] (issue #132).
  */
 fun drawGroups(seeded: List<ClubId>, format: CompetitionFormat.GroupsThenKnockout, rng: Random): List<List<ClubId>> {
     require(seeded.size == format.teams) { "Fase de grupos espera ${format.teams} clubes: ${seeded.size}" }
     require(seeded.distinct().size == seeded.size) { "Clube repetido no sorteio: $seeded" }
     val pots = seeded.chunked(format.groups).map { it.shuffled(rng) }
     return (0 until format.groups).map { group -> pots.map { pot -> pot[group] } }
+}
+
+/**
+ * Resultado do sorteio de grupos com restrição (issue #132). Não caber é
+ * desfecho do DADO (um país com mais clubes que grupos), não bug — vira valor.
+ */
+sealed interface GroupDraw {
+    /** Os grupos, cada um com um clube de cada pote, na ordem dos potes. */
+    data class Drawn(val groups: List<List<ClubId>>) : GroupDraw
+
+    /** Nenhuma distribuição respeita a restrição (ex.: 9 clubes do mesmo país em 8 grupos). */
+    data object Impossible : GroupDraw
+}
+
+/**
+ * Sorteio por POTES (como [drawGroups]) em que dois clubes do mesmo país
+ * ([countryOf]) nunca caem no mesmo grupo — a regra da Libertadores (issue
+ * #132).
+ *
+ * Pote a pote, cada clube vai para um grupo sorteado entre os que ainda não
+ * receberam ninguém daquele pote e não têm clube do país dele. O sorteio
+ * "puro" de bolinhas pode chegar a um beco sem saída (o último clube do pote
+ * só cabe num grupo que já tem compatriota); por isso a busca VOLTA ATRÁS
+ * (backtracking) e tenta outro grupo para os clubes anteriores. Com 8 grupos
+ * e no máximo 6 clubes por país, sempre existe saída — e a ordem das
+ * tentativas vem do [rng], então a mesma seed dá sempre o mesmo sorteio.
+ */
+fun <C> drawGroupsApart(
+    seeded: List<ClubId>,
+    format: CompetitionFormat.GroupsThenKnockout,
+    countryOf: (ClubId) -> C,
+    rng: Random,
+): GroupDraw {
+    require(seeded.size == format.teams) { "Fase de grupos espera ${format.teams} clubes: ${seeded.size}" }
+    require(seeded.distinct().size == seeded.size) { "Clube repetido no sorteio: $seeded" }
+    // Mais clubes de um país que grupos: nem o backtracking salva.
+    if (seeded.groupingBy(countryOf).eachCount().values.any { it > format.groups }) return GroupDraw.Impossible
+
+    // A ordem de sorteio: pote a pote, e dentro do pote embaralhado.
+    val order = seeded.chunked(format.groups).flatMap { it.shuffled(rng) }
+    val groups = List(format.groups) { mutableListOf<ClubId>() }
+    // Ordem em que cada clube tenta os grupos, sorteada uma vez (determinística).
+    val tries = order.associateWith { (0 until format.groups).shuffled(rng) }
+
+    // Função local recursiva: coloca o clube `index` e segue; `false` = beco
+    // sem saída, desfaz e tenta o próximo grupo. Mutação só LOCAL — por fora a
+    // função continua pura.
+    fun place(index: Int): Boolean {
+        if (index == order.size) return true
+        val club = order[index]
+        val pot = index / format.groups
+        for (g in tries.getValue(club)) {
+            val group = groups[g]
+            val takenThisPot = group.size > pot
+            if (takenThisPot || group.any { countryOf(it) == countryOf(club) }) continue
+            group += club
+            if (place(index + 1)) return true
+            group.removeAt(group.lastIndex)
+        }
+        return false
+    }
+    return if (place(0)) GroupDraw.Drawn(groups.map { it.toList() }) else GroupDraw.Impossible
 }
 
 /** Rodadas da fase de grupos: os pontos corridos de cada grupo, rodada a rodada, juntos. */

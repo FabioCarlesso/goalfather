@@ -24,6 +24,13 @@ import com.carlesso.goalfather.domain.model.Slot
 data class ScheduleRequest(
     val season: CompetitionSeason,
     val rounds: List<Set<ClubId>>,
+    /**
+     * Encaixes PERMITIDOS (issue #132). O [CompetitionSeason.preferredSlot] é
+     * só preferência — a liga apertada desce para o meio de semana. A
+     * continental joga SÓ no meio de semana (o fim de semana é das ligas
+     * nacionais dos clubes dela), então ela restringe. Default: os dois.
+     */
+    val slots: Set<Slot> = Slot.entries.toSet(),
 ) {
     init {
         require(rounds.isNotEmpty()) { "Competição ${season.competition.id.value} sem rodadas para agendar" }
@@ -140,6 +147,7 @@ fun scheduleSeasons(
         val season = request.season
         val candidates = Matchday.between(season.start, season.end)
             .filterNot { season.pausesOnFifaWindows && fifaWindows.reserves(it.week) }
+            .filter { it.slot in request.slots }
             .filter { notBefore == null || it > notBefore }
         val weeks = candidates.map { it.week }.distinct()
         // Posição de cada candidato na ordem do TEMPO: quantos encaixes ainda

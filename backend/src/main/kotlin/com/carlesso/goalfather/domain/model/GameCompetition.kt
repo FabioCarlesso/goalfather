@@ -7,9 +7,15 @@ package com.carlesso.goalfather.domain.model
  * vir do pack do mundo, são gravadas no save quando o jogo nasce e, dali em
  * diante, são lidas do save — mudar o pack não mexe num jogo em andamento.
  *
- * O MVP só tem competições NACIONAIS (a Libertadores entra com a #132), por
- * isso [country] não é nulo. Quando vier a primeira continental, o dono vira
- * um `CompetitionOwner` (já existe em `world/WorldPack.kt`).
+ * [country] é o país dono da competição — e, numa continental (issue #132), o
+ * país cujo CALENDÁRIO a hospeda: a Libertadores segue a temporada do Brasil
+ * (o único país da CONMEBOL com liga no save), é agendada junto com o
+ * Brasileirão e a Copa do Brasil (é isso que impede um clube brasileiro de ter
+ * dois jogos no mesmo encaixe) e fecha junto com a virada do Brasil. A
+ * confederação sai do próprio país (`country.confederation`). Trocar por um
+ * `CompetitionOwner` de verdade fica para quando duas confederações tiverem
+ * continental no save (#145): hoje mudaria todo consumidor do catálogo para
+ * nada.
  *
  * [pausesOnFifaWindows] e [span] ficam aqui, e não em [Competition], pelo
  * mesmo motivo de [CompetitionSeason]: são regras de calendário, não de formato.
@@ -44,6 +50,13 @@ sealed interface CompetitionKind {
 
     /** Copa nacional mata-mata (Copa do Brasil): os clubes das ligas do país. */
     data object NationalCup : CompetitionKind
+
+    /**
+     * Competição continental com fase de grupos e mata-mata (Libertadores,
+     * issue #132). Os participantes não saem de liga nenhuma: a edição sorteada
+     * (`ContinentalCup`) é que diz quem joga.
+     */
+    data object Continental : CompetitionKind
 }
 
 /** A liga que [club] disputa entre [competitions], ou `null` se nenhuma é dele. */
