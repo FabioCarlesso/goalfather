@@ -5,6 +5,7 @@ import { StandingsPage } from './pages/StandingsPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { CupPage } from './pages/CupPage'
 import { LibertadoresPage } from './pages/LibertadoresPage'
+import { NationalTeamsPage } from './pages/NationalTeamsPage'
 import { MarketPage } from './pages/MarketPage'
 import { LineupPage } from './pages/LineupPage'
 import { RoundPage } from './pages/RoundPage'
@@ -52,6 +53,7 @@ export const router = createBrowserRouter(
             <Route path="/cup"       element={<CupPage />} />
             <Route path="/libertadores" element={<LibertadoresPage />} />
             <Route path="/history"   element={<HistoryPage />} />
+            <Route path="/national-teams" element={<NationalTeamsPage />} />
           </Route>
         </Route>
       </Route>

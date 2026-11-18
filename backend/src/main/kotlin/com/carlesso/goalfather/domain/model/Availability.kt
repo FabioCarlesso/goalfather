@@ -1,8 +1,10 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.serialization.LocalDateSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
+import java.time.LocalDate
 
 /**
  * Disponibilidade de um jogador para ser escalado (issue #54).
@@ -46,4 +48,29 @@ sealed interface Availability {
             require(roundsOut >= 1) { "roundsOut de uma lesão deve ser >= 1: $roundsOut" }
         }
     }
+
+    /**
+     * Convocado pela seleção de [country] para a data FIFA que termina em
+     * [until] (issue #134). Fica fora de TODOS os jogos do clube enquanto a
+     * janela durar — o Brasileirão, que não pausa, joga desfalcado — e volta
+     * quando o relógio sai da janela (`returnFromDuty`, em
+     * `NationalTeamRules.kt`), com a stamina gasta pela seleção e, às vezes,
+     * lesionado.
+     *
+     * Uma variante nova do `sealed` em vez de um `onDuty: Boolean` no
+     * jogador: convocado E lesionado ao mesmo tempo não existe (lesionado nem
+     * é convocado), e o `when` exaustivo obriga cada regra que olha a
+     * disponibilidade (desgaste, persistência) a decidir o que fazer com o
+     * convocado — o compilador aponta os lugares.
+     *
+     * `@Serializable(with = …)` no PARÂMETRO aplica o serializer custom só a
+     * este campo: `LocalDate` sai como `"2026-03-31"`, o `format: date` do
+     * contrato.
+     */
+    @Serializable
+    @SerialName("OnInternationalDuty")
+    data class OnInternationalDuty(
+        val country: CountryCode,
+        @Serializable(with = LocalDateSerializer::class) val until: LocalDate,
+    ) : Availability
 }

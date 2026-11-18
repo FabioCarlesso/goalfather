@@ -6,6 +6,7 @@ import { standingsKey } from './useStandings'
 import { seasonHistoryKey, clubCareerKey } from './useSeasonHistory'
 import { cupKey } from './useCup'
 import { boardKey } from './useBoard'
+import { nationalTeamsRootKey } from './useNationalTeams'
 import { errorMessage } from '../errorMessages'
 import { wsUrl } from '../wsUrl'
 import { handOff } from '../streamHandoff'
@@ -199,6 +200,8 @@ export function useRoundStream(
       qc.invalidateQueries({ queryKey: boardKey(myClubId) })
       // O relógio andou um encaixe (issue #125): data corrente e próximo jogo.
       qc.invalidateQueries({ queryKey: ['calendar'] })
+      // Datas FIFA (issue #134): a virada pode ter convocado ou devolvido jogadores.
+      qc.invalidateQueries({ queryKey: nationalTeamsRootKey })
       // Treino da semana (issue #58): o evento traz o extrato de todos os
       // clubes; só o do técnico interessa aqui. Fica DEPOIS das
       // invalidações e com acesso opcional de propósito: um payload sem

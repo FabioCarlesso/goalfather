@@ -4,6 +4,7 @@ import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.CountryCode
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -31,8 +32,7 @@ fun PlayerEntity.toDomain(): Player {
         goals = goals,
         yellowCards = yellowCards,
         redCards = redCards,
-        availability = if (injuredForRounds >= 1) Availability.Injured(injuredForRounds)
-        else Availability.Available,
+        availability = availability(),
         nationality = nationality.toCountry(),
         // `takeIf` descarta a segunda nacionalidade se ela coincidir com a primeira
         // depois de resolvidas (ex.: dois códigos desconhecidos caindo no default),
@@ -68,9 +68,12 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     redCards = redCards,
     // `when` exaustivo sobre o sealed: a soma de tipos vira o Int da coluna.
     injuredForRounds = when (val a = availability) {
-        is Availability.Available -> 0
+        is Availability.Available, is Availability.OnInternationalDuty -> 0
         is Availability.Injured -> a.roundsOut
     },
+    // Convocação (issue #134): `as?` devolve `null` para as outras variantes.
+    dutyCountry = (availability as? Availability.OnInternationalDuty)?.country?.value,
+    dutyUntil = (availability as? Availability.OnInternationalDuty)?.until,
     nationality = nationality.code.value,
     secondNationality = secondNationality?.code?.value,
     disciplineJson = PlayerDisciplineRecord(
@@ -96,6 +99,22 @@ private data class PlayerDisciplineRecord(
 private data class SuspensionRecord(val competitionId: String, val matchesLeft: Int)
 
 private val disciplineFormat = Json { ignoreUnknownKeys = true }
+
+/**
+ * Colunas → `sealed Availability`. A convocação (issue #134) vem primeiro: as
+ * duas colunas dela preenchidas valem mais que uma lesão (que o domínio nunca
+ * grava junto). Código de país inválido numa linha corrompida cai em "apto",
+ * em vez de derrubar a leitura do elenco.
+ */
+private fun PlayerEntity.availability(): Availability {
+    val country = dutyCountry?.takeIf { it.length == 3 && it.all { c -> c in 'A'..'Z' } }
+    val until = dutyUntil
+    return when {
+        country != null && until != null -> Availability.OnInternationalDuty(CountryCode(country), until)
+        injuredForRounds >= 1 -> Availability.Injured(injuredForRounds)
+        else -> Availability.Available
+    }
+}
 
 /** Coluna nula (ficha limpa ou linha anterior à issue) → registro vazio. */
 private fun PlayerEntity.discipline(): PlayerDisciplineRecord =

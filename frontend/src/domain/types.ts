@@ -94,3 +94,14 @@ export type AvailableClub   = components['schemas']['AvailableClub']
 // Mundo do onboarding país → liga → clube (issue #131)
 export type WorldCountry    = components['schemas']['WorldCountry']
 export type WorldLeague     = components['schemas']['WorldLeague']
+
+// --- #134 Seleções ---
+export type FifaWindowSummary     = components['schemas']['FifaWindowSummary']
+export type FifaWindowStatus      = components['schemas']['FifaWindowStatus']
+export type CalledUpPlayer        = components['schemas']['CalledUpPlayer']
+export type ClubCallUps           = components['schemas']['ClubCallUps']
+export type NationalMatch         = components['schemas']['NationalMatch']
+export type NationalMatchKind     = components['schemas']['NationalMatchKind']
+export type NationalTableRow      = components['schemas']['NationalTableRow']
+export type QualifiersTable       = components['schemas']['QualifiersTable']
+export type NationalTeamsOverview = components['schemas']['NationalTeamsOverview']

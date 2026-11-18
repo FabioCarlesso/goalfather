@@ -7,6 +7,7 @@ import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.LoginUseCase
+import com.carlesso.goalfather.application.port.`in`.NationalTeamClock
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
@@ -150,6 +151,8 @@ class BeanConfig {
         finalizationGate: RoundFinalizationGate,
         // Continentais (issue #132): grupos, mata-mata e o sorteio da edição seguinte.
         continentalRepo: ContinentalRepository,
+        // Datas FIFA (issue #134): convocações e jogos de seleção.
+        nationalTeams: NationalTeamClock,
     ): PlayRoundUseCase = PlayRoundService(
         clubRepo,
         leagueRepo,
@@ -165,6 +168,7 @@ class BeanConfig {
         meterRegistry,
         finalizationGate = finalizationGate,
         continentalRepo = continentalRepo,
+        nationalTeams = nationalTeams,
     )
 
     /**

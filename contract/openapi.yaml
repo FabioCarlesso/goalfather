@@ -74,6 +74,9 @@ tags:
   # --- #132 Libertadores ---
   - name: Libertadores
     description: Copa Libertadores — fase de grupos, mata-mata e final única (issue #132)
+  # --- #134 Seleções ---
+  - name: NationalTeams
+    description: Seleções nas datas FIFA — convocações, Eliminatórias e ranking (issue #134)
 
 paths:
   /api/auth/register:
@@ -1046,6 +1049,62 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  # --- #134 Seleções ---
+  /api/national-teams:
+    get:
+      tags: [NationalTeams]
+      operationId: getNationalTeams
+      summary: Datas FIFA, resultados das seleções, Eliminatórias e ranking
+      description: |
+        Painel das seleções (issue #134). `windows` lista as datas FIFA do ano
+        corrente do jogo e do seguinte, com a situação de cada uma — é o que o
+        calendário usa para destacar as pausas. `nextWindow` é a janela em que
+        o relógio está ou a próxima. `lastResults` são os jogos da última
+        janela disputada. A classificação das Eliminatórias da CONMEBOL e o
+        ranking são calculados pelo backend a partir dos placares — a UI só
+        exibe.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Painel das seleções
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NationalTeamsOverview' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/clubs/{id}/call-ups:
+    get:
+      tags: [NationalTeams]
+      operationId: getClubCallUps
+      summary: Convocados do clube na data FIFA corrente ou na próxima
+      description: |
+        Quem do clube vai para a seleção (issue #134). Antes da janela
+        (`window.status = UPCOMING`) a lista é a PRÉVIA, calculada com os
+        elencos de agora — o técnico vê quem perderá. Com a janela em curso
+        (`CALLED`), é a convocação de fato: esses jogadores estão com
+        `availability.type = OnInternationalDuty` e ficam fora de todos os
+        jogos do clube até a janela acabar. `window` ausente só num save sem
+        calendário.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Convocados do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClubCallUps' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Clube inexistente (`CLUB_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /ws/slot/{key}:
     get:
       tags: [League]
@@ -1570,11 +1629,13 @@ components:
       oneOf:
         - $ref: '#/components/schemas/AvailableStatus'
         - $ref: '#/components/schemas/InjuredStatus'
+        - $ref: '#/components/schemas/InternationalDutyStatus'
       discriminator:
         propertyName: type
         mapping:
           Available: '#/components/schemas/AvailableStatus'
           Injured:   '#/components/schemas/InjuredStatus'
+          OnInternationalDuty: '#/components/schemas/InternationalDutyStatus'
 
     AvailableStatus:
       type: object
@@ -3316,3 +3377,151 @@ components:
           type: object
           additionalProperties: true
           description: Dados extras dependentes do código de erro
+
+    # --- #134 Seleções ---
+    InternationalDutyStatus:
+      type: object
+      description: |
+        Convocado pela seleção numa data FIFA (issue #134): fora de TODOS os
+        jogos do clube até `until` (último dia da janela). Volta quando o
+        relógio sai da janela, com a stamina gasta nos jogos da seleção e,
+        às vezes, lesionado.
+      required: [type, country, until]
+      properties:
+        type: { type: string, enum: [OnInternationalDuty] }
+        country:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Trigrama FIFA da seleção que convocou
+          example: BRA
+        until:
+          type: string
+          format: date
+          description: Último dia da data FIFA
+          example: '2026-03-31'
+
+    FifaWindowStatus:
+      type: string
+      description: |
+        Situação de uma data FIFA no save: `UPCOMING` (ainda não chegou — a
+        lista de convocados é só prévia), `CALLED` (convocados com as
+        seleções, jogos por disputar), `PLAYED` (jogada, convocados de volta).
+      enum: [UPCOMING, CALLED, PLAYED]
+
+    FifaWindowSummary:
+      type: object
+      description: Uma data FIFA. As ligas que pausam não jogam nas semanas que ela toca.
+      required: [start, end, status, matchSlots]
+      properties:
+        start: { type: string, format: date, example: '2026-03-23' }
+        end:   { type: string, format: date, example: '2026-03-31' }
+        status: { $ref: '#/components/schemas/FifaWindowStatus' }
+        matchSlots:
+          type: integer
+          description: Jogos de seleção na janela — 4 em setembro/outubro, 2 nas demais
+          example: 2
+
+    CalledUpPlayer:
+      type: object
+      description: |
+        Um convocado. Nome, posição, overall e clube são a foto da convocação
+        (a lista continua legível se o jogador mudar de clube depois).
+      required: [playerId, name, position, overall, clubId, clubName, country]
+      properties:
+        playerId: { type: integer, format: int64 }
+        name:     { type: string }
+        position: { $ref: '#/components/schemas/Position' }
+        overall:  { type: integer, minimum: 0, maximum: 99 }
+        clubId:   { type: integer, format: int64 }
+        clubName: { type: string }
+        country:  { $ref: '#/components/schemas/Country' }
+
+    ClubCallUps:
+      type: object
+      required: [players]
+      properties:
+        window: { $ref: '#/components/schemas/FifaWindowSummary' }
+        players:
+          type: array
+          description: Convocados do clube (vazia quando ninguém foi chamado)
+          items: { $ref: '#/components/schemas/CalledUpPlayer' }
+
+    NationalMatchKind:
+      type: string
+      description: Jogo de Eliminatórias (CONMEBOL) ou amistoso
+      enum: [QUALIFIER, FRIENDLY]
+
+    NationalMatch:
+      type: object
+      description: Jogo de seleção já disputado (simulação rápida).
+      required: [home, away, kind, matchNumber, homeGoals, awayGoals]
+      properties:
+        home: { $ref: '#/components/schemas/Country' }
+        away: { $ref: '#/components/schemas/Country' }
+        kind: { $ref: '#/components/schemas/NationalMatchKind' }
+        matchNumber:
+          type: integer
+          minimum: 1
+          description: Ordem do jogo na janela (1..4)
+        qualifierRound:
+          type: integer
+          minimum: 1
+          maximum: 18
+          description: Rodada das Eliminatórias — ausente nos amistosos
+        homeGoals: { type: integer, minimum: 0 }
+        awayGoals: { type: integer, minimum: 0 }
+
+    NationalTableRow:
+      type: object
+      description: |
+        Linha da classificação das Eliminatórias ou do ranking de seleções.
+        No ranking, jogo de Eliminatórias vale o dobro dos pontos de um
+        amistoso. Ordem: pontos, saldo, gols pró.
+      required: [position, country, played, won, drawn, lost, goalsFor, goalsAgainst, goalDifference, points]
+      properties:
+        position: { type: integer, minimum: 1 }
+        country:  { $ref: '#/components/schemas/Country' }
+        played:   { type: integer }
+        won:      { type: integer }
+        drawn:    { type: integer }
+        lost:     { type: integer }
+        goalsFor: { type: integer }
+        goalsAgainst: { type: integer }
+        goalDifference: { type: integer }
+        points:   { type: integer }
+
+    QualifiersTable:
+      type: object
+      description: |
+        Eliminatórias da CONMEBOL do ciclo corrente: 10 seleções em turno e
+        returno, 18 rodadas distribuídas pelas datas FIFA de dois anos.
+      required: [cycle, roundsPlayed, totalRounds, rows]
+      properties:
+        cycle:
+          type: integer
+          description: Ano de início do ciclo (2026, 2028…)
+        roundsPlayed: { type: integer, minimum: 0 }
+        totalRounds:  { type: integer, example: 18 }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/NationalTableRow' }
+
+    NationalTeamsOverview:
+      type: object
+      required: [windows, lastResults, qualifiers, ranking]
+      properties:
+        windows:
+          type: array
+          description: Datas FIFA do ano corrente do jogo e do seguinte, em ordem
+          items: { $ref: '#/components/schemas/FifaWindowSummary' }
+        nextWindow: { $ref: '#/components/schemas/FifaWindowSummary' }
+        lastWindow: { $ref: '#/components/schemas/FifaWindowSummary' }
+        lastResults:
+          type: array
+          description: Jogos da última data FIFA disputada (vazia antes da primeira)
+          items: { $ref: '#/components/schemas/NationalMatch' }
+        qualifiers: { $ref: '#/components/schemas/QualifiersTable' }
+        ranking:
+          type: array
+          description: Ranking de seleções — só quem já jogou aparece
+          items: { $ref: '#/components/schemas/NationalTableRow' }
