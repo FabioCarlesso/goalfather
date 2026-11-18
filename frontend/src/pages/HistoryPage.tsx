@@ -138,6 +138,12 @@ function SeasonRow({
           {season.cupChampion && (
             <span className="ml-3 text-sm text-amber-200">🥇 Copa: {season.cupChampion.name}</span>
           )}
+          {/* Títulos continentais que fecharam com este país (issue #132). */}
+          {season.continentalChampions?.map((title) => (
+            <span key={title.competitionId} className="ml-3 text-sm text-amber-200">
+              🏆 {title.competitionName}: {title.champion.name}
+            </span>
+          ))}
         </span>
         <span className="hidden text-sm text-slate-400 sm:block">
           {season.topScorer

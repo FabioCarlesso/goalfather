@@ -166,7 +166,9 @@ function openLeg(tie: CupTie): CupLeg | null {
  */
 export function decidesOnPenalties(stage: RoundStage, homeGoals: number, awayGoals: number): boolean {
   switch (stage.type) {
+    // Grupo da Libertadores (issue #132) é pontos corridos: nunca vai aos pênaltis.
     case 'League':
+    case 'Group':
       return false
     case 'Cup':
       switch (stage.leg) {

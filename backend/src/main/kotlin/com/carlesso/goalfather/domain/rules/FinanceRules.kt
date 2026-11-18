@@ -173,7 +173,8 @@ fun isSalaryRound(roundNumber: Int): Boolean =
  */
 fun isSalaryDate(stage: RoundStage): Boolean = when (stage) {
     is RoundStage.League -> isSalaryRound(stage.matchday)
-    is RoundStage.Cup -> false
+    // Continental (issue #132) também não: a folha anda com a liga do clube.
+    is RoundStage.Cup, is RoundStage.Group -> false
 }
 
 /**

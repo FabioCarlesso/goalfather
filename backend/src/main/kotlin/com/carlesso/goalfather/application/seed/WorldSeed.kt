@@ -5,6 +5,7 @@ import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionFormat
 import com.carlesso.goalfather.domain.model.CompetitionKind
+import com.carlesso.goalfather.domain.model.ContinentalCup
 import com.carlesso.goalfather.domain.model.Country
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.GameCompetition
@@ -13,6 +14,8 @@ import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.SeasonSpan
+import com.carlesso.goalfather.domain.model.Venue
+import com.carlesso.goalfather.domain.model.world.WorldClubId
 import com.carlesso.goalfather.domain.model.world.ClubProfile
 import com.carlesso.goalfather.domain.model.world.CompetitionOwner
 import com.carlesso.goalfather.domain.model.world.LeagueStrength
@@ -22,6 +25,9 @@ import com.carlesso.goalfather.domain.model.world.WorldCompetition
 import com.carlesso.goalfather.domain.model.world.WorldPack
 import com.carlesso.goalfather.domain.rules.inStartingOrder
 import com.carlesso.goalfather.domain.rules.AttributeGenerator
+import com.carlesso.goalfather.domain.rules.ContinentalDraw
+import com.carlesso.goalfather.domain.rules.continentalDrawSeed
+import com.carlesso.goalfather.domain.rules.drawContinental
 import com.carlesso.goalfather.domain.rules.PlayerAttributes
 import com.carlesso.goalfather.domain.rules.WorldStart
 import com.carlesso.goalfather.domain.rules.initialCash
@@ -48,13 +54,15 @@ data class InitialWorld(
     val competitions: List<GameCompetition>,
     val clubs: List<Club>,
     val market: List<MarketEntry>,
+    /** As continentais já sorteadas da temporada [year] (a Libertadores, issue #132). */
+    val continentals: List<ContinentalCup> = emptyList(),
 ) {
     /**
      * Primeiro encaixe, tabelas e copas da temporada [year]. Delega a
      * [startWorld] (o calendário), que é dono dessa decisão: o seed só monta
-     * clubes e catálogo.
+     * clubes, catálogo e o sorteio da 1ª continental (que depende do pack).
      */
-    fun start(): WorldStart = startWorld(year, clubs, competitions)
+    fun start(): WorldStart = startWorld(year, clubs, competitions, continentals)
 }
 
 /**
@@ -64,10 +72,15 @@ data class InitialWorld(
  * contexto (`WorldSeedTest`).
  *
  * Regras (detalhes em `docs/WORLD_DATA.md`, seção "Seed"):
- * - **Competições:** as NACIONAIS do pack. Liga (pontos corridos com `tier`)
- *   vira [CompetitionKind.League]; mata-mata nacional vira
- *   [CompetitionKind.NationalCup]. Continentais (Libertadores) ficam fora do
- *   MVP (#132), e com elas os clubes que só aparecem nelas.
+ * - **Competições:** as do pack, na ordem dele. Liga (pontos corridos com
+ *   `tier`) vira [CompetitionKind.League]; mata-mata nacional vira
+ *   [CompetitionKind.NationalCup]; continental com grupos (Libertadores, issue
+ *   #132) vira [CompetitionKind.Continental], hospedada pelo calendário do
+ *   primeiro país da confederação com liga no catálogo (o Brasil).
+ * - **Clubes só da continental** (Boca, Peñarol… — países sem liga simulada)
+ *   entram DEPOIS dos clubes de liga, numerados em seguida. Divisão 1 (não
+ *   disputam liga nenhuma: `leagueOf` devolve `null`) e a força da liga mais
+ *   forte da confederação (`continentalOnlyStrength`).
  * - **Ids:** clubes numerados `1..N` na ordem do pack (liga a liga); jogador =
  *   `clube × 1000 + posição no elenco` (a convenção do seed antigo, que o
  *   `youthPlayerId` evita); jogador livre do mercado = `1..999` (o "clube 0").
@@ -77,7 +90,12 @@ data class InitialWorld(
  */
 fun WorldPack.toInitialWorld(year: Int = startYear()): InitialWorld {
     val referenceDate = LocalDate.of(year, Month.JULY, 1)
-    val catalog = competitions.mapNotNull { it.toGameCompetition() }
+    val national = competitions.mapNotNull { it.toGameCompetition() }
+    // Continentais depois: precisam saber que país da confederação tem liga.
+    // `associateWith` monta o mapa id → competição do save sem `for`.
+    val continental = competitions.associateWith { it.toContinental(national) }.filterValues { it != null }
+    // Mesma ordem do pack, com as continentais no lugar delas.
+    val catalog = competitions.mapNotNull { world -> national.firstOrNull { it.id == world.id } ?: continental[world] }
     // As ligas do catálogo, ainda como `WorldCompetition`: são elas que sabem
     // os clubes (`clubIds`), a força e o tier.
     val leagues = competitions.filter { world -> catalog.any { it.id == world.id && it.kind is CompetitionKind.League } }
@@ -87,10 +105,17 @@ fun WorldPack.toInitialWorld(year: Int = startYear()): InitialWorld {
     val profiles: List<Pair<ClubProfile, WorldCompetition>> = leagues
         .flatMap { league -> league.clubIds.mapNotNull { id -> club(id)?.let { it to league } } }
         .distinctBy { (profile, _) -> profile.id }
+    // Clubes que só jogam a continental (issue #132): depois dos de liga, na ordem do pack.
+    val leagueClubIds = profiles.mapTo(HashSet()) { (profile, _) -> profile.id }
+    val continentalOnly: List<Pair<ClubProfile, WorldCompetition>> = continental.keys
+        .flatMap { cup -> cup.clubIds.filterNot { it in leagueClubIds }.mapNotNull { id -> club(id)?.let { it to cup } } }
+        .distinctBy { (profile, _) -> profile.id }
 
-    val clubs = profiles.mapIndexed { index, (profile, league) ->
+    val clubs = (profiles + continentalOnly).mapIndexed { index, (profile, league) ->
         val clubId = ClubId(index + 1L)
-        val strength = leagueStrengthOf(profile.id) ?: DEFAULT_LEAGUE_STRENGTH
+        val strength = leagueStrengthOf(profile.id)
+            ?: continentalOnlyStrength(profile)
+            ?: DEFAULT_LEAGUE_STRENGTH
         // Os 11 primeiros = o melhor 4-4-2: é o time da escalação automática.
         // Os ids saem DEPOIS da ordem, porque o elenco é relido do banco pelo
         // id do jogador — numerar pela ordem do pack desfaria a ordenação.
@@ -112,20 +137,62 @@ fun WorldPack.toInitialWorld(year: Int = startYear()): InitialWorld {
             cash = initialCash(profile.reputation, squad),
             stadiumCapacity = profile.stadium.capacity,
             squad = squad,
-            // `requireNotNull`: liga do catálogo sempre tem tier (ver toGameCompetition).
-            division = Division(requireNotNull(league.tier)),
+            // Liga do catálogo sempre tem tier (ver toGameCompetition); o clube
+            // só da continental não tem liga e fica na divisão 1.
+            division = league.tier?.let(::Division) ?: Division.FIRST,
             ticketPriceCents = initialTicketPrice(strength, profile.reputation),
             country = profile.country,
         )
     }
 
+    // Do id do pack ao clube do save, para sortear a 1ª edição da continental.
+    val clubByPackId = (profiles + continentalOnly).map { it.first.id }.zip(clubs).toMap()
     return InitialWorld(
         year = year,
         countries = countries,
         competitions = catalog,
         clubs = clubs,
         market = freeAgents(catalog, leagues, takenNames = clubs.flatMapTo(HashSet()) { c -> c.squad.map { it.name } }),
+        continentals = continental.mapNotNull { (world, game) ->
+            game?.let { firstContinentalEdition(year, world, it, clubByPackId) }
+        },
     )
+}
+
+/**
+ * Força dos clubes que só jogam a continental (issue #132): o pack não tem a
+ * liga deles, então vale a da liga mais forte da MESMA confederação no pack (a
+ * Série A para a CONMEBOL). A reputação do clube já espalha uns acima e outros
+ * abaixo dessa régua no [AttributeGenerator].
+ */
+private fun WorldPack.continentalOnlyStrength(profile: ClubProfile): LeagueStrength? =
+    competitions
+        .filter { (it.owner as? CompetitionOwner.National)?.country?.confederation == profile.country.confederation }
+        .mapNotNull { it.strength }
+        .maxByOrNull { it.value }
+
+/**
+ * A 1ª edição da continental, sorteada entre os clubes do pack (a fase de
+ * grupos real de 2026): cabeças de chave pela reputação do pack — o dado que o
+ * seed ainda tem; nas edições seguintes, sem o pack, vale a força do elenco. A
+ * sede da final é o maior estádio entre os participantes. Pack sem os clubes
+ * suficientes (o recorte do E2E) ou com sorteio impossível: sem continental.
+ */
+private fun WorldPack.firstContinentalEdition(
+    year: Int,
+    world: WorldCompetition,
+    game: GameCompetition,
+    clubByPackId: Map<WorldClubId, Club>,
+): ContinentalCup? {
+    val entrants = world.clubIds.mapNotNull { id -> club(id)?.let { profile -> clubByPackId[id]?.let { profile to it } } }
+    val seeded = entrants
+        .sortedWith(compareByDescending<Pair<ClubProfile, Club>> { it.first.reputation.value }.thenBy { it.second.id.value })
+        .map { it.second }
+    val venue = entrants.map { it.first.stadium }.maxByOrNull { it.capacity }?.let { Venue(it.name, it.capacity) }
+    return when (val draw = drawContinental(year, game, seeded, venue, Random(continentalDrawSeed(year, game.id)))) {
+        is ContinentalDraw.Drawn -> draw.edition
+        is ContinentalDraw.WrongSize, ContinentalDraw.Impossible -> null
+    }
 }
 
 /**
@@ -149,6 +216,7 @@ private val DEFAULT_LEAGUE_STRENGTH = LeagueStrength(60)
  * explicitamente, e um terceiro tipo de dono obrigaria a decidir aqui.
  */
 private fun WorldCompetition.toGameCompetition(): GameCompetition? = when (val owner = owner) {
+    // Continental entra por [toContinental], que precisa do catálogo nacional.
     is CompetitionOwner.Continental -> null
     is CompetitionOwner.National -> {
         val kind = when {
@@ -166,6 +234,25 @@ private fun WorldCompetition.toGameCompetition(): GameCompetition? = when (val o
             )
         }
     }
+}
+
+/**
+ * A continental do pack como competição do save (issue #132), ou `null` se ela
+ * não é de grupos + mata-mata (a suíça é da #145) ou se nenhum país da
+ * confederação tem liga no catálogo (sem calendário que a hospede).
+ */
+private fun WorldCompetition.toContinental(national: List<GameCompetition>): GameCompetition? {
+    val owner = owner as? CompetitionOwner.Continental ?: return null
+    if (competition.format !is CompetitionFormat.GroupsThenKnockout) return null
+    val host = national.firstOrNull { it.kind is CompetitionKind.League && it.country.confederation == owner.confederation }
+        ?: return null
+    return GameCompetition(
+        competition = competition,
+        country = host.country,
+        kind = CompetitionKind.Continental,
+        span = SeasonSpan.of(owner.confederation),
+        pausesOnFifaWindows = pausesOnFifaWindows,
+    )
 }
 
 /**

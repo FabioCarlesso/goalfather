@@ -45,9 +45,35 @@ class WorldSeedTest {
     }
 
     @Test
-    fun `catalogo tem as 8 competicoes do MVP na ordem do pack e a Libertadores fica de fora`() {
-        assertEquals(MVP_COMPETITIONS, world.competitions.map { it.id.value })
+    fun `catalogo tem as 8 competicoes nacionais do MVP e a Libertadores hospedada pelo Brasil`() {
+        assertEquals(MVP_COMPETITIONS + "conmebol-libertadores", world.competitions.map { it.id.value })
         assertEquals(2026, world.year)
+        val libertadores = world.competitions.last()
+        assertEquals(CompetitionKind.Continental, libertadores.kind)
+        assertEquals("BRA", libertadores.country.code.value)
+        assertEquals(SeasonSpan.CALENDAR_YEAR, libertadores.span)
+    }
+
+    @Test
+    fun `a Libertadores 2026 nasce sorteada com os 32 do pack e sem compatriotas no grupo`() {
+        val edition = world.continentals.single()
+        assertEquals(2026, edition.season)
+        assertEquals(32, edition.clubs.size)
+        assertEquals(6, edition.clubs.count { it.country.value == "BRA" })
+        edition.groups.forEach { group -> assertEquals(4, group.clubs.map { it.country }.distinct().size, group.name) }
+        // Sede da final: o maior estádio entre os participantes.
+        assertEquals("Estadio Monumental U", edition.finalVenue?.name)
+        // A 1ª edição entra no plano do mundo já em 2026.
+        assertEquals(edition, world.start().continentals.single())
+    }
+
+    @Test
+    fun `clubes so da Libertadores entram depois dos de liga, sem liga e com elenco`() {
+        val onlyContinental = world.clubs.drop(136)
+        assertEquals(26, onlyContinental.size)
+        assertTrue(onlyContinental.none { it.country.code.value == "BRA" })
+        assertTrue(onlyContinental.all { world.competitions.leagueOf(it) == null })
+        assertTrue(onlyContinental.all { it.squad.size >= 11 && it.squad.any { p -> p.position == Position.GK } })
     }
 
     @Test
@@ -56,12 +82,12 @@ class WorldSeedTest {
         assertEquals(
             mapOf(
                 "bra-serie-a" to 20, "bra-serie-b" to 20, "eng-premier-league" to 20, "esp-la-liga" to 20,
-                "ita-serie-a" to 20, "ger-bundesliga" to 18, "fra-ligue-1" to 18,
+                "ita-serie-a" to 20, "ger-bundesliga" to 18, "fra-ligue-1" to 18, "sem liga" to 26,
             ),
             sizes,
         )
-        // Só clubes de liga: os da Libertadores que não jogam liga do MVP não entram.
-        assertEquals(136, world.clubs.size)
+        // 136 de liga + 26 que só jogam a Libertadores (issue #132).
+        assertEquals(162, world.clubs.size)
     }
 
     @Test

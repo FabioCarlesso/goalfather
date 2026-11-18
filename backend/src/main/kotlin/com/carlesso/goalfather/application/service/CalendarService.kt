@@ -3,6 +3,7 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.port.`in`.CalendarUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
+import com.carlesso.goalfather.application.port.out.ContinentalRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.domain.model.CalendarView
@@ -28,6 +29,8 @@ class CalendarService(
     private val clubRepo: ClubRepository,
     private val cupRepo: CupRepository,
     private val catalogRepo: CompetitionCatalogRepository,
+    // Continentais (issue #132): o jogo da Libertadores aparece no calendário do clube.
+    private val continentalRepo: ContinentalRepository = ContinentalRepository.NONE,
 ) : CalendarUseCase {
 
     override suspend fun calendar(clubId: ClubId?): CalendarView {
@@ -51,7 +54,14 @@ class CalendarService(
         current.matches.firstOrNull { inPlay && it.involves(clubId) }
             ?.let { return withSeason.copy(nextMatch = NextMatch(current.matchday, it)) }
 
-        val next = worldPlan(catalog, clubs, seasons, cupRepo.currentCups(catalog, seasons)).nextMatchOf(
+        val plan = worldPlan(
+            catalog,
+            clubs,
+            seasons,
+            cupRepo.currentCups(catalog, seasons),
+            continentalRepo.currentContinentals(catalog, seasons),
+        )
+        val next = plan.nextMatchOf(
             clubId = clubId,
             after = current.matchday,
             clubs = clubs,

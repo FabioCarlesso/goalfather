@@ -4,6 +4,7 @@ import { dashboardTabRoutes } from './pages/dashboard/routes'
 import { StandingsPage } from './pages/StandingsPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { CupPage } from './pages/CupPage'
+import { LibertadoresPage } from './pages/LibertadoresPage'
 import { MarketPage } from './pages/MarketPage'
 import { LineupPage } from './pages/LineupPage'
 import { RoundPage } from './pages/RoundPage'
@@ -49,6 +50,7 @@ export const router = createBrowserRouter(
             <Route path="/standings" element={<StandingsPage />} />
             <Route path="/clubs/:id" element={<ClubPage />} />
             <Route path="/cup"       element={<CupPage />} />
+            <Route path="/libertadores" element={<LibertadoresPage />} />
             <Route path="/history"   element={<HistoryPage />} />
           </Route>
         </Route>

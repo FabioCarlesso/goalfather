@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.serialization.CompetitionIdSerializer
 import kotlinx.serialization.Serializable
 
 /**
@@ -79,4 +80,20 @@ data class SeasonRecord(
     val country: Country? = null,
     /** `2026` ou `2026/27` (issue #131); nulo nos records antigos. */
     val seasonLabel: String? = null,
+    /**
+     * Campeões das continentais que o calendário deste país hospeda (issue
+     * #132): a Libertadores fecha junto com a temporada do Brasil, então o
+     * título dela entra no record do Brasil. Lista vazia (e não nula) quando
+     * não houve: o default deixa os records antigos desserializarem sem migração.
+     */
+    val continentalChampions: List<ContinentalTitle> = emptyList(),
+)
+
+/** Um título continental na história (issue #132). Nomes copiados, como o resto do record. */
+@Serializable
+data class ContinentalTitle(
+    @Serializable(with = CompetitionIdSerializer::class)
+    val competitionId: CompetitionId,
+    val competitionName: String,
+    val champion: CupClub,
 )

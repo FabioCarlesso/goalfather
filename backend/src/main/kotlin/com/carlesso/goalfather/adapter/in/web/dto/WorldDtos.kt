@@ -57,7 +57,8 @@ fun OnboardingLeague.toDto(): WorldLeagueDto = WorldLeagueDto(
     name = league.competition.name,
     tier = when (val kind = league.kind) {
         is CompetitionKind.League -> kind.tier.value
-        CompetitionKind.NationalCup -> error("Copa ${league.id.value} não é liga do onboarding")
+        CompetitionKind.NationalCup, CompetitionKind.Continental ->
+            error("Copa ${league.id.value} não é liga do onboarding")
     },
     clubCount = clubCount,
     availableClubCount = availableClubCount,

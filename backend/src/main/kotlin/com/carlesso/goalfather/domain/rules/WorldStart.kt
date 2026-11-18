@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.CompetitionKind
+import com.carlesso.goalfather.domain.model.ContinentalCup
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Round
@@ -19,6 +20,8 @@ data class WorldStart(
     val firstRound: Round?,
     val standings: List<Standings>,
     val cups: List<Cup>,
+    /** As continentais da temporada (issue #132), já sorteadas pelo seed. */
+    val continentals: List<ContinentalCup> = emptyList(),
 )
 
 /**
@@ -34,7 +37,12 @@ data class WorldStart(
  * - primeiro encaixe: o primeiro do plano do mundo — em 2026, janeiro, no
  *   Brasil (a Europa só estreia em agosto).
  */
-fun startWorld(year: Int, clubs: List<Club>, competitions: List<GameCompetition>): WorldStart {
+fun startWorld(
+    year: Int,
+    clubs: List<Club>,
+    competitions: List<GameCompetition>,
+    continentals: List<ContinentalCup> = emptyList(),
+): WorldStart {
     val cups = competitions
         .filter { it.kind == CompetitionKind.NationalCup }
         .mapNotNull { game ->
@@ -43,10 +51,11 @@ fun startWorld(year: Int, clubs: List<Club>, competitions: List<GameCompetition>
         }
         .toMap()
     val seasons = competitions.associate { it.country.code to year }
-    val plan = worldPlan(competitions, clubs, seasons, cups)
+    val plan = worldPlan(competitions, clubs, seasons, cups, continentals.associateBy { it.competitionId })
     return WorldStart(
         firstRound = plan.first?.let { plan.roundAt(it, clubs) },
         standings = seasonStandings(year, competitions, clubs),
         cups = cups.values.toList(),
+        continentals = continentals,
     )
 }

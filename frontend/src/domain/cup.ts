@@ -37,5 +37,12 @@ export function stageTitle(stage: RoundStage): string {
       return `Rodada ${stage.matchday}`
     case 'Cup':
       return `Copa — ${cupStageLabel(stage)}`
+    case 'Group':
+      return `Libertadores — ${groupStageLabel(stage)}`
   }
+}
+
+/** "Grupo A · Rodada 3": jogo da fase de grupos da Libertadores (issue #132). */
+export function groupStageLabel(stage: Extract<RoundStage, { type: 'Group' }>): string {
+  return `${stage.groupName} · Rodada ${stage.matchday}`
 }
