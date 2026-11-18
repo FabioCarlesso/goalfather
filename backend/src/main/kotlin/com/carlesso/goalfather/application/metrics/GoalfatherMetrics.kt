@@ -49,6 +49,17 @@ object GoalfatherMetrics {
      */
     const val ROUND_CLAIM_CONFLICTS = "goalfather.round.claim.conflicts"
 
+    /**
+     * Counter de efeitos secundários do encaixe que falharam e foram contidos
+     * (revisão da PR #155): datas FIFA e prazo das propostas. Dimensionado por
+     * [TAG_EFFECT]. Diferente de zero = o calendário seguiu, mas um efeito
+     * ficou para o próximo encaixe; o log tem a causa.
+     */
+    const val ROUND_SECONDARY_FAILURES = "goalfather.round.secondary.failures"
+
+    /** Tag que dimensiona o efeito secundário (`national_teams`, `offer_deadlines`). */
+    const val TAG_EFFECT = "effect"
+
     /** Tag que dimensiona o desfecho (`success`, `conflict`, `failure`, ...). */
     const val TAG_RESULT = "result"
 

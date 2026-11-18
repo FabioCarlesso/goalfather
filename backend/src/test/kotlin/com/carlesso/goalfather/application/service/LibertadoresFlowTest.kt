@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
+import com.carlesso.goalfather.application.port.`in`.NationalTeamClock
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
@@ -133,6 +136,29 @@ class LibertadoresFlowTest {
         assertEquals(ended.quotas, next.quotas)
         assertTrue(next.clubs.any { it.id == champion.id })
         next.groups.forEach { assertEquals(4, it.clubs.map { c -> c.country }.distinct().size) }
+    }
+
+    @Test
+    fun `falha nas datas FIFA nao trava o encaixe nem engole o RoundFinished`() = runBlocking {
+        val registry = SimpleMeterRegistry()
+        val broken = PlayRoundService(
+            clubs, league, NoReadiness, EmptyMarket, NoPlayers, history, cups, NoClaims, NoOffers,
+            InMemoryCatalogRepository(catalog),
+            meterRegistry = registry,
+            continentalRepo = continentals,
+            nationalTeams = NationalTeamClock { _, _ -> error("janela FIFA corrompida") },
+        )
+        val round = assertNotNull(league.findLatest())
+        league.startRound(round.matchday)
+
+        val events = broken.stream(round.matchday).toList()
+
+        assertIs<RoundEvent.RoundFinished>(events.last(), "o encaixe fechou normalmente")
+        assertTrue(assertNotNull(league.findLatest()).matchday > round.matchday, "o próximo encaixe foi agendado")
+        assertEquals(
+            1.0,
+            registry.counter(GoalfatherMetrics.ROUND_SECONDARY_FAILURES, GoalfatherMetrics.TAG_EFFECT, "national_teams").count(),
+        )
     }
 
     // ─── Fakes em memória ───────────────────────────────────────────────────

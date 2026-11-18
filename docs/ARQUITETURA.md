@@ -1463,6 +1463,7 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   | Oitavas | 1º × 2º de **outro** grupo, sorteado com volta atrás; o 2º recebe a ida, o 1º decide em casa. Depois, sorteio livre fase a fase (o da `Cup`). |
   | Final | Jogo único na sede neutra da edição (`RoundMatch.neutralVenue`): ninguém fatura bilheteria. Empate vai **direto aos pênaltis** — corte: a engine joga 90 minutos, sem prorrogação. |
   | Prêmio | O dobro da escada da copa nacional (`CONTINENTAL_PRIZE_FACTOR`): final US$ 2 mi. |
+  | Folha | Clube **sem liga** no save (os 26 estrangeiros) paga a folha em cada data da continental (`salaryPayers`): elas caem a cada 3–4 semanas, o ritmo do "mês". Clube com liga continua pagando só pela liga. Eliminado da continental, o estrangeiro fica parado (sem jogo, sem receita, sem folha) até a edição seguinte. |
   | `matchId` | `encaixe × 1000 + 50 + índice` — a copa nacional usa `+ 1..`, as ligas `+ 100..`. |
 
   **Calendário:** 13 encaixes (6 de grupo + 2+2+2+1), cada um reservando os 32
@@ -1565,6 +1566,14 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   torneios de seleção ficam para a #144. O mock do frontend não simula datas
   FIFA: devolve as datas, a tabela vazia e uma prévia fixa (os 3 melhores do
   elenco).
+
+  **Efeito secundário não trava o encaixe** (revisão da PR #155). O relógio
+  das datas FIFA e o prazo das propostas rodam no `secondaryEffect` do
+  `PlayRoundService`: depois do agendamento do próximo encaixe, e uma falha
+  deles vira log + `goalfather.round.secondary.failures{effect}` em vez de
+  derrubar o `RoundFinished`. Os dois são idempotentes por estado: o efeito
+  anda no encaixe seguinte. A `CancellationException` é relançada (não é erro,
+  é o cancelamento das coroutines), por isso `try` explícito e não `runCatching`.
 
 - [x] **Navegação pelo mundo: competições, calendário do clube e tabelas** — issue #133
 

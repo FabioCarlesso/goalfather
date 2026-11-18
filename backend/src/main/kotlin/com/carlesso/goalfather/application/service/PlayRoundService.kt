@@ -76,7 +76,7 @@ import com.carlesso.goalfather.domain.rules.cashDelta
 import com.carlesso.goalfather.domain.rules.decidesOnPenalties
 import com.carlesso.goalfather.domain.rules.fitnessSeed
 import com.carlesso.goalfather.domain.rules.gate
-import com.carlesso.goalfather.domain.rules.isSalaryDate
+import com.carlesso.goalfather.domain.rules.salaryPayers
 import com.carlesso.goalfather.domain.rules.marketAgingSeed
 import com.carlesso.goalfather.domain.rules.recordRound
 import com.carlesso.goalfather.domain.rules.title
@@ -93,7 +93,9 @@ import com.carlesso.goalfather.domain.rules.trainingSeed
 import com.carlesso.goalfather.domain.rules.toDismissal
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
+import org.slf4j.LoggerFactory
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -203,6 +205,10 @@ class PlayRoundService(
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
+
+    // SLF4J é só a fachada de log (sem Spring): a camada de aplicação não
+    // depende do framework por isso.
+    private val log = LoggerFactory.getLogger(PlayRoundService::class.java)
 
     // Parâmetros de construtor SEM `val` só existem no `init`/inicializadores:
     // `quickSimulator` e `simulationDispatcher` não viram propriedade do
@@ -410,7 +416,14 @@ class PlayRoundService(
 
         // Calcula o balanço financeiro da rodada — bilheteria (mandante),
         // folha salarial em rodadas de "mês" (issue #4) e prêmio da copa.
-        val finances = computeFinances(round, involvedClubs, prizes, competitionOf)
+        // Clubes sem liga no save (só a continental, issue #132) pagam a folha
+        // pelas datas da continental — ver `salaryPayers`.
+        val payroll = salaryPayers(
+            round,
+            leagueless = involvedClubs.filter { catalog.leagueOf(it) == null }.mapTo(HashSet()) { it.id },
+            continentals = catalog.filter { it.kind == CompetitionKind.Continental }.mapTo(HashSet()) { it.id },
+        )
+        val finances = computeFinances(round, involvedClubs, prizes, competitionOf, payroll)
 
         // Acumula estatísticas dos jogadores (issue #2), aplica o caixa
         // (issue #4) e o desgaste da rodada (issue #54) em uma única gravação
@@ -510,7 +523,7 @@ class PlayRoundService(
         // ficam fora dos jogos do clube), a que ele deixa para trás é jogada e
         // devolve os convocados. Depois do agendamento, pelo mesmo motivo das
         // propostas abaixo: uma falha aqui não pode travar o calendário.
-        nextMatchday?.let { nationalTeams.advance(round.matchday, it) }
+        nextMatchday?.let { next -> secondaryEffect("national_teams") { nationalTeams.advance(round.matchday, next) } }
 
         // Prazo das propostas entre técnicos (issue #63): uma rodada a menos
         // para cada pendente, e quem chega a zero expira. Aqui, depois do claim
@@ -519,7 +532,7 @@ class PlayRoundService(
         // secundário, e uma falha nele antes de `scheduleRound` deixaria a
         // rodada `Finished` sem sucessora — a liga travaria por causa de uma
         // proposta. Aqui, no pior caso, o prazo anda na rodada seguinte.
-        advanceOfferDeadlines()
+        secondaryEffect("offer_deadlines") { advanceOfferDeadlines() }
 
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
         // encerrada"); os SeasonFinished, quando há, vêm logo antes dele —
@@ -775,6 +788,33 @@ class PlayRoundService(
      * incluídas) e só quando há proposta pendente — o caso comum não paga a
      * leitura extra.
      */
+    /**
+     * Roda um efeito SECUNDÁRIO do encaixe (datas FIFA, prazo das propostas)
+     * sem deixar a falha dele derrubar o resto da finalização: o próximo
+     * encaixe já foi agendado, e o `RoundFinished` ainda precisa sair. A falha
+     * vira log + contador ([GoalfatherMetrics.ROUND_SECONDARY_FAILURES]); o
+     * efeito anda no encaixe seguinte (os dois são idempotentes por estado).
+     *
+     * Kotlin:
+     * - `inline` + lambda comum (não `suspend`): o corpo da lambda é copiado
+     *   para dentro desta função `suspend`, então pode chamar funções
+     *   `suspend` sem a lambda precisar ser `suspend () -> Unit`.
+     * - `CancellationException` é relançada ANTES do `catch (Exception)`: ela
+     *   é o mecanismo de cancelamento das coroutines, não um erro. Engoli-la
+     *   (como um `runCatching` faria) deixaria uma coroutine cancelada seguir
+     *   rodando — por isso o `try` explícito em vez de `runCatching`.
+     */
+    private suspend inline fun secondaryEffect(effect: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log.warn("Efeito secundário '{}' do encaixe falhou; segue no próximo encaixe", effect, e)
+            meterRegistry.counter(GoalfatherMetrics.ROUND_SECONDARY_FAILURES, GoalfatherMetrics.TAG_EFFECT, effect).increment()
+        }
+    }
+
     private suspend fun advanceOfferDeadlines() {
         val pending = offerRepo.findPending()
         if (pending.isEmpty()) return
@@ -924,16 +964,13 @@ class PlayRoundService(
         clubs: Collection<Club>,
         cupPrizes: Map<ClubId, Money>,
         competitionOf: Map<ClubId, Competition>,
+        payroll: Set<ClubId>,
     ): List<RoundFinance> {
         // Sede neutra (final única da continental, issue #132): ninguém joga em
         // casa, então ninguém fatura bilheteria.
         val homeClubIds = round.matches.filter { it.neutralVenue == null }.map { it.homeClubId.value }.toSet()
-        // Folha segue as rodadas de LIGA; jogo de copa não cobra (issue #61).
-        // Por clube desde o calendário semanal (issue #125): paga quem joga,
-        // neste encaixe, uma rodada de liga que é "mês" de salário.
-        val payroll: Set<ClubId> = round.matches
-            .filter { isSalaryDate(it.stage) }
-            .flatMapTo(HashSet()) { listOf(it.homeClubId, it.awayClubId) }
+        // Folha: [payroll] vem de `salaryPayers` (regra pura do domínio) —
+        // liga em "mês" de salário, ou a continental para quem não tem liga.
         return clubs.map { club ->
             val homeGate =
                 if (club.id.value in homeClubIds) {
