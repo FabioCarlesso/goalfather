@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
+import com.carlesso.goalfather.application.port.`in`.NationalTeamClock
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
@@ -190,6 +191,9 @@ class PlayRoundService(
     // reset do profile e2e espera as finalizações em curso antes de apagar a
     // liga. Default próprio para os testes que montam o service à mão.
     private val finalizationGate: RoundFinalizationGate = RoundFinalizationGate(),
+    // Datas FIFA (issue #134): convocações e jogos de seleção a cada virada
+    // de encaixe. Default sem seleções para os testes montados à mão.
+    private val nationalTeams: NationalTeamClock = NationalTeamClock.NONE,
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
@@ -473,7 +477,15 @@ class PlayRoundService(
             worldPlan(catalog, world, nextSeasons, cupRepo.currentCups(catalog, nextSeasons)) to world
         }
         checkNotInPast(nextPlan, ending, round.matchday)
-        nextPlan.nextAfter(round.matchday)?.let { leagueRepo.saveRound(nextPlan.roundAt(it, nextClubs)) }
+        val nextMatchday = nextPlan.nextAfter(round.matchday)
+        nextMatchday?.let { leagueRepo.saveRound(nextPlan.roundAt(it, nextClubs)) }
+
+        // Datas FIFA (issue #134): o relógio andou de `round.matchday` para o
+        // próximo encaixe — a janela em que ele entra convoca (os convocados
+        // ficam fora dos jogos do clube), a que ele deixa para trás é jogada e
+        // devolve os convocados. Depois do agendamento, pelo mesmo motivo das
+        // propostas abaixo: uma falha aqui não pode travar o calendário.
+        nextMatchday?.let { nationalTeams.advance(round.matchday, it) }
 
         // Prazo das propostas entre técnicos (issue #63): uma rodada a menos
         // para cada pendente, e quem chega a zero expira. Aqui, depois do claim
@@ -778,7 +790,10 @@ class PlayRoundService(
                         goals = 0,
                         yellowCards = 0,
                         redCards = 0,
-                        availability = Availability.Available,
+                        // Convocado continua com a seleção (issue #134): a virada
+                        // não o devolve antes de a data FIFA acabar.
+                        availability = it.availability.takeIf { a -> a is Availability.OnInternationalDuty }
+                            ?: Availability.Available,
                         stamina = 100,
                     ).withCleanRecord() // sem amarelo pendente nem gancho (issue #130)
                 }

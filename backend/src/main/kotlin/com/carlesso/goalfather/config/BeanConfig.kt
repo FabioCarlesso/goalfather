@@ -6,6 +6,7 @@ import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.LoginUseCase
+import com.carlesso.goalfather.application.port.`in`.NationalTeamClock
 import com.carlesso.goalfather.application.port.`in`.PlayRoundUseCase
 import com.carlesso.goalfather.application.port.`in`.RegisterUserUseCase
 import com.carlesso.goalfather.application.port.`in`.RoundReadinessUseCase
@@ -145,6 +146,8 @@ class BeanConfig {
         meterRegistry: MeterRegistry,
         // Portão entre a finalização de encaixes e o reset do profile e2e.
         finalizationGate: RoundFinalizationGate,
+        // Datas FIFA (issue #134): convocações e jogos de seleção.
+        nationalTeams: NationalTeamClock,
     ): PlayRoundUseCase = PlayRoundService(
         clubRepo,
         leagueRepo,
@@ -159,6 +162,7 @@ class BeanConfig {
         simulator,
         meterRegistry,
         finalizationGate = finalizationGate,
+        nationalTeams = nationalTeams,
     )
 
     /**

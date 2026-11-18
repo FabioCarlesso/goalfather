@@ -79,6 +79,9 @@ data class Player(
      */
     val injured: Boolean get() = availability is Availability.Injured
 
+    /** Servindo a seleção numa data FIFA (issue #134): fora dos jogos do clube. */
+    val onInternationalDuty: Boolean get() = availability is Availability.OnInternationalDuty
+
     /** A suspensão em vigor em [competition], se houver — ausência no tipo. */
     fun suspensionIn(competition: CompetitionId): Suspension? =
         suspensions.firstOrNull { it.competitionId == competition }
@@ -90,7 +93,9 @@ data class Player(
      * em jogo (partida avulsa, telas): só a lesão conta.
      */
     fun canPlayIn(competition: CompetitionId?): Boolean =
-        !injured && (competition == null || !isSuspendedIn(competition))
+        // Lesão OU convocação para a seleção (issue #134): as duas tiram o
+        // jogador de qualquer jogo do clube.
+        availability == Availability.Available && (competition == null || !isSuspendedIn(competition))
 
     init {
         require(overall in OVERALL_RANGE) { "overall fora de $OVERALL_RANGE: $overall" }
