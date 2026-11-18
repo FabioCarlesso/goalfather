@@ -270,7 +270,7 @@ Ressalva: com as capacidades reais (até 99 mil lugares), a bilheteria dos clube
 
 ### Mercado inicial
 
-O pack só tem jogadores com clube. Para a tela de mercado não nascer vazia, o seed gera **16 jogadores livres**: 2 goleiros, 5 zagueiros, 5 meias e 4 atacantes. Os nomes vêm do gerador da #88 (brasileiros) e não repetem nomes do pack. A nacionalidade é o país da primeira liga do catálogo (o Brasil no MVP). Os atributos saem do `AttributeGenerator` com a força dessa liga e reputação mediana. A idade vai de 20 a 32 anos, o preço é o de tabela (`marketListingPrice`, 12× o salário) e cada vaga tem seed fixa.
+O pack só tem jogadores com clube. Para a tela de mercado não nascer vazia, o seed gera **16 jogadores livres**: 2 goleiros, 5 zagueiros, 5 meias e 4 atacantes. Os nomes vêm do gerador da #88 (brasileiros) e não repetem nomes do pack. A nacionalidade é o país da primeira liga do catálogo (o Brasil no MVP). Os atributos saem do `AttributeGenerator` com a força dessa liga e reputação mediana. A idade vai de 20 a 32 anos, o preço é o de tabela (`marketListingPrice(marketReferenceValue(...))`: 125% do valor de mercado de referência, issue #135) e cada vaga tem seed fixa.
 
 ### Copa do Brasil: o corte do MVP
 

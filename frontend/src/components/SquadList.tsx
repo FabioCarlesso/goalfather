@@ -3,6 +3,7 @@ import { injuryRoundsOut, staminaLevel } from '../domain/players'
 import type { Availability, Player } from '../domain/types'
 import { CountryFlag } from './CountryFlag'
 import { formatGameDate } from '../domain/calendar'
+import { formatMoney } from '../domain/formatters'
 
 interface Props {
   squad: Player[]
@@ -37,6 +38,10 @@ export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Prop
             <div className="flex items-center gap-3">
               <StaminaBar stamina={p.stamina} />
               <PlayerStats player={p} />
+              {/* Valor de mercado no clube (issue #135): vem pronto do backend. */}
+              <span className="font-mono text-xs text-slate-400" title="Valor de mercado" aria-label={`Valor de mercado ${formatMoney(p.marketValue)}`}>
+                {formatMoney(p.marketValue)}
+              </span>
               {p.star && <span className="text-yellow-400" title="Estrela">★</span>}
               <span className="text-slate-300 font-mono w-8 text-right">{p.overall}</span>
               <button

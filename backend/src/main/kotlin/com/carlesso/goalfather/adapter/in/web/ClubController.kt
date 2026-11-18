@@ -17,6 +17,8 @@ import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
+import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.application.service.today
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Money
@@ -55,6 +57,8 @@ class ClubController(
     // estrangeiros da escalação efetiva e os nomes das competições.
     private val catalog: CompetitionCatalogRepository,
     private val onboarding: WorldOnboardingUseCase,
+    // Encaixe corrente (issue #135): o "hoje" do valor de mercado do elenco.
+    private val leagueRepo: LeagueRepository,
     // `ClubDto` carrega o `availability` (sealed) de cada jogador: as respostas
     // de sucesso saem pelo kotlinx via `okJson` para manter o `type` do
     // contrato — `ResponseEntity<Any>` sozinho cairia no Jackson.
@@ -85,7 +89,7 @@ class ClubController(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
         } else {
-            json.okJson(club.toDto(catalog.findAll()))
+            json.okJson(club.toDto(catalog.findAll(), leagueRepo.today()))
         }
     }
 
@@ -193,7 +197,7 @@ class ClubController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
         when (val result = treatSquad.execute(ClubId(id), userId)) {
-            is MedicalResult.Success -> json.okJson(result.club.toDto(catalog.findAll()))
+            is MedicalResult.Success -> json.okJson(result.club.toDto(catalog.findAll(), leagueRepo.today()))
             is MedicalResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
@@ -224,7 +228,7 @@ class ClubController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
         when (val result = setTrainingFocus.execute(ClubId(id), userId, req.focus)) {
-            is TrainingFocusResult.Success -> json.okJson(result.club.toDto(catalog.findAll()))
+            is TrainingFocusResult.Success -> json.okJson(result.club.toDto(catalog.findAll(), leagueRepo.today()))
             is TrainingFocusResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
@@ -246,7 +250,7 @@ class ClubController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
         when (val result = setTicketPrice.execute(ClubId(id), userId, Money(req.ticketPriceCents))) {
-            is TicketPriceResult.Success -> json.okJson(result.club.toDto(catalog.findAll()))
+            is TicketPriceResult.Success -> json.okJson(result.club.toDto(catalog.findAll(), leagueRepo.today()))
             is TicketPriceResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
@@ -273,7 +277,7 @@ class ClubController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> =
         when (val result = expandStadium.execute(ClubId(id), userId, req.additionalSeats)) {
-            is ExpandStadiumResult.Success -> json.okJson(result.club.toDto(catalog.findAll()))
+            is ExpandStadiumResult.Success -> json.okJson(result.club.toDto(catalog.findAll(), leagueRepo.today()))
             is ExpandStadiumResult.ClubNotFound -> ResponseEntity.status(404).body(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )

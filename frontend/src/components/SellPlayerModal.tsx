@@ -1,4 +1,5 @@
 import { POSITION_ABBR, POSITION_LABEL } from '../domain/formations'
+import { formatMoney } from '../domain/formatters'
 import type { Player } from '../domain/types'
 import { Button } from './ui/Button'
 import { Modal } from './ui/Modal'
@@ -48,6 +49,11 @@ export function SellPlayerModal({ player, onConfirm, onCancel }: Props) {
               <dd className="font-mono text-slate-100">{player.overall}</dd>
             </div>
           </dl>
+          {/* O valor de mercado vem do backend (issue #135). O quanto entra no caixa
+              continua fora do contrato: é regra do `TransferRules`, não da tela. */}
+          <p className="text-slate-300">
+            Valor de mercado: <span className="font-mono text-slate-100">{formatMoney(player.marketValue)}</span>
+          </p>
           <p className="text-slate-400">A venda é imediata e não pode ser desfeita.</p>
         </div>
       )}

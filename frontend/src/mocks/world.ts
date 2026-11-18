@@ -5,7 +5,7 @@
 // o backend assumir, esta pasta inteira (mocks/) sai.
 
 import type { Country, Player, Position } from '../domain/types'
-import { MulberryRng } from './engine'
+import { MulberryRng, marketValueOf } from './engine'
 
 /** Bandeira da Inglaterra: bandeira preta + "tag characters" de `gbeng` (como o `flagEmoji` do backend). */
 const ENGLAND_FLAG = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}'
@@ -25,6 +25,8 @@ export interface MockLeague {
   tier: number
   /** A temporada atravessa a virada do ano (Europa: `2026/27`) ou cabe nele (Brasil: `2026`). */
   crossesYear: boolean
+  /** Força da liga, a mesma do pack (issue #135): o multiplicador de liga do valor de mercado. */
+  strength: number
 }
 
 /**
@@ -33,9 +35,9 @@ export interface MockLeague {
  * `matchId` (ver `generateRound` em `./seed`), por isso a ordem é estável.
  */
 export const WORLD_LEAGUES: readonly MockLeague[] = [
-  { id: 'bra-serie-a', name: 'Campeonato Brasileiro Série A', country: WORLD_COUNTRIES.BRA, tier: 1, crossesYear: false },
-  { id: 'bra-serie-b', name: 'Campeonato Brasileiro Série B', country: WORLD_COUNTRIES.BRA, tier: 2, crossesYear: false },
-  { id: 'eng-premier-league', name: 'Premier League', country: WORLD_COUNTRIES.ENG, tier: 1, crossesYear: true },
+  { id: 'bra-serie-a', name: 'Campeonato Brasileiro Série A', country: WORLD_COUNTRIES.BRA, tier: 1, crossesYear: false, strength: 70 },
+  { id: 'bra-serie-b', name: 'Campeonato Brasileiro Série B', country: WORLD_COUNTRIES.BRA, tier: 2, crossesYear: false, strength: 62 },
+  { id: 'eng-premier-league', name: 'Premier League', country: WORLD_COUNTRIES.ENG, tier: 1, crossesYear: true, strength: 78 },
 ]
 
 export function leagueById(id: string): MockLeague {
@@ -174,6 +176,8 @@ export function syntheticSquad(club: MockWorldClub, country: Country, taken: Set
       suspensions: [],
       star: overall >= 82,
       nationality: country,
+      // Valor de referência (issue #135); no elenco, o handler o recalcula com a liga do clube.
+      marketValue: marketValueOf({ overall, age: ageForSlot(slot) }),
     }
   })
 }

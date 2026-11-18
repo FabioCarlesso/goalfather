@@ -118,6 +118,8 @@ export function MarketPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-slate-100 font-mono">{formatMoney(entry.price)}</div>
+                    {/* Valor de mercado (issue #135): calculado pelo backend, só exibido. */}
+                    <div className="text-xs text-text-muted">valor {formatMoney(entry.player.marketValue)}</div>
                     <div className="text-xs text-text-muted">salário {formatMoney(entry.player.salary)}</div>
                     {/* Comparação de exibição entre dois números do contrato, NÃO regra de
                         transferência: quem decide é o backend (`InsufficientFunds`), por isso

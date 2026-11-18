@@ -58,6 +58,7 @@ import {
   MIN_STADIUM_EXPANSION_SEATS,
   salePayoutOf,
   marketListingPriceOf,
+  marketValueOf,
   type SquadMember,
   type TeamTactics,
 } from './engine'
@@ -153,7 +154,12 @@ const tacticsOf = (clubId: number): TeamTactics => {
 const toClubResponse = (club: StoredClub): Club => ({
   ...club,
   // `foreign` relativo ao clube (issue #130), como `Player.toDto(club)`.
-  squad: club.squad.map((p) => ({ ...p, foreign: isForeignAt(p, club.country.code) })),
+  // `marketValue` com a força da liga do clube (issue #135), como `squadMarketValue`.
+  squad: club.squad.map((p) => ({
+    ...p,
+    foreign: isForeignAt(p, club.country.code),
+    marketValue: marketValueOf(p, leagueOf(club.id).strength),
+  })),
   foreignPlayerLimit: NATIONAL_FOREIGN_PLAYER_LIMIT,
   // Efetiva = a do próximo jogo de LIGA, como no backend.
   ...effectiveLineupOf(club.squad, club.lineup, lineupRulesOf(club, leagueOf(club.id).id)),
@@ -579,7 +585,8 @@ export const handlers = [
     if (position) entries = entries.filter((e) => e.player.position === position)
     if (maxPrice) entries = entries.filter((e) => e.price <= Number(maxPrice))
 
-    return HttpResponse.json(entries)
+    // Fora de elenco, o valor de referência do mercado (issue #135).
+    return HttpResponse.json(entries.map((e) => ({ ...e, player: { ...e.player, marketValue: marketValueOf(e.player) } })))
   }),
 
   // ─── buyPlayer ────────────────────────────────────────────────────────
@@ -637,11 +644,12 @@ export const handlers = [
 
     const updatedClub: StoredClub = {
       ...club,
-      cash: club.cash + salePayoutOf(player),
+      // Venda: 60% do valor NO CLUBE; anúncio: 125% do de referência (issue #135).
+      cash: club.cash + salePayoutOf(marketValueOf(player, leagueOf(club.id).strength)),
       squad: club.squad.filter((p) => p.id !== body.playerId),
     }
     state.clubs[body.clubId] = updatedClub
-    state.market = [...state.market, { player, price: marketListingPriceOf(player) }]
+    state.market = [...state.market, { player, price: marketListingPriceOf(marketValueOf(player)) }]
 
     return HttpResponse.json(
       { type: 'Success', club: toClubResponse(updatedClub), player } satisfies TransferResult,

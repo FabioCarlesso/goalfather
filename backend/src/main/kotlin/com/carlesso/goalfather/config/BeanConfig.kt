@@ -95,7 +95,9 @@ class BeanConfig {
     fun sellPlayerUseCase(
         clubRepo: ClubRepository,
         marketRepo: MarketRepository,
-    ): SellPlayerUseCase = SellPlayerService(clubRepo, marketRepo)
+        catalogRepo: CompetitionCatalogRepository,
+        leagueRepo: LeagueRepository,
+    ): SellPlayerUseCase = SellPlayerService(clubRepo, marketRepo, catalogRepo, leagueRepo)
 
     @Bean
     fun saveLineupUseCase(

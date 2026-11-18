@@ -9,7 +9,9 @@ import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.SellPlayerUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
+import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
+import com.carlesso.goalfather.application.service.today
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
@@ -35,6 +37,8 @@ class MarketController(
     private val meterRegistry: MeterRegistry,
     // Catálogo do save (issue #131): o clube da compra sai com a liga dele.
     private val catalog: CompetitionCatalogRepository,
+    // Encaixe corrente (issue #135): o "hoje" do valor de mercado do elenco.
+    private val leagueRepo: LeagueRepository,
     // `TransferResultDto` é sealed: sai pelo kotlinx (`okJson`) para levar o
     // `type` do contrato — com `ResponseEntity<Any>` o Spring usaria o Jackson.
     private val json: Json,
@@ -57,7 +61,7 @@ class MarketController(
         // o `PlayerNotAvailable` — na prática, a perda do lock otimista do mercado
         // (#21) quando dois donos disputam o mesmo jogador.
         countTransfer(result)
-        return json.okJson(result.toDto(catalog.findAll()))
+        return json.okJson(result.toDto(catalog.findAll(), leagueRepo.today()))
     }
 
     private fun countTransfer(result: TransferResult) {
@@ -80,7 +84,7 @@ class MarketController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> {
         ownershipError(req.clubId, userId)?.let { return it }
-        return json.okJson(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)).toDto())
+        return json.okJson(sellUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId)).toDto(catalog.findAll(), leagueRepo.today()))
     }
 
     /** 403 se o usuário não é dono do clube alvo da operação (issue #18). */
