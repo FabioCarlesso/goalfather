@@ -62,6 +62,7 @@ import {
 } from './engine'
 import { decidesOnPenalties, recordCupRound } from './cup'
 import { matchdaySerial } from './calendar'
+import { mockClubCallUps, mockNationalTeams } from './nationalTeams'
 import { boardStatusOf, forNewManager } from './board'
 import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
 import type {
@@ -390,6 +391,21 @@ export const handlers = [
     return club
       ? HttpResponse.json(toClubResponse(club))
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+  }),
+
+  // --- #134 Seleções ---
+  // ─── getClubCallUps / getNationalTeams (datas FIFA, issue #134) ───────
+  http.get('/api/clubs/:id/call-ups', async ({ params }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const club = loadClub(Number(params.id))
+    return club
+      ? HttpResponse.json(mockClubCallUps(club.id, club.name, club.squad))
+      : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+  }),
+
+  http.get('/api/national-teams', async () => {
+    await delay(SIMULATED_LATENCY_MS)
+    return HttpResponse.json(mockNationalTeams())
   }),
 
   // ─── getBoardStatus (diretoria, issue #62) ────────────────────────────

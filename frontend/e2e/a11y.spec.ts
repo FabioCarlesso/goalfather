@@ -40,6 +40,7 @@ const ROUTES = [
   { name: 'Tabela', path: '/standings' },
   { name: 'Copa', path: '/cup' },
   { name: 'Histórico', path: '/history' },
+  { name: 'Seleções', path: '/national-teams' }, // #134
 ] as const
 
 test.describe('Acessibilidade (axe)', () => {

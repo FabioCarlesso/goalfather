@@ -1436,6 +1436,72 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   ainda precisa clicar "jogar" nos encaixes só de outro país — andar o relógio
   sozinho é trabalho futuro.
 
+- [x] **Seleções nas datas FIFA: convocações, Eliminatórias e ranking** — issue #134
+
+  **Convocado é um estado do jogador.** `Availability` ganhou a variante
+  `OnInternationalDuty(country, until)`. Uma variante do `sealed`, e não um
+  booleano ao lado da lesão, porque "convocado e lesionado" não existe, e o
+  `when` exaustivo obrigou cada regra que olha a disponibilidade a decidir o que
+  fazer com o convocado: a lesão não anda com os jogos do clube, o treino não
+  roda e a virada de temporada não o devolve antes da hora. `Player.canPlayIn`
+  passou a exigir `Available`, então `Club.startingLineup` (a escalação de
+  engine, bilheteria e desgaste) tira o convocado de **todos** os jogos do
+  clube. Escalação salva com convocado não é recusada (como a do suspenso): o
+  apito inicial o troca pelo reserva da mesma posição. No banco são duas
+  colunas novas em `players` (V22, `duty_country` e `duty_until`).
+
+  **Regras puras** (`domain/rules/NationalTeamRules.kt`), com seed por janela
+  e país (convocação) ou por janela e jogo (amistosos e placares), para que
+  todo cliente veja a mesma lista:
+
+  | Regra | O que faz |
+  |---|---|
+  | `callUp` / `worldCallUps` | 23 a 26 jogadores aptos por overall, com cota mínima de 3 GK, 7 ZG, 7 MC e 4 AT. O `Random` sorteia o tamanho e desempata overalls iguais (embaralha antes de uma ordenação estável). Tem seleção quem tem 11 aptos no mundo, mais as 10 da CONMEBOL. |
+  | `qualifierSchedule` / `qualifierRoundsOf` | Eliminatórias da CONMEBOL: Berger em turno e returno (o gerador das ligas), 18 rodadas. Ciclo de dois anos civis a partir de 2026: a rodada `k` é o k-ésimo jogo de data FIFA do ciclo (10 por ano: 2 + 2 + 4 + 2), e os 2 últimos jogos (novembro do 2º ano) são amistosos. |
+  | `windowFixtures` / `playWindow` | Em cada jogo da janela: a rodada das Eliminatórias e amistosos sorteados entre as demais seleções. Simulação rápida (#129) com o melhor 4-4-2 da lista. |
+  | `returnFromDuty` | A volta reusa `FitnessRules`: cada jogo começado pela seleção custa o desgaste de um titular, e a lesão sofrida lá (sorteada pela engine) vira `Injured`. |
+  | `nationalTable` / `nationalRanking` | Classificação e ranking (3/1/0, Eliminatórias com peso 2) recalculados dos placares a cada leitura. Nada de tabela persistida que possa divergir. |
+
+  **Relógio** (`application/service/NationalTeamService.kt`, que implementa
+  `NationalTeamClock` e `NationalTeamUseCase`). O `PlayRoundService` chama
+  `advance(encaixe encerrado, próximo encaixe)` num ponto só, depois de agendar
+  o próximo encaixe, dentro do claim (issue #46). A janela que o relógio toca é
+  convocada: a lista vai para `national_windows` (V22, JSON do `sealed
+  NationalWindow`, `Called` → `Played`) e os convocados saem dos clubes. A
+  janela cuja última semana ficou para trás é jogada, e os convocados voltam.
+  Um salto que atravesse a janela inteira faz as duas coisas na mesma virada.
+  O estado gravado é a segunda trava: janela convocada não convoca de novo.
+
+  **Clube do Brasileirão × clube europeu:** nada novo no calendário. O
+  agendador (#125) já não marca jogo das ligas com `pausesOnFifaWindows` nas
+  semanas que a janela toca, e o Brasileirão (sem pausa) joga nelas sem os
+  convocados. O `NationalTeamRulesTest` confere as duas coisas sobre o mundo
+  do MVP.
+
+  **Datas FIFA** (`FifaCalendar.kt`): continuam interinas (o pack só traz
+  março de 2026), mas agora começam na **segunda-feira** da semana do dia de
+  2026 e têm a duração do calendário (9 dias; 16 em setembro/outubro). Em 2026
+  nada muda; em 2027 as datas batem com o calendário publicado (22/03, 20/09,
+  08/11), e junho de 2027 em diante fica a até 6 dias do real.
+  `FifaWindow.matchSlots` deriva da duração: 4 jogos na janela longa, 2 nas
+  demais.
+
+  **API:** `GET /api/clubs/{id}/call-ups` (antes da janela, a prévia calculada
+  com os elencos de agora; durante, a lista gravada) e `GET
+  /api/national-teams` (datas FIFA do ano corrente e do seguinte com a
+  situação de cada uma, últimos resultados, Eliminatórias e ranking). No
+  frontend, o aviso de convocação (`CallUpNotice`) aparece na visão geral do
+  clube e a página `/national-teams` mostra o resto.
+
+  **Cortes:** seleção sem 11 aptos não convoca (o jogador fica no clube); as da
+  CONMEBOL sem jogadores suficientes completam o time com reforços estimados
+  (ver `docs/WORLD_DATA.md`). Jogadores livres do mercado não são convocados.
+  Entre os jogos da mesma janela não há desgaste (a fadiga é cobrada uma vez,
+  na volta). O ciclo das Eliminatórias não está alinhado à Copa do Mundo, e os
+  torneios de seleção ficam para a #144. O mock do frontend não simula datas
+  FIFA: devolve as datas, a tabela vazia e uma prévia fixa (os 3 melhores do
+  elenco).
+
 ---
 
 ## 9. Stack consolidada

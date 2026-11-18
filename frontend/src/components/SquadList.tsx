@@ -2,6 +2,7 @@ import { POSITION_ABBR, POSITION_LABEL } from '../domain/formations'
 import { injuryRoundsOut, staminaLevel } from '../domain/players'
 import type { Availability, Player } from '../domain/types'
 import { CountryFlag } from './CountryFlag'
+import { formatGameDate } from '../domain/calendar'
 
 interface Props {
   squad: Player[]
@@ -31,6 +32,7 @@ export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Prop
                 {' · '}{p.age}a
               </span>
               <InjuryBadge availability={p.availability} />
+              <InternationalDutyBadge availability={p.availability} />
             </div>
             <div className="flex items-center gap-3">
               <StaminaBar stamina={p.stamina} />
@@ -64,6 +66,19 @@ function InjuryBadge({ availability }: { availability: Availability }) {
       title={`Lesionado — indisponível por mais ${roundsOut} jogo(s) do clube`}
     >
       🚑 LESIONADO · {roundsOut} jogo{roundsOut === 1 ? '' : 's'}
+    </span>
+  )
+}
+
+/** Convocado pela seleção (issue #134): fora dos jogos do clube até o fim da data FIFA. */
+function InternationalDutyBadge({ availability }: { availability: Availability }) {
+  if (availability.type !== 'OnInternationalDuty') return null
+  return (
+    <span
+      className="ml-2 rounded bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300"
+      title={`Com a seleção (${availability.country}) até ${formatGameDate(availability.until)}`}
+    >
+      SELEÇÃO · até {formatGameDate(availability.until)}
     </span>
   )
 }

@@ -14,8 +14,12 @@ export function injuryRoundsOut(a: Availability): number | null {
   switch (a.type) {
     case 'Injured':   return a.roundsOut
     case 'Available': return null
+    case 'OnInternationalDuty': return null
   }
 }
+
+/** Convocado pela seleção numa data FIFA (issue #134): fora dos jogos do clube até `until`. */
+export const isOnInternationalDuty = (p: Player): boolean => p.availability.type === 'OnInternationalDuty'
 
 /**
  * Faixa de forma física para a UI pintar. O limiar de 70 espelha o

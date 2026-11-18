@@ -327,3 +327,17 @@ O boot loga o tempo de cada etapa do seed: carga do pack, seed puro e abertura d
 O seed é ~7% do boot: o custo é o do Spring, não o do mundo. O pack do E2E (16 clubes, 368 jogadores) sobe em ~6,1 s, com a carga em 61 ms. O plano do calendário do mundo inteiro, recalculado a cada encaixe, sai em ~5 ms (medido pela frente de calendário).
 
 **Escalação automática.** O seed ordena cada elenco para que os 11 primeiros sejam o melhor 4-4-2 (`domain/rules/SquadOrder.kt`, `inStartingOrder`) e só depois numera os ids dos jogadores. A escalação automática (`Club.startingLineup`, a de todo clube da IA) usa os 11 primeiros, e o pack lista os goleiros primeiro; sem a ordem, um clube real entraria em campo com dois ou três goleiros. Os ids saem depois da ordem porque o elenco é relido do banco pelo id.
+
+## Seleções (issue #134)
+
+O pack não traz seleções: elas saem dos **jogadores do save**, pela nacionalidade (`Player.nationality`). Os 97 países do pack ficam no save, mas só os 136 clubes das ligas, então a força de cada seleção depende de quantos jogadores daquela nacionalidade as ligas do MVP têm. No pack completo: Brasil 878, Espanha 374, França 345, Itália 294, Alemanha 290, Inglaterra 264, Argentina 40, Uruguai 18, Colômbia 17, Equador 7, Paraguai 6, Venezuela 5, Chile 2, Peru 1, Bolívia 0.
+
+**Corte:**
+
+- Tem seleção o país com pelo menos **11 jogadores aptos** no mundo (`MIN_PLAYERS_FOR_NATIONAL_TEAM`). No pack completo são 23 países. Abaixo disso ninguém é convocado, e o jogador continua no clube.
+- As **10 da CONMEBOL** jogam sempre, porque as Eliminatórias precisam delas. Seleção com menos de 23 convocados completa o time com **reforços estimados**: jogadores gerados na hora, com overall 62 (`ESTIMATED_PLAYER_OVERALL`), id negativo e nunca persistidos. Eles entram na simulação e somem depois; nenhuma lesão ou estatística sai deles. A Bolívia do pack joga só com eles.
+- Jogadores livres (mercado) não são convocados.
+
+Quando a #132 trouxer os clubes estrangeiros da Libertadores para o save, Argentina, Uruguai e as demais ganham jogadores de verdade sem mudar nenhuma regra.
+
+**Datas FIFA:** `calendar/2026.json` ainda só tem a janela de março. O jogo usa as interinas de `FifaCalendar.kt` (o padrão FIFA 2026–2030, alinhado à segunda-feira). Quando o pack trouxer o calendário completo, basta o serviço ler as janelas dele em vez de `interimFifaWindows` (`NationalTeamService.windowsOf`).
