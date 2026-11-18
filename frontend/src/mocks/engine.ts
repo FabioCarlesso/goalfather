@@ -8,6 +8,7 @@
 
 import type {
   Availability,
+  Contract,
   Formation,
   Lineup,
   MatchEvent,
@@ -707,6 +708,8 @@ export function ageSquadOneSeason(
   rng: MulberryRng,
   clubId = 1,
   youthId: (slot: number) => number = (slot) => 900_000 + slot,
+  // Contrato de quem sobe da base (issue #136); sem ele, o garoto sobe sem.
+  youthContract?: Contract,
 ): { squad: Player[]; retirements: Retirement[] } {
   const next: Player[] = []
   const retirements: Retirement[] = []
@@ -717,8 +720,12 @@ export function ageSquadOneSeason(
       YOUTH_MIN_OVERALL,
       Math.min(99, retired.overall - drawInt(rng, YOUTH_OVERALL_GAP_MIN, YOUTH_OVERALL_GAP_MAX)),
     )
+    // O contrato do aposentado não passa para o garoto: ele sobe com o dele.
+    const base: Player = { ...retired }
+    delete base.contract
     return {
-      ...retired,
+      ...base,
+      ...(youthContract ? { contract: youthContract } : {}),
       id: youthId(slot),
       name: `Cria da base ${slot}`,
       overall,
@@ -957,3 +964,103 @@ export const isTicketPriceAllowed = (priceCents: number): boolean =>
   Number.isInteger(priceCents) &&
   priceCents >= MIN_TICKET_PRICE_CENTS &&
   priceCents <= MAX_TICKET_PRICE_CENTS
+
+// ─── Contratos — espelham domain/rules/ContractRules.kt (issue #136) ───
+// O mock só tem a régua do ano civil (31/12) para o Brasil e a de agosto–maio
+// (31/05 do ano seguinte) para os clubes europeus; o backend tira a janela da
+// confederação do país do clube. Datas são strings ISO (`YYYY-MM-DD`), que
+// comparam certo como texto.
+
+export const CONTRACT_SEASONS_MAX = 5
+export const MAX_MINOR_CONTRACT_SEASONS = 3
+export const ADULT_AGE = 18
+/** Duração do contrato da compra enquanto não há negociação de termos (#138). */
+export const DEFAULT_SIGNING_SEASONS = 3
+/** Contrato de quem sobe da base: o máximo permitido ao menor. */
+export const YOUTH_CONTRACT_SEASONS = MAX_MINOR_CONTRACT_SEASONS
+
+const UEFA_CODES = new Set(['ENG', 'ESP', 'ITA', 'GER', 'FRA', 'POR'])
+
+/** Último dia da temporada [season] da liga de [countryCode]. */
+export const seasonEndOf = (season: number, countryCode: string): string =>
+  UEFA_CODES.has(countryCode) ? `${season + 1}-05-31` : `${season}-12-31`
+
+/** Primeiro dia da temporada [season] da liga de [countryCode]. */
+export const seasonStartOf = (season: number, countryCode: string): string =>
+  UEFA_CODES.has(countryCode) ? `${season}-08-01` : `${season}-01-01`
+
+/** Temporadas permitidas para [age] anos: 1–5, ou 1–3 para menor de 18. */
+export const maxContractSeasons = (age: number): number =>
+  age < ADULT_AGE ? MAX_MINOR_CONTRACT_SEASONS : CONTRACT_SEASONS_MAX
+
+/** Duração típica pela idade (jovem assina longo, veterano curto), dentro da regra. */
+export function typicalContractSeasons(age: number, rng: MulberryRng): number {
+  const [min, max] =
+    age < ADULT_AGE ? [2, 3] : age <= 23 ? [2, 5] : age <= 29 ? [1, 4] : age <= 32 ? [1, 3] : [1, 2]
+  return Math.min(drawInt(rng, min, max), maxContractSeasons(age))
+}
+
+/** Contrato que termina no fim da temporada `season + seasons - 1` da liga do clube. */
+export const contractFor = (
+  start: string,
+  season: number,
+  seasons: number,
+  countryCode: string,
+): Contract => ({ start, end: seasonEndOf(season + seasons - 1, countryCode), finalSeason: false })
+
+/** Última temporada do contrato em [today]: passou do término menos um ano. */
+export const isInFinalSeason = (contract: Pick<Contract, 'end'>, today: string): boolean => {
+  const year = Number(contract.end.slice(0, 4))
+  return today > `${year - 1}${contract.end.slice(4)}`
+}
+
+/** O jogador sem clube: sem contrato e sem salário. */
+export const releasedPlayer = (player: Player): Player => {
+  // O "livre" do contrato é a AUSÊNCIA de `contract`, não um
+  // `contract: undefined`: copia e apaga o campo (opcional no tipo).
+  const free: Player = { ...player, salary: 0 }
+  delete free.contract
+  return free
+}
+
+/**
+ * Salário pedido pelo livre do mercado: o inverso do preço de tabela (12
+ * salários). No backend o salário sai do valor de mercado; o mock não tem a
+ * curva de valor, e este inverso mantém a escala dos preços do mercado.
+ */
+export const askingSalaryOf = (price: number): number =>
+  Math.max(500_00, Math.round(price / MARKET_LISTING_SALARY_MULTIPLIER / 10_00) * 10_00)
+
+/**
+ * Vencimentos na virada da temporada [endedSeason] de um clube: o humano perde
+ * quem venceu (sai livre); a IA renova pelo mesmo salário (provisório, #143).
+ */
+export function contractTurnover(
+  squad: Player[],
+  endedSeason: number,
+  countryCode: string,
+  human: boolean,
+  rng: MulberryRng,
+): { squad: Player[]; released: Player[] } {
+  const seasonEnd = seasonEndOf(endedSeason, countryCode)
+  const expires = (p: Player): boolean => p.contract !== undefined && p.contract.end <= seasonEnd
+  if (human) {
+    return { squad: squad.filter((p) => !expires(p)), released: squad.filter(expires).map(releasedPlayer) }
+  }
+  const start = seasonStartOf(endedSeason + 1, countryCode)
+  return {
+    squad: squad.map((p) =>
+      expires(p)
+        ? { ...p, contract: contractFor(start, endedSeason + 1, typicalContractSeasons(p.age, rng), countryCode) }
+        : p,
+    ),
+    released: [],
+  }
+}
+
+/**
+ * Contrato de quem já tem clube quando o mundo do mock nasce: assinado em
+ * 01/01/2026, duração típica da idade (seed pelo id do jogador).
+ */
+export const initialContractOf = (player: Pick<Player, 'id' | 'age'>, countryCode: string): Contract =>
+  contractFor('2026-01-01', 2026, typicalContractSeasons(player.age, new MulberryRng(player.id * 31 + 136)), countryCode)

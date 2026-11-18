@@ -1,6 +1,7 @@
 import { POSITION_ABBR, POSITION_LABEL } from '../domain/formations'
 import { injuryRoundsOut, staminaLevel } from '../domain/players'
 import type { Availability, Player } from '../domain/types'
+import { ContractInfo } from './ContractInfo'
 import { CountryFlag } from './CountryFlag'
 import { formatGameDate } from '../domain/calendar'
 
@@ -14,7 +15,7 @@ interface Props {
   sellDisabled: boolean
 }
 
-/** Elenco do próprio clube na Dashboard: forma física, lesão, estatísticas e venda. */
+/** Elenco do próprio clube na Dashboard: forma física, lesão, estatísticas, contrato (issue #136) e venda. */
 export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Props) {
   return (
     <div>
@@ -33,6 +34,9 @@ export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Prop
               </span>
               <InjuryBadge availability={p.availability} />
               <InternationalDutyBadge availability={p.availability} />
+              <div className="mt-0.5">
+                <ContractInfo player={p} />
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <StaminaBar stamina={p.stamina} />

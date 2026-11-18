@@ -1621,6 +1621,75 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   #132 também toca). O relógio ainda não anda sozinho nos encaixes sem técnico
   humano (pendência conhecida).
 
+
+### Fase 9 — Mercado de transferências (épico #148)
+
+#### Contratos com término, vencimento e jogador livre (issue #136)
+
+- **Vínculo no tipo.** `Player.employment: Employment` substitui o `salary`
+  solto. `Employment` é `sealed`: `UnderContract(clubId, salary, start, end,
+  releaseClause?)` ou `FreeAgent` — um livre com salário não compila. O
+  `clubId` fica dentro do contrato porque o contrato é do VÍNCULO: trocar de
+  clube é trocar de contrato. `Player.salary` continua existindo como
+  propriedade DERIVADA (`contract?.salary ?: ZERO`), e é ela que a folha
+  salarial soma — a folha lê o contrato sem saber disso.
+- **Regras puras em `domain/rules/ContractRules.kt`.** Duração de 1 a 5
+  temporadas, no máximo 3 para menor de 18 (`signContract` devolve
+  `ContractResult.Rejected(InvalidDuration)`, erro como valor). A temporada
+  corrente conta como a primeira, e o término cai sempre no fim de temporada
+  da liga do clube: a janela sai da confederação do país (`contractSpanOf`,
+  a mesma regra do `span` das ligas no seed) — 31/12 no Brasil, 31/05 na
+  Europa.
+- **Salário derivado do valor.** `pricedFor` monta o contrato, pergunta a
+  `marketValue(player, contrato, força, hoje)` quanto o jogador vale e fixa o
+  salário mensal = valor / `VALUE_PER_MONTHLY_SALARY` (piso de US$ 500). O
+  divisor está calibrado na curva provisória do valor; quando a #135
+  recalibrar a curva, é ele que acompanha. O `initialSalary` por overall saiu.
+- **Mundo inicial.** Todo jogador de elenco do pack nasce com contrato
+  assinado em 01/01 do ano do mundo, com duração sorteada pela idade
+  (`typicalContractSeasons`, seed pelo id do pack: jovem longo, veterano
+  curto). Os 16 livres do mercado são `FreeAgent`; o preço de tabela deles
+  sai do contrato que pediriam (a #135 troca pelo valor). Quem sobe da base
+  já sobe com contrato de 3 temporadas.
+- **Vencimento na virada DA LIGA do clube.** `contractTurnover(club,
+  endedSeason)` roda dentro de `startNextSeasonClubs`, que só é chamada na
+  virada do país do clube (e dos clubes sem liga da confederação que hospeda
+  a continental). Por isso dezembro no Brasil não toca contrato europeu. Vence
+  quem termina até o fim daquela temporada. Clube de técnico humano: o
+  jogador vira `FreeAgent`, sai do elenco e vai ao mercado por **preço zero**
+  (livre, sem taxa). O pool de livres de verdade é a #139, e ele substitui
+  esse destino. Clube da IA: renova sozinho pelo mesmo salário, com duração
+  típica da idade. É provisório até a IA ativa (#143): sem isso os elencos da
+  IA, que não compram, encolheriam a cada virada.
+- **Mudança de clube.** Comprar do mercado assina um contrato novo
+  (`DEFAULT_SIGNING_SEASONS` = 3, salário pelo valor com
+  `NEUTRAL_LEAGUE_STRENGTH`, porque a força da liga só existe no pack). A
+  proposta aceita entre técnicos transfere o contrato (`transferredTo`): o
+  comprador assume salário e cláusula, e o término é realinhado à janela da
+  liga dele. Vender ao mercado libera o jogador (`released()`). Termos
+  negociados e renovação ficam para a #138.
+- **Persistência e save.** A migration `V23__player_contracts.sql` cria
+  `contract_start`, `contract_end` e `release_clause` em `players`, que ficam
+  nulas para o livre (mesma postura da V22 com a convocação). O backfill dá
+  contrato padrão a todo jogador com clube: 3 temporadas a partir da temporada
+  corrente do país (a maior das tabelas dele), terminando no fim de temporada
+  da liga, com o salário que ele já tinha. O livre fica com salário zero. O
+  mapper monta o `sealed` a partir de `club_id`: sem clube é livre. Ao sair do
+  elenco, a linha perde o vínculo inteiro (`PlayerEntity.releaseFromClub`).
+  **Estado serializado:** o `lineup_json` guarda jogadores inteiros. Uma
+  escalação gravada antes da issue não tem `employment` (campo sem default de
+  propósito). `decodeLineup` (`ClubMapper`) abre a árvore JSON e põe
+  `FreeAgent` em quem não tem o campo. Isso é seguro porque a escalação é só
+  uma foto: `startingLineup()` reidrata pelo id a partir do `squad`. A próxima
+  gravação já escreve o formato novo.
+- **API e UI.** `Player.contract` (schema `Contract`: `start`, `end`,
+  `releaseClause?`, `finalSeason`) fica ausente para o livre, e `salary` é o do
+  contrato. `finalSeason` é a regra `isInFinalSeason(hoje)` calculada no
+  backend com a data do jogo (`LeagueRepository.gameDate()`). A UI só destaca
+  (`ContractInfo`: salário, "até dd/mm/aaaa", badge "ÚLTIMO ANO") no elenco da
+  Dashboard e na página do clube. O mercado mostra "livre · sem contrato", e a
+  ordenação por salário saiu (todo livre tem salário zero).
+
 ---
 
 ## 9. Stack consolidada

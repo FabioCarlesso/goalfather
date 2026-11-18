@@ -58,6 +58,12 @@ import {
   MIN_STADIUM_EXPANSION_SEATS,
   salePayoutOf,
   marketListingPriceOf,
+  askingSalaryOf,
+  contractFor,
+  DEFAULT_SIGNING_SEASONS,
+  isInFinalSeason,
+  maxContractSeasons,
+  releasedPlayer,
   type SquadMember,
   type TeamTactics,
 } from './engine'
@@ -152,8 +158,15 @@ const tacticsOf = (clubId: number): TeamTactics => {
  */
 const toClubResponse = (club: StoredClub): Club => ({
   ...club,
-  // `foreign` relativo ao clube (issue #130), como `Player.toDto(club)`.
-  squad: club.squad.map((p) => ({ ...p, foreign: isForeignAt(p, club.country.code) })),
+  // `foreign` relativo ao clube (issue #130), como `Player.toDto(club)`; o
+  // "último ano de contrato" (issue #136) pela data do jogo, como o backend.
+  squad: club.squad.map((p) => ({
+    ...p,
+    foreign: isForeignAt(p, club.country.code),
+    ...(p.contract
+      ? { contract: { ...p.contract, finalSeason: isInFinalSeason(p.contract, state.currentRound.matchday.date) } }
+      : {}),
+  })),
   foreignPlayerLimit: NATIONAL_FOREIGN_PLAYER_LIMIT,
   // Efetiva = a do próximo jogo de LIGA, como no backend.
   ...effectiveLineupOf(club.squad, club.lineup, lineupRulesOf(club, leagueOf(club.id).id)),
@@ -606,15 +619,28 @@ export const handlers = [
       return HttpResponse.json(result)
     }
 
+    // Livre do mercado → contratado (issue #136): contrato padrão contando a
+    // temporada corrente; o salário é o pedido pelo livre (ver askingSalaryOf).
+    const { date } = state.currentRound.matchday
+    const signed: Player = {
+      ...entry.player,
+      salary: askingSalaryOf(entry.price),
+      contract: contractFor(
+        date,
+        state.currentRound.season,
+        Math.min(DEFAULT_SIGNING_SEASONS, maxContractSeasons(entry.player.age)),
+        club.country.code,
+      ),
+    }
     const updatedClub: StoredClub = {
       ...club,
       cash: club.cash - entry.price,
-      squad: [...club.squad, entry.player],
+      squad: [...club.squad, signed],
     }
     state.clubs[body.clubId] = updatedClub
     state.market = state.market.filter((e) => e.player.id !== body.playerId)
 
-    const result: TransferResult = { type: 'Success', club: toClubResponse(updatedClub), player: entry.player }
+    const result: TransferResult = { type: 'Success', club: toClubResponse(updatedClub), player: signed }
     return HttpResponse.json(result)
   }),
 
@@ -641,10 +667,12 @@ export const handlers = [
       squad: club.squad.filter((p) => p.id !== body.playerId),
     }
     state.clubs[body.clubId] = updatedClub
-    state.market = [...state.market, { player, price: marketListingPriceOf(player) }]
+    // Preço do jogador AINDA com contrato; anunciado, ele é livre (issue #136).
+    const listed = releasedPlayer(player)
+    state.market = [...state.market, { player: listed, price: marketListingPriceOf(player) }]
 
     return HttpResponse.json(
-      { type: 'Success', club: toClubResponse(updatedClub), player } satisfies TransferResult,
+      { type: 'Success', club: toClubResponse(updatedClub), player: listed } satisfies TransferResult,
     )
   }),
 

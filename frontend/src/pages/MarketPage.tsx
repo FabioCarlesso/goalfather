@@ -118,7 +118,9 @@ export function MarketPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-slate-100 font-mono">{formatMoney(entry.price)}</div>
-                    <div className="text-xs text-text-muted">salário {formatMoney(entry.player.salary)}</div>
+                    {/* Do mercado só sai livre (issue #136): sem contrato, sem salário —
+                        o salário nasce com o contrato assinado na compra. */}
+                    <div className="text-xs text-text-muted">livre · sem contrato</div>
                     {/* Comparação de exibição entre dois números do contrato, NÃO regra de
                         transferência: quem decide é o backend (`InsufficientFunds`), por isso
                         o botão continua habilitado. */}

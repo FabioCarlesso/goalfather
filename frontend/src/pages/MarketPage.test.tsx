@@ -95,7 +95,6 @@ describe('MarketPage (issue #111)', () => {
       ['Preço', [RAMIRES, PACHECO, APARICIO, VIDIGAL]],
       ['OVR', [RAMIRES, PACHECO, APARICIO, VIDIGAL]],
       ['Idade', [PACHECO, VIDIGAL, APARICIO, RAMIRES]],
-      ['Salário', [RAMIRES, PACHECO, APARICIO, VIDIGAL]],
     ])('ordena por %s nos dois sentidos', async (label, ascending) => {
       const user = userEvent.setup()
       renderMarket()
