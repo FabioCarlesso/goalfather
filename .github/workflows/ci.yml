@@ -118,6 +118,12 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.60.0-noble
+    # No container o `~` do actions/cache e o home que o Gradle usa não
+    # coincidem: o cache acusava "Path(s) ... do not exist" e nunca salvava.
+    # Um GRADLE_USER_HOME absoluto (em /github/home, montado do host) amarra
+    # os dois ao mesmo diretório.
+    env:
+      GRADLE_USER_HOME: /github/home/.gradle
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -133,10 +139,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('backend/**/*.gradle.kts', 'backend/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: gradle-${{ runner.os }}-
+            /github/home/.gradle/caches
+            /github/home/.gradle/wrapper
+          key: gradle-container-${{ runner.os }}-${{ hashFiles('backend/**/*.gradle.kts', 'backend/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-container-${{ runner.os }}-
       # Jar em vez de `bootRun`: compilar fica num passo próprio (erro de build
       # aparece como erro de build, não como timeout de health) e o processo
       # em background é só a JVM.
