@@ -289,7 +289,7 @@ Quando o backend Kotlin tiver `/ws/matches/{id}` (Spring WebSocket + `Flow` → 
 - `useStreamSpeed()` (`src/lib/useStreamSpeed.ts`) guarda a preferência em `localStorage` (`gf:streamSpeed`, com try/catch). É estado de UI, não de servidor — por isso não passa por TanStack Query. Rodada e partida compartilham a chave.
 - `SpeedControl` (`src/components/SpeedControl.tsx`) é apresentação pura: seletor + botão "Pular para o fim". Trocar a velocidade no meio da transmissão vale para a próxima conexão (a atual já tem o ritmo fixado no handshake).
 - **Pular para o fim** não usa mensagem cliente → servidor: abre uma conexão `INSTANT` (o stream é determinístico e reprocessa desde o início), zera os eventos acumulados e aposenta a antiga com `handOff` (`src/api/streamHandoff.ts`), que silencia os handlers dela e só a fecha quando a nova termina — no backend real, quem chega ao fim primeiro é quem recebe o `RoundFinished` completo. Na `MatchPage` (drill-down, que não grava nada) basta fechar e reconectar.
-- Os E2E de copa e de a11y jogam em `INSTANT`; `round.spec` mantém o fluxo canônico em `NORMAL` e cobre o pulo e a persistência da escolha.
+- Os E2E de copa e de a11y jogam em `INSTANT`. Os que esperam a rodada ou a partida inteira (`round.spec` no fluxo canônico, `match.spec` no feed do drill-down) usam `FAST`, ~2s de stream em vez de ~7s (issue #156). `startRound` fica em `SLOW` porque quem o chama abre o drill-down com a transmissão ainda no ar, e o teste termina antes do apito. `round.spec` também cobre o pulo e a persistência da escolha.
 
 ### Encaixe não liberado (issue #151)
 
@@ -373,6 +373,11 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
   until curl -fsS localhost:8080/actuator/health | grep -q UP; do sleep 2; done
   (cd frontend && npm run e2e:real)
   ```
+
+**Onde rodar a suíte completa (issue #156):** no CI, não na máquina local. As duas suítes juntas sobem o Gradle, a JVM, o Vite e o Chromium ao mesmo tempo. No dia a dia:
+- **Local:** `npm test` e só o spec que mudou: `npx playwright test e2e/market.spec.ts`, `--last-failed` (só o que falhou na última execução) ou `--only-changed` (specs alterados em relação ao git). Com `--workers=1` (ou `nice -n 19 npm run e2e`), a máquina continua usável.
+- **Suíte completa:** o push num PR já roda tudo. Sem PR, dispare o CI na branch: `gh workflow run ci.yml --ref <branch>` e depois `gh run watch`.
+- **Tempos no CI:** o modo mock roda com 4 workers. O modo real roda com 1 (liga única). Os jobs E2E rodam na imagem `mcr.microsoft.com/playwright`, que já traz o Chromium e as libs: o `playwright install --with-deps` chegava a 8min no `apt-get`. A tag da imagem precisa bater com o `@playwright/test` do `package-lock.json`. No E2E, o MSW roda sem a latência artificial de 120ms por chamada (`VITE_MOCK_LATENCY_MS=0`, ver `src/mocks/latency.ts`). No `npm run dev`, a latência continua.
 
 **Mundo do pack no modo real (issue #131):** o backend do profile `e2e` monta o mundo a partir do pack reduzido `data/world/e2e/v1` (Série A e Série B com 6 clubes cada, Copa do Brasil com esses 12, Premier League com 4), e o mundo dos mocks (`src/mocks/world.ts`) tem a mesma forma, com os mesmos nomes de clubes e ligas. Elencos, atributos, salários e preços são GERADOS pelo backend e não batem com os do mock, por isso as specs leem nomes e valores da tela em vez de fixá-los. Duas diferenças de dado que as specs toleram:
 - o calendário real intercala rodadas de liga entre as fases da copa numa ordem que o mock não reproduz (`cup.spec` joga os encaixes até chegar à fase que quer afirmar);

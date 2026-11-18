@@ -90,6 +90,7 @@ import type {
 import { isStreamSpeed } from '../domain/streamSpeed'
 import { WS_CLOSE_NOT_STARTED, WS_REASON_NOT_STARTED } from '../api/wsProtocol'
 import type { components } from '../api/generated'
+import { MOCK_LATENCY_MS } from './latency'
 
 type BuyPlayerRequest      = components['schemas']['BuyPlayerRequest']
 type SellPlayerRequest     = components['schemas']['SellPlayerRequest']
@@ -165,8 +166,8 @@ const lineupRulesOf = (club: StoredClub, competitionId: string): LineupRules<Pla
   foreignLimit: NATIONAL_FOREIGN_PLAYER_LIMIT,
 })
 
-// Latência simulada para parecer com rede real (descomente em testes determinísticos)
-const SIMULATED_LATENCY_MS = 120
+// Latência simulada para parecer com rede real (zerada no E2E — ver latency.ts).
+const SIMULATED_LATENCY_MS = MOCK_LATENCY_MS
 
 const notFound = (msg: string): ErrorResponse => ({
   code: 'NOT_FOUND',
