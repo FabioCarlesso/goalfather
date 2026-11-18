@@ -202,6 +202,9 @@ class PlayRoundService(
     // Datas FIFA (issue #134): convocações e jogos de seleção a cada virada
     // de encaixe. Default sem seleções para os testes montados à mão.
     private val nationalTeams: NationalTeamClock = NationalTeamClock.NONE,
+    // Janelas de transferência (issue #137): a proposta pendente morre quando
+    // a janela do comprador fecha. Default sem relógio: não expira nada.
+    private val transferWindows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
@@ -533,6 +536,9 @@ class PlayRoundService(
         // rodada `Finished` sem sucessora — a liga travaria por causa de uma
         // proposta. Aqui, no pior caso, o prazo anda na rodada seguinte.
         secondaryEffect("offer_deadlines") { advanceOfferDeadlines() }
+        // Janela fechada (issue #137): o relógio já está no próximo encaixe
+        // (agendado acima), e a janela do comprador é lida na data dele.
+        secondaryEffect("offer_windows") { expireOffersOutsideWindow() }
 
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
         // encerrada"); os SeasonFinished, quando há, vêm logo antes dele —
@@ -823,6 +829,18 @@ class PlayRoundService(
             val stillWithSeller = offer.playerId in squadsBySeller[offer.sellerClubId].orEmpty()
             offerRepo.saveIfPending(offer.advance(stillWithSeller))
         }
+    }
+
+    /**
+     * Expira por `WINDOW_CLOSED` as propostas pendentes cuja janela do
+     * comprador fechou (issue #137). A regra é da guarda/domínio; aqui só se
+     * lê e grava — condicional ao status, como o prazo acima.
+     */
+    private suspend fun expireOffersOutsideWindow() {
+        val pending = offerRepo.findPending()
+        if (pending.isEmpty()) return
+        val clubs = clubRepo.findAll().associateBy { it.id }
+        transferWindows.closedByWindow(pending, clubs).forEach { offerRepo.saveIfPending(it) }
     }
 
     /**

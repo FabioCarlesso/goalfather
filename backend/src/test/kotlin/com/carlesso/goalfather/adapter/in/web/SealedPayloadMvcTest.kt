@@ -57,7 +57,9 @@ class SealedPayloadMvcTest {
         }.andReturn().await().contentAsString
         val token = json.decodeFromString(AuthResponse.serializer(), auth).token
 
-        val available = mockMvc.get("/api/clubs/available") { header("Authorization", "Bearer $token") }
+        // Série A: no pack do E2E o mercado do Brasil está aberto na data inicial
+        // e o da Inglaterra fechado (issue #137) — a venda do teste precisa da janela.
+        val available = mockMvc.get("/api/clubs/available?competitionId=bra-serie-a") { header("Authorization", "Bearer $token") }
             .andReturn().await().contentAsString
         val clubId = json.parseToJsonElement(available).jsonArray.first().jsonObject.getValue("id").jsonPrimitive.long
         mockMvc.post("/api/clubs/$clubId/claim") { header("Authorization", "Bearer $token") }.andReturn().await()

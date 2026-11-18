@@ -23,6 +23,8 @@ class BuyPlayerService(
     private val clubRepo: ClubRepository,
     private val marketRepo: MarketRepository,
     private val squadMaxSize: Int = DEFAULT_MAX_SQUAD,
+    // Janela de transferência do comprador (issue #137).
+    private val windows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : BuyPlayerUseCase {
 
     override suspend fun execute(clubId: ClubId, playerId: PlayerId): TransferResult {
@@ -30,6 +32,10 @@ class BuyPlayerService(
             ?: return TransferResult.PlayerNotAvailable(playerId)
         val entry = marketRepo.findEntry(playerId)
             ?: return TransferResult.PlayerNotAvailable(playerId)
+        // Janela e limite de registros (issue #137). Do mercado não há clube de
+        // origem (`origin = null`): a janela só doméstica também aceita.
+        windows.registrationBlocker(club, origin = null, playerId = playerId)
+            ?.let { return it.toTransferResult(playerId) }
 
         if (club.cash < entry.price) {
             return TransferResult.InsufficientFunds(
@@ -61,7 +67,10 @@ class BuyPlayerService(
         // qualquer elenco). Sem retry automático: o débito é sobre o caixa que
         // o técnico viu, então a decisão de tentar de novo volta para ele.
         return when (val saved = clubRepo.save(updatedClub)) {
-            is ClubSaveResult.Saved -> TransferResult.Success(club = saved.club, player = entry.player)
+            is ClubSaveResult.Saved -> {
+                windows.recordRegistration(entry.player.id, club.id)
+                TransferResult.Success(club = saved.club, player = entry.player)
+            }
             is ClubSaveResult.Conflict -> {
                 marketRepo.add(MarketEntry(player = entry.player, price = entry.price))
                 TransferResult.Conflict(saved.clubId)

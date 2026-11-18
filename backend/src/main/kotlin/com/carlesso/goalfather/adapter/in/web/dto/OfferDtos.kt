@@ -4,6 +4,7 @@ import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.result.OfferResult
+import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.SquadViolation
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -103,6 +104,16 @@ sealed interface TransferOfferResultDto {
     @Serializable
     @SerialName("Conflict")
     data class Conflict(val clubId: Long) : TransferOfferResultDto
+
+    /** Janela do comprador fechada (issue #137) — mesmo schema do mercado. */
+    @Serializable
+    @SerialName("TransferWindowClosed")
+    data class TransferWindowClosed(val nextOpens: String? = null) : TransferOfferResultDto
+
+    /** Limite de registros do jogador esgotado (issue #137) — mesmo schema do mercado. */
+    @Serializable
+    @SerialName("TransferLimitReached")
+    data class TransferLimitReached(val playerId: Long, val limit: RegistrationLimit) : TransferOfferResultDto
 }
 
 fun TransferOffer.toDto(): TransferOfferDto = TransferOfferDto(
@@ -136,4 +147,6 @@ fun OfferResult.Rejection.toDto(): TransferOfferResultDto = when (this) {
     is OfferResult.OfferExpired -> TransferOfferResultDto.OfferExpired(offerId.value, reason)
     is OfferResult.RoundInProgress -> TransferOfferResultDto.RoundInProgress(matchday.key)
     is OfferResult.Conflict -> TransferOfferResultDto.Conflict(clubId.value)
+    is OfferResult.TransferWindowClosed -> TransferOfferResultDto.TransferWindowClosed(nextOpens?.toString())
+    is OfferResult.TransferLimitReached -> TransferOfferResultDto.TransferLimitReached(playerId.value, limit)
 }

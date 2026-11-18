@@ -68,6 +68,9 @@ describe('MarketPage (issue #111)', () => {
   afterEach(() => {
     state.market = [...marketEntries]
     state.clubs[1] = originalClub
+    // A compra registra o jogador (issue #137): sem zerar, a do teste seguinte
+    // pelo mesmo jogador esbarraria no limite de 1 por janela.
+    state.registrations = {}
   })
 
   describe('filtro por posição', () => {

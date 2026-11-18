@@ -539,6 +539,9 @@ paths:
       description: |
         Devolve um `TransferResult` como union — `Success` traz o clube
         atualizado e o jogador contratado; variantes de erro indicam o motivo.
+        Só dentro da janela de transferência do clube comprador
+        (`TransferWindowClosed` fora dela) e respeitando o limite de registros
+        do jogador (`TransferLimitReached`) — issue #137.
       requestBody:
         required: true
         content:
@@ -566,7 +569,8 @@ paths:
         anunciado por 125% do valor de referência do mercado
         (`domain/rules/TransferRules`). O pagamento é sempre menor que o
         anúncio, de qualquer liga: comprar e revender o mesmo jogador dá
-        prejuízo, nunca lucro.
+        prejuízo, nunca lucro. Só dentro da janela de transferência do clube
+        vendedor (`TransferWindowClosed` fora dela, issue #137).
       requestBody:
         required: true
         content:
@@ -1106,6 +1110,36 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # --- #137 Janelas de transferência ---
+  /api/clubs/{id}/transfer-window:
+    get:
+      tags: [Market]
+      operationId: getClubTransferWindow
+      summary: Janela de transferência da federação do clube hoje
+      description: |
+        O selo "Janela aberta até …" / "Abre em …" do mercado e do cabeçalho
+        (issue #137). A janela que vale é a da federação (país) do clube, na
+        data do relógio do jogo (o encaixe corrente). Compra, venda ao mercado,
+        criação e aceite de proposta fora dela devolvem `TransferWindowClosed`.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Situação da janela
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferWindowStatus' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Clube inexistente (`CLUB_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  # --- fim #137 ---
 
   # --- #133 Navegação do mundo ---
   /api/competitions:
@@ -2080,6 +2114,8 @@ components:
         - $ref: '#/components/schemas/SquadFull'
         - $ref: '#/components/schemas/PlayerNotAvailable'
         - $ref: '#/components/schemas/TransferConflict'
+        - $ref: '#/components/schemas/TransferWindowClosed'
+        - $ref: '#/components/schemas/TransferLimitReached'
       discriminator:
         propertyName: type
         mapping:
@@ -2088,6 +2124,8 @@ components:
           SquadFull:          '#/components/schemas/SquadFull'
           PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
           Conflict:           '#/components/schemas/TransferConflict'
+          TransferWindowClosed: '#/components/schemas/TransferWindowClosed'
+          TransferLimitReached: '#/components/schemas/TransferLimitReached'
 
     TransferSuccess:
       type: object
@@ -2245,13 +2283,16 @@ components:
 
     ExpiryReason:
       type: string
-      enum: [DEADLINE, PLAYER_TRANSFERRED, MANAGER_LEFT]
+      enum: [DEADLINE, PLAYER_TRANSFERRED, MANAGER_LEFT, WINDOW_CLOSED]
       description: |
         `DEADLINE` — o prazo em rodadas venceu sem resposta.
         `PLAYER_TRANSFERRED` — o jogador deixou o elenco do vendedor: outra
         proposta por ele foi aceita, ou ele foi vendido ao mercado/se aposentou.
         `MANAGER_LEFT` — o técnico de um dos dois clubes foi demitido: a
         negociação era dele, e o clube (agora da IA) não a herda.
+        `WINDOW_CLOSED` — a janela de transferência do comprador fechou (ou
+        virou só doméstica, com vendedor de outro país) com a proposta
+        pendente (issue #137).
 
     SquadViolation:
       type: string
@@ -2267,9 +2308,10 @@ components:
         `switch (result.type)` exaustivo. Posse (403) e existência (404) NÃO
         estão aqui: viram status HTTP.
 
-        `InsufficientFunds`, `SquadFull`, `PlayerNotAvailable` e `Conflict`
-        reusam os schemas do `TransferResult` do mercado: mesmo significado,
-        mesma forma.
+        `InsufficientFunds`, `SquadFull`, `PlayerNotAvailable`, `Conflict`,
+        `TransferWindowClosed` e `TransferLimitReached` reusam os schemas do
+        `TransferResult` do mercado: mesmo significado, mesma forma. A janela
+        é a do COMPRADOR, na criação e no aceite.
       oneOf:
         - $ref: '#/components/schemas/OfferSuccess'
         - $ref: '#/components/schemas/InvalidOfferAmount'
@@ -2284,6 +2326,8 @@ components:
         - $ref: '#/components/schemas/OfferExpired'
         - $ref: '#/components/schemas/RoundInProgress'
         - $ref: '#/components/schemas/TransferConflict'
+        - $ref: '#/components/schemas/TransferWindowClosed'
+        - $ref: '#/components/schemas/TransferLimitReached'
       discriminator:
         propertyName: type
         mapping:
@@ -2300,6 +2344,8 @@ components:
           OfferExpired:       '#/components/schemas/OfferExpired'
           RoundInProgress:    '#/components/schemas/RoundInProgress'
           Conflict:           '#/components/schemas/TransferConflict'
+          TransferWindowClosed: '#/components/schemas/TransferWindowClosed'
+          TransferLimitReached: '#/components/schemas/TransferLimitReached'
 
     OfferSuccess:
       description: Comando aplicado — `offer` traz o estado novo da proposta.
@@ -3763,6 +3809,76 @@ components:
           type: object
           additionalProperties: true
           description: Dados extras dependentes do código de erro
+
+    # --- #137 Janelas de transferência ---
+    TransferWindowClosed:
+      description: |
+        A janela de transferência do clube está fechada (issue #137): a do
+        comprador na compra e nas propostas, a do vendedor na venda ao
+        mercado. Também sai na janela SÓ DOMÉSTICA quando o vendedor é de
+        outro país — aí `nextOpens` é a próxima janela internacional.
+        `nextOpens` ausente: a federação não tem calendário de janelas.
+      type: object
+      required: [type]
+      properties:
+        type:      { type: string, enum: [TransferWindowClosed] }
+        nextOpens: { type: string, format: date, description: Próxima abertura (ISO-8601) }
+
+    TransferLimitReached:
+      description: |
+        O jogador já esgotou o limite simplificado de registros (issue #137):
+        um por janela e dois por temporada. Registro = entrar num clube
+        (compra no mercado ou proposta aceita).
+      type: object
+      required: [type, playerId, limit]
+      properties:
+        type:     { type: string, enum: [TransferLimitReached] }
+        playerId: { type: integer, format: int64 }
+        limit:    { $ref: '#/components/schemas/RegistrationLimit' }
+
+    RegistrationLimit:
+      type: string
+      enum: [ONE_PER_WINDOW, TWO_PER_SEASON]
+      description: |
+        `ONE_PER_WINDOW` — o jogador já foi registrado nesta janela.
+        `TWO_PER_SEASON` — já foram dois registros na temporada do comprador
+        (ano civil no Brasil; de junho a maio na UEFA).
+
+    TransferWindowScope:
+      type: string
+      enum: [DOMESTIC_ONLY, INTERNATIONAL]
+      description: |
+        `DOMESTIC_ONLY` — só transferências entre clubes da própria federação
+        (a CBF abre uma em março). `INTERNATIONAL` — qualquer transferência.
+
+    TransferWindowStatus:
+      description: |
+        Mapeia `sealed interface WindowStatus` do domínio (issue #137).
+        Discriminado por `type` — no TS, `switch (status.type)` exaustivo.
+      oneOf:
+        - $ref: '#/components/schemas/OpenTransferWindow'
+        - $ref: '#/components/schemas/ClosedTransferWindow'
+      discriminator:
+        propertyName: type
+        mapping:
+          Open:   '#/components/schemas/OpenTransferWindow'
+          Closed: '#/components/schemas/ClosedTransferWindow'
+
+    OpenTransferWindow:
+      type: object
+      required: [type, closes, scope]
+      properties:
+        type:   { type: string, enum: [Open] }
+        closes: { type: string, format: date, description: Último dia da janela (inclusivo) }
+        scope:  { $ref: '#/components/schemas/TransferWindowScope' }
+
+    ClosedTransferWindow:
+      type: object
+      required: [type]
+      properties:
+        type:      { type: string, enum: [Closed] }
+        nextOpens: { type: string, format: date, description: 'Próxima abertura; ausente se a federação não tem calendário' }
+    # --- fim #137 ---
 
     # --- #134 Seleções ---
     InternationalDutyStatus:

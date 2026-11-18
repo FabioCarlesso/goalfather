@@ -12,6 +12,9 @@ import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.application.port.out.TransferOfferRepository
+import com.carlesso.goalfather.application.port.out.PlayerRegistrationRepository
+import com.carlesso.goalfather.application.port.out.TransferWindowRepository
+import com.carlesso.goalfather.domain.model.world.TransferWindow
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Availability
@@ -61,6 +64,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicInteger
+import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -1062,6 +1066,50 @@ class PlayRoundServiceTest {
             leagueRepo.saveRound(any())
             offerRepo.findPending()
         }
+    }
+
+    @Test
+    fun `janela do comprador fechada na virada expira as pendentes por WINDOW_CLOSED (issue 137)`() = runTest {
+        coEvery { leagueRepo.findRound(md(1)) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val offer = TransferOffer(
+            id = OfferId(1),
+            buyerClubId = ClubId(1),
+            buyerClubName = "Home FC",
+            sellerClubId = ClubId(2),
+            sellerClubName = "Away FC",
+            playerId = PlayerId(5),
+            playerName = "Alvo",
+            amount = 100_000_00.cents,
+            slotsLeft = 3,
+        )
+        coEvery { offerRepo.findPending() } returns listOf(offer)
+        val saved = mutableListOf<TransferOffer>()
+        coEvery { offerRepo.saveIfPending(capture(saved)) } returns true
+        // Janela do Brasil já fechada na data do relógio (o encaixe seguinte).
+        val window = TransferWindow(homeClub.country, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 3, 3))
+        val guard = TransferWindowGuard(
+            object : TransferWindowRepository {
+                override suspend fun findAll() = listOf(window)
+            },
+            PlayerRegistrationRepository.NONE,
+        ) { LocalDate.of(2026, 3, 4) }
+        val withWindows = PlayRoundService(
+            clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo, claimRepo, offerRepo,
+            InMemoryCatalogRepository(),
+            transferWindows = guard,
+        )
+
+        withWindows.stream(md(1)).toList()
+
+        // O prazo andou (1ª gravação) e a janela fechada a expirou (2ª).
+        assertEquals(OfferStatus.Expired(ExpiryReason.WINDOW_CLOSED), saved.last().status)
     }
 
     @Test

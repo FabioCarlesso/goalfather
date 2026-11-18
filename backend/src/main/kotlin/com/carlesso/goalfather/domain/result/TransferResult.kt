@@ -5,9 +5,12 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.rules.RegistrationLimit
+import com.carlesso.goalfather.domain.serialization.LocalDateSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
+import java.time.LocalDate
 
 /**
  * Resultado de uma transferência (compra ou venda).
@@ -42,4 +45,22 @@ sealed interface TransferResult {
     @Serializable
     @SerialName("Conflict")
     data class Conflict(val clubId: ClubId) : TransferResult
+
+    /**
+     * Janela de transferência fechada para o clube (issue #137): o do
+     * comprador na compra, o do vendedor na venda ao mercado. [nextOpens] é a
+     * próxima abertura (`null` = federação sem calendário). `@Serializable(with
+     * = ...)` no PARÂMETRO troca o serializer só deste campo — o `LocalDate`
+     * do JDK não tem um nativo no kotlinx.
+     */
+    @Serializable
+    @SerialName("TransferWindowClosed")
+    data class TransferWindowClosed(
+        @Serializable(with = LocalDateSerializer::class) val nextOpens: LocalDate?,
+    ) : TransferResult
+
+    /** O jogador já esgotou o limite de registros da janela ou da temporada (issue #137). */
+    @Serializable
+    @SerialName("TransferLimitReached")
+    data class TransferLimitReached(val playerId: PlayerId, val limit: RegistrationLimit) : TransferResult
 }

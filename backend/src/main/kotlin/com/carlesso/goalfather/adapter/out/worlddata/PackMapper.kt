@@ -26,6 +26,7 @@ import com.carlesso.goalfather.domain.model.world.PlayerProfile
 import com.carlesso.goalfather.domain.model.world.Reputation
 import com.carlesso.goalfather.domain.model.world.Stadium
 import com.carlesso.goalfather.domain.model.world.TransferWindow
+import com.carlesso.goalfather.domain.model.world.TransferWindowScope
 import com.carlesso.goalfather.domain.model.world.WorldCalendar
 import com.carlesso.goalfather.domain.model.world.WorldClubId
 import com.carlesso.goalfather.domain.model.world.WorldCompetition
@@ -267,7 +268,14 @@ internal class PackMapper(private val errors: MutableList<PackLoadError>) {
         }
         val transferWindows = dto.transferWindows.mapNotNull { window ->
             country(resource, window.country, countries)?.let { country ->
-                attempt(resource) { TransferWindow(country, LocalDate.parse(window.start), LocalDate.parse(window.end)) }
+                attempt(resource) {
+                    TransferWindow(
+                        country = country,
+                        start = LocalDate.parse(window.start),
+                        end = LocalDate.parse(window.end),
+                        scope = enumValue<TransferWindowScope>(window.scope, "escopo de janela"),
+                    )
+                }
             }
         }
         val allMapped = fifaWindows.size == dto.fifaWindows.size && transferWindows.size == dto.transferWindows.size

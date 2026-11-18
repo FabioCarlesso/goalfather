@@ -5,6 +5,8 @@ import { MarketFilterBar } from '../components/MarketFilterBar'
 import { useMarket } from '../api/queries/useMarket'
 import { useBuyPlayer } from '../api/queries/useBuyPlayer'
 import { useClub } from '../api/queries/useClub'
+import { useTransferWindow } from '../api/queries/useTransferWindow'
+import { TransferWindowBadge } from '../components/TransferWindowBadge'
 import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney } from '../domain/formatters'
 import { POSITION_ABBR } from '../domain/formations'
@@ -25,6 +27,8 @@ export function MarketPage() {
   const myClubId = useMyClubId()
   const market = useMarket()
   const { data: club } = useClub(myClubId)
+  // Janela de transferência do clube (issue #137): comprar fora dela é recusado pelo backend.
+  const { data: transferWindow } = useTransferWindow(myClubId)
   // O resultado da compra vira toast dentro do próprio hook: o `switch` exaustivo
   // sobre `TransferResult` vive em `transferErrorMessage`, e erro HTTP é tratado
   // pelo `MutationCache` de `main.tsx`. Por isso a página não dispara toast.
@@ -73,6 +77,7 @@ export function MarketPage() {
       <PageTitle>Mercado</PageTitle>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4">
         <h1 className="text-3xl font-bold text-slate-100">Mercado</h1>
+        <TransferWindowBadge status={transferWindow} />
         <p className="text-sm text-slate-400">
           Caixa:{' '}
           <span className="font-mono text-slate-100">{club ? formatMoney(club.cash) : '—'}</span>

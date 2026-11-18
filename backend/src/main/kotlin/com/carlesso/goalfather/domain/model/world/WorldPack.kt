@@ -207,12 +207,19 @@ data class PlayerProfile(
 
 /**
  * Janela de transferência de UMA federação (aqui, o país: a CBF é o Brasil, a
- * FA é a Inglaterra). Só o dado; abrir e fechar o mercado por ela é a #137.
+ * FA é a Inglaterra). Abrir e fechar o mercado por ela é regra de
+ * `domain/rules/TransferWindowRules.kt` (issue #137).
+ *
+ * [scope] distingue a janela comum da **só doméstica** (a CBF abre uma, em
+ * março, para transferências entre clubes brasileiros). Default
+ * [TransferWindowScope.INTERNATIONAL] porque é o caso comum — e é o que um
+ * pack sem o campo quer dizer.
  */
 data class TransferWindow(
     val country: Country,
     val start: LocalDate,
     val end: LocalDate,
+    val scope: TransferWindowScope = TransferWindowScope.INTERNATIONAL,
 ) {
     init {
         require(!end.isBefore(start)) { "TransferWindow de ${country.code} termina ($end) antes de começar ($start)" }
@@ -220,6 +227,18 @@ data class TransferWindow(
 
     /** `operator fun contains` habilita `date in window`, como em [FifaWindow]. */
     operator fun contains(date: LocalDate): Boolean = date in start..end
+}
+
+/**
+ * O que a janela aceita (issue #137). `enum` e não `sealed`: os dois casos não
+ * carregam dado, só mudam a regra — a mesma escolha de `SeasonSpan`.
+ */
+enum class TransferWindowScope {
+    /** Só transferências entre clubes da própria federação. */
+    DOMESTIC_ONLY,
+
+    /** Qualquer transferência: de dentro do país e de fora dele. */
+    INTERNATIONAL,
 }
 
 /** Datas FIFA e janelas de transferência de um ano (`calendar/{year}.json`). */

@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.tools.worldimport.e2e
 
 import com.carlesso.goalfather.adapter.out.worlddata.WorldPackLoader
+import com.carlesso.goalfather.adapter.out.worlddata.dto.CalendarDto
 import com.carlesso.goalfather.adapter.out.worlddata.dto.ClubDto
 import com.carlesso.goalfather.adapter.out.worlddata.dto.CompetitionDto
 import com.carlesso.goalfather.adapter.out.worlddata.dto.CountryDto
@@ -11,16 +12,17 @@ import com.carlesso.goalfather.adapter.out.worlddata.dto.SquadDto
 import com.carlesso.goalfather.tools.worldimport.assemble.GeneratedPack
 import com.carlesso.goalfather.tools.worldimport.output.PackWriter
 import com.carlesso.goalfather.tools.worldimport.output.Provenance
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.copyTo
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 /**
  * Pack REDUZIDO do profile `e2e` (issue #131): o reset do E2E recria o mundo
@@ -33,9 +35,19 @@ import kotlin.io.path.readText
  * - `bra-copa-do-brasil`: esses 12, num formato curto (ver [E2E_CUP_FORMAT]);
  * - `eng-premier-league`: os 4 de maior reputação.
  *
- * Elencos e calendário são COPIADOS do pack completo; países, só os citados.
+ * Elencos e datas FIFA são COPIADOS do pack completo; países, só os citados.
  * Os clubes ficam na ordem do pack completo (é um recorte, não uma
- * reordenação). Função pura ([build]) + E/S em volta ([write]).
+ * reordenação). Função pura ([build], [e2eCalendar]) + E/S em volta ([write]).
+ *
+ * **Janelas de transferência (issue #137)** — o único dado do recorte que NÃO
+ * é cópia fiel. O mundo começa em 04/01/2026, um dia antes da janela real da
+ * CBF (05/01), e todas as janelas europeias de inverno já estão abertas nessa
+ * data. A suíte E2E precisa dos dois estados na data inicial, sem jogar dezenas
+ * de encaixes: o Brasil (onde estão os fluxos de compra, venda e proposta)
+ * com o mercado ABERTO, e a Inglaterra com ele FECHADO (o E2E da compra fora da
+ * janela). Por isso, no ano de início, [e2eCalendar]: a 1ª janela de janeiro do
+ * [OPEN_AT_START] abre no dia 1º, e a de janeiro do [CLOSED_AT_START] sai. Só
+ * as federações com competição no recorte ficam no calendário.
  */
 object E2ePack {
 
@@ -63,6 +75,32 @@ object E2ePack {
             KnockoutStageDto(name = "Final", teams = 2, legs = 1, newEntrants = 0),
         ),
     )
+
+    /** Federação com o mercado aberto na data inicial do E2E (issue #137). */
+    const val OPEN_AT_START = "BRA"
+
+    /** Federação com o mercado fechado na data inicial do E2E (issue #137). */
+    const val CLOSED_AT_START = "ENG"
+
+    /**
+     * O calendário do recorte (issue #137; ver o KDoc do objeto): datas FIFA
+     * iguais; janelas só de [federations], com os dois ajustes do ano de
+     * início [startYear]. Puro.
+     */
+    fun e2eCalendar(calendar: CalendarDto, startYear: Int, federations: Set<String>): CalendarDto {
+        val january = "${calendar.year}-01-"
+        val windows = calendar.transferWindows
+            .filter { it.country in federations }
+            .filterNot { calendar.year == startYear && it.country == CLOSED_AT_START && it.start.startsWith(january) }
+            .map {
+                if (calendar.year == startYear && it.country == OPEN_AT_START && it.start.startsWith(january)) {
+                    it.copy(start = "${january}01")
+                } else {
+                    it
+                }
+            }
+        return calendar.copy(transferWindows = windows)
+    }
 
     /** Recorta [full] na forma do E2E. Puro: mesma entrada, mesma saída. */
     fun build(full: GeneratedPack): GeneratedPack {
@@ -107,22 +145,45 @@ object E2ePack {
     /**
      * Lê o pack completo em [fullDir], escreve o recorte em [e2eDir] (com o
      * mesmo [PackWriter] do importador, então o JSON sai no mesmo formato) e
-     * copia o calendário. A proveniência é a do pack completo, com o recorte
-     * anotado em `source`.
+     * o calendário do recorte ([e2eCalendar]). A proveniência é a do pack
+     * completo, com o recorte anotado em `source`.
      */
     @OptIn(ExperimentalPathApi::class)
     fun write(fullDir: Path, e2eDir: Path) {
         val reader = PackReader(fullDir)
         val (full, provenance) = reader.read()
+        val e2e = build(full)
         PackWriter(e2eDir, provenance.copy(source = "${provenance.source}; recorte e2e de data/world/v1 (issue #131)"))
-            .write(build(full))
+            .write(e2e)
 
         val calendar = e2eDir.resolve("calendar")
         calendar.deleteRecursively()
         calendar.createDirectories()
-        fullDir.resolve("calendar").listDirectoryEntries("*.json").sorted().forEach {
-            it.copyTo(calendar.resolve(it.fileName.toString()), StandardCopyOption.REPLACE_EXISTING)
+        val federations = e2e.competitions.mapNotNullTo(HashSet()) { it.country }
+        val files = fullDir.resolve("calendar").listDirectoryEntries("*.json").sorted()
+        val envelopes = files.map { it to reader.calendar(it) }
+        val startYear = envelopes.minOfOrNull { (_, envelope) -> envelope.data.year } ?: return
+        envelopes.forEach { (file, envelope) ->
+            val adjusted = envelope.copy(
+                source = "${envelope.source}; recorte e2e com ajustes de janela (issue #137)",
+                data = e2eCalendar(envelope.data, startYear, federations),
+            )
+            calendar.resolve(file.fileName.toString())
+                .writeText(CALENDAR_JSON.encodeToString(EnvelopeDto.serializer(CalendarDto.serializer()), adjusted) + "\n")
         }
+    }
+
+    /**
+     * Mesmo formato do `PackWriter` (indentação de 2, defaults gravados,
+     * opcionais nulos omitidos): o calendário do recorte é gerado, então sai
+     * no formato gerado, não no compacto do arquivo mantido à mão.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    private val CALENDAR_JSON = Json {
+        prettyPrint = true
+        prettyPrintIndent = "  "
+        encodeDefaults = true
+        explicitNulls = false
     }
 }
 
@@ -148,6 +209,10 @@ private class PackReader(private val root: Path) {
         )
         return GeneratedPack(countriesEnvelope.data, competitions, clubsByCompetition, squads) to provenance
     }
+
+    /** Um `calendar/{ano}.json` do pack, com o envelope (a proveniência vai junto para o recorte). */
+    fun calendar(file: Path): EnvelopeDto<CalendarDto> =
+        WorldPackLoader.PACK_JSON.decodeFromString(EnvelopeDto.serializer(CalendarDto.serializer()), file.readText())
 
     private fun <T> envelope(resource: String, serializer: KSerializer<T>): EnvelopeDto<T> =
         WorldPackLoader.PACK_JSON.decodeFromString(EnvelopeDto.serializer(serializer), root.resolve(resource).readText())

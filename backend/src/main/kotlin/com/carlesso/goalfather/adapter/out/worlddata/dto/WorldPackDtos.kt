@@ -177,6 +177,15 @@ data class CalendarDto(
 @Serializable
 data class DateRangeDto(val start: String, val end: String)
 
-/** Janela por federação; [country] é o trigrama FIFA da federação (`BRA` = CBF). */
+/**
+ * Janela por federação; [country] é o trigrama FIFA da federação (`BRA` = CBF).
+ * [scope] (issue #137): `INTERNATIONAL` (default, quando ausente) ou
+ * `DOMESTIC_ONLY`.
+ */
 @Serializable
-data class TransferWindowDto(val country: String, val start: String, val end: String)
+data class TransferWindowDto(
+    val country: String,
+    val start: String,
+    val end: String,
+    val scope: String = "INTERNATIONAL",
+)
