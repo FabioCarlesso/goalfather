@@ -80,6 +80,8 @@ npm run e2e               # Playwright contra mocks
 npm run e2e:real          # Playwright contra backend real (precisa `SPRING_PROFILES_ACTIVE=dev,e2e ./gradlew bootRun`)
 ```
 
+**E2E completo roda no CI, não localmente** (issue #156): a máquina local é modesta e as duas suítes juntas a saturam. Ao validar uma mudança, rode localmente só `npm test` e os specs afetados (`npx playwright test e2e/<spec>.spec.ts --workers=1`). A suíte completa (mock + real) fica para o CI do PR, ou para `gh workflow run ci.yml --ref <branch>` sem PR. Ver `docs/FRONTEND.md` § Testes.
+
 ## O que NÃO fazer
 
 - Não vazar o modelo de domínio na API (use DTOs).

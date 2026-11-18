@@ -17,6 +17,9 @@ test.describe('Round flow', () => {
 
     await expect(page.getByRole('heading', { name: /Rodada \d+/ })).toBeVisible()
     await expect(page.getByText('SEU JOGO')).toBeVisible()
+    // O teste espera a rodada inteira; em FAST ela leva ~2s em vez dos ~7s do
+    // NORMAL (issue #156). O que se afirma é o resumo, não o ritmo.
+    await page.getByLabel('Velocidade').selectOption('FAST')
 
     // Liga compartilhada (issue #20): sinalizar "pronto" destrava o jogo.
     const startBtn = page.getByRole('button', { name: 'Jogar rodada' })

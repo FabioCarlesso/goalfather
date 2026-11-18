@@ -34,8 +34,9 @@ import type {
   ScheduleWeek,
   Tiebreaker,
 } from '../domain/types'
+import { MOCK_LATENCY_MS } from './latency'
 
-const LATENCY_MS = 120
+const LATENCY_MS = MOCK_LATENCY_MS
 const TOP_SCORERS = 20
 
 /** Critérios de desempate de cada liga do mock — os do pack do E2E. */

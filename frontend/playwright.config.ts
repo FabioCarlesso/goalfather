@@ -19,7 +19,11 @@ export default defineConfig({
   // Sem retry no modo real (issue #102): um teste que só passa na segunda
   // tentativa esconderia a dependência de ordem/estado que a #101 eliminou.
   retries: process.env.CI && !REAL_BACKEND ? 2 : 0,
-  workers: process.env.CI || REAL_BACKEND ? 1 : undefined,
+  // Mock: cada teste tem o estado do MSW isolado na própria página, então o CI
+  // usa os 4 vCPUs do runner (issue #156 — serial, a suíte levava ~7min30).
+  // Local fica no padrão do Playwright (metade dos núcleos); para poupar a
+  // máquina, `--workers=1`. Real: sempre 1 (liga única, ver acima).
+  workers: REAL_BACKEND ? 1 : process.env.CI ? 4 : undefined,
   reporter: process.env.CI ? 'github' : 'list',
 
   use: {
@@ -41,7 +45,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `${REAL_BACKEND ? 'VITE_USE_MOCKS=false ' : ''}npm run dev -- --port ${PORT} --strictPort`,
+    // Mock sem latência artificial (src/mocks/latency.ts): 120ms por chamada
+    // só deixava a suíte mais lenta. Com `reuseExistingServer`, um `npm run
+    // dev` já aberto na mesma porta mantém a latência dele.
+    command: `${REAL_BACKEND ? 'VITE_USE_MOCKS=false ' : 'VITE_MOCK_LATENCY_MS=0 '}npm run dev -- --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

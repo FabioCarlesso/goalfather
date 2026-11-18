@@ -14,8 +14,9 @@ test.describe('Match drill-down', () => {
   test('abre o feed de uma partida a partir do card da rodada', async ({ page }) => {
     await page.goto('/round')
     await startRound(page)
-    // O drill-down herda o SLOW da rodada; aqui o ritmo é o padrão.
-    await page.getByLabel('Velocidade').selectOption('NORMAL')
+    // O drill-down herda o SLOW da rodada; aqui o teste espera a partida
+    // inteira, então acelera (FAST ≈ 2s de stream; issue #156).
+    await page.getByLabel('Velocidade').selectOption('FAST')
 
     // Abre uma partida que NÃO é a do usuário (sem o selo "SEU JOGO").
     const otherMatch = page
@@ -29,7 +30,7 @@ test.describe('Match drill-down', () => {
     await expect(page.getByText(/Bola rolando/i).first()).toBeVisible({ timeout: 10_000 })
 
     // Ao apito final o sumário aparece com os números do jogo (issue #57).
-    // A partida inteira leva ~7s de stream (80ms por minuto simulado).
+    // A partida inteira leva ~2s de stream em FAST (20ms por minuto simulado).
     await expect(page.getByText(/Estatísticas da partida/i)).toBeVisible({ timeout: 30_000 })
     await expect(page.getByText('Finalizações')).toBeVisible()
 

@@ -1,10 +1,26 @@
 name: CI
 
-# Roda em todo PR (qualquer branch → main) e em push para main.
+# Roda em todo PR (qualquer branch → main), em push para main e sob demanda
+# (`gh workflow run ci.yml --ref <branch>`), para rodar a suíte completa —
+# E2E incluso — sem pesar na máquina local nem abrir PR (issue #156).
+#
+# Mudança só de documentação não roda nada: nenhum job daqui lê esses
+# arquivos. Não há branch protection exigindo os checks, então pular o
+# workflow inteiro não deixa PR travado com check pendente.
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
+  workflow_dispatch:
+
+# Push novo na mesma branch/PR cancela o run anterior, que já está obsoleto.
+# No main cada merge roda até o fim (o grupo inclui o SHA), para todo commit
+# do main ter o seu resultado.
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'latest' }}
+  cancel-in-progress: true
 
 jobs:
   backend:
@@ -33,20 +49,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # `frontend/package-lock.json` é versionado: `npm ci` instala exatamente
+      # o lockfile, e o cache nativo do setup-node guarda ~/.npm por hash dele.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # Sem package-lock.json no projeto, então cacheamos ~/.npm manualmente
-      # (o cache nativo do setup-node exige lockfile).
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package.json') }}
-          restore-keys: npm-${{ runner.os }}-
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Install
         working-directory: frontend
-        run: npm install
+        run: npm ci
       - name: Generate API types
         working-directory: frontend
         run: npm run gen:api
@@ -59,29 +71,28 @@ jobs:
 
   frontend-e2e:
     name: Frontend E2E (mock)
-    # Fixado: o Playwright não instala o Chromium no ubuntu26.04, para onde
-    # o `ubuntu-latest` passou a apontar.
+    # Imagem oficial do Playwright (issue #156): Chromium e as libs do sistema
+    # já vêm instalados. O `playwright install --with-deps` gastava até 8min
+    # no `apt-get` (mirror do runner a ~70kB/s); o download do browser em si
+    # era ~7s. A tag PRECISA bater com o @playwright/test do package-lock.json
+    # — senão o teste falha com "Executable doesn't exist". Ao atualizar o
+    # Playwright, atualize as duas tags (este job e o frontend-e2e-real).
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package.json') }}
-          restore-keys: npm-${{ runner.os }}-
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Install
         working-directory: frontend
-        run: npm install
+        run: npm ci
       - name: Generate API types
         working-directory: frontend
         run: npm run gen:api
-      - name: Install Playwright (chromium)
-        working-directory: frontend
-        run: npx playwright install --with-deps chromium
       - name: E2E (mock)
         working-directory: frontend
         run: npm run e2e
@@ -101,9 +112,12 @@ jobs:
   # determinística. Retries = 0 neste modo (ver playwright.config.ts).
   frontend-e2e-real:
     name: Frontend E2E (backend real)
-    # Fixado: o Playwright não instala o Chromium no ubuntu26.04, para onde
-    # o `ubuntu-latest` passou a apontar.
+    # Mesma imagem (e mesma regra de versão) do frontend-e2e — ver lá. O JDK
+    # vem do setup-java, dentro do container; o backend sobe nele também,
+    # então `localhost:8080` continua valendo para o Playwright.
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -113,6 +127,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -121,12 +137,6 @@ jobs:
             ~/.gradle/wrapper
           key: gradle-${{ runner.os }}-${{ hashFiles('backend/**/*.gradle.kts', 'backend/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package.json') }}
-          restore-keys: npm-${{ runner.os }}-
       # Jar em vez de `bootRun`: compilar fica num passo próprio (erro de build
       # aparece como erro de build, não como timeout de health) e o processo
       # em background é só a JVM.
@@ -140,19 +150,17 @@ jobs:
         run: nohup java -jar build/libs/goalfather.jar > backend.log 2>&1 &
       - name: Install
         working-directory: frontend
-        run: npm install
+        run: npm ci
       - name: Generate API types
         working-directory: frontend
         run: npm run gen:api
-      - name: Install Playwright (chromium)
-        working-directory: frontend
-        run: npx playwright install --with-deps chromium
-      # Por último antes dos testes: o boot corre em paralelo ao npm install.
+      # Por último antes dos testes: o boot corre em paralelo ao npm ci.
       # Falha aqui (e não em 16 erros de conexão) se o backend não subir.
       - name: Esperar o backend ficar UP
         run: |
           for _ in $(seq 1 90); do
-            curl -fs http://localhost:8080/actuator/health | grep -q '"status":"UP"' && exit 0
+            # node em vez de curl: a imagem do Playwright traz node, não curl.
+            node -e "fetch('http://localhost:8080/actuator/health').then(r => r.json()).then(j => process.exit(j.status === 'UP' ? 0 : 1), () => process.exit(1))" && exit 0
             sleep 2
           done
           echo "backend não ficou UP em 180s"
