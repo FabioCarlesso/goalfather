@@ -15,6 +15,9 @@ import { LoginPage } from './pages/LoginPage'
 import { SelectClubPage } from './pages/SelectClubPage'
 import { FiredPage } from './pages/FiredPage'
 import { ClubPage } from './pages/ClubPage'
+import { WorldPage } from './pages/WorldPage'
+import { CompetitionPage } from './pages/CompetitionPage'
+import { CalendarPage } from './pages/CalendarPage'
 import { AppLayout } from './components/layout/AppLayout'
 import { RouteErrorPage } from './pages/RouteErrorPage'
 import { BareLayout, PublicOnly, RequireAuth, RequireClub, RootRedirect } from './routeGuards'
@@ -54,6 +57,11 @@ export const router = createBrowserRouter(
             <Route path="/libertadores" element={<LibertadoresPage />} />
             <Route path="/history"   element={<HistoryPage />} />
             <Route path="/national-teams" element={<NationalTeamsPage />} />
+            {/* Navegação pelo mundo (issue #133). `:tab?` é segmento opcional: sem
+                ele, a competição abre na aba padrão do formato. */}
+            <Route path="/world"     element={<WorldPage />} />
+            <Route path="/competitions/:id/:tab?" element={<CompetitionPage />} />
+            <Route path="/calendar"  element={<CalendarPage />} />
           </Route>
         </Route>
       </Route>

@@ -3,6 +3,7 @@ package com.carlesso.goalfather.config
 import com.carlesso.goalfather.application.port.`in`.BoardUseCase
 import com.carlesso.goalfather.application.port.`in`.CalendarUseCase
 import com.carlesso.goalfather.application.port.`in`.ContinentalUseCase
+import com.carlesso.goalfather.application.port.`in`.CompetitionQueryUseCase
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
@@ -38,6 +39,7 @@ import com.carlesso.goalfather.application.service.BuyPlayerService
 import com.carlesso.goalfather.application.service.CalendarService
 import com.carlesso.goalfather.application.service.ContinentalService
 import com.carlesso.goalfather.application.service.ClaimClubService
+import com.carlesso.goalfather.application.service.CompetitionQueryService
 import com.carlesso.goalfather.application.service.ExpandStadiumService
 import com.carlesso.goalfather.application.service.LoginService
 import com.carlesso.goalfather.application.service.PlayMatchService
@@ -200,6 +202,16 @@ class BeanConfig {
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
     ): WorldOnboardingUseCase = WorldOnboardingService(catalog, clubRepo, leagueRepo)
+
+    /** Navegação pelo mundo: competições e calendário do clube (issue #133). */
+    @Bean
+    fun competitionQueryUseCase(
+        catalog: CompetitionCatalogRepository,
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+        cupRepo: CupRepository,
+        continentalRepo: ContinentalRepository,
+    ): CompetitionQueryUseCase = CompetitionQueryService(catalog, clubRepo, leagueRepo, cupRepo, continentalRepo)
 
     /** Leitura do histórico de temporadas e da carreira do técnico (issue #60). */
     @Bean

@@ -1105,6 +1105,217 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  # --- #133 Navegação do mundo ---
+  /api/competitions:
+    get:
+      tags: [World]
+      operationId: listCompetitions
+      summary: Competições do mundo do save (issue #133)
+      description: |
+        Todas as competições do catálogo do save — ligas, copas nacionais e,
+        quando existirem, continentais —, cada uma na SUA temporada corrente.
+        A UI agrupa por país (`country`; continentais vêm sem país, com a
+        `confederation` dona).
+
+        Ordem: Brasil primeiro, depois os demais países pelo código; dentro do
+        país, as ligas da elite para baixo e depois as copas; continentais por
+        último.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Competições do mundo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CompetitionSummary' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/competitions/{competitionId}:
+    get:
+      tags: [World]
+      operationId: getCompetition
+      summary: Uma competição, com formato e critérios de desempate (issue #133)
+      description: |
+        O `format` diz quais visões a competição tem (tabela, chave, grupos):
+        a UI faz `switch` exaustivo sobre ele. `tiebreakers` é a ordem dos
+        critérios que o backend aplica na tabela — a UI só os lista.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Competição
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CompetitionDetail' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição fora do catálogo do save (`COMPETITION_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/standings:
+    get:
+      tags: [World]
+      operationId: getCompetitionStandings
+      summary: Tabela corrente de uma liga (issue #133)
+      description: |
+        A tabela da temporada corrente da competição, já ordenada pelos
+        desempates dela e com a faixa (`zone`) de cada posição — o mesmo
+        `Standings` de `/api/league/standings`. Competição sem tabela
+        (mata-mata) ou ainda sem temporada: 404 `STANDINGS_NOT_FOUND`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Tabela da competição
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Standings' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`) ou sem tabela (`STANDINGS_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/matches:
+    get:
+      tags: [World]
+      operationId: listCompetitionMatches
+      summary: Jogos da temporada corrente, por encaixe (issue #133)
+      description: |
+        Os encaixes da temporada corrente da competição, em ordem, cada um
+        com os jogos DELA. Encaixes já jogados trazem os placares gravados;
+        os futuros vêm do calendário do backend. Num mata-mata só a fase em
+        disputa tem confrontos conhecidos: encaixe de fase ainda não
+        sorteada vem com `matches` vazio.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Encaixes da competição
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CompetitionMatchday' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/scorers:
+    get:
+      tags: [World]
+      operationId: listCompetitionScorers
+      summary: Artilharia dos clubes da competição (issue #133)
+      description: |
+        Os artilheiros dos clubes que disputam a competição, do que mais
+        marcou para o que menos (empate pelo nome), até 20, só quem marcou.
+
+        **Corte do MVP:** os gols são os da TEMPORADA do jogador em todas as
+        competições — o jogo ainda não separa gols por competição.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Artilheiros
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CompetitionScorer' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/competitions/{competitionId}/bracket:
+    get:
+      tags: [World]
+      operationId: getCompetitionBracket
+      summary: Chave de mata-mata da competição (issue #133)
+      description: |
+        A chave da temporada corrente de uma copa — o mesmo `Cup` de
+        `/api/league/cup`, mas da competição pedida. Competição sem chave
+        (liga de pontos corridos) ou copa ainda não sorteada: 404
+        `BRACKET_NOT_FOUND`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompetitionIdPath'
+      responses:
+        '200':
+          description: Chave da copa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cup' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Competição desconhecida (`COMPETITION_NOT_FOUND`) ou sem chave (`BRACKET_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/clubs/{id}/schedule:
+    get:
+      tags: [World]
+      operationId: getClubSchedule
+      summary: Calendário do clube semana a semana (issue #133)
+      description: |
+        As próximas `weeks` semanas a partir da semana do encaixe corrente,
+        cada uma com os jogos do clube (e a competição de cada um) e se é
+        data FIFA. Jogos já disputados na semana corrente vêm com o placar.
+        Semanas além da temporada corrente de cada competição vêm vazias —
+        a edição seguinte só é agendada na virada. Sem calendário, `weeks`
+        vem vazio e `current` ausente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+        - name: weeks
+          in: query
+          required: false
+          description: Quantas semanas (padrão 8, de 1 a 26)
+          schema: { type: integer, minimum: 1, maximum: 26, default: 8 }
+      responses:
+        '200':
+          description: Calendário do clube
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClubSchedule' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Clube inexistente (`CLUB_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  # --- fim #133 ---
+
   /ws/slot/{key}:
     get:
       tags: [League]
@@ -1260,6 +1471,13 @@ components:
       required: true
       description: ID do clube
       schema: { type: integer, format: int64 }
+    # --- #133 Navegação do mundo ---
+    CompetitionIdPath:
+      name: competitionId
+      in: path
+      required: true
+      description: Id da competição no catálogo do save (`bra-serie-a`, `bra-copa-do-brasil`)
+      schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]*$' }
     OfferIdPath:
       name: id
       in: path
@@ -3347,6 +3565,157 @@ components:
         knockout:   { $ref: '#/components/schemas/Cup' }
         finalVenue: { $ref: '#/components/schemas/Venue' }
         champion:   { $ref: '#/components/schemas/CupClub' }
+
+    # --- #133 Navegação do mundo ---
+    CompetitionFormatType:
+      type: string
+      description: |
+        Formato da competição (espelha o `sealed CompetitionFormat` do domínio,
+        issue #124). A UI escolhe as visões por ele, com `switch` exaustivo:
+        `ROUND_ROBIN` tem tabela; `KNOCKOUT` tem chave;
+        `GROUPS_THEN_KNOCKOUT` tem grupos e chave (Libertadores, #132);
+        `SWISS_LEAGUE` tem tabela e chave (Champions, #145).
+      enum: [ROUND_ROBIN, KNOCKOUT, GROUPS_THEN_KNOCKOUT, SWISS_LEAGUE]
+
+    CompetitionKindType:
+      type: string
+      description: |
+        Papel da competição no mundo (espelha o `sealed CompetitionKind`):
+        liga do país, copa nacional ou continental (dona é a confederação).
+      enum: [LEAGUE, NATIONAL_CUP, CONTINENTAL]
+
+    Tiebreaker:
+      type: string
+      description: |
+        Critério de classificação, na ordem em que a competição o aplica
+        (issue #124). A tabela já chega ordenada; a UI só lista os critérios.
+      enum: [POINTS, WINS, GOAL_DIFFERENCE, GOALS_FOR, HEAD_TO_HEAD, HEAD_TO_HEAD_GOAL_DIFFERENCE, FEWER_RED_CARDS, FEWER_YELLOW_CARDS, DRAWING_OF_LOTS]
+
+    CompetitionSummary:
+      description: Uma competição do catálogo do save, na temporada corrente (issue #133).
+      type: object
+      required: [id, name, format, kind, confederation, clubCount]
+      properties:
+        id:     { type: string, example: bra-serie-a }
+        name:   { type: string, example: Campeonato Brasileiro Série A }
+        format: { $ref: '#/components/schemas/CompetitionFormatType' }
+        kind:   { $ref: '#/components/schemas/CompetitionKindType' }
+        country:
+          $ref: '#/components/schemas/Country'
+          description: País da competição; ausente nas continentais
+        confederation: { $ref: '#/components/schemas/Confederation' }
+        tier:
+          type: integer
+          minimum: 1
+          description: Divisão no país (1 = elite); só nas ligas
+        season:
+          type: integer
+          description: Ano de INÍCIO da temporada corrente; ausente se o país ainda não começou
+        seasonLabel:
+          type: string
+          description: '`2026` ou `2026/27`; ausente junto com `season`'
+        clubCount:
+          type: integer
+          minimum: 0
+          description: Clubes que disputam a temporada corrente
+
+    CompetitionDetail:
+      description: |
+        Uma competição com as regras que a tela mostra (issue #133). Mesmos
+        campos de `CompetitionSummary` + os critérios de desempate e o limite
+        de estrangeiros.
+      type: object
+      required: [id, name, format, kind, confederation, clubCount, tiebreakers]
+      properties:
+        id:     { type: string, example: bra-serie-a }
+        name:   { type: string, example: Campeonato Brasileiro Série A }
+        format: { $ref: '#/components/schemas/CompetitionFormatType' }
+        kind:   { $ref: '#/components/schemas/CompetitionKindType' }
+        country:
+          $ref: '#/components/schemas/Country'
+          description: País da competição; ausente nas continentais
+        confederation: { $ref: '#/components/schemas/Confederation' }
+        tier:
+          type: integer
+          minimum: 1
+          description: Divisão no país (1 = elite); só nas ligas
+        season:
+          type: integer
+          description: Ano de INÍCIO da temporada corrente; ausente se o país ainda não começou
+        seasonLabel:
+          type: string
+          description: '`2026` ou `2026/27`; ausente junto com `season`'
+        clubCount:
+          type: integer
+          minimum: 0
+          description: Clubes que disputam a temporada corrente
+        tiebreakers:
+          type: array
+          description: Critérios de desempate da tabela, em ordem (o primeiro é sempre `POINTS`)
+          items: { $ref: '#/components/schemas/Tiebreaker' }
+        foreignPlayerLimit:
+          type: integer
+          minimum: 0
+          description: Máximo de estrangeiros em campo por jogo; ausente = sem limite
+
+    CompetitionMatchday:
+      description: |
+        Um encaixe da temporada de uma competição e os jogos dela nele
+        (issue #133). `matches` vazio = fase de mata-mata ainda não sorteada.
+      type: object
+      required: [matchday, matches]
+      properties:
+        matchday: { $ref: '#/components/schemas/Matchday' }
+        matches:
+          type: array
+          items: { $ref: '#/components/schemas/RoundMatch' }
+
+    CompetitionScorer:
+      description: |
+        Um artilheiro dos clubes da competição (issue #133). `goals` são os
+        gols da temporada do jogador em TODAS as competições (corte do MVP).
+      type: object
+      required: [playerId, playerName, clubId, clubName, goals]
+      properties:
+        playerId:   { type: integer, format: int64 }
+        playerName: { type: string }
+        clubId:     { type: integer, format: int64 }
+        clubName:   { type: string }
+        goals:      { type: integer, minimum: 1 }
+
+    ScheduleWeek:
+      description: |
+        Uma semana do calendário do clube (issue #133): semana ISO, de
+        segunda a domingo, se é data FIFA e os jogos do clube nela, em ordem.
+      type: object
+      required: [year, week, start, end, fifaWindow, matches]
+      properties:
+        year:  { type: integer, description: Ano da SEMANA ISO }
+        week:  { type: integer, minimum: 1, maximum: 53 }
+        start: { type: string, format: date, description: Segunda-feira }
+        end:   { type: string, format: date, description: Domingo }
+        fifaWindow:
+          type: boolean
+          description: |
+            A semana é (ou toca) uma data FIFA. Ligas que pausam não jogam
+            nela; o Brasileirão segue.
+        matches:
+          type: array
+          items: { $ref: '#/components/schemas/NextMatch' }
+
+    ClubSchedule:
+      description: Calendário do clube nas próximas semanas (issue #133).
+      type: object
+      required: [clubId, weeks]
+      properties:
+        clubId:  { type: integer, format: int64 }
+        current:
+          $ref: '#/components/schemas/Matchday'
+          description: Encaixe corrente do jogo; ausente sem calendário
+        weeks:
+          type: array
+          items: { $ref: '#/components/schemas/ScheduleWeek' }
+    # --- fim #133 ---
 
     # ─── Error ────────────────────────────────────────────────────────────
     ErrorResponse:

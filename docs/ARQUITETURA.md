@@ -1566,6 +1566,52 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   FIFA: devolve as datas, a tabela vazia e uma prévia fixa (os 3 melhores do
   elenco).
 
+- [x] **Navegação pelo mundo: competições, calendário do clube e tabelas** — issue #133
+
+  Leituras novas, sem tocar no `PlayRoundService`: caso de uso
+  `CompetitionQueryUseCase` (`CompetitionQueryService`) e dois controllers
+  novos, `CompetitionController` (`/api/competitions`, `/{id}`,
+  `/{id}/standings`, `/{id}/matches`, `/{id}/scorers`, `/{id}/bracket`) e
+  `ClubScheduleController` (`/api/clubs/{id}/schedule?weeks=`). O cabeçalho
+  reaproveita `GET /api/league/calendar`.
+
+  **Uma regra só para "o que vem depois".** Os jogos futuros saem do MESMO
+  plano do mundo que anda o relógio (`worldPlan`) e da mesma regra de
+  visibilidade do `nextMatchOf`, agora extraída como função pura em
+  `domain/rules/WorldNavigation.kt` (`SeasonPlan.visibleRoundsAfter`): a liga
+  é conhecida de antemão (Berger); de um mata-mata só a fase em disputa — a
+  copa aparece no primeiro encaixe dela adiante e os seguintes vêm sem
+  confrontos. O `when` que decide isso (`dependsOnResults`) é exaustivo sobre
+  `SeasonCompetition`: o papel continental da #132 obriga a decidir ali.
+  Encaixes passados vêm das rodadas gravadas (placares); o corrente, como está.
+
+  **Erro como valor de três desfechos.** `CompetitionLookup<out T>` é
+  `Found(value)`, `UnknownCompetition` (404 `COMPETITION_NOT_FOUND`) ou
+  `NotAvailable` (tabela de mata-mata → `STANDINGS_NOT_FOUND`; chave de liga →
+  `BRACKET_NOT_FOUND`). Os dois `data object` são `CompetitionLookup<Nothing>`:
+  com a covariância (`out T`), um objeto só serve a qualquer `T`.
+
+  **Formato achatado na borda.** O `sealed CompetitionFormat` vira o enum
+  `CompetitionFormatType` (`ROUND_ROBIN`, `KNOCKOUT`, `GROUPS_THEN_KNOCKOUT`,
+  `SWISS_LEAGUE`) e o `CompetitionKind` vira `CompetitionKindType` (com
+  `CONTINENTAL` já no contrato); a UI escolhe as abas por ele. Os desempates
+  saem como a lista de `Tiebreaker` da competição — a tabela já chega ordenada
+  e com as faixas, a UI só lista os critérios.
+
+  **Calendário do clube:** `clubScheduleWeeks` agrupa os jogos do clube por
+  semana ISO a partir da semana do encaixe corrente e marca a semana que toca
+  uma data FIFA (`interimFifaWindows`, as mesmas do agendador). Semanas além da
+  temporada corrente de cada país vêm vazias: a edição seguinte só é agendada
+  na virada.
+
+  **Cortes:** a artilharia é dos clubes da competição pelos gols da TEMPORADA
+  (`Player.goals`, todas as competições) — separar gols por competição exige
+  mexer nos efeitos do encaixe (`PlayRoundService`), fora do escopo; o contrato
+  e a tela dizem isso. Sem migration. O `nextMatchOf` continua com a cópia
+  dele da regra de visibilidade (unificar mexeria no `SeasonCalendar.kt`, que a
+  #132 também toca). O relógio ainda não anda sozinho nos encaixes sem técnico
+  humano (pendência conhecida).
+
 ---
 
 ## 9. Stack consolidada

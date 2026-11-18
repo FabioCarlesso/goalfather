@@ -1,8 +1,10 @@
 import { Outlet, useNavigate } from 'react-router-dom'
+import { useCalendar } from '../../api/queries/useCalendar'
 import { useClubOffers } from '../../api/queries/useOffers'
 import { useAuth } from '../../auth/AuthContext'
 import { useMyClubId } from '../../auth/useMyClubId'
 import { pendingReceivedCount } from '../../domain/offers'
+import { GameClock } from './GameClock'
 import { DesktopNav, MobileMenu } from './MainNav'
 import { UserMenu } from './UserMenu'
 
@@ -11,7 +13,7 @@ import { UserMenu } from './UserMenu'
  * papel de uma página (lê os dados e passa por props); os menus são apresentação.
  *
  * Barra horizontal a partir de `lg`, botão de menu abaixo disso (issue #106). Em
- * `md` (768px) os 7 links, o logo e o indicador de ambiente estouram a largura.
+ * `md` (768px) os links, o logo e o indicador de ambiente estouram a largura.
  */
 export function AppLayout() {
   const { user, logout } = useAuth()
@@ -22,6 +24,9 @@ export function AppLayout() {
   const myClubId = useMyClubId()
   const { data: offers } = useClubOffers(myClubId)
   const pendingOffers = offers ? pendingReceivedCount(offers, myClubId) : 0
+  // Relógio do jogo no cabeçalho (issue #133): a mesma query do painel de
+  // calendário — o `useRoundStream` a invalida a cada encaixe jogado.
+  const { data: calendar } = useCalendar(myClubId)
 
   const onLogout = () => {
     logout()
@@ -46,6 +51,8 @@ export function AppLayout() {
             <MobileMenu pendingOffers={pendingOffers} />
           </div>
         </div>
+        {/* Aviso de convocação da #134: passar em `notices`. */}
+        <GameClock calendar={calendar} clubId={myClubId} />
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">

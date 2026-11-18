@@ -504,6 +504,9 @@ export const state = {
   // Copa da temporada corrente (issue #61).
   cup: initialCup as Cup | null,
   currentRound: roundOf(seasonSlots(2026, initialCup)[0]!, 2026, initialCup) as Round,
+  // Encaixes já jogados, com os placares (issue #133): a aba Jogos da
+  // competição e o calendário do clube mostram o resultado dos passados.
+  playedRounds: [] as Round[],
   // Metas da diretoria da temporada corrente, por clube (issue #62) —
   // preenchidas logo abaixo, porque a força de cada clube sai de `state.clubs`.
   boards: {} as Record<number, MockBoard>,

@@ -163,13 +163,7 @@ data class SeasonPlan(
             // Mata-mata (copa nacional ou o da continental, issue #132): só a
             // fase corrente é conhecida.
             val cups = schedule.at(matchday)
-                .filter { scheduled ->
-                    when (val competition = competitions[scheduled.competition]) {
-                        is SeasonCompetition.NationalCup -> true
-                        is SeasonCompetition.Continental -> scheduled.round > competition.edition.groupRounds
-                        is SeasonCompetition.League, null -> false
-                    }
-                }
+                .filter { dependsOnResults(it) }
                 .mapTo(HashSet()) { it.competition }
             val visible = Round(
                 matchday = matchday,
@@ -182,6 +176,21 @@ data class SeasonPlan(
         }
         return null
     }
+
+    /**
+     * Os jogos de [scheduled] dependem de resultados anteriores (mata-mata)?
+     * `when` exaustivo sobre o `sealed SeasonCompetition`: um papel novo obriga
+     * a decidir aqui se os jogos dele se conhecem de antemão. A continental
+     * (issue #132) é das duas coisas: os grupos são turno e returno sorteados
+     * (conhecidos), o mata-mata depois deles não. Única fonte da regra, usada
+     * pelo [nextMatchOf] e pelo `visibleRoundsAfter` da navegação (#133).
+     */
+    internal fun dependsOnResults(scheduled: ScheduledRound): Boolean =
+        when (val competition = competitions[scheduled.competition]) {
+            is SeasonCompetition.NationalCup -> true
+            is SeasonCompetition.Continental -> scheduled.round > competition.edition.groupRounds
+            is SeasonCompetition.League, null -> false
+        }
 
     /** O plano com as competições e o calendário de [other] junto (países disjuntos). */
     operator fun plus(other: SeasonPlan): SeasonPlan =
