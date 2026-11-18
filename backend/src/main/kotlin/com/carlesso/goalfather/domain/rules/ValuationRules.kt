@@ -1,7 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.Club
-import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Money
@@ -22,17 +21,24 @@ import kotlin.math.roundToLong
  *
  *   valor = base(overall) × idade(age) × contrato(restante) × liga(força)
  *
- * Calibração (USD, ordem de grandeza do futebol real, constantes NOSSAS — não
- * copiadas de site nenhum): um overall 70 no auge, com contrato longo e numa
- * liga de força 70, vale US$ 2,5 milhões; cada 4 pontos de overall DOBRAM o
- * valor (80 ≈ US$ 14 mi, 85 ≈ US$ 34 mi, 90 ≈ US$ 80 mi; 60 ≈ US$ 440 mil).
+ * Calibração (USD, constantes NOSSAS — não copiadas de site nenhum): um
+ * overall 70 no auge, com contrato longo e numa liga de força 70, vale US$ 25
+ * mil; cada 4 pontos de overall DOBRAM o valor (80 ≈ US$ 141 mil, 85 ≈ US$ 336
+ * mil, 90 ≈ US$ 800 mil; 60 ≈ US$ 4,4 mil).
+ *
+ * A escala é a da ECONOMIA DO JOGO, não a do futebol real (decisão da onda 6):
+ * caixa, bilheteria e salários do jogo são ~100× menores que os reais, e um
+ * valor na escala real deixaria um titular impagável e uma venda valendo vários
+ * caixas do clube. O FORMATO da curva (o que vale mais que o quê, e quanto) é o
+ * que importa; trocar de escala é mexer só em [BASE_VALUE_AT_REFERENCE_CENTS]
+ * — e, junto, no divisor do salário (`VALUE_PER_MONTHLY_SALARY`, #136).
  */
 
 /** Overall de referência da curva: [BASE_VALUE_AT_REFERENCE] vale exatamente aqui. */
 private const val REFERENCE_OVERALL: Int = 70
 
-/** US$ 2,5 milhões para o overall de referência (no auge, contrato longo, liga 70). */
-private const val BASE_VALUE_AT_REFERENCE_CENTS: Double = 2_500_000_00.0
+/** US$ 25 mil para o overall de referência (no auge, contrato longo, liga 70). */
+private const val BASE_VALUE_AT_REFERENCE_CENTS: Double = 25_000_00.0
 
 /** Cada 4 pontos de overall dobram o valor: o mercado paga MUITO mais pelo topo. */
 private const val OVERALL_DOUBLING_POINTS: Double = 4.0
@@ -78,11 +84,11 @@ private const val LEAGUE_DOUBLING_POINTS: Double = 16.0
  */
 private val LEAGUE_FACTOR_RANGE: ClosedFloatingPointRange<Double> = 0.5..1.8
 
-/** Menor valor de um jogador com contrato: US$ 10 mil. */
-private val MIN_MARKET_VALUE: Money = Money.dollars(10_000)
+/** Menor valor de um jogador com contrato: US$ 100. */
+private val MIN_MARKET_VALUE: Money = Money.dollars(100)
 
-/** Passo do arredondamento: US$ 1 mil — a tela não mostra centavos de valor. */
-private const val VALUE_ROUNDING_CENTS: Long = 1_000_00
+/** Passo do arredondamento: US$ 10 — a tela não mostra centavos de valor. */
+private const val VALUE_ROUNDING_CENTS: Long = 10_00
 
 /**
  * Valor de mercado de [player], em USD, no vínculo [employment], numa liga de
@@ -115,11 +121,11 @@ fun marketReferenceValue(player: Player): Money =
     valueOf(player, contractFactor = 1.0, leagueFactor = leagueFactor(MARKET_REFERENCE_STRENGTH))
 
 /**
- * Valor de [player] no elenco de [club]: o contrato (provisório até a #136) e a
- * força da liga do clube no [catalog] do save.
+ * Valor de [player] no elenco de [club]: o contrato dele (`player.employment`,
+ * #136) e a força da liga do clube no [catalog] do save.
  */
 fun squadMarketValue(player: Player, club: Club, catalog: List<GameCompetition>, today: LocalDate): Money =
-    marketValue(player, provisionalEmployment(player, club.id, today), catalog.leagueStrengthOf(club), today)
+    marketValue(player, player.employment, catalog.leagueStrengthOf(club), today)
 
 /**
  * Força da liga de [club] no catálogo. Clube sem liga no save (só joga a
@@ -128,23 +134,6 @@ fun squadMarketValue(player: Player, club: Club, catalog: List<GameCompetition>,
  */
 fun List<GameCompetition>.leagueStrengthOf(club: Club): LeagueStrength =
     leagueOf(club)?.strength ?: MARKET_REFERENCE_STRENGTH
-
-/**
- * Contrato PADRÃO PROVISÓRIO: enquanto o [Player] não tem `employment` (#136),
- * todo jogador de elenco é tratado como tendo assinado hoje um contrato de 3
- * anos com o salário atual. Um helper só, para a integração da #136 ter um
- * único ponto a trocar.
- */
-// #136: substituir por player.employment
-fun provisionalEmployment(player: Player, clubId: ClubId, today: LocalDate): Employment =
-    Employment.UnderContract(
-        clubId = clubId,
-        salary = player.salary,
-        start = today,
-        end = today.plusYears(PROVISIONAL_CONTRACT_YEARS),
-    )
-
-private const val PROVISIONAL_CONTRACT_YEARS: Long = 3
 
 // ─── Os fatores ──────────────────────────────────────────────────────────────
 

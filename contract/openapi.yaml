@@ -1820,7 +1820,13 @@ components:
             Forma física (issue #54). Titulares perdem 10–25 por rodada (piso
             40) e reservas recuperam. Abaixo de 70 o rendimento do jogador cai
             proporcionalmente — a UI não recalcula isso, só exibe.
-        salary:     { type: integer, format: int64, minimum: 0, description: Salário mensal, em centavos de USD }
+        salary:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Salário mensal, em centavos de USD — o do contrato (issue #136).
+            Zero para o jogador livre do mercado, que não tem contrato.
         age:
           type: integer
           minimum: 15
@@ -1874,6 +1880,11 @@ components:
             (mercado, eventos de rodada), é o valor de referência do mercado,
             sobre o qual sai o preço de anúncio. A venda rápida ao mercado paga
             uma fração do valor no clube. A UI só exibe — nunca recalcula.
+        contract:
+          $ref: '#/components/schemas/Contract'
+          description: |
+            Contrato em vigor (issue #136) — ausente para o jogador livre
+            (mercado).
 
     Suspension:
       type: object
@@ -4027,3 +4038,35 @@ components:
           type: array
           description: Ranking de seleções — só quem já jogou aparece
           items: { $ref: '#/components/schemas/NationalTableRow' }
+
+    # --- #136 ---
+    Contract:
+      type: object
+      description: |
+        Contrato em vigor do jogador (issue #136). O vínculo é com o clube
+        dono do elenco; o salário fica em `Player.salary`. Dura de 1 a 5
+        temporadas (no máximo 3 para menor de 18) e termina sempre no fim de
+        temporada da liga do clube — 31/12 no Brasil, 31/05 nas ligas
+        europeias. Ao vencer, na virada daquela liga, o jogador sai livre.
+      required: [start, end, finalSeason]
+      properties:
+        start:
+          type: string
+          format: date
+          example: '2026-01-01'
+        end:
+          type: string
+          format: date
+          description: Último dia do contrato — um fim de temporada da liga do clube
+          example: '2028-12-31'
+        releaseClause:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Cláusula de rescisão, em centavos de USD — ausente quando não há
+        finalSeason:
+          type: boolean
+          description: |
+            `true` quando o contrato está na última temporada (vence na próxima
+            virada da liga do clube). Calculado pelo backend a partir da data
+            do jogo — a UI só destaca.

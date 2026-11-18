@@ -113,8 +113,10 @@ class BeanConfig {
     fun buyPlayerUseCase(
         clubRepo: ClubRepository,
         marketRepo: MarketRepository,
+        leagueRepo: LeagueRepository,
+        catalogRepo: CompetitionCatalogRepository,
         windows: TransferWindowGuard,
-    ): BuyPlayerUseCase = BuyPlayerService(clubRepo, marketRepo, windows = windows)
+    ): BuyPlayerUseCase = BuyPlayerService(clubRepo, marketRepo, leagueRepo, catalogRepo, windows = windows)
 
     @Bean
     fun sellPlayerUseCase(

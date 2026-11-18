@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.`in`.web.dto
 
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.Lineup
@@ -17,6 +18,7 @@ import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
 import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.competitionOf
 import com.carlesso.goalfather.domain.rules.isForeignAt
+import com.carlesso.goalfather.domain.rules.isInFinalSeason
 import com.carlesso.goalfather.domain.rules.marketReferenceValue
 import com.carlesso.goalfather.domain.rules.squadMarketValue
 import com.carlesso.goalfather.domain.rules.startingLineupIn
@@ -92,6 +94,26 @@ data class PlayerDto(
      * referência do mercado — a régua do preço de anúncio.
      */
     val marketValue: Long,
+    /**
+     * Contrato em vigor (issue #136) — ausente para o livre (mercado). O
+     * salário continua em [salary], que é o do contrato.
+     */
+    val contract: ContractDto? = null,
+)
+
+/**
+ * Contrato como a API o descreve (issue #136). Datas ISO (`2028-12-31`), como
+ * o resto do contrato. [finalSeason] é a regra do domínio
+ * (`isInFinalSeason`) materializada aqui, para a UI só destacar — ela não
+ * sabe a data do jogo nem quando a temporada termina.
+ */
+@Serializable
+data class ContractDto(
+    val start: String,
+    val end: String,
+    /** Cláusula de rescisão, em centavos — ausente quando não há. */
+    val releaseClause: Long? = null,
+    val finalSeason: Boolean,
 )
 
 /** Suspensão como a API a descreve: com o nome da competição para a UI exibir. */
@@ -205,7 +227,8 @@ sealed interface TransferResultDto {
 /**
  * [club] é o clube de referência para o "estrangeiro?" — passado só pelo
  * elenco de um clube; o mercado chama sem ele. [competitions] (o catálogo do
- * save, issue #131) dá o nome das competições das suspensões.
+ * save, issue #131) dá o nome das competições das suspensões. [today] é a data
+ * do jogo (issue #136), para o "último ano de contrato?"; sem ela, `false`.
  */
 fun Player.toDto(
     club: Club? = null,
@@ -213,6 +236,7 @@ fun Player.toDto(
     // Um default pode ser uma EXPRESSÃO sobre o receiver (`this`): avaliada a
     // cada chamada que omite o argumento — em Java seria uma sobrecarga a mais.
     marketValue: Money = marketReferenceValue(this),
+    today: LocalDate? = null,
 ): PlayerDto = PlayerDto(
     id = id.value,
     name = name,
@@ -242,6 +266,14 @@ fun Player.toDto(
     },
     foreign = club?.let { isForeignAt(it) },
     marketValue = marketValue.cents,
+    contract = contract?.toDto(today),
+)
+
+fun Employment.UnderContract.toDto(today: LocalDate?): ContractDto = ContractDto(
+    start = start.toString(),
+    end = end.toString(),
+    releaseClause = releaseClause?.cents,
+    finalSeason = today?.let { isInFinalSeason(it) } ?: false,
 )
 
 fun Lineup.toDto(): LineupDto = LineupDto(
@@ -268,7 +300,12 @@ fun Club.toDto(competitions: List<GameCompetition> = emptyList(), today: LocalDa
         cash = cash.cents,
         stadiumCapacity = stadiumCapacity,
         squad = squad.map {
-            it.toDto(club = this, competitions = competitions, marketValue = squadMarketValue(it, this, competitions, today))
+            it.toDto(
+                club = this,
+                competitions = competitions,
+                marketValue = squadMarketValue(it, this, competitions, today),
+                today = today,
+            )
         },
         lineup = saved,
         effectiveLineup = effective,
@@ -293,7 +330,7 @@ fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto()
  */
 fun TransferResult.toDto(competitions: List<GameCompetition> = emptyList(), today: LocalDate): TransferResultDto = when (this) {
     is TransferResult.Success ->
-        TransferResultDto.Success(club = club.toDto(competitions, today), player = player.toDto())
+        TransferResultDto.Success(club = club.toDto(competitions, today), player = player.toDto(today = today))
 
     is TransferResult.InsufficientFunds ->
         TransferResultDto.InsufficientFunds(available = available.cents, required = required.cents)

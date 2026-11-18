@@ -57,7 +57,8 @@ class ClubController(
     // estrangeiros da escalação efetiva e os nomes das competições.
     private val catalog: CompetitionCatalogRepository,
     private val onboarding: WorldOnboardingUseCase,
-    // Encaixe corrente (issue #135): o "hoje" do valor de mercado do elenco.
+    // Encaixe corrente (issues #135/#136): o "hoje" do valor de mercado e do
+    // "último ano de contrato" do elenco.
     private val leagueRepo: LeagueRepository,
     // `ClubDto` carrega o `availability` (sealed) de cada jogador: as respostas
     // de sucesso saem pelo kotlinx via `okJson` para manter o `type` do

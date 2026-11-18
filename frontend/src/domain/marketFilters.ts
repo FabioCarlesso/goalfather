@@ -11,7 +11,8 @@ export const MARKET_SORT_OPTIONS = [
   { key: 'price', label: 'Preço' },
   { key: 'overall', label: 'OVR' },
   { key: 'age', label: 'Idade' },
-  { key: 'salary', label: 'Salário' },
+  // Sem "Salário" desde a issue #136: do mercado só sai jogador livre, sem
+  // contrato e com salário zero — ordenar por ele não diz nada.
 ] as const
 
 export type MarketSortKey = (typeof MARKET_SORT_OPTIONS)[number]['key']
@@ -33,7 +34,6 @@ const SORT_VALUE: Record<MarketSortKey, (entry: MarketEntry) => number> = {
   price: (e) => e.price,
   overall: (e) => e.player.overall,
   age: (e) => e.player.age,
-  salary: (e) => e.player.salary,
 }
 
 export function isMarketSortKey(value: string | null): value is MarketSortKey {

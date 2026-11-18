@@ -37,7 +37,8 @@ class MarketController(
     private val meterRegistry: MeterRegistry,
     // Catálogo do save (issue #131): o clube da compra sai com a liga dele.
     private val catalog: CompetitionCatalogRepository,
-    // Encaixe corrente (issue #135): o "hoje" do valor de mercado do elenco.
+    // Encaixe corrente (issues #135/#136): o "hoje" do valor de mercado e do
+    // "último ano de contrato" no clube devolvido.
     private val leagueRepo: LeagueRepository,
     // `TransferResultDto` é sealed: sai pelo kotlinx (`okJson`) para levar o
     // `type` do contrato — com `ResponseEntity<Any>` o Spring usaria o Jackson.

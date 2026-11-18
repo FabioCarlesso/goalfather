@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.SeasonSpan
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.Position
@@ -278,7 +279,7 @@ class AgingRulesTest {
             makePlayer(3, position = Position.FW, overall = 55, age = 39), // aposenta
         )
 
-        val turn = ageSquadForSeason(squad, ClubId(7), season = 2030)
+        val turn = ageSquadForSeason(squad, ClubId(7), season = 2030, span = SeasonSpan.CALENDAR_YEAR)
 
         assertEquals(squad.size, turn.squad.size, "o elenco deveria manter o tamanho")
         assertEquals(2, turn.retirements.size)
@@ -305,7 +306,7 @@ class AgingRulesTest {
     fun `elenco sem aposentadoria passa intacto em tamanho e ordem`() {
         val squad = (1L..11L).map { makePlayer(it, overall = 75, age = 24) }
 
-        val turn = ageSquadForSeason(squad, ClubId(1), season = 2027)
+        val turn = ageSquadForSeason(squad, ClubId(1), season = 2027, span = SeasonSpan.CALENDAR_YEAR)
 
         assertTrue(turn.retirements.isEmpty())
         assertEquals(squad.map { it.id }, turn.squad.map { it.id })
@@ -316,12 +317,12 @@ class AgingRulesTest {
         val squad = listOf(makePlayer(1, overall = 60, age = 38), makePlayer(2, overall = 70, age = 22))
 
         assertEquals(
-            ageSquadForSeason(squad, ClubId(3), 2028),
-            ageSquadForSeason(squad, ClubId(3), 2028),
+            ageSquadForSeason(squad, ClubId(3), 2028, SeasonSpan.CALENDAR_YEAR),
+            ageSquadForSeason(squad, ClubId(3), 2028, SeasonSpan.CALENDAR_YEAR),
         )
         assertNotEquals(
-            ageSquadForSeason(squad, ClubId(3), 2028).squad,
-            ageSquadForSeason(squad, ClubId(4), 2028).squad,
+            ageSquadForSeason(squad, ClubId(3), 2028, SeasonSpan.CALENDAR_YEAR).squad,
+            ageSquadForSeason(squad, ClubId(4), 2028, SeasonSpan.CALENDAR_YEAR).squad,
             "clubes distintos não deveriam viver a mesma temporada",
         )
     }
@@ -351,7 +352,7 @@ class AgingRulesTest {
         var squad = (1L..11L).map { makePlayer(it, overall = 70, age = 25) }
 
         for (season in 2026..2045) {
-            val turn = ageSquadForSeason(squad, ClubId(1), season)
+            val turn = ageSquadForSeason(squad, ClubId(1), season, SeasonSpan.CALENDAR_YEAR)
             squad = turn.squad
             assertEquals(11, squad.size, "elenco encolheu na temporada $season")
         }

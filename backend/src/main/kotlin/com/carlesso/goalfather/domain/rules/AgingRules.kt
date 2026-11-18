@@ -1,10 +1,12 @@
 package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Retirement
+import com.carlesso.goalfather.domain.model.SeasonSpan
 import com.carlesso.goalfather.domain.model.cents
 import kotlin.random.Random
 
@@ -162,9 +164,11 @@ fun ageSquadOneSeason(squad: List<Player>, rng: Random): List<AgingOutcome> =
  * equivalente barato de uma categoria de base.
  *
  * A seed sai de [agingSeed]: mesma temporada + mesmo clube ⇒ mesma virada,
- * inclusive os garotos promovidos.
+ * inclusive os garotos promovidos. [span] é a janela de temporada do clube
+ * (issue #136): o garoto sobe já com contrato, que termina num fim de
+ * temporada da liga dele.
  */
-fun ageSquadForSeason(squad: List<Player>, clubId: ClubId, season: Int): SquadSeasonTurn {
+fun ageSquadForSeason(squad: List<Player>, clubId: ClubId, season: Int, span: SeasonSpan): SquadSeasonTurn {
     val rng = Random(agingSeed(season, clubId))
     val outcomes = ageSquadOneSeason(squad, rng)
 
@@ -181,6 +185,7 @@ fun ageSquadForSeason(squad: List<Player>, clubId: ClubId, season: Int): SquadSe
                     id = youthPlayerId(clubId, season, slot),
                     slot = slot,
                     rng = rng,
+                    contract = youthContract(clubId, season, span),
                 )
                 next += youth
                 retirements += Retirement(clubId, retired = outcome.player, promoted = youth)
@@ -221,7 +226,7 @@ val YOUTH_SALARY_CENTS: Money = 600_00.cents
  * O nome é genérico de propósito — o domínio não conhece o nome do clube, e um
  * gerador de nomes de verdade pluga depois sem tocar na regra.
  */
-private fun youthFor(retired: Player, id: PlayerId, slot: Int, rng: Random): Player {
+private fun youthFor(retired: Player, id: PlayerId, slot: Int, rng: Random, contract: Employment.UnderContract): Player {
     val overall = (retired.overall - YOUTH_OVERALL_GAP.random(rng))
         .coerceIn(YOUTH_MIN_OVERALL, Player.OVERALL_RANGE.last)
     return Player(
@@ -233,10 +238,27 @@ private fun youthFor(retired: Player, id: PlayerId, slot: Int, rng: Random): Pla
         shooting = overall,
         passing = overall,
         defending = overall,
-        salary = YOUTH_SALARY_CENTS,
+        employment = contract,
         age = YOUTH_AGE.random(rng),
     )
 }
+
+/**
+ * Primeiro contrato profissional do garoto (issue #136): [YOUTH_CONTRACT_SEASONS]
+ * temporadas a partir da [season] que começa, na janela [span] do clube, com o
+ * salário de base. 3 temporadas cabem até no limite do menor de 18 — os
+ * garotos sobem com 17 a 19 anos.
+ */
+private fun youthContract(clubId: ClubId, season: Int, span: SeasonSpan): Employment.UnderContract =
+    Employment.UnderContract(
+        clubId = clubId,
+        salary = YOUTH_SALARY_CENTS,
+        start = span.start(season),
+        end = span.end(season + YOUTH_CONTRACT_SEASONS - 1),
+    )
+
+/** Duração do contrato de quem sobe da base: o máximo permitido ao menor. */
+const val YOUTH_CONTRACT_SEASONS: Int = MAX_MINOR_CONTRACT_SEASONS
 
 /** Piso do garoto: abaixo disto ele não seria jogador de elenco principal. */
 private const val YOUTH_MIN_OVERALL: Int = 40

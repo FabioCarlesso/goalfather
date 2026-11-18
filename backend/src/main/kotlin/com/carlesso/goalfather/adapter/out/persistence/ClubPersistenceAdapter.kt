@@ -159,7 +159,7 @@ class ClubSaveTransaction(
         val newPlayerIds = club.squad.mapTo(HashSet()) { it.id.value }
 
         val removed = currentPlayers.filter { it.id !in newPlayerIds }
-        removed.forEach { it.clubId = null }
+        removed.forEach { it.releaseFromClub() }
         playerRepo.saveAll(removed)
 
         // Atualiza/adiciona players do squad

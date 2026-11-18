@@ -5,6 +5,8 @@
 import type { components } from '../api/generated'
 
 export type Player        = components['schemas']['Player']
+// Contrato do vínculo (issue #136)
+export type Contract      = components['schemas']['Contract']
 export type Availability  = components['schemas']['Availability']
 export type Club          = components['schemas']['Club']
 // País e nacionalidade (issue #123)

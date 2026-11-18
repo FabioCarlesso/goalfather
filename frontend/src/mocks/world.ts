@@ -5,7 +5,7 @@
 // o backend assumir, esta pasta inteira (mocks/) sai.
 
 import type { Country, Player, Position } from '../domain/types'
-import { MulberryRng, marketValueOf } from './engine'
+import { MulberryRng, initialContractOf, marketValueOf } from './engine'
 
 /** Bandeira da Inglaterra: bandeira preta + "tag characters" de `gbeng` (como o `flagEmoji` do backend). */
 const ENGLAND_FLAG = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}'
@@ -169,6 +169,8 @@ export function syntheticSquad(club: MockWorldClub, country: Country, taken: Set
       defending: attr(),
       stamina: 100,
       salary: SYNTHETIC_SALARY_CENTS,
+      // Contrato inicial (issue #136), com término na temporada da liga do país.
+      contract: initialContractOf({ id: club.id * 1000 + slot, age: ageForSlot(slot) }, country.code),
       goals: 0,
       yellowCards: 0,
       redCards: 0,

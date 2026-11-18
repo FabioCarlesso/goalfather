@@ -16,6 +16,7 @@ import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.result.OfferResult
 import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_SLOTS
 import com.carlesso.goalfather.domain.rules.offerBlocker
+import com.carlesso.goalfather.domain.rules.transferredTo
 
 /**
  * Implementação de [TransferOfferUseCase] (issue #63). As regras — o que
@@ -101,9 +102,8 @@ class TransferOfferService(
         // finalização da rodada e a transferência se pisem (a rodada relê e
         // reaplica, issue #89); o que a guarda evita é o caso comum, o técnico
         // aceitando com a rodada já rolando na tela dele.
-        leagueRepo.findLatest()
-            ?.takeIf { it.status == RoundStatus.InProgress }
-            ?.let { return OfferResult.RoundInProgress(it.matchday) }
+        val latest = leagueRepo.findLatest()
+        latest?.takeIf { it.status == RoundStatus.InProgress }?.let { return OfferResult.RoundInProgress(it.matchday) }
 
         val buyer = clubRepo.findById(offer.buyerClubId) ?: return OfferResult.ClubNotFound(offer.buyerClubId)
         when (val blocker = offerBlocker(buyer, seller, offer.playerId, offer.amount)) {
@@ -121,7 +121,13 @@ class TransferOfferService(
         // a virada do encaixe é quem a expira quando a janela fecha.
         windows.registrationBlocker(buyer, seller.country.code, offer.playerId)
             ?.let { return it.toOfferRejection(offer.playerId) }
+
+        // Trocar de clube é trocar de contrato (issue #136): o comprador assume
+        // os termos (salário, cláusula), com o vínculo e o término na liga dele.
+        // A negociação de termos pessoais é a #138. Sem rodada (save vazio), o
+        // novo vínculo começa onde o antigo começou.
         val player = seller.squad.first { it.id == offer.playerId }
+            .let { it.transferredTo(buyer, today = latest?.matchday?.date ?: it.contract?.start) }
 
         // Quem disputava o mesmo jogador expira junto, na mesma transação.
         // `mapNotNull`: a transição devolve `null` para quem já não estava

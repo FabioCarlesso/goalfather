@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.MarketEntry
@@ -61,7 +62,7 @@ class CacheIntegrationTest {
                 player = Player(
                     id = PlayerId(9001), name = "Cache Tester", position = Position.MF,
                     overall = 70, pace = 70, shooting = 70, passing = 70, defending = 70,
-                    salary = 10_000_00.cents, age = 25,
+                    employment = Employment.FreeAgent, age = 25,
                 ),
                 price = 100_000_00.cents,
             ),

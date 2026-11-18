@@ -35,16 +35,16 @@ class ValuationRulesTest {
     }
 
     @Test
-    fun `tabela de calibracao na ordem de grandeza do futebol real em USD`() {
+    fun `tabela de calibracao na escala da economia do jogo em USD`() {
         // Auge (25 anos), contrato longo, liga de referência. Faixas largas de
         // propósito: o teste trava a ORDEM DE GRANDEZA, não a constante.
         val cases = listOf(
-            50 to 50_000L..150_000L,
-            60 to 300_000L..700_000L,
-            70 to 2_000_000L..3_000_000L,
-            80 to 10_000_000L..20_000_000L,
-            85 to 25_000_000L..50_000_000L,
-            90 to 60_000_000L..120_000_000L,
+            50 to 500L..1_500L,
+            60 to 3_000L..7_000L,
+            70 to 20_000L..30_000L,
+            80 to 100_000L..200_000L,
+            85 to 250_000L..500_000L,
+            90 to 600_000L..1_200_000L,
         )
         for ((overall, dollars) in cases) {
             val v = value(overall = overall).cents / 100
@@ -55,7 +55,7 @@ class ValuationRulesTest {
     @Test
     fun `mais overall vale mais`() {
         for (age in listOf(18, 25, 33)) {
-            // A partir de 50: abaixo disso um veterano já encosta no piso de US$ 10 mil.
+            // A partir de 50: abaixo disso um veterano já encosta no piso de US$ 100.
             (50..99).map { value(overall = it, age = age) }.zipWithNext().forEach { (lower, higher) ->
                 assertTrue(higher > lower, "idade $age: $higher não é maior que $lower")
             }
@@ -108,7 +108,7 @@ class ValuationRulesTest {
 
     @Test
     fun `todo jogador com contrato tem um valor minimo positivo`() {
-        assertEquals(Money.dollars(10_000), value(overall = 1, age = 50, employment = contract(0), strength = 1))
+        assertEquals(Money.dollars(100), value(overall = 1, age = 50, employment = contract(0), strength = 1))
     }
 
     @Test
@@ -118,14 +118,13 @@ class ValuationRulesTest {
     }
 
     @Test
-    fun `valor no elenco usa a forca da liga do clube e o contrato provisorio`() {
+    fun `valor no elenco usa a forca da liga do clube e o contrato do jogador`() {
         // Série B com força 62 no catálogo; clube sem liga cai na referência.
         val catalog = brazilCatalog().map { if (it.id == SERIE_B) it.copy(strength = LeagueStrength(62)) else it }
         val club = makeClub().copy(country = Countries.BRAZIL, division = Division(2))
         val player = club.squad.first()
 
-        val employment = assertIs<Employment.UnderContract>(provisionalEmployment(player, club.id, today))
-        assertEquals(today.plusYears(3), employment.end)
+        val employment = assertIs<Employment.UnderContract>(player.employment)
         assertEquals(LeagueStrength(62), catalog.leagueStrengthOf(club))
         assertEquals(marketValue(player, employment, LeagueStrength(62), today), squadMarketValue(player, club, catalog, today))
         assertEquals(reference, emptyList<GameCompetition>().leagueStrengthOf(club))

@@ -330,9 +330,9 @@ describe('averageOverall', () => {
 })
 
 describe('valor e preços do mercado (espelha ValuationRules.kt e TransferRules.kt — issue #135)', () => {
-  it('overall 70 no auge e na liga de referência vale US$ 2,5 mi; cada 4 pontos dobram', () => {
-    expect(marketValueOf({ overall: 70, age: 25 })).toBe(2_500_000_00)
-    expect(marketValueOf({ overall: 74, age: 25 })).toBe(5_000_000_00)
+  it('overall 70 no auge e na liga de referência vale US$ 25 mil; cada 4 pontos dobram', () => {
+    expect(marketValueOf({ overall: 70, age: 25 })).toBe(25_000_00)
+    expect(marketValueOf({ overall: 74, age: 25 })).toBe(50_000_00)
   })
 
   it('pico de idade entre 24 e 27 e liga mais forte vale mais', () => {

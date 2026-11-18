@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.test.testContract
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,7 +19,7 @@ class LineupTest {
         shooting = overall,
         passing = overall,
         defending = overall,
-        salary = 10_000.cents,
+        employment = testContract(10_000.cents),
         age = 25,
     )
 

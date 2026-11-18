@@ -94,12 +94,20 @@ class TransferWindowGuardTest {
         coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
     }
 
+    private fun buyService() = BuyPlayerService(
+        clubRepo,
+        marketRepo,
+        leagueRepo = mockk { coEvery { findLatest() } returns null; coEvery { currentStandings() } returns emptyList() },
+        catalogRepo = InMemoryCatalogRepository(),
+        windows = guard,
+    )
+
     @Test
     fun `compra fora da janela devolve TransferWindowClosed com a proxima abertura e nao mexe em nada`() = runTest {
         stubBuy()
         today = day(2026, 4, 1)
 
-        val result = BuyPlayerService(clubRepo, marketRepo, windows = guard).execute(buyer.id, target.id)
+        val result = buyService().execute(buyer.id, target.id)
 
         assertEquals(TransferResult.TransferWindowClosed(day(2026, 7, 20)), result)
         coVerify(exactly = 0) { marketRepo.claim(any()) }
@@ -109,7 +117,7 @@ class TransferWindowGuardTest {
     @Test
     fun `compra na janela registra o jogador e a segunda na mesma janela esbarra no limite`() = runTest {
         stubBuy()
-        val service = BuyPlayerService(clubRepo, marketRepo, windows = guard)
+        val service = buyService()
 
         assertIs<TransferResult.Success>(service.execute(buyer.id, target.id))
         assertEquals(listOf(Triple(target.id, buyer.id, today)), registrations.rows)

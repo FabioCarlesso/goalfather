@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.test
 
+import java.time.LocalDate
+import com.carlesso.goalfather.domain.model.Money
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
@@ -30,6 +33,7 @@ internal fun makePlayer(
     availability: Availability = Availability.Available,
     age: Int = 25,
     salary: Int = 10_000,
+    clubId: Long = 1,
 ): Player = Player(
     id = PlayerId(id),
     name = "Player$id",
@@ -40,10 +44,23 @@ internal fun makePlayer(
     passing = overall,
     defending = overall,
     stamina = stamina,
-    salary = salary.cents,
+    employment = testContract(salary.cents, clubId),
     age = age,
     availability = availability,
 )
+
+/**
+ * Contrato de teste (issue #136): longo de propósito (até 2099), para nenhum
+ * teste anterior aos contratos ver jogador sair livre numa virada. Quem testa
+ * vencimento monta o próprio contrato com término real.
+ */
+internal fun testContract(salary: Money = 10_000.cents, clubId: Long = 1): Employment.UnderContract =
+    Employment.UnderContract(
+        clubId = ClubId(clubId),
+        salary = salary,
+        start = LocalDate.of(2026, 1, 1),
+        end = LocalDate.of(2099, 12, 31),
+    )
 
 internal fun makeClub(
     id: Long = 1,
@@ -60,7 +77,7 @@ internal fun makeClub(
     name = name,
     cash = cash.cents,
     stadiumCapacity = 15_000,
-    squad = (1L..squadSize.toLong()).map { makePlayer(it, overall = overall, stamina = stamina) },
+    squad = (1L..squadSize.toLong()).map { makePlayer(it, overall = overall, stamina = stamina, clubId = id) },
     lineup = lineup,
     ownerId = ownerId,
     division = division,

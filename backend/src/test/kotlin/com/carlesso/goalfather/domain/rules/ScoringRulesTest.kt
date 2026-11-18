@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.test.testContract
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
@@ -25,7 +26,7 @@ class ScoringRulesTest {
         shooting = 75,
         passing = 75,
         defending = 75,
-        salary = 10_000.cents,
+        employment = testContract(10_000.cents),
         age = 25,
     )
 

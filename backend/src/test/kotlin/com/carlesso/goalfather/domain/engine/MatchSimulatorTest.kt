@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.engine
 
+import com.carlesso.goalfather.test.testContract
 import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CupLeg
@@ -44,7 +45,7 @@ class MatchSimulatorTest {
         shooting = overall,
         passing = overall,
         defending = overall,
-        salary = 10_000.cents,
+        employment = testContract(10_000.cents),
         age = 25,
     )
 
