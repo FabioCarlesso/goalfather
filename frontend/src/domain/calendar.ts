@@ -5,7 +5,7 @@
 // `SeasonCalendar.kt`) e chegam prontos pelo contrato — este módulo só
 // transforma em texto o que a API entregou.
 
-import { cupStageLabel, stageTitle } from './cup'
+import { cupStageLabel, groupStageLabel, stageTitle } from './cup'
 import type { Matchday, Round, RoundMatch, RoundStage, Slot } from './types'
 
 export const SLOT_LABEL: Record<Slot, string> = {
@@ -63,5 +63,7 @@ export function matchCompetitionLabel(match: Pick<RoundMatch, 'competitionName' 
       return `${match.competitionName} · Rodada ${match.stage.matchday}`
     case 'Cup':
       return `${match.competitionName} · ${cupStageLabel(match.stage)}`
+    case 'Group':
+      return `${match.competitionName} · ${groupStageLabel(match.stage)}`
   }
 }

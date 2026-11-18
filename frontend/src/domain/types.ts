@@ -62,6 +62,12 @@ export type CupLegs       = components['schemas']['CupLegs']
 export type CupLegScore   = components['schemas']['CupLegScore']
 export type PenaltyScore  = components['schemas']['PenaltyScore']
 
+// --- #132 Libertadores ---
+export type Libertadores       = components['schemas']['Libertadores']
+export type ContinentalGroup   = components['schemas']['ContinentalGroup']
+export type GroupFixture       = components['schemas']['GroupFixture']
+export type ContinentalTitle   = components['schemas']['ContinentalTitle']
+
 // Diretoria — meta da temporada, confiança e demissão (issue #62)
 export type BoardObjective = components['schemas']['BoardObjective']
 export type BoardMood      = components['schemas']['BoardMood']

@@ -32,6 +32,7 @@ import {
   type StoredClub,
 } from './seed'
 import { WORLD_LEAGUES, seasonLabelOf } from './world'
+import { mockLibertadores } from './libertadores'
 import {
   simulateMatch,
   averageOverall,
@@ -817,6 +818,20 @@ export const handlers = [
   // ─── getCup (issue #61) ───────────────────────────────────────────────
   // Só a copa da temporada corrente existe no mock; temporada anterior ou
   // liga sem copa → 404, como no backend.
+  // --- #132 Libertadores --- (retrato estático, ver ./libertadores)
+  http.get('/api/libertadores', async ({ request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const season = new URL(request.url).searchParams.get('season')
+    const edition = mockLibertadores()
+    if (season != null && Number(season) !== edition.season) {
+      return HttpResponse.json(
+        { code: 'LIBERTADORES_NOT_FOUND', message: `Temporada ${season} sem Libertadores` } satisfies ErrorResponse,
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json(edition)
+  }),
+
   http.get('/api/league/cup', async ({ request }) => {
     await delay(SIMULATED_LATENCY_MS)
     const season = new URL(request.url).searchParams.get('season')

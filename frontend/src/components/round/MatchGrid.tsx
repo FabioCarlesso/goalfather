@@ -13,6 +13,9 @@ function groupLabel(match: RoundMatch): string {
       return match.competitionName
     case 'Cup':
       return `${match.competitionName} · ${cupStageLabel(match.stage)}`
+    // Fase de grupos da Libertadores (issue #132): um bloco por competição.
+    case 'Group':
+      return `${match.competitionName} · Fase de grupos`
   }
 }
 
