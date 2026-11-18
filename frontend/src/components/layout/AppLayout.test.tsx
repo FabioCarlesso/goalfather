@@ -62,7 +62,7 @@ describe('AppLayout (issue #106)', () => {
 
       expect(menuButton()).toHaveAttribute('aria-expanded', 'true')
       const links = within(panelOf(menuButton())).getAllByRole('link').map((link) => link.textContent)
-      expect(links).toEqual(['Clube', 'Escalação', 'Rodada', 'Mercado', 'Tabela', 'Copa', 'Histórico'])
+      expect(links).toEqual(['Clube', 'Escalação', 'Rodada', 'Mercado', 'Mundo', 'Tabela', 'Copa', 'Histórico'])
     })
 
     it('fecha e navega ao escolher um link', async () => {

@@ -1,8 +1,8 @@
 import { type Page } from '@playwright/test'
 import { expect, test } from './helpers'
 
-/** Data do próximo encaixe ("Semana 6 · Meio de semana"): muda a cada encaixe jogado. */
-const nextMatchday = (page: Page) => page.getByText(/Semana \d+ · (Meio de semana|Fim de semana)/).first()
+/** Data do próximo encaixe ("Semana 6 · Meio de semana") na página — o cabeçalho também mostra a data do jogo (issue #133). */
+const nextMatchday = (page: Page) => page.getByRole('main').getByText(/Semana \d+ · (Meio de semana|Fim de semana)/).first()
 
 /**
  * Joga os encaixes que vierem até o próximo ser [name]. Contra o backend real
@@ -37,7 +37,7 @@ test.describe('Cup flow', () => {
 
     // Encaixe 1: rodada de liga, no domingo (issue #125).
     await expect(page.getByRole('heading', { name: 'Rodada 1' })).toBeVisible()
-    await expect(page.getByText(/Semana \d+ · Fim de semana/)).toBeVisible()
+    await expect(page.getByRole('main').getByText(/Semana \d+ · Fim de semana/)).toBeVisible()
     // Instantânea (issue #115): o placar é o mesmo em qualquer velocidade, e a
     // copa não precisa de 3 × ~7s de transmissão para ser testada.
     await page.getByLabel('Velocidade').selectOption('INSTANT')
@@ -47,7 +47,7 @@ test.describe('Cup flow', () => {
 
     // 1ª fase da copa (jogo único), numa quarta, no mesmo fluxo.
     await playUntil(page, 'Copa — Primeira fase')
-    await expect(page.getByText(/Semana \d+ · Meio de semana/)).toBeVisible()
+    await expect(page.getByRole('main').getByText(/Semana \d+ · Meio de semana/)).toBeVisible()
     await expect(page.getByText(/agregado da volta vai aos pênaltis/)).toBeVisible()
     await page.getByRole('button', { name: 'Estou pronto' }).click()
     await page.getByRole('button', { name: 'Próxima rodada' }).click()

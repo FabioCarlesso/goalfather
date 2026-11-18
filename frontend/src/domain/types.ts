@@ -88,3 +88,14 @@ export type AvailableClub   = components['schemas']['AvailableClub']
 // Mundo do onboarding país → liga → clube (issue #131)
 export type WorldCountry    = components['schemas']['WorldCountry']
 export type WorldLeague     = components['schemas']['WorldLeague']
+
+// Navegação pelo mundo: competições e calendário do clube (issue #133)
+export type CompetitionSummary    = components['schemas']['CompetitionSummary']
+export type CompetitionDetail     = components['schemas']['CompetitionDetail']
+export type CompetitionFormatType = components['schemas']['CompetitionFormatType']
+export type CompetitionKindType   = components['schemas']['CompetitionKindType']
+export type Tiebreaker            = components['schemas']['Tiebreaker']
+export type CompetitionMatchday   = components['schemas']['CompetitionMatchday']
+export type CompetitionScorer     = components['schemas']['CompetitionScorer']
+export type ScheduleWeek          = components['schemas']['ScheduleWeek']
+export type ClubSchedule          = components['schemas']['ClubSchedule']

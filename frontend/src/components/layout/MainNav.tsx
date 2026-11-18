@@ -8,6 +8,7 @@ const nav = [
   { to: '/lineup',    label: 'Escalação' },
   { to: '/round',     label: 'Rodada' },
   { to: '/market',    label: 'Mercado' },
+  { to: '/world',     label: 'Mundo' },
   { to: '/standings', label: 'Tabela' },
   { to: '/cup',       label: 'Copa' },
   { to: '/history',   label: 'Histórico' },

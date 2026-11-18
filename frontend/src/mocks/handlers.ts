@@ -63,6 +63,7 @@ import {
 import { decidesOnPenalties, recordCupRound } from './cup'
 import { matchdaySerial } from './calendar'
 import { boardStatusOf, forNewManager } from './board'
+import { worldNavigationHandlers } from './worldNavigation'
 import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
 import type {
   TransferResult,
@@ -996,6 +997,7 @@ export const handlers = [
           : m
       })
       state.currentRound = { ...round, status: 'Finished', matches: finishedMatches }
+      state.playedRounds.push(state.currentRound)
 
       // Data de copa (issue #61): resultados (com pênaltis) vão para a chave,
       // que avança e devolve o prêmio de quem passou em campo.
@@ -1191,4 +1193,7 @@ export const handlers = [
       client.close(1000, 'Rodada encerrada')
     })()
   }),
+
+  // ─── Navegação pelo mundo (issue #133) ────────────────────────────────
+  ...worldNavigationHandlers,
 ]

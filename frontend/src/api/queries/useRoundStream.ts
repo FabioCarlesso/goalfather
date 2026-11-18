@@ -5,6 +5,7 @@ import { roundReadinessKey } from './useRoundReadiness'
 import { standingsKey } from './useStandings'
 import { seasonHistoryKey, clubCareerKey } from './useSeasonHistory'
 import { cupKey } from './useCup'
+import { competitionsKey } from './useCompetitions'
 import { boardKey } from './useBoard'
 import { errorMessage } from '../errorMessages'
 import { wsUrl } from '../wsUrl'
@@ -199,6 +200,9 @@ export function useRoundStream(
       qc.invalidateQueries({ queryKey: boardKey(myClubId) })
       // O relógio andou um encaixe (issue #125): data corrente e próximo jogo.
       qc.invalidateQueries({ queryKey: ['calendar'] })
+      // Navegação pelo mundo (issue #133): tabela, jogos, artilharia e chave
+      // de qualquer competição mudam com o encaixe.
+      qc.invalidateQueries({ queryKey: competitionsKey })
       // Treino da semana (issue #58): o evento traz o extrato de todos os
       // clubes; só o do técnico interessa aqui. Fica DEPOIS das
       // invalidações e com acesso opcional de propósito: um payload sem
