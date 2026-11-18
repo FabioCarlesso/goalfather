@@ -2,7 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { api, ApiError } from '../client'
 import type { Libertadores } from '../../domain/types'
 
-export const libertadoresKey = (season?: number) => ['libertadores', season ?? 'current'] as const
+/** Prefixo de todas as edições: o `useRoundStream` invalida a família inteira a cada encaixe. */
+export const libertadoresRootKey = ['libertadores'] as const
+export const libertadoresKey = (season?: number) => [...libertadoresRootKey, season ?? 'current'] as const
 
 /**
  * A Libertadores (issue #132): grupos com tabela, jogos e a chave do

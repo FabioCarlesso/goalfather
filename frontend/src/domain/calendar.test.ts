@@ -21,10 +21,18 @@ describe('rótulos do calendário semanal (issue #125)', () => {
     expect(roundTitle({ matches: [league, league] })).toBe('Rodada 3')
     expect(roundTitle({ matches: [league, cup] })).toBe('Rodada 3 + Copa — Semifinal')
     expect(roundTitle({ matches: [] })).toBe('Encaixe sem jogos')
+
     expect(hasKnockout({ matches: [league] })).toBe(false)
     expect(hasKnockout({ matches: [league, cup] })).toBe(true)
     // O resumo destaca a rodada de liga, que é a que mexe na tabela.
     expect(primaryStage({ matches: [cup, league] })).toEqual({ type: 'League', matchday: 3 })
+  })
+
+  it('os grupos da Libertadores na mesma rodada viram uma fase só no título do encaixe (#132)', () => {
+    const league = match({ type: 'League', matchday: 3 })
+    const group = (groupName: string) => match({ type: 'Group', groupName, matchday: 5 })
+    expect(roundTitle({ matches: [group('Grupo A'), group('Grupo B'), league] }))
+      .toBe('Libertadores — Fase de grupos · Rodada 5 + Rodada 3')
   })
 
   it('rótulo da partida diz a competição e o que ela disputa', () => {

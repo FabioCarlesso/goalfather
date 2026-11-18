@@ -6,6 +6,7 @@ import { standingsKey } from './useStandings'
 import { seasonHistoryKey, clubCareerKey } from './useSeasonHistory'
 import { cupKey } from './useCup'
 import { competitionsKey } from './useCompetitions'
+import { libertadoresRootKey } from './useLibertadores'
 import { boardKey } from './useBoard'
 import { nationalTeamsRootKey } from './useNationalTeams'
 import { errorMessage } from '../errorMessages'
@@ -206,6 +207,10 @@ export function useRoundStream(
       // Navegação pelo mundo (issue #133): tabela, jogos, artilharia e chave
       // de qualquer competição mudam com o encaixe.
       qc.invalidateQueries({ queryKey: competitionsKey })
+      // Libertadores (issue #132): a rodada de grupo ou de mata-mata muda a
+      // tabela dos grupos e a chave — sem isso, a tela mostra a classificação
+      // antiga por até 30 s (staleTime) depois do encaixe.
+      qc.invalidateQueries({ queryKey: libertadoresRootKey })
       // Treino da semana (issue #58): o evento traz o extrato de todos os
       // clubes; só o do técnico interessa aqui. Fica DEPOIS das
       // invalidações e com acesso opcional de propósito: um payload sem
