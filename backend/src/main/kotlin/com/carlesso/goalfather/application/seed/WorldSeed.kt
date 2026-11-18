@@ -21,6 +21,7 @@ import com.carlesso.goalfather.domain.model.world.CompetitionOwner
 import com.carlesso.goalfather.domain.model.world.LeagueStrength
 import com.carlesso.goalfather.domain.model.world.PlayerProfile
 import com.carlesso.goalfather.domain.model.world.Reputation
+import com.carlesso.goalfather.domain.model.world.TransferWindow
 import com.carlesso.goalfather.domain.model.world.WorldCompetition
 import com.carlesso.goalfather.domain.model.world.WorldPack
 import com.carlesso.goalfather.domain.rules.inStartingOrder
@@ -56,6 +57,8 @@ data class InitialWorld(
     val market: List<MarketEntry>,
     /** As continentais já sorteadas da temporada [year] (a Libertadores, issue #132). */
     val continentals: List<ContinentalCup> = emptyList(),
+    /** Janelas de transferência de todos os anos do pack (issue #137), copiadas do calendário. */
+    val transferWindows: List<TransferWindow> = emptyList(),
 ) {
     /**
      * Primeiro encaixe, tabelas e copas da temporada [year]. Delega a
@@ -156,6 +159,7 @@ fun WorldPack.toInitialWorld(year: Int = startYear()): InitialWorld {
         continentals = continental.mapNotNull { (world, game) ->
             game?.let { firstContinentalEdition(year, world, it, clubByPackId) }
         },
+        transferWindows = calendars.flatMap { it.transferWindows },
     )
 }
 

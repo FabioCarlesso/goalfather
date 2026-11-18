@@ -25,6 +25,8 @@ class SellPlayerService(
     private val marketRepo: MarketRepository,
     private val salePriceCalc: (Player) -> Money = ::salePayout,
     private val listingPriceCalc: (Player) -> Money = ::marketListingPrice,
+    // Venda rápida só dentro da janela do vendedor (issue #137).
+    private val windows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : SellPlayerUseCase {
 
     override suspend fun execute(clubId: ClubId, playerId: PlayerId): TransferResult {
@@ -32,6 +34,7 @@ class SellPlayerService(
             ?: return TransferResult.PlayerNotAvailable(playerId)
         val player = club.squad.firstOrNull { it.id == playerId }
             ?: return TransferResult.PlayerNotAvailable(playerId)
+        windows.saleBlocker(club)?.let { return it.toTransferResult(playerId) }
 
         val salePrice = salePriceCalc(player)
         val updatedClub = club.copy(

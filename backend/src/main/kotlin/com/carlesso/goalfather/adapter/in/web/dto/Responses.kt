@@ -13,6 +13,7 @@ import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.model.leagueOf
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
+import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.competitionOf
 import com.carlesso.goalfather.domain.rules.isForeignAt
 import com.carlesso.goalfather.domain.rules.startingLineupIn
@@ -177,6 +178,16 @@ sealed interface TransferResultDto {
     @Serializable
     @SerialName("Conflict")
     data class Conflict(val clubId: Long) : TransferResultDto
+
+    /** Janela fechada (issue #137) — `nextOpens` (ISO) omitido quando a federação não tem calendário. */
+    @Serializable
+    @SerialName("TransferWindowClosed")
+    data class TransferWindowClosed(val nextOpens: String? = null) : TransferResultDto
+
+    /** Limite de registros do jogador esgotado (issue #137). */
+    @Serializable
+    @SerialName("TransferLimitReached")
+    data class TransferLimitReached(val playerId: Long, val limit: RegistrationLimit) : TransferResultDto
 }
 
 // ─── Mapeamento domínio → DTO ─────────────────────────────────────────────
@@ -276,4 +287,10 @@ fun TransferResult.toDto(competitions: List<GameCompetition> = emptyList()): Tra
 
     is TransferResult.Conflict ->
         TransferResultDto.Conflict(clubId = clubId.value)
+
+    is TransferResult.TransferWindowClosed ->
+        TransferResultDto.TransferWindowClosed(nextOpens = nextOpens?.toString())
+
+    is TransferResult.TransferLimitReached ->
+        TransferResultDto.TransferLimitReached(playerId = playerId.value, limit = limit)
 }

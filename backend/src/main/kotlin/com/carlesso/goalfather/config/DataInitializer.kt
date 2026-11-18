@@ -1,6 +1,8 @@
 package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.adapter.out.persistence.SavedCountryCatalog
+import com.carlesso.goalfather.adapter.out.persistence.TransferWindowJpaRepository
+import com.carlesso.goalfather.adapter.out.persistence.toEntity
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.CompetitionCatalogJpaRepository
 import org.slf4j.LoggerFactory
@@ -34,11 +36,14 @@ class DataInitializer(
     private val newWorld: NewWorldFactory,
     private val seed: SeedWriter,
     private val countries: SavedCountryCatalog,
+    // Janelas de transferência (issue #137, V24).
+    private val transferWindowRepo: TransferWindowJpaRepository,
 ) : CommandLineRunner {
 
     override fun run(vararg args: String?) {
         if (clubRepo.count() > 0L) {
             check(catalogRepo.count() > 0L) { LEGACY_SAVE_MESSAGE }
+            backfillTransferWindows()
             countries.reload()
             return
         }
@@ -49,6 +54,19 @@ class DataInitializer(
         }
         countries.reload()
         log.info("Seed do mundo concluído em {} ms (carga do pack + seed + gravação)", total.inWholeMilliseconds)
+    }
+
+    /**
+     * Save de antes da #137 (V24 criou a tabela vazia): sem janelas, o mercado
+     * ficaria fechado para sempre. Ganha as janelas do pack, uma vez. Ao
+     * contrário do save anterior à #131, aqui a migração faz sentido: as
+     * janelas são dado da federação, não dependem de nada do save.
+     */
+    private fun backfillTransferWindows() {
+        if (transferWindowRepo.count() > 0L) return
+        val windows = newWorld.create().world.transferWindows
+        transferWindowRepo.saveAll(windows.map { it.toEntity() })
+        log.info("Save anterior à #137: {} janelas de transferência copiadas do pack", windows.size)
     }
 
     companion object {

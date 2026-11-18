@@ -8,7 +8,9 @@ import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.TransferOffer
+import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.SquadViolation
+import java.time.LocalDate
 
 /**
  * Desfecho de um comando sobre propostas de transferência (issue #63): criar,
@@ -88,4 +90,13 @@ sealed interface OfferResult {
 
     /** Lock otimista de um dos clubes (issue #89): nada foi aplicado. */
     data class Conflict(val clubId: ClubId) : Rejection
+
+    /**
+     * Janela do comprador fechada — ou só doméstica, com vendedor de outro
+     * país (issue #137). Vale na criação e no aceite.
+     */
+    data class TransferWindowClosed(val nextOpens: LocalDate?) : Rejection
+
+    /** O jogador já esgotou o limite de registros da janela ou da temporada (issue #137). */
+    data class TransferLimitReached(val playerId: PlayerId, val limit: RegistrationLimit) : Rejection
 }

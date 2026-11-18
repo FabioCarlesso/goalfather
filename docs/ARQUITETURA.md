@@ -1621,6 +1621,64 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   #132 também toca). O relógio ainda não anda sozinho nos encaixes sem técnico
   humano (pendência conhecida).
 
+### Fase 9 — Mercado de transferências (épico #148)
+
+- [x] **Janelas de transferência por federação e por data** — issue #137
+  O mercado abre e fecha pela federação (o país) do clube **comprador**, na
+  data do relógio do jogo (o dia do encaixe corrente). Na venda rápida ao
+  mercado não há comprador: vale a janela do vendedor.
+
+  **Domínio puro** (`domain/rules/TransferWindowRules.kt`):
+  `windowStatus(federação, data, janelas): WindowStatus`, com
+  `sealed WindowStatus { Open(closes, scope); Closed(nextOpens) }`, e
+  `registrationBlocker(...)`, que devolve um `sealed TransferBlock`
+  (`WindowClosed(nextOpens)` / `LimitReached(limit)`) ou `null`. Cada serviço
+  traduz o bloqueio para o seu resultado com uma extension (`toTransferResult`,
+  `toOfferRejection`), num `when` exaustivo: os erros de negócio novos são
+  `TransferResult.TransferWindowClosed`/`TransferLimitReached` e as variantes
+  homônimas de `OfferResult.Rejection`. `TransferWindow` ganhou
+  `scope: TransferWindowScope` (`DOMESTIC_ONLY` | `INTERNATIONAL`). Granularidade
+  de **dia**, não de semana: as bordas reais caem no meio da semana (a CBF fecha
+  numa terça e abre a doméstica na quarta), e por semana as duas se sobreporiam.
+
+  **Janela só doméstica:** recusa transferência entre países (vendedor de outro
+  país) com `TransferWindowClosed` apontando a próxima abertura
+  **internacional**; aceita dentro do país. Compra no mercado não tem país de
+  origem e passa (a transferência internacional de verdade é a #142).
+
+  **Limite simplificado:** 1 registro por jogador por janela e 2 por temporada
+  de registro do comprador (ano civil no Brasil; 1º/jun–31/mai na UEFA, porque
+  a janela de verão abre antes do 1º jogo). Registro = o jogador entrar num
+  clube (compra ou proposta aceita), gravado em `player_registrations` (V24).
+  A venda ao mercado não registra.
+
+  **Onde a guarda entra:** `TransferWindowGuard` (aplicação) junta janelas do
+  save, registros e a data e é consultado por compra, venda rápida, criação e
+  aceite de proposta, como guarda adicional antes de mexer em caixa e elenco.
+  O relógio é injetado como `suspend () -> LocalDate?` (um tipo de função no
+  lugar de uma interface de um método); `TransferWindowGuard.UNRESTRICTED` (sem
+  relógio, nada bloqueia) é o default dos serviços montados à mão nos testes.
+  Na virada do encaixe, um efeito secundário novo (`offer_windows`, depois do
+  prazo das propostas) expira as pendentes por `ExpiryReason.WINDOW_CLOSED`
+  quando a janela do comprador fecha, ou vira só doméstica com vendedor de
+  fora.
+
+  **Dados:** janelas reais de 2026 e 2027 no pack (ver `docs/WORLD_DATA.md`,
+  "Janelas de transferência"), gravadas no save com o mundo (`transfer_windows`,
+  V24) e copiadas do pack para um save antigo no boot. Ano sem dado repete o
+  último ano conhecido da federação. O recorte do E2E ajusta as janelas do ano
+  de início para ter, na data inicial, o Brasil aberto e a Inglaterra fechada.
+
+  **API/UI:** `GET /api/clubs/{id}/transfer-window` (`TransferWindowStatus`) e
+  o selo "Janela aberta até …" / "Mercado fechado · abre em …" no Mercado e no
+  relógio do cabeçalho; os erros novos têm mensagem nos toasts de compra,
+  venda e proposta.
+
+  **Cortes:** registros gravados depois do `save` do clube, fora da mesma
+  transação (uma falha entre os dois deixaria de contar um registro). Sem
+  regra de jogador livre fora da janela. Migration numerada **V24** (a V11
+  sugerida já existe no repositório).
+
 ---
 
 ## 9. Stack consolidada

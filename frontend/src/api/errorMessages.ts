@@ -3,9 +3,11 @@
 
 import { ApiError } from './client'
 import { formatMoney, formatSeats } from '../domain/formatters'
+import { formatGameDate } from '../domain/calendar'
 import { MIN_STADIUM_EXPANSION_SEATS } from './queries/useExpandStadium'
 import type { TransferOfferResult, TransferResult } from '../domain/types'
 import { offerStatusLabel, expiryReasonLabel } from '../domain/offers'
+import { registrationLimitMessage, windowClosedMessage } from '../domain/transferWindow'
 
 /** Mensagens por `code` estável do ErrorResponse (não pela mensagem livre). */
 const MESSAGES: Record<string, string> = {
@@ -71,6 +73,11 @@ export function transferErrorMessage(result: Exclude<TransferResult, { type: 'Su
       return `Jogador #${result.playerId} indisponível.`
     case 'Conflict':
       return 'O clube foi alterado por outra operação ao mesmo tempo — nada foi aplicado. Tente de novo.'
+    // Janelas de transferência (issue #137).
+    case 'TransferWindowClosed':
+      return windowClosedMessage(result.nextOpens)
+    case 'TransferLimitReached':
+      return registrationLimitMessage(result.limit)
   }
 }
 
@@ -129,5 +136,12 @@ export function offerErrorMessage(
       return 'Há jogos em andamento agora — aceite depois que eles terminarem.'
     case 'Conflict':
       return 'Um dos clubes foi alterado por outra operação ao mesmo tempo — nada foi aplicado. Tente de novo.'
+    // Janelas de transferência (issue #137): a janela é a do COMPRADOR.
+    case 'TransferWindowClosed':
+      return seller
+        ? `A janela do comprador está fechada${result.nextOpens ? ` — abre em ${formatGameDate(result.nextOpens)}` : ''}.`
+        : windowClosedMessage(result.nextOpens)
+    case 'TransferLimitReached':
+      return registrationLimitMessage(result.limit)
   }
 }

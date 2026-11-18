@@ -84,6 +84,11 @@ export type SquadViolation      = components['schemas']['SquadViolation']
 export type TransferOfferResult = components['schemas']['TransferOfferResult']
 export type CreateOfferRequest  = components['schemas']['CreateOfferRequest']
 
+// --- #137 Janelas de transferência ---
+export type TransferWindowStatus = components['schemas']['TransferWindowStatus']
+export type TransferWindowScope  = components['schemas']['TransferWindowScope']
+export type RegistrationLimit    = components['schemas']['RegistrationLimit']
+
 // Auth (issue #18) + seleção de clube (issue #19)
 export type AuthUser        = components['schemas']['AuthUser']
 export type AuthResponse    = components['schemas']['AuthResponse']

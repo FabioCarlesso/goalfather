@@ -19,6 +19,7 @@ import com.carlesso.goalfather.application.port.`in`.SetTicketPriceUseCase
 import com.carlesso.goalfather.application.port.`in`.SetTrainingFocusUseCase
 import com.carlesso.goalfather.application.port.`in`.StreamMatchUseCase
 import com.carlesso.goalfather.application.port.`in`.TransferOfferUseCase
+import com.carlesso.goalfather.application.port.`in`.TransferWindowUseCase
 import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
@@ -32,7 +33,9 @@ import com.carlesso.goalfather.application.port.out.PasswordHasher
 import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
+import com.carlesso.goalfather.application.port.out.PlayerRegistrationRepository
 import com.carlesso.goalfather.application.port.out.TransferOfferRepository
+import com.carlesso.goalfather.application.port.out.TransferWindowRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BoardService
 import com.carlesso.goalfather.application.service.BuyPlayerService
@@ -53,6 +56,8 @@ import com.carlesso.goalfather.application.service.SellPlayerService
 import com.carlesso.goalfather.application.service.SetTicketPriceService
 import com.carlesso.goalfather.application.service.SetTrainingFocusService
 import com.carlesso.goalfather.application.service.TransferOfferService
+import com.carlesso.goalfather.application.service.TransferWindowGuard
+import com.carlesso.goalfather.application.service.TransferWindowService
 import com.carlesso.goalfather.application.service.TreatSquadService
 import com.carlesso.goalfather.application.service.WorldOnboardingService
 import com.carlesso.goalfather.domain.engine.MatchSimulator
@@ -85,17 +90,38 @@ class BeanConfig {
     @Bean
     fun matchSimulator(): MatchSimulator = MatchSimulator()
 
+    /**
+     * Guarda das janelas de transferência (issue #137). O relógio é a data do
+     * encaixe corrente; a lambda final é o `today: suspend () -> LocalDate?`
+     * do construtor (trailing lambda, fora dos parênteses).
+     */
+    @Bean
+    fun transferWindowGuard(
+        windowRepo: TransferWindowRepository,
+        registrationRepo: PlayerRegistrationRepository,
+        leagueRepo: LeagueRepository,
+    ): TransferWindowGuard = TransferWindowGuard(windowRepo, registrationRepo) { leagueRepo.findLatest()?.matchday?.date }
+
+    /** Selo de janela do clube (issue #137). */
+    @Bean
+    fun transferWindowUseCase(
+        clubRepo: ClubRepository,
+        guard: TransferWindowGuard,
+    ): TransferWindowUseCase = TransferWindowService(clubRepo, guard)
+
     @Bean
     fun buyPlayerUseCase(
         clubRepo: ClubRepository,
         marketRepo: MarketRepository,
-    ): BuyPlayerUseCase = BuyPlayerService(clubRepo, marketRepo)
+        windows: TransferWindowGuard,
+    ): BuyPlayerUseCase = BuyPlayerService(clubRepo, marketRepo, windows = windows)
 
     @Bean
     fun sellPlayerUseCase(
         clubRepo: ClubRepository,
         marketRepo: MarketRepository,
-    ): SellPlayerUseCase = SellPlayerService(clubRepo, marketRepo)
+        windows: TransferWindowGuard,
+    ): SellPlayerUseCase = SellPlayerService(clubRepo, marketRepo, windows = windows)
 
     @Bean
     fun saveLineupUseCase(
@@ -155,6 +181,8 @@ class BeanConfig {
         continentalRepo: ContinentalRepository,
         // Datas FIFA (issue #134): convocações e jogos de seleção.
         nationalTeams: NationalTeamClock,
+        // Janelas de transferência (issue #137): propostas expiram quando fecham.
+        transferWindows: TransferWindowGuard,
     ): PlayRoundUseCase = PlayRoundService(
         clubRepo,
         leagueRepo,
@@ -171,6 +199,7 @@ class BeanConfig {
         finalizationGate = finalizationGate,
         continentalRepo = continentalRepo,
         nationalTeams = nationalTeams,
+        transferWindows = transferWindows,
     )
 
     /**
@@ -186,7 +215,8 @@ class BeanConfig {
         offerRepo: TransferOfferRepository,
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
-    ): TransferOfferUseCase = TransferOfferService(offerRepo, clubRepo, leagueRepo)
+        windows: TransferWindowGuard,
+    ): TransferOfferUseCase = TransferOfferService(offerRepo, clubRepo, leagueRepo, windows)
 
     /** Painel da diretoria: meta da temporada e confiança no técnico (issue #62). */
     @Bean

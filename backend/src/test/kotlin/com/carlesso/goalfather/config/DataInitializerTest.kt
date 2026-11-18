@@ -1,12 +1,16 @@
 package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.adapter.out.persistence.SavedCountryCatalog
+import com.carlesso.goalfather.adapter.out.persistence.TransferWindowEntity
+import com.carlesso.goalfather.adapter.out.persistence.TransferWindowJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.ClubJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.repository.CompetitionCatalogJpaRepository
 import com.carlesso.goalfather.application.port.out.PackLoadError
 import com.carlesso.goalfather.application.port.out.PackLoadResult
 import com.carlesso.goalfather.application.port.out.WorldDataProvider
 import com.carlesso.goalfather.application.seed.InitialWorld
+import com.carlesso.goalfather.domain.model.Countries
+import com.carlesso.goalfather.domain.model.world.TransferWindow
 import com.carlesso.goalfather.domain.model.world.WorldPack
 import com.carlesso.goalfather.domain.rules.WorldStart
 import io.mockk.coEvery
@@ -19,6 +23,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import java.time.LocalDate
 
 /**
  * Quando o boot grava o mundo (issue #131). Sem Spring: repositórios, seed e
@@ -32,7 +37,8 @@ class DataInitializerTest {
     private val newWorld = mockk<NewWorldFactory>()
     private val seed = mockk<SeedWriter>(relaxed = true)
     private val countries = mockk<SavedCountryCatalog>(relaxed = true)
-    private val initializer = DataInitializer(clubRepo, catalogRepo, newWorld, seed, countries)
+    private val transferWindowRepo = mockk<TransferWindowJpaRepository>(relaxed = true)
+    private val initializer = DataInitializer(clubRepo, catalogRepo, newWorld, seed, countries, transferWindowRepo)
 
     private val world = InitialWorld(year = 2026, countries = emptyList(), competitions = emptyList(), clubs = emptyList(), market = emptyList())
     private val start = WorldStart(firstRound = null, standings = emptyList(), cups = emptyList())
@@ -55,12 +61,27 @@ class DataInitializerTest {
     fun `mundo existente nao e regravado`() {
         every { clubRepo.count() } returns 136
         every { catalogRepo.count() } returns 8
+        every { transferWindowRepo.count() } returns 30
 
         initializer.run()
 
         verify(exactly = 0) { seed.write(any(), any()) }
         verify(exactly = 0) { newWorld.create() }
         verify { countries.reload() }
+    }
+
+    @Test
+    fun `save anterior as janelas de transferencia ganha as do pack sem regravar o mundo`() {
+        val window = TransferWindow(Countries.BRAZIL, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 3, 3))
+        every { clubRepo.count() } returns 136
+        every { catalogRepo.count() } returns 8
+        every { transferWindowRepo.count() } returns 0
+        every { newWorld.create() } returns NewWorld(world.copy(transferWindows = listOf(window)), start)
+
+        initializer.run()
+
+        verify(exactly = 0) { seed.write(any(), any()) }
+        verify { transferWindowRepo.saveAll(match<List<TransferWindowEntity>> { it.single().startDate == window.start }) }
     }
 
     @Test

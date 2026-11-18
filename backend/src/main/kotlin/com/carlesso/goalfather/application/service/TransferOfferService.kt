@@ -27,6 +27,8 @@ class TransferOfferService(
     private val offerRepo: TransferOfferRepository,
     private val clubRepo: ClubRepository,
     private val leagueRepo: LeagueRepository,
+    // Janela do comprador e limite de registros (issue #137).
+    private val windows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : TransferOfferUseCase {
 
     override suspend fun offersOf(clubId: ClubId): List<TransferOffer> = offerRepo.findByClub(clubId)
@@ -46,6 +48,10 @@ class TransferOfferService(
         // sabendo agora que o vendedor não pode abrir mão do goleiro, em vez de
         // descobrir rodadas depois, quando o vendedor tentar aceitar.
         offerBlocker(buyer, seller, playerId, amount)?.let { return it }
+        // Janela do COMPRADOR, com o país do vendedor como origem (issue #137):
+        // a proposta nem nasce se o aceite não poderia registrar o jogador.
+        windows.registrationBlocker(buyer, seller.country.code, playerId)
+            ?.let { return it.toOfferRejection(playerId) }
         // Uma pendente por comprador × jogador (revisão do PR #94). É checagem
         // de leitura: dois cliques simultâneos ainda podem gravar duas — o que
         // não corrompe nada (o aceite de uma expira a outra como rival).
@@ -111,6 +117,10 @@ class TransferOfferService(
             // a proposta segue pendente e o vendedor pode tentar de novo.
             else -> return blocker
         }
+        // Janela e limite de registros (issue #137). A proposta segue pendente:
+        // a virada do encaixe é quem a expira quando a janela fecha.
+        windows.registrationBlocker(buyer, seller.country.code, offer.playerId)
+            ?.let { return it.toOfferRejection(offer.playerId) }
         val player = seller.squad.first { it.id == offer.playerId }
 
         // Quem disputava o mesmo jogador expira junto, na mesma transação.
@@ -133,7 +143,10 @@ class TransferOfferService(
             rivals = rivals,
         )
         return when (completion) {
-            TransferCompletion.Completed -> OfferResult.Success(accepted)
+            TransferCompletion.Completed -> {
+                windows.recordRegistration(player.id, buyer.id)
+                OfferResult.Success(accepted)
+            }
             // Recusada/retirada/expirada entre a leitura e o commit: relê para
             // contar ao vendedor o que de fato aconteceu com ela.
             TransferCompletion.OfferNoLongerPending -> current(offerId)
