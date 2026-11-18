@@ -12,6 +12,12 @@ import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.rules.TICKET_PRICE_RANGE
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 
 fun ClubEntity.toDomain(squadEntities: List<PlayerEntity>, json: Json): Club = Club(
     id = ClubId(id),
@@ -19,7 +25,7 @@ fun ClubEntity.toDomain(squadEntities: List<PlayerEntity>, json: Json): Club = C
     cash = Money(cash),
     stadiumCapacity = stadiumCapacity,
     squad = squadEntities.map { it.toDomain() },
-    lineup = lineupJson?.let { json.decodeFromString(Lineup.serializer(), it) },
+    lineup = lineupJson?.let { decodeLineup(it, json) },
     ownerId = ownerId,
     division = Division(division),
     // `entries.find` em vez de `valueOf`: texto fora do enum (linha antiga,
@@ -58,6 +64,39 @@ private fun ClubEntity.boardExpectation(): BoardExpectation? {
         confidence = confidence.coerceIn(BoardExpectation.CONFIDENCE_RANGE),
     )
 }
+
+/**
+ * Lê o `lineup_json`, que guarda a escalação com os jogadores INTEIROS (o
+ * `Lineup` do domínio serializado). Escalação gravada antes da issue #136 tem
+ * jogadores com `salary` e sem `employment` — campo obrigatório do `Player`
+ * hoje —, e decodificá-la direto derrubaria a leitura do clube.
+ *
+ * Em vez de dar um default ao `employment` no domínio (o que tornaria trivial
+ * esquecer o vínculo ao criar um jogador), a compatibilidade fica AQUI, na
+ * borda: a árvore JSON é aberta e quem não tem vínculo ganha `FreeAgent`. É
+ * seguro porque a escalação é só uma FOTO — `Club.startingLineup()` reidrata
+ * cada titular pelo id a partir do `squad`, e da foto só lê id e posição. O
+ * `salary` antigo sobra no JSON e o `ignoreUnknownKeys` o ignora; a próxima
+ * gravação do clube já escreve a escalação no formato novo.
+ *
+ * `buildJsonObject`/`JsonObject(map + par)`: a árvore do kotlinx é imutável,
+ * então "acrescentar um campo" é montar um objeto novo — `+` num `Map` devolve
+ * outro `Map`.
+ */
+internal fun decodeLineup(raw: String, json: Json): Lineup {
+    val tree = json.parseToJsonElement(raw).jsonObject
+    val players = tree["players"]?.jsonArray ?: return json.decodeFromJsonElement(Lineup.serializer(), tree)
+    val patched = JsonArray(
+        players.map { element ->
+            val player = element.jsonObject
+            if (EMPLOYMENT_KEY in player) player else JsonObject(player + (EMPLOYMENT_KEY to LEGACY_EMPLOYMENT))
+        },
+    )
+    return json.decodeFromJsonElement(Lineup.serializer(), JsonObject(tree + ("players" to patched)))
+}
+
+private const val EMPLOYMENT_KEY = "employment"
+private val LEGACY_EMPLOYMENT = buildJsonObject { put("type", "FreeAgent") }
 
 /** Copia a meta da diretoria para as colunas — `null` limpa as quatro. */
 fun ClubEntity.applyBoard(board: BoardExpectation?) {

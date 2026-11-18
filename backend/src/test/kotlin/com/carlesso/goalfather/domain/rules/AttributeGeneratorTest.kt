@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.rules
 
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -103,7 +104,7 @@ class AttributeGeneratorTest {
             shooting = attrs.shooting,
             passing = attrs.passing,
             defending = attrs.defending,
-            salary = Money.ZERO,
+            employment = Employment.FreeAgent,
             age = 30,
         )
         assertEquals(attrs.overall, player.overall)

@@ -50,6 +50,7 @@ import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.PenaltyScore
@@ -68,6 +69,8 @@ import com.carlesso.goalfather.domain.rules.AgingOutcome
 import com.carlesso.goalfather.domain.rules.ageOneSeason
 import com.carlesso.goalfather.domain.rules.afterRound
 import com.carlesso.goalfather.domain.rules.ageSquadForSeason
+import com.carlesso.goalfather.domain.rules.contractSpan
+import com.carlesso.goalfather.domain.rules.contractTurnover
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
@@ -854,6 +857,14 @@ class PlayRoundService(
      * evolução. O aposentado sai do `squad` (e da folha, que é somada dele) e é
      * APAGADO do banco: mantê-lo com `club_id = null` o deixaria indistinguível
      * de um agente livre.
+     *
+     * Contratos (issue #136): DEPOIS do envelhecimento (o aposentado não tem o
+     * que vencer, e o garoto da base já sobe com contrato novo), vencem os que
+     * terminam no fim da temporada [nextSeason] − 1 DESTE clube — esta função
+     * só roda na virada do país dele, então a virada do Brasil nunca toca um
+     * contrato europeu. Ver `contractTurnover` para quem sai livre e quem a IA
+     * renova. O livre sai do elenco e vai ao mercado por preço zero (sem taxa);
+     * o pool de livres de verdade é a #139.
      */
     private suspend fun startNextSeasonClubs(
         nextSeason: Int,
@@ -862,6 +873,7 @@ class PlayRoundService(
     ): SeasonTurnover {
         val clubs = mutableListOf<Club>()
         val retirements = mutableListOf<Retirement>()
+        val released = mutableListOf<Player>()
 
         for (club in clubsAtSeasonEnd) {
             // Envelhecimento roda sobre o clube que estiver no banco NA HORA de
@@ -870,12 +882,15 @@ class PlayRoundService(
             // temporada + clube, então a releitura não muda o sorteio — e só as
             // aposentadorias da tentativa que gravou entram no resultado.
             var turnRetirements = emptyList<Retirement>()
+            var turnReleased = emptyList<Player>()
             val updated = saveReapplying(club) { current ->
-                val turn = ageSquadForSeason(current.squad, current.id, nextSeason)
+                val turn = ageSquadForSeason(current.squad, current.id, nextSeason, current.contractSpan)
                 turnRetirements = turn.retirements
+                val contracts = contractTurnover(current.copy(squad = turn.squad), endedSeason = nextSeason - 1)
+                turnReleased = contracts.released
 
                 // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-                val reset = turn.squad.map {
+                val reset = contracts.squad.map {
                     it.copy(
                         goals = 0,
                         yellowCards = 0,
@@ -893,12 +908,16 @@ class PlayRoundService(
                 )
             }
             retirements += turnRetirements
+            released += turnReleased
             clubs += updated
         }
 
         // Depois do save do clube: enquanto o aposentado ainda constava do
         // elenco, apagá-lo faria o `save` tentar reatribuir uma linha inexistente.
         playerRepo.deleteAll(retirements.map { it.retired.id })
+        // Contrato vencido (issue #136): também depois do save, que já tirou o
+        // jogador do elenco (e do vínculo) no banco. Preço zero = livre, sem taxa.
+        released.forEach { marketRepo.add(MarketEntry(player = it, price = Money.ZERO)) }
         return SeasonTurnover(clubs, retirements)
     }
 

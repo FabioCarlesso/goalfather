@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.test.testContract
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +34,7 @@ class LineupSerializationTest {
         shooting = 70,
         passing = 70,
         defending = 70,
-        salary = 10_000.cents,
+        employment = testContract(10_000.cents),
         age = 25,
     )
 

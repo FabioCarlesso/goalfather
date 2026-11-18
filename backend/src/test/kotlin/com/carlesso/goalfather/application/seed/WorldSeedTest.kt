@@ -1,5 +1,10 @@
 package com.carlesso.goalfather.application.seed
 
+import kotlin.test.assertNotNull
+import com.carlesso.goalfather.domain.rules.contractSpanOf
+import com.carlesso.goalfather.domain.rules.allowedContractSeasons
+import com.carlesso.goalfather.domain.rules.MIN_CONTRACT_SALARY
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.adapter.out.worlddata.FileWorldDataProvider
 import com.carlesso.goalfather.application.port.out.PackLoadResult
 import com.carlesso.goalfather.domain.model.CompetitionFormat
@@ -11,7 +16,6 @@ import com.carlesso.goalfather.domain.model.SeasonSpan
 import com.carlesso.goalfather.domain.model.leagueOf
 import com.carlesso.goalfather.domain.model.world.WorldPack
 import com.carlesso.goalfather.domain.rules.TICKET_PRICE_RANGE
-import com.carlesso.goalfather.domain.rules.marketListingPrice
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
 import kotlin.test.Test
@@ -172,10 +176,33 @@ class WorldSeedTest {
     }
 
     @Test
+    fun `todo jogador de elenco nasce com contrato do proprio clube terminando no fim da temporada da liga`() {
+        world.clubs.forEach { club ->
+            val span = contractSpanOf(club.country)
+            club.squad.forEach { player ->
+                val contract = assertNotNull(player.contract, "${player.name} sem contrato")
+                assertEquals(club.id, contract.clubId)
+                // Termina num fim de temporada da janela do clube, entre a 1ª e a 5ª.
+                val seasons = (world.year..world.year + 4).filter { span.end(it) == contract.end }
+                assertEquals(1, seasons.size, "${player.name}: término ${contract.end} fora da janela de ${club.country.code}")
+                val length = seasons.single() - world.year + 1
+                assertTrue(length in allowedContractSeasons(player.age), "${player.name} (${player.age}): $length temporadas")
+                // Salário sai do valor de mercado (o piso cobre o resto).
+                assertTrue(contract.salary >= MIN_CONTRACT_SALARY)
+            }
+        }
+        // Distribuído por idade: o mundo não nasce com todos os contratos iguais.
+        assertTrue(world.clubs.flatMap { c -> c.squad.mapNotNull { it.contract?.end } }.toSet().size >= 4)
+    }
+
+    @Test
     fun `mercado inicial tem livres gerados com preco de tabela`() {
         assertEquals(16, world.market.size)
         world.market.forEach { entry ->
-            assertEquals(marketListingPrice(entry.player), entry.price)
+            // Livre de verdade (issue #136): sem contrato e sem salário; o
+            // preço de tabela sai do contrato que ele pediria.
+            assertEquals(Employment.FreeAgent, entry.player.employment)
+            assertTrue(entry.price.isPositive)
             assertTrue(entry.player.age in 20..32)
         }
         assertEquals(setOf(Position.GK, Position.CB, Position.MF, Position.FW), world.market.map { it.player.position }.toSet())

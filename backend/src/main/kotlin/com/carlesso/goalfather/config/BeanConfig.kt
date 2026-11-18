@@ -89,7 +89,8 @@ class BeanConfig {
     fun buyPlayerUseCase(
         clubRepo: ClubRepository,
         marketRepo: MarketRepository,
-    ): BuyPlayerUseCase = BuyPlayerService(clubRepo, marketRepo)
+        leagueRepo: LeagueRepository,
+    ): BuyPlayerUseCase = BuyPlayerService(clubRepo, marketRepo, leagueRepo)
 
     @Bean
     fun sellPlayerUseCase(

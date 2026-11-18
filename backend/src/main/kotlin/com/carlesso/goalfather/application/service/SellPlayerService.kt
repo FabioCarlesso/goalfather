@@ -11,6 +11,7 @@ import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.domain.rules.marketListingPrice
+import com.carlesso.goalfather.domain.rules.released
 import com.carlesso.goalfather.domain.rules.salePayout
 
 /**
@@ -43,8 +44,11 @@ class SellPlayerService(
         // Na ordem inversa, um conflito deixaria o jogador no mercado E no clube.
         return when (val saved = clubRepo.save(updatedClub)) {
             is ClubSaveResult.Saved -> {
-                marketRepo.add(MarketEntry(player = player, price = listingPriceCalc(player)))
-                TransferResult.Success(club = saved.club, player = player)
+                // O preço sai do jogador AINDA com contrato; anunciado, ele é
+                // livre (issue #136) — o mercado não tem clube nem paga salário.
+                val listed = player.released()
+                marketRepo.add(MarketEntry(player = listed, price = listingPriceCalc(player)))
+                TransferResult.Success(club = saved.club, player = listed)
             }
             is ClubSaveResult.Conflict -> TransferResult.Conflict(saved.clubId)
         }

@@ -43,8 +43,23 @@ class PlayerEntity(
     @Column(name = "stamina", nullable = false)
     var stamina: Int = 100,
 
+    /** Salário do CONTRATO (issue #136), em centavos; 0 para o livre. */
     @Column(name = "salary", nullable = false)
     var salary: Int = 0,
+
+    /**
+     * Contrato (issue #136): as três colunas descrevem o `UnderContract` do
+     * domínio, cujo `clubId` é o próprio [clubId]. Nulas = livre — o banco não
+     * tem soma de tipos, e o mapper reconstrói o `sealed Employment`.
+     */
+    @Column(name = "contract_start")
+    var contractStart: LocalDate? = null,
+
+    @Column(name = "contract_end")
+    var contractEnd: LocalDate? = null,
+
+    @Column(name = "release_clause")
+    var releaseClause: Long? = null,
 
     @Column(name = "age", nullable = false)
     var age: Int = 25,
@@ -87,7 +102,20 @@ class PlayerEntity(
 
     @Column(name = "duty_until")
     var dutyUntil: LocalDate? = null,
-)
+) {
+    /**
+     * Tira o jogador do clube (venda, contrato vencido): sem clube, sem
+     * contrato. Uma linha com `club_id` nulo e contrato preenchido seria um
+     * livre com salário — justamente o estado que o domínio não representa.
+     */
+    fun releaseFromClub() {
+        clubId = null
+        salary = 0
+        contractStart = null
+        contractEnd = null
+        releaseClause = null
+    }
+}
 
 /**
  * Enum interno da persistência. Mantemos um por camada para evitar que

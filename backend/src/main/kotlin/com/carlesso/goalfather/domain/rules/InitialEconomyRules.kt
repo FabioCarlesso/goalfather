@@ -6,11 +6,10 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.domain.model.world.LeagueStrength
 import com.carlesso.goalfather.domain.model.world.Reputation
-import kotlin.math.pow
 import kotlin.math.roundToLong
 
 /*
- * Economia INICIAL de um mundo novo (issue #131): salário, caixa e preço do
+ * Economia INICIAL de um mundo novo (issue #131): caixa e preço do
  * ingresso de cada clube quando o jogo nasce do pack. O pack só traz fatos
  * reais (nome, estádio, capacidade, reputação); dinheiro é SIMULADO, por regra
  * nossa — política de direitos em `docs/WORLD_DATA.md`. Tudo em USD (`Money`,
@@ -21,24 +20,8 @@ import kotlin.math.roundToLong
  * mercado, prêmios e ampliação de estádio continuarem fazendo sentido.
  */
 
-/** Salário (por folha, ver `SALARY_EVERY_N_ROUNDS`) de um overall 60: US$ 1.500. */
-private const val SALARY_AT_60_CENTS: Double = 1_500_00.0
-
-/** Cada 10 pontos de overall dobram o salário: 70 → US$ 3 mil, 80 → US$ 6 mil, 90 → US$ 12 mil. */
-private const val SALARY_DOUBLING_POINTS: Double = 10.0
-
-/** Piso: ninguém do elenco principal ganha menos de US$ 500 por folha. */
-private val MIN_INITIAL_SALARY: Money = Money.dollars(500)
-
-/**
- * Salário inicial de um jogador do pack pelo overall SIMULADO. Exponencial
- * porque o mercado de verdade é assim: um 90 não custa 1,5× um 60, custa 8×.
- * Arredondado a US$ 10 para a tela não mostrar centavos de salário.
- */
-fun initialSalary(overall: Int): Money {
-    val raw = SALARY_AT_60_CENTS * 2.0.pow((overall - 60) / SALARY_DOUBLING_POINTS)
-    return Money(roundTo(raw, 10_00)).coerceAtLeast(MIN_INITIAL_SALARY)
-}
+// O salário inicial saía daqui (`initialSalary`, pelo overall). Com a #136 ele
+// é o salário do CONTRATO, derivado do valor de mercado: ver `ContractRules`.
 
 /**
  * Caixa inicial: um número de FOLHAS SALARIAIS que cresce com a reputação —

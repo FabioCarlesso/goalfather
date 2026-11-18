@@ -8,10 +8,10 @@ import com.carlesso.goalfather.domain.model.CalledUpPlayer
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CountryCode
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.FifaWindow
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
-import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.NationalMatch
 import com.carlesso.goalfather.domain.model.NationalMatchKind
 import com.carlesso.goalfather.domain.model.NationalSquad
@@ -350,7 +350,8 @@ private fun List<Player>.estimatedFillers(country: CountryCode, idOffset: Int): 
             shooting = ESTIMATED_PLAYER_OVERALL,
             passing = ESTIMATED_PLAYER_OVERALL,
             defending = ESTIMATED_PLAYER_OVERALL,
-            salary = Money.ZERO,
+            // Estimado, nunca persistido: não tem clube nem contrato.
+            employment = Employment.FreeAgent,
             age = 26,
         )
     }

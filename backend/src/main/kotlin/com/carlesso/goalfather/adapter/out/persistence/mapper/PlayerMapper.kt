@@ -3,8 +3,10 @@ package com.carlesso.goalfather.adapter.out.persistence.mapper
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
 import com.carlesso.goalfather.domain.model.Availability
+import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.CountryCode
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -12,6 +14,7 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Suspension
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.time.LocalDate
 
 fun PlayerEntity.toDomain(): Player {
     // Decodifica o `discipline_json` UMA vez por jogador: a leitura de elenco
@@ -27,7 +30,7 @@ fun PlayerEntity.toDomain(): Player {
         passing = passing,
         defending = defending,
         stamina = stamina,
-        salary = Money(salary.toLong()),
+        employment = employment(),
         age = age,
         goals = goals,
         yellowCards = yellowCards,
@@ -61,7 +64,6 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     passing = passing,
     defending = defending,
     stamina = stamina,
-    salary = Math.toIntExact(salary.cents),
     age = age,
     goals = goals,
     yellowCards = yellowCards,
@@ -76,6 +78,14 @@ fun Player.toEntity(clubId: Long? = null): PlayerEntity = PlayerEntity(
     dutyUntil = (availability as? Availability.OnInternationalDuty)?.until,
     nationality = nationality.code.value,
     secondNationality = secondNationality?.code?.value,
+    // Contrato (issue #136) só para quem vai gravado COM clube: sem `clubId` a
+    // linha é de livre, e um contrato sem clube não volta do banco. O `clubId`
+    // da linha é o do vínculo — é ele que o mapper de leitura devolve ao
+    // `UnderContract`.
+    salary = (contract?.takeIf { clubId != null }?.salary ?: Money.ZERO).cents.let(Math::toIntExact),
+    contractStart = contract?.takeIf { clubId != null }?.start,
+    contractEnd = contract?.takeIf { clubId != null }?.end,
+    releaseClause = contract?.takeIf { clubId != null }?.releaseClause?.cents,
     disciplineJson = PlayerDisciplineRecord(
         pendingYellows = pendingYellows.mapKeys { (id, _) -> id.value },
         suspensions = suspensions.map { SuspensionRecord(it.competitionId.value, it.matchesLeft) },
@@ -115,6 +125,30 @@ private fun PlayerEntity.availability(): Availability {
         else -> Availability.Available
     }
 }
+
+/**
+ * Colunas → `sealed Employment` (issue #136). Sem clube = livre, sejam quais
+ * forem as outras colunas. Com clube, o contrato da linha; uma linha com clube
+ * e sem datas (só escrita fora do mapper — a V23 preencheu as antigas) ganha
+ * [LEGACY_CONTRACT_END] em vez de derrubar a leitura do elenco, mesma postura
+ * da disciplina e da convocação acima. Cláusula não positiva é descartada
+ * pelo mesmo motivo (o `init` do contrato a recusaria).
+ */
+private fun PlayerEntity.employment(): Employment {
+    val club = clubId ?: return Employment.FreeAgent
+    val start = contractStart ?: LEGACY_CONTRACT_START
+    val end = contractEnd?.takeIf { it.isAfter(start) } ?: maxOf(LEGACY_CONTRACT_END, start.plusYears(1))
+    return Employment.UnderContract(
+        clubId = ClubId(club),
+        salary = Money(salary.toLong().coerceAtLeast(0)),
+        start = start,
+        end = end,
+        releaseClause = releaseClause?.takeIf { it > 0 }?.let(::Money),
+    )
+}
+
+private val LEGACY_CONTRACT_START: LocalDate = LocalDate.of(2026, 1, 1)
+private val LEGACY_CONTRACT_END: LocalDate = LocalDate.of(2028, 12, 31)
 
 /** Coluna nula (ficha limpa ou linha anterior à issue) → registro vazio. */
 private fun PlayerEntity.discipline(): PlayerDisciplineRecord =

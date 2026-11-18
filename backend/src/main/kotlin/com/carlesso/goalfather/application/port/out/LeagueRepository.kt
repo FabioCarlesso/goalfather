@@ -54,3 +54,10 @@ interface LeagueRepository {
      */
     suspend fun finishRound(round: Round): Boolean
 }
+
+/**
+ * A data do jogo (issue #136): o dia do encaixe corrente, ou `null` num save
+ * sem rodada. Extension function sobre o port: um atalho de leitura para
+ * controllers e serviços, sem obrigar cada implementação do port a repeti-lo.
+ */
+suspend fun LeagueRepository.gameDate(): java.time.LocalDate? = findLatest()?.matchday?.date

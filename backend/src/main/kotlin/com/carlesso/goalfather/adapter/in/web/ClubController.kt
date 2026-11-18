@@ -17,6 +17,8 @@ import com.carlesso.goalfather.application.port.`in`.TreatSquadUseCase
 import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
+import com.carlesso.goalfather.application.port.out.LeagueRepository
+import com.carlesso.goalfather.application.port.out.gameDate
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CompetitionId
 import com.carlesso.goalfather.domain.model.Money
@@ -55,6 +57,8 @@ class ClubController(
     // estrangeiros da escalação efetiva e os nomes das competições.
     private val catalog: CompetitionCatalogRepository,
     private val onboarding: WorldOnboardingUseCase,
+    // Data do jogo (issue #136): o "último ano de contrato" do elenco.
+    private val leagueRepo: LeagueRepository,
     // `ClubDto` carrega o `availability` (sealed) de cada jogador: as respostas
     // de sucesso saem pelo kotlinx via `okJson` para manter o `type` do
     // contrato — `ResponseEntity<Any>` sozinho cairia no Jackson.
@@ -85,7 +89,7 @@ class ClubController(
                 ErrorResponse(code = "CLUB_NOT_FOUND", message = "Clube $id não encontrado"),
             )
         } else {
-            json.okJson(club.toDto(catalog.findAll()))
+            json.okJson(club.toDto(catalog.findAll(), today = leagueRepo.gameDate()))
         }
     }
 

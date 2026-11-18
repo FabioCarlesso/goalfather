@@ -1,5 +1,14 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.domain.rules.salaryForValue
+import com.carlesso.goalfather.domain.rules.marketValue
+import com.carlesso.goalfather.domain.rules.NEUTRAL_LEAGUE_STRENGTH
+import kotlin.test.assertNotNull
+import java.time.LocalDate
+import com.carlesso.goalfather.domain.model.Round
+import com.carlesso.goalfather.domain.model.Slot
+import com.carlesso.goalfather.domain.model.Matchday
+import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.MarketRepository
@@ -26,7 +35,12 @@ class BuyPlayerServiceTest {
 
     private val clubRepo: ClubRepository = mockk()
     private val marketRepo: MarketRepository = mockk()
-    private val service = BuyPlayerService(clubRepo, marketRepo, squadMaxSize = 25)
+    // Jogo em 10/03/2027, sem tabelas: a compra assina pela temporada da data.
+    private val leagueRepo: LeagueRepository = mockk {
+        coEvery { findLatest() } returns Round(Matchday.of(LocalDate.of(2027, 3, 10), Slot.MIDWEEK), season = 2027, matches = emptyList())
+        coEvery { currentStandings() } returns emptyList()
+    }
+    private val service = BuyPlayerService(clubRepo, marketRepo, leagueRepo, squadMaxSize = 25)
 
     @Test
     fun `compra bem-sucedida debita caixa, adiciona ao elenco e remove do mercado`() = runTest {
@@ -45,7 +59,15 @@ class BuyPlayerServiceTest {
         assertIs<TransferResult.Success>(result)
         assertEquals(600_000_00.cents, result.club.cash)
         assertEquals(12, result.club.squad.size)
-        assertEquals(target, result.player)
+        // Livre do mercado vira contratado (issue #136): contrato com o
+        // comprador, 3 temporadas contando a corrente (2027) e salário do valor.
+        val contract = assertNotNull(result.player.contract)
+        assertEquals(ClubId(1), contract.clubId)
+        assertEquals(LocalDate.of(2027, 3, 10), contract.start)
+        assertEquals(LocalDate.of(2029, 12, 31), contract.end)
+        assertEquals(salaryForValue(marketValue(target, contract, NEUTRAL_LEAGUE_STRENGTH, contract.start)), contract.salary)
+        assertEquals(target.id, result.player.id)
+        assertEquals(result.player, result.club.squad.last())
 
         coVerify(exactly = 1) { clubRepo.save(any()) }
         coVerify(exactly = 1) { marketRepo.claim(PlayerId(99)) }
