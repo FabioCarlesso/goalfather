@@ -2,6 +2,7 @@ package com.carlesso.goalfather.config
 
 import com.carlesso.goalfather.adapter.out.persistence.CompetitionCatalogTransaction
 import com.carlesso.goalfather.adapter.out.persistence.SavedCountryCatalog
+import com.carlesso.goalfather.adapter.out.persistence.TransferWindowJpaRepository
 import com.carlesso.goalfather.adapter.out.persistence.entity.ClubEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
 import com.carlesso.goalfather.adapter.out.persistence.mapper.applyBoard
@@ -51,6 +52,7 @@ class SeedWriter(
     private val cupRepo: CupJpaRepository,
     private val continentalRepo: ContinentalEditionJpaRepository,
     private val catalog: CompetitionCatalogTransaction,
+    private val transferWindowRepo: TransferWindowJpaRepository,
     private val countries: SavedCountryCatalog,
     private val json: Json,
 ) {
@@ -86,6 +88,9 @@ class SeedWriter(
         start.cups.forEach { cupRepo.save(it.toEntity(json)) }
         // 1ª edição das continentais (issue #132), sorteada pelo seed.
         start.continentals.forEach { continentalRepo.save(it.toEntity(json)) }
+
+        // Janelas de transferência do pack (issue #137).
+        transferWindowRepo.saveAll(world.transferWindows.map { it.toEntity() })
 
         // Por último: catálogo presente = mundo completo (ver DataInitializer).
         catalog.replaceAll(world.competitions)

@@ -19,6 +19,7 @@ export function expiryReasonLabel(reason: ExpiryReason): string {
     case 'DEADLINE':           return 'o prazo acabou sem resposta'
     case 'PLAYER_TRANSFERRED': return 'o jogador deixou o clube vendedor'
     case 'MANAGER_LEFT':       return 'o técnico de um dos clubes deixou o cargo'
+    case 'WINDOW_CLOSED':      return 'a janela de transferências do comprador fechou'
   }
 }
 

@@ -58,6 +58,13 @@ import {
   MIN_STADIUM_EXPANSION_SEATS,
   salePayoutOf,
   marketListingPriceOf,
+  contractFor,
+  DEFAULT_SIGNING_SEASONS,
+  isInFinalSeason,
+  marketValueOf,
+  maxContractSeasons,
+  releasedPlayer,
+  salaryForValueOf,
   type SquadMember,
   type TeamTactics,
 } from './engine'
@@ -67,8 +74,10 @@ import { mockClubCallUps, mockNationalTeams } from './nationalTeams'
 import { boardStatusOf, forNewManager } from './board'
 import { worldNavigationHandlers } from './worldNavigation'
 import { advanceOffer, closedOfferResult, offerBlocker, OFFER_DEADLINE_SLOTS } from './offers'
+import { registrationBlocker, windowBlocker, windowStatus } from './transferWindows'
 import type {
   TransferResult,
+  TransferWindowStatus,
   Calendar,
   Club,
   ErrorResponse,
@@ -153,7 +162,16 @@ const tacticsOf = (clubId: number): TeamTactics => {
 const toClubResponse = (club: StoredClub): Club => ({
   ...club,
   // `foreign` relativo ao clube (issue #130), como `Player.toDto(club)`.
-  squad: club.squad.map((p) => ({ ...p, foreign: isForeignAt(p, club.country.code) })),
+  // `marketValue` com a força da liga do clube (issue #135), como `squadMarketValue`;
+  // o "último ano de contrato" (issue #136) pela data do jogo, como o backend.
+  squad: club.squad.map((p) => ({
+    ...p,
+    foreign: isForeignAt(p, club.country.code),
+    marketValue: marketValueOf(p, leagueOf(club.id).strength),
+    ...(p.contract
+      ? { contract: { ...p.contract, finalSeason: isInFinalSeason(p.contract, state.currentRound.matchday.date) } }
+      : {}),
+  })),
   foreignPlayerLimit: NATIONAL_FOREIGN_PLAYER_LIMIT,
   // Efetiva = a do próximo jogo de LIGA, como no backend.
   ...effectiveLineupOf(club.squad, club.lineup, lineupRulesOf(club, leagueOf(club.id).id)),
@@ -281,6 +299,17 @@ async function resolveOffer(
   return HttpResponse.json({ type: 'Success', offer: next } satisfies TransferOfferResult)
 }
 
+// --- #137 Janelas de transferência ---
+/** A data do relógio do mock: o dia do encaixe corrente, como no backend. */
+const today = (): string => state.currentRound.matchday.date
+
+/** Anota que [playerId] entrou num clube hoje — conta para o limite de registros. */
+function recordRegistration(playerId: number): void {
+  state.registrations[playerId] = [...(state.registrations[playerId] ?? []), today()]
+}
+
+const registrationsOf = (playerId: number): string[] => state.registrations[playerId] ?? []
+
 export const handlers = [
 
   // ─── register (issue #18) ─────────────────────────────────────────────
@@ -393,6 +422,15 @@ export const handlers = [
     const club = loadClub(id)
     return club
       ? HttpResponse.json(toClubResponse(club))
+      : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+  }),
+
+  // --- #137 Janelas de transferência ---
+  http.get('/api/clubs/:id/transfer-window', async ({ params }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const club = loadClub(Number(params.id))
+    return club
+      ? HttpResponse.json(windowStatus(club.country.code, today()) satisfies TransferWindowStatus)
       : HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
   }),
 
@@ -579,7 +617,8 @@ export const handlers = [
     if (position) entries = entries.filter((e) => e.player.position === position)
     if (maxPrice) entries = entries.filter((e) => e.price <= Number(maxPrice))
 
-    return HttpResponse.json(entries)
+    // Fora de elenco, o valor de referência do mercado (issue #135).
+    return HttpResponse.json(entries.map((e) => ({ ...e, player: { ...e.player, marketValue: marketValueOf(e.player) } })))
   }),
 
   // ─── buyPlayer ────────────────────────────────────────────────────────
@@ -593,6 +632,9 @@ export const handlers = [
       const result: TransferResult = { type: 'PlayerNotAvailable', playerId: body.playerId }
       return HttpResponse.json(result)
     }
+    // Janela e limite de registros (issue #137); do mercado não há país de origem.
+    const windowBlock = registrationBlocker(club.country, null, today(), body.playerId, registrationsOf(body.playerId))
+    if (windowBlock) return HttpResponse.json(windowBlock satisfies TransferResult)
     if (club.cash < entry.price) {
       const result: TransferResult = {
         type: 'InsufficientFunds',
@@ -606,15 +648,29 @@ export const handlers = [
       return HttpResponse.json(result)
     }
 
+    // Livre do mercado → contratado (issue #136): contrato padrão contando a
+    // temporada corrente; o salário sai do valor dele na liga do clube (#135).
+    const { date } = state.currentRound.matchday
+    const signed: Player = {
+      ...entry.player,
+      salary: salaryForValueOf(marketValueOf(entry.player, leagueOf(club.id).strength)),
+      contract: contractFor(
+        date,
+        state.currentRound.season,
+        Math.min(DEFAULT_SIGNING_SEASONS, maxContractSeasons(entry.player.age)),
+        club.country.code,
+      ),
+    }
     const updatedClub: StoredClub = {
       ...club,
       cash: club.cash - entry.price,
-      squad: [...club.squad, entry.player],
+      squad: [...club.squad, signed],
     }
     state.clubs[body.clubId] = updatedClub
     state.market = state.market.filter((e) => e.player.id !== body.playerId)
+    recordRegistration(body.playerId)
 
-    const result: TransferResult = { type: 'Success', club: toClubResponse(updatedClub), player: entry.player }
+    const result: TransferResult = { type: 'Success', club: toClubResponse(updatedClub), player: signed }
     return HttpResponse.json(result)
   }),
 
@@ -634,17 +690,23 @@ export const handlers = [
         { type: 'PlayerNotAvailable', playerId: body.playerId } satisfies TransferResult,
       )
     }
+    // Venda rápida só na janela do vendedor (issue #137).
+    const windowBlock = windowBlocker(club.country.code, null, today())
+    if (windowBlock) return HttpResponse.json(windowBlock satisfies TransferResult)
 
     const updatedClub: StoredClub = {
       ...club,
-      cash: club.cash + salePayoutOf(player),
+      // Venda: 60% do valor NO CLUBE; anúncio: 125% do de referência (issue #135).
+      cash: club.cash + salePayoutOf(marketValueOf(player, leagueOf(club.id).strength)),
       squad: club.squad.filter((p) => p.id !== body.playerId),
     }
     state.clubs[body.clubId] = updatedClub
-    state.market = [...state.market, { player, price: marketListingPriceOf(player) }]
+    // Preço do valor de referência; anunciado, o jogador é livre (issue #136).
+    const listed = releasedPlayer(player)
+    state.market = [...state.market, { player: listed, price: marketListingPriceOf(marketValueOf(player)) }]
 
     return HttpResponse.json(
-      { type: 'Success', club: toClubResponse(updatedClub), player } satisfies TransferResult,
+      { type: 'Success', club: toClubResponse(updatedClub), player: listed } satisfies TransferResult,
     )
   }),
 
@@ -669,6 +731,9 @@ export const handlers = [
 
     const blocker = offerBlocker(buyer, seller, body.playerId, body.amount)
     if (blocker) return HttpResponse.json(blocker satisfies TransferOfferResult)
+    // Janela do COMPRADOR, com o país do vendedor como origem (issue #137).
+    const windowBlock = registrationBlocker(buyer.country, seller.country.code, today(), body.playerId, registrationsOf(body.playerId))
+    if (windowBlock) return HttpResponse.json(windowBlock satisfies TransferOfferResult)
     // Uma pendente por comprador × jogador (revisão do PR #94).
     const duplicate = state.offers.find((o) =>
       o.buyerClubId === buyer.id && o.playerId === body.playerId && o.status.type === 'Pending')
@@ -719,6 +784,8 @@ export const handlers = [
       return HttpResponse.json(closedOfferResult(expired) satisfies TransferOfferResult)
     }
     if (blocker) return HttpResponse.json(blocker satisfies TransferOfferResult)
+    const windowBlock = registrationBlocker(buyer.country, seller.country.code, today(), offer.playerId, registrationsOf(offer.playerId))
+    if (windowBlock) return HttpResponse.json(windowBlock satisfies TransferOfferResult)
 
     const player = seller.squad.find((p) => p.id === offer.playerId)!
     state.clubs[seller.id] = {
@@ -727,6 +794,7 @@ export const handlers = [
       squad: seller.squad.filter((p) => p.id !== player.id),
     }
     state.clubs[buyer.id] = { ...buyer, cash: buyer.cash - offer.amount, squad: [...buyer.squad, player] }
+    recordRegistration(player.id)
 
     const accepted: TransferOffer = { ...offer, status: { type: 'Accepted' } }
     state.offers = state.offers.map((o) => {
@@ -1208,6 +1276,14 @@ export const handlers = [
         o,
         state.clubs[o.sellerClubId]?.squad.some((p) => p.id === o.playerId) ?? true,
       ))
+      // Janela do comprador fechada na data nova (issue #137): a pendente expira.
+      state.offers = state.offers.map((o) => {
+        const buyer = state.clubs[o.buyerClubId]
+        const seller = state.clubs[o.sellerClubId]
+        const closed = o.status.type === 'Pending' && buyer && seller &&
+          windowBlocker(buyer.country.code, seller.country.code, today()) != null
+        return closed ? { ...o, status: { type: 'Expired', reason: 'WINDOW_CLOSED' } } : o
+      })
 
       // Extrato de TODOS os clubes do mundo, como o backend — inclusive de
       // quem folgou ou já caiu na copa (review do PR #78).

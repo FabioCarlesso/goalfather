@@ -35,6 +35,21 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.carlesso.goalfather.domain.model.Club
+import com.carlesso.goalfather.domain.model.GameCompetition
+import com.carlesso.goalfather.domain.rules.marketReferenceValue
+import com.carlesso.goalfather.domain.rules.squadMarketValue
+import java.time.LocalDate
+
+/** "Hoje" fixo dos testes de mapeamento: o valor de mercado depende da data (issue #135). */
+private val TODAY: LocalDate = LocalDate.of(2026, 3, 1)
+
+// Sobrecargas LOCAIS (privadas ao arquivo) com a data fixa: os testes anteriores
+// à #135 continuam chamando `club.toDto()` sem repetir o `TODAY` em cada linha.
+// O compilador escolhe esta versão porque a de produção exige `today`.
+private fun Club.toDto(competitions: List<GameCompetition> = emptyList()): ClubDto = toDto(competitions, TODAY)
+
+private fun TransferResult.toDto(): TransferResultDto = toDto(emptyList(), TODAY)
 
 /**
  * O JSON que sai de `/api/clubs/{id}` tem de ser o que `contract/openapi.yaml`
@@ -140,7 +155,7 @@ class ResponsesTest {
         val required = listOf(
             "id", "name", "position", "overall", "pace", "shooting", "passing",
             "defending", "stamina", "salary", "age", "goals", "yellowCards",
-            "redCards", "availability", "nationality",
+            "redCards", "availability", "nationality", "marketValue",
         )
         for (field in required) {
             assertTrue(field in player, "campo obrigatório do contrato ausente: $field")
@@ -425,5 +440,18 @@ class ResponsesTest {
     fun `sem liga no catalogo o clube nao tem limite de estrangeiros (issue 131)`() {
         val encoded = encode(club.toDto())
         assertNull(encoded["foreignPlayerLimit"])
+    }
+
+    @Test
+    fun `valor de mercado do elenco e o do clube e o do mercado e o de referencia (issue 135)`() {
+        val catalog = brazilCatalog()
+        val player = club.squad.first()
+
+        val squadValue = encode(club.toDto(catalog)).getValue("squad").jsonArray.first().jsonObject
+            .getValue("marketValue").jsonPrimitive.content.toLong()
+        assertEquals(squadMarketValue(player, club, catalog, TODAY).cents, squadValue)
+
+        val listed = MarketEntry(player = player, price = 1_00.cents).toDto()
+        assertEquals(marketReferenceValue(player).cents, listed.player.marketValue)
     }
 }

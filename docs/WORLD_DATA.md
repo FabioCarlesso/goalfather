@@ -108,10 +108,12 @@ Um item **só com `id`** é uma *referência* a um clube definido por completo e
 ```json
 { "year": 2026,
   "fifaWindows": [{ "start": "2026-03-23", "end": "2026-03-31" }],
-  "transferWindows": [{ "country": "BRA", "start": "2026-01-05", "end": "2026-03-03" }] }
+  "transferWindows": [
+    { "country": "BRA", "start": "2026-01-05", "end": "2026-03-03", "scope": "INTERNATIONAL" },
+    { "country": "BRA", "start": "2026-03-04", "end": "2026-03-27", "scope": "DOMESTIC_ONLY" }] }
 ```
 
-As datas FIFA viram `FifaWindow` (o tipo compartilhado com o calendário semanal da #125). As janelas de transferência, por federação (o país da federação: `BRA` = CBF), viram `TransferWindow`. O comportamento de abrir e fechar o mercado é da #137. O `year` tem que bater com o nome do arquivo. No adapter de arquivo, os anos disponíveis são os arquivos presentes em `calendar/`.
+As datas FIFA viram `FifaWindow` (o tipo compartilhado com o calendário semanal da #125). As janelas de transferência, por federação (o país da federação: `BRA` = CBF), viram `TransferWindow`. `scope` (issue #137) é `INTERNATIONAL` (o default, quando ausente) ou `DOMESTIC_ONLY`; outro valor é `InvalidValue`. Abrir e fechar o mercado por elas está em "Janelas de transferência" abaixo. O `year` tem que bater com o nome do arquivo. No adapter de arquivo, os anos disponíveis são os arquivos presentes em `calendar/`.
 
 ## Política de direitos
 
@@ -216,7 +218,7 @@ Política de uso do endpoint: User-Agent genérico do projeto (`GoalFather-world
 ## Estado do pack
 
 - `data/world/v1/` tem o pack importado do Wikidata: as 7 ligas do MVP (Brasileirão A e B 2026; Premier League, La Liga, Serie A, Bundesliga e Ligue 1 2026/27), a Copa do Brasil 2026 recortada (só referências aos 40 clubes de A e B, ver abaixo) e a fase de grupos da Libertadores 2026. São 162 clubes, com 1.329 jogadores reais e 2.258 gerados (3.587 no total, 2,1 MB de JSON). O Wikidata cobre bem os grandes clubes europeus, mas mal o futebol sul-americano, e os elencos brasileiros vêm, na maioria, completados por gerados. O `FileWorldDataProviderTest` carrega o pack em todo build, e o `GeneratedWorldPackTest` confere os critérios da #127.
-- `calendar/2026.json` continua mantido à mão; o importador não toca nele.
+- `calendar/2026.json` e `calendar/2027.json` continuam mantidos à mão; o importador não toca neles (o recorte do E2E, sim: ver abaixo).
 - `data/world/e2e/v1/` é o recorte do profile `e2e` (16 clubes, ~350 jogadores), gerado na mesma importação.
 
 ## Seed do jogo (issue #131)
@@ -270,7 +272,7 @@ Ressalva: com as capacidades reais (até 99 mil lugares), a bilheteria dos clube
 
 ### Mercado inicial
 
-O pack só tem jogadores com clube. Para a tela de mercado não nascer vazia, o seed gera **16 jogadores livres**: 2 goleiros, 5 zagueiros, 5 meias e 4 atacantes. Os nomes vêm do gerador da #88 (brasileiros) e não repetem nomes do pack. A nacionalidade é o país da primeira liga do catálogo (o Brasil no MVP). Os atributos saem do `AttributeGenerator` com a força dessa liga e reputação mediana. A idade vai de 20 a 32 anos, o preço é o de tabela (`marketListingPrice`, 12× o salário) e cada vaga tem seed fixa.
+O pack só tem jogadores com clube. Para a tela de mercado não nascer vazia, o seed gera **16 jogadores livres**: 2 goleiros, 5 zagueiros, 5 meias e 4 atacantes. Os nomes vêm do gerador da #88 (brasileiros) e não repetem nomes do pack. A nacionalidade é o país da primeira liga do catálogo (o Brasil no MVP). Os atributos saem do `AttributeGenerator` com a força dessa liga e reputação mediana. A idade vai de 20 a 32 anos e cada vaga tem seed fixa. Desde a #136 eles são livres de verdade (`FreeAgent`, sem contrato nem salário), e o preço é o de tabela (`marketListingPrice(marketReferenceValue(...))`: 125% do valor de mercado de referência, issue #135). Os jogadores de elenco nascem com contrato: duração sorteada pela idade e salário derivado do valor de mercado (ver `docs/ARQUITETURA.md`, issue #136).
 
 ### Copa do Brasil: o corte do MVP
 
@@ -304,7 +306,7 @@ O reset do E2E (`POST /test-support/reset`, profile `e2e`) recria o mundo a cada
 - `bra-copa-do-brasil`: esses 12 clubes. Na Primeira fase, 8 clubes em jogo único; nas Quartas de final, 8 clubes em ida e volta, 4 deles entrando ali; Semifinal em ida e volta; Final em jogo único;
 - `eng-premier-league`: os 4 de maior reputação.
 
-Elencos e calendário são copiados do pack completo; os países são só os citados. Os clubes ficam na ordem do pack completo. O mundo dos mocks do frontend tem a **mesma forma**, e a suíte E2E roda contra os dois. O recorte é **gerado**, não editado à mão: o `./gradlew worldImport` o refaz a partir de `data/world/v1` (`tools/world-import/.../e2e/E2ePack.kt`), e o `E2ePackTest` compara o recorte com o commitado byte a byte. Os testes de integração do backend (`src/test/resources/application.yml`) usam o mesmo pack: cada contexto Spring com banco vazio monta 16 clubes em vez de 136.
+Elencos e datas FIFA são copiados do pack completo; os países são só os citados. As janelas de transferência são a exceção (issue #137, `E2ePack.e2eCalendar`): só ficam as das federações com competição no recorte (Brasil e Inglaterra), e no ano de início a janela de janeiro da CBF abre no dia 1º (o real é 05/01, e o mundo começa em 04/01) e a de inverno da Inglaterra sai. Assim a data inicial do E2E tem um mercado aberto (Brasil, onde estão os fluxos de compra, venda e proposta) e um fechado (Inglaterra, o E2E da compra fora da janela). Os clubes ficam na ordem do pack completo. O mundo dos mocks do frontend tem a **mesma forma**, e a suíte E2E roda contra os dois. O recorte é **gerado**, não editado à mão: o `./gradlew worldImport` o refaz a partir de `data/world/v1` (`tools/world-import/.../e2e/E2ePack.kt`), e o `E2ePackTest` compara o recorte com o commitado byte a byte. Os testes de integração do backend (`src/test/resources/application.yml`) usam o mesmo pack: cada contexto Spring com banco vazio monta 16 clubes em vez de 136.
 
 ### Save antigo
 
@@ -349,3 +351,19 @@ O pack não traz seleções: elas saem dos **jogadores do save**, pela nacionali
 Quando a #132 trouxer os clubes estrangeiros da Libertadores para o save, Argentina, Uruguai e as demais ganham jogadores de verdade sem mudar nenhuma regra.
 
 **Datas FIFA:** `calendar/2026.json` ainda só tem a janela de março. O jogo usa as interinas de `FifaCalendar.kt` (o padrão FIFA 2026–2030, alinhado à segunda-feira). Quando o pack trouxer o calendário completo, basta o serviço ler as janelas dele em vez de `interimFifaWindows` (`NationalTeamService.windowsOf`).
+
+## Janelas de transferência (issue #137)
+
+As janelas do `calendar/{ano}.json` são **gravadas no save** com o mundo novo (tabela `transfer_windows`, V24), como o catálogo: mudar o pack não mexe num jogo em andamento. Um save anterior à V24 ganha as janelas do pack no boot (`DataInitializer`), uma vez.
+
+Datas no pack (mantidas à mão):
+
+| Federação | 2026 | 2027 |
+|---|---|---|
+| BRA (CBF) | 05/01–03/03; **só doméstica** 04/03–27/03; 20/07–11/09 | 04/01–02/03; 19/07–10/09 |
+| ENG | 01/01–02/02; 15/06–01/09 | 01/01–01/02; 15/06–01/09 |
+| ESP, ITA | 02/01–02/02; 01/07–01/09 | 02/01–01/02; 01/07–01/09 |
+| GER | 01/01–02/02; 01/07–01/09 | 01/01–01/02; 01/07–01/09 |
+| FRA | 01/01–02/02; 15/06–01/09 | 01/01–01/02; 15/06–01/09 |
+
+As da CBF são as da issue. As europeias seguem o padrão de cada federação (inverno em janeiro, verão de junho ou julho até 1º/set); onde a data oficial do ano ainda não está publicada, o arquivo usa o padrão. Ano sem dado no pack repete o último ano conhecido da federação no mesmo dia e mês (`projectedFor`, em `TransferWindowRules.kt`).

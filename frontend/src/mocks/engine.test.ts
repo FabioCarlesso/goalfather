@@ -10,6 +10,7 @@ import {
   type SquadMember,
   salePayoutOf,
   marketListingPriceOf,
+  marketValueOf,
 } from './engine'
 import type { MatchEvent, Position, Posture } from '../domain/types'
 
@@ -328,15 +329,29 @@ describe('averageOverall', () => {
   })
 })
 
-describe('preços do mercado (espelha TransferRules.kt)', () => {
-  it('venda paga 8 salários e o anúncio cobra 12', () => {
-    expect(salePayoutOf({ salary: 23_000_00 })).toBe(184_000_00)
-    expect(marketListingPriceOf({ salary: 23_000_00 })).toBe(276_000_00)
+describe('valor e preços do mercado (espelha ValuationRules.kt e TransferRules.kt — issue #135)', () => {
+  it('overall 70 no auge e na liga de referência vale US$ 25 mil; cada 4 pontos dobram', () => {
+    expect(marketValueOf({ overall: 70, age: 25 })).toBe(25_000_00)
+    expect(marketValueOf({ overall: 74, age: 25 })).toBe(50_000_00)
   })
 
-  it('comprar e revender o mesmo jogador nunca dá lucro', () => {
-    for (const salary of [1, 10_000_00, 55_000_00]) {
-      expect(salePayoutOf({ salary })).toBeLessThan(marketListingPriceOf({ salary }))
+  it('pico de idade entre 24 e 27 e liga mais forte vale mais', () => {
+    expect(marketValueOf({ overall: 80, age: 24 })).toBe(marketValueOf({ overall: 80, age: 27 }))
+    expect(marketValueOf({ overall: 80, age: 21 })).toBeLessThan(marketValueOf({ overall: 80, age: 24 }))
+    expect(marketValueOf({ overall: 80, age: 30 })).toBeLessThan(marketValueOf({ overall: 80, age: 27 }))
+    expect(marketValueOf({ overall: 80, age: 25 }, 78)).toBeGreaterThan(marketValueOf({ overall: 80, age: 25 }, 70))
+  })
+
+  it('venda paga 60% do valor e o anúncio cobra 125%', () => {
+    expect(salePayoutOf(1_000_000_00)).toBe(600_000_00)
+    expect(marketListingPriceOf(1_000_000_00)).toBe(1_250_000_00)
+  })
+
+  it('comprar e revender nunca dá lucro, nem do clube da liga mais forte', () => {
+    for (const overall of [40, 70, 90]) {
+      const player = { overall, age: 25 }
+      const bought = marketListingPriceOf(marketValueOf(player))
+      expect(salePayoutOf(marketValueOf(player, 99))).toBeLessThan(bought)
     }
   })
 })

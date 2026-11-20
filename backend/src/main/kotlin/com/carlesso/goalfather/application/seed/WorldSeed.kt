@@ -8,8 +8,10 @@ import com.carlesso.goalfather.domain.model.CompetitionKind
 import com.carlesso.goalfather.domain.model.ContinentalCup
 import com.carlesso.goalfather.domain.model.Country
 import com.carlesso.goalfather.domain.model.Division
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.GameCompetition
 import com.carlesso.goalfather.domain.model.MarketEntry
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
@@ -21,20 +23,27 @@ import com.carlesso.goalfather.domain.model.world.CompetitionOwner
 import com.carlesso.goalfather.domain.model.world.LeagueStrength
 import com.carlesso.goalfather.domain.model.world.PlayerProfile
 import com.carlesso.goalfather.domain.model.world.Reputation
+import com.carlesso.goalfather.domain.model.world.TransferWindow
 import com.carlesso.goalfather.domain.model.world.WorldCompetition
 import com.carlesso.goalfather.domain.model.world.WorldPack
 import com.carlesso.goalfather.domain.rules.inStartingOrder
 import com.carlesso.goalfather.domain.rules.AttributeGenerator
 import com.carlesso.goalfather.domain.rules.ContinentalDraw
+import com.carlesso.goalfather.domain.rules.ContractResult
 import com.carlesso.goalfather.domain.rules.continentalDrawSeed
+import com.carlesso.goalfather.domain.rules.contractSpanOf
 import com.carlesso.goalfather.domain.rules.drawContinental
 import com.carlesso.goalfather.domain.rules.PlayerAttributes
 import com.carlesso.goalfather.domain.rules.WorldStart
 import com.carlesso.goalfather.domain.rules.initialCash
-import com.carlesso.goalfather.domain.rules.initialSalary
 import com.carlesso.goalfather.domain.rules.initialTicketPrice
 import com.carlesso.goalfather.domain.rules.marketListingPrice
+import com.carlesso.goalfather.domain.rules.marketReferenceValue
+import com.carlesso.goalfather.domain.rules.pricedFor
+import com.carlesso.goalfather.domain.rules.signContract
+import com.carlesso.goalfather.domain.rules.signed
 import com.carlesso.goalfather.domain.rules.startWorld
+import com.carlesso.goalfather.domain.rules.typicalContractSeasons
 import java.time.LocalDate
 import java.time.Month
 import kotlin.random.Random
@@ -56,6 +65,8 @@ data class InitialWorld(
     val market: List<MarketEntry>,
     /** As continentais já sorteadas da temporada [year] (a Libertadores, issue #132). */
     val continentals: List<ContinentalCup> = emptyList(),
+    /** Janelas de transferência de todos os anos do pack (issue #137), copiadas do calendário. */
+    val transferWindows: List<TransferWindow> = emptyList(),
 ) {
     /**
      * Primeiro encaixe, tabelas e copas da temporada [year]. Delega a
@@ -127,7 +138,20 @@ fun WorldPack.toInitialWorld(year: Int = startYear()): InitialWorld {
                     referenceDate = referenceDate,
                     strength = strength,
                     reputation = profile.reputation,
-                )
+                ).let { generated ->
+                    // Contrato inicial (issue #136): duração pela idade, salário
+                    // pelo valor. A seed é a do id do pack, como a dos atributos.
+                    generated.signed(
+                        initialContract(
+                            player = generated,
+                            clubId = clubId,
+                            span = contractSpanOf(profile.country),
+                            year = year,
+                            strength = strength,
+                            rng = Random(player.id.value.hashCode().toLong() xor CONTRACT_SEED_SALT),
+                        ),
+                    )
+                }
             }
             .inStartingOrder()
             .mapIndexed { slot, player -> player.copy(id = PlayerId(clubId.value * PLAYER_ID_BLOCK + slot + 1)) }
@@ -152,10 +176,11 @@ fun WorldPack.toInitialWorld(year: Int = startYear()): InitialWorld {
         countries = countries,
         competitions = catalog,
         clubs = clubs,
-        market = freeAgents(catalog, leagues, takenNames = clubs.flatMapTo(HashSet()) { c -> c.squad.map { it.name } }),
+        market = freeAgents(year, catalog, leagues, takenNames = clubs.flatMapTo(HashSet()) { c -> c.squad.map { it.name } }),
         continentals = continental.mapNotNull { (world, game) ->
             game?.let { firstContinentalEdition(year, world, it, clubByPackId) }
         },
+        transferWindows = calendars.flatMap { it.transferWindows },
     )
 }
 
@@ -231,6 +256,8 @@ private fun WorldCompetition.toGameCompetition(): GameCompetition? = when (val o
                 kind = it,
                 span = SeasonSpan.of(owner.country.confederation),
                 pausesOnFifaWindows = pausesOnFifaWindows,
+                // Força da liga (issue #135): o pack só a informa em liga — copa vem `null`.
+                strength = strength,
             )
         }
     }
@@ -290,13 +317,48 @@ private fun PlayerAttributes.toPlayer(
     shooting = shooting,
     passing = passing,
     defending = defending,
-    salary = initialSalary(overall),
+    // Nasce livre: o contrato depende do clube, da liga e do valor — quem
+    // chama assina (`initialContract`).
+    employment = Employment.FreeAgent,
     age = age,
     nationality = nationality,
     secondNationality = secondNationality,
 )
 
 private const val ATTRIBUTE_SEED_SALT: Long = 0x5EED_0131L
+
+/**
+ * Contrato de um jogador que já tem clube quando o mundo nasce (issue #136):
+ * assinado no primeiro dia do ano do mundo, com duração típica da idade
+ * ([typicalContractSeasons]) contada a partir da temporada [year] — a que todo
+ * país abre no começo do jogo (`startWorld`) — e salário derivado do valor de
+ * mercado ([pricedFor]). Termina sempre num fim de temporada da liga do clube.
+ */
+private fun initialContract(
+    player: Player,
+    clubId: ClubId,
+    span: SeasonSpan,
+    year: Int,
+    strength: LeagueStrength,
+    rng: Random,
+): Employment.UnderContract {
+    val start = LocalDate.of(year, Month.JANUARY, 1)
+    val seasons = typicalContractSeasons(player.age, rng)
+    val signed = when (val result = signContract(player, clubId, Money.ZERO, start, year, span, seasons)) {
+        is ContractResult.Signed -> result.contract
+        // A duração típica sai de dentro da faixa da idade: chegar aqui é bug.
+        is ContractResult.Rejected -> error("contrato inicial fora da regra para ${player.name}: ${result.reason}")
+    }
+    return signed.pricedFor(player, strength, start)
+}
+
+private const val CONTRACT_SEED_SALT: Long = 0x0C0_0136L
+
+/**
+ * "Clube" fictício do preço de tabela dos livres do mercado — o "clube 0" da
+ * convenção de ids. Só existe dentro de [freeAgents], nunca é gravado.
+ */
+private val MARKET_CLUB = ClubId(0)
 
 /**
  * Mercado inicial (issue #131): [FREE_AGENT_POSITIONS] jogadores livres
@@ -307,6 +369,7 @@ private const val ATTRIBUTE_SEED_SALT: Long = 0x5EED_0131L
  * a 32 e preço de tabela ([marketListingPrice]). Seed fixa por vaga.
  */
 private fun freeAgents(
+    year: Int,
     catalog: List<GameCompetition>,
     leagues: List<WorldCompetition>,
     takenNames: Set<String>,
@@ -322,7 +385,10 @@ private fun freeAgents(
         val player = AttributeGenerator(random)
             .generate(position, age, strength, Reputation.AVERAGE)
             .toPlayer(PlayerId(slot.toLong()), names[index], position, age, country, secondNationality = null)
-        MarketEntry(player = player, price = marketListingPrice(player))
+        // Livre de verdade (issue #136), anunciado pelo valor de referência do
+        // mercado (issue #135): contrato pleno, liga de referência — a mesma
+        // régua do anúncio de um jogador vendido.
+        MarketEntry(player = player, price = marketListingPrice(marketReferenceValue(player)))
     }
 }
 

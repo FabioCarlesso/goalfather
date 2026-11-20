@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-18T00:00:00Z",
+  "source": "montado à mão (issue #137). Janelas: CBF conforme o calendário de registro 2027; ligas europeias com o padrão de cada federação. Datas FIFA: as de março, setembro/outubro e novembro do calendário FIFA 2026–2030; recorte e2e com ajustes de janela (issue #137)",
+  "data": {
+    "year": 2027,
+    "fifaWindows": [
+      {
+        "start": "2027-03-22",
+        "end": "2027-03-30"
+      },
+      {
+        "start": "2027-09-20",
+        "end": "2027-10-05"
+      },
+      {
+        "start": "2027-11-08",
+        "end": "2027-11-16"
+      }
+    ],
+    "transferWindows": [
+      {
+        "country": "BRA",
+        "start": "2027-01-04",
+        "end": "2027-03-02",
+        "scope": "INTERNATIONAL"
+      },
+      {
+        "country": "BRA",
+        "start": "2027-07-19",
+        "end": "2027-09-10",
+        "scope": "INTERNATIONAL"
+      },
+      {
+        "country": "ENG",
+        "start": "2027-01-01",
+        "end": "2027-02-01",
+        "scope": "INTERNATIONAL"
+      },
+      {
+        "country": "ENG",
+        "start": "2027-06-15",
+        "end": "2027-09-01",
+        "scope": "INTERNATIONAL"
+      }
+    ]
+  }
+}

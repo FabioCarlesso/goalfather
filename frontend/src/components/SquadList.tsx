@@ -1,8 +1,10 @@
 import { POSITION_ABBR, POSITION_LABEL } from '../domain/formations'
 import { injuryRoundsOut, staminaLevel } from '../domain/players'
 import type { Availability, Player } from '../domain/types'
+import { ContractInfo } from './ContractInfo'
 import { CountryFlag } from './CountryFlag'
 import { formatGameDate } from '../domain/calendar'
+import { formatMoney } from '../domain/formatters'
 
 interface Props {
   squad: Player[]
@@ -14,7 +16,7 @@ interface Props {
   sellDisabled: boolean
 }
 
-/** Elenco do próprio clube na Dashboard: forma física, lesão, estatísticas e venda. */
+/** Elenco do próprio clube na Dashboard: forma física, lesão, estatísticas, contrato (issue #136) e venda. */
 export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Props) {
   return (
     <div>
@@ -33,10 +35,17 @@ export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Prop
               </span>
               <InjuryBadge availability={p.availability} />
               <InternationalDutyBadge availability={p.availability} />
+              <div className="mt-0.5">
+                <ContractInfo player={p} />
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <StaminaBar stamina={p.stamina} />
               <PlayerStats player={p} />
+              {/* Valor de mercado no clube (issue #135): vem pronto do backend. */}
+              <span className="font-mono text-xs text-slate-400" title="Valor de mercado" aria-label={`Valor de mercado ${formatMoney(p.marketValue)}`}>
+                {formatMoney(p.marketValue)}
+              </span>
               {p.star && <span className="text-yellow-400" title="Estrela">★</span>}
               <span className="text-slate-300 font-mono w-8 text-right">{p.overall}</span>
               <button

@@ -3,12 +3,27 @@ package com.carlesso.goalfather.application.service
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
+import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
+import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
+import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.MarketEntry
+import com.carlesso.goalfather.domain.model.Money
+import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
+import com.carlesso.goalfather.domain.rules.ContractResult
+import com.carlesso.goalfather.domain.rules.DEFAULT_SIGNING_SEASONS
 import com.carlesso.goalfather.domain.rules.MAX_SQUAD_SIZE
+import com.carlesso.goalfather.domain.rules.leagueStrengthOf
+import com.carlesso.goalfather.domain.rules.allowedContractSeasons
+import com.carlesso.goalfather.domain.rules.contractSpan
+import com.carlesso.goalfather.domain.rules.pricedFor
+import com.carlesso.goalfather.domain.rules.seasonOn
+import com.carlesso.goalfather.domain.rules.signContract
+import com.carlesso.goalfather.domain.rules.signed
+import com.carlesso.goalfather.domain.rules.worldSeasons
 
 /**
  * Implementação de `BuyPlayerUseCase`. Orquestra dois ports
@@ -22,7 +37,15 @@ import com.carlesso.goalfather.domain.rules.MAX_SQUAD_SIZE
 class BuyPlayerService(
     private val clubRepo: ClubRepository,
     private val marketRepo: MarketRepository,
+    // A data do jogo (issue #136): o contrato assinado na compra começa nela e
+    // conta a temporada corrente da liga do clube como a primeira.
+    private val leagueRepo: LeagueRepository,
+    // Força da liga do comprador (issue #135): o salário sai do valor do
+    // jogador NA liga em que ele vai jogar.
+    private val catalogRepo: CompetitionCatalogRepository,
     private val squadMaxSize: Int = DEFAULT_MAX_SQUAD,
+    // Janela de transferência do comprador (issue #137).
+    private val windows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : BuyPlayerUseCase {
 
     override suspend fun execute(clubId: ClubId, playerId: PlayerId): TransferResult {
@@ -30,6 +53,10 @@ class BuyPlayerService(
             ?: return TransferResult.PlayerNotAvailable(playerId)
         val entry = marketRepo.findEntry(playerId)
             ?: return TransferResult.PlayerNotAvailable(playerId)
+        // Janela e limite de registros (issue #137). Do mercado não há clube de
+        // origem (`origin = null`): a janela só doméstica também aceita.
+        windows.registrationBlocker(club, origin = null, playerId = playerId)
+            ?.let { return it.toTransferResult(playerId) }
 
         if (club.cash < entry.price) {
             return TransferResult.InsufficientFunds(
@@ -49,9 +76,13 @@ class BuyPlayerService(
             return TransferResult.PlayerNotAvailable(playerId)
         }
 
+        // Livre do mercado → contratado (issue #136): contrato padrão de
+        // [DEFAULT_SIGNING_SEASONS] temporadas, salário derivado do valor. Os
+        // termos negociados com o jogador são a #138.
+        val signed = signFromMarket(entry.player, club)
         val updatedClub = club.copy(
             cash = club.cash - entry.price,
-            squad = club.squad + entry.player,
+            squad = club.squad + signed,
         )
 
         // O clube pode ter mudado desde a leitura (issue #89) — ex.: a virada da
@@ -61,11 +92,34 @@ class BuyPlayerService(
         // qualquer elenco). Sem retry automático: o débito é sobre o caixa que
         // o técnico viu, então a decisão de tentar de novo volta para ele.
         return when (val saved = clubRepo.save(updatedClub)) {
-            is ClubSaveResult.Saved -> TransferResult.Success(club = saved.club, player = entry.player)
+            is ClubSaveResult.Saved -> {
+                windows.recordRegistration(entry.player.id, club.id)
+                TransferResult.Success(club = saved.club, player = signed)
+            }
             is ClubSaveResult.Conflict -> {
                 marketRepo.add(MarketEntry(player = entry.player, price = entry.price))
                 TransferResult.Conflict(saved.clubId)
             }
+        }
+    }
+
+    /**
+     * O contrato da compra. A temporada corrente do país do clube sai das
+     * tabelas (o Brasil de 2027 convive com a Europa de 2026/27); clube sem
+     * liga cai na temporada da data na janela dele. Sem rodada nenhuma (save
+     * vazio), vale o início do mundo ([today]).
+     */
+    private suspend fun signFromMarket(player: Player, club: Club): Player {
+        val today = leagueRepo.today()
+        val span = club.contractSpan
+        val season = leagueRepo.currentStandings().worldSeasons()[club.country.code]
+            ?.takeIf { !span.end(it).isBefore(today) }
+            ?: span.seasonOn(today)
+        val seasons = DEFAULT_SIGNING_SEASONS.coerceIn(allowedContractSeasons(player.age))
+        return when (val result = signContract(player, club.id, Money.ZERO, today, season, span, seasons)) {
+            is ContractResult.Signed -> player.signed(result.contract.pricedFor(player, catalogRepo.findAll().leagueStrengthOf(club), today))
+            // A duração foi cortada na faixa da idade logo acima: não acontece.
+            is ContractResult.Rejected -> error("contrato padrão recusado para ${player.id}: ${result.reason}")
         }
     }
 

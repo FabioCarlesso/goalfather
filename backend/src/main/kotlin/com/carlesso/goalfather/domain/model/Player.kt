@@ -41,7 +41,13 @@ data class Player(
     val passing: Int,
     val defending: Int,
     val stamina: Int = 100,
-    val salary: Money,
+    /**
+     * Vínculo com o clube (issue #136), no lugar do antigo `salary` solto: o
+     * salário mora DENTRO do contrato ([Employment.UnderContract]), então um
+     * jogador livre com salário simplesmente não compila. Sem default de
+     * propósito — quem cria um jogador tem de decidir se ele tem clube.
+     */
+    val employment: Employment,
     val age: Int,
     val goals: Int = 0,
     val yellowCards: Int = 0,
@@ -72,6 +78,22 @@ data class Player(
     val suspensions: List<Suspension> = emptyList(),
 ) {
     val star: Boolean get() = overall >= 82
+
+    /**
+     * O contrato em vigor, ou `null` para o livre. `as?` é o cast seguro do
+     * Kotlin: devolve `null` em vez de lançar `ClassCastException` — o
+     * `instanceof` + cast do Java numa expressão só.
+     */
+    val contract: Employment.UnderContract? get() = employment as? Employment.UnderContract
+
+    /**
+     * Salário do vínculo (issue #136): o do contrato, e zero para o livre —
+     * quem não tem clube não entra em folha nenhuma. Derivado (não é campo),
+     * então não há como divergir do contrato; é o que a folha salarial soma.
+     */
+    val salary: Money get() = contract?.salary ?: Money.ZERO
+
+    val isFreeAgent: Boolean get() = employment == Employment.FreeAgent
 
     /**
      * Atalho de leitura para as checagens de "pode escalar?". Derivado de

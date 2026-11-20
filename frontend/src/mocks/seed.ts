@@ -31,6 +31,12 @@ import type {
 import {
   MulberryRng,
   ageSquadOneSeason,
+  marketValueOf,
+  contractFor,
+  contractTurnover,
+  initialContractOf,
+  seasonStartOf,
+  YOUTH_CONTRACT_SEASONS,
   DEFAULT_TICKET_PRICE_CENTS,
   type EffectiveLineupFields,
   type PendingYellows,
@@ -105,6 +111,8 @@ const player = (
   star: ovr >= 82,
   nationality,
   ...(secondNationality ? { secondNationality } : {}),
+  // Valor de referência (issue #135); no elenco, o handler o recalcula com a liga do clube.
+  marketValue: marketValueOf({ overall: ovr, age }),
 })
 
 // Elenco escrito à mão do clube 1 (o mais forte da Série A do mock): é o que
@@ -122,7 +130,8 @@ const initialSquad: Player[] = [
   player(9,  'Carlos Almeida',    'MF', 71, 2_800_00, 21),
   player(10, 'Renato Silva',      'FW', 88, 11_000_00, 29),
   player(11, 'João Faria',        'FW', 79, 5_200_00, 26),
-]
+  // Contrato inicial (issue #136): duração pela idade, término em 31/12.
+].map((p) => ({ ...p, contract: initialContractOf(p, 'BRA') }))
 
 /**
  * Clube como o mock o GUARDA: sem os campos derivados da escalação efetiva
@@ -151,12 +160,13 @@ const storedClubOf = (world: (typeof WORLD_CLUBS)[number], squad: Player[]): Sto
 
 export const myClub: StoredClub = storedClubOf(WORLD_CLUBS[0]!, initialSquad)
 
+// Do mercado só sai jogador LIVRE (issue #136): sem contrato e sem salário.
 export const marketEntries: MarketEntry[] = [
-  { player: player(101, 'Lucas Vidigal',  'FW', 81, 6_400_00, 25), price:  90_000_00 },
+  { player: player(101, 'Lucas Vidigal',  'FW', 81, 0, 25), price:  90_000_00 },
   // Estrangeiros (issue #123), espelhando o seed do backend.
-  { player: player(102, 'André Pacheco',  'MF', 77, 4_600_00, 24, COUNTRIES.POR), price:  44_000_00 },
-  { player: player(103, 'Bruno Aparício', 'CB', 79, 5_000_00, 27, COUNTRIES.ARG, COUNTRIES.ITA), price:  60_000_00 },
-  { player: player(104, 'Eduardo Ramires','GK', 76, 4_200_00, 28, COUNTRIES.URU), price:  36_000_00 },
+  { player: player(102, 'André Pacheco',  'MF', 77, 0, 24, COUNTRIES.POR), price:  44_000_00 },
+  { player: player(103, 'Bruno Aparício', 'CB', 79, 0, 27, COUNTRIES.ARG, COUNTRIES.ITA), price:  60_000_00 },
+  { player: player(104, 'Eduardo Ramires','GK', 76, 0, 28, COUNTRIES.URU), price:  36_000_00 },
 ]
 
 // ─── Registro de clubes do mundo ─────────────────────────────────────────
@@ -514,6 +524,9 @@ export const state = {
   // estado de sessão, como o resto do mock.
   offers: [] as TransferOffer[],
   nextOfferId: 1,
+  // Registros de jogador por id (issue #137): as datas em que ele entrou num
+  // clube — o que o limite de "1 por janela, 2 por temporada" conta.
+  registrations: {} as Record<number, string[]>,
   // Amarelos pendentes por jogador e competição (issue #130) — o contrato não
   // os expõe, então o mock guarda à parte, como o backend no `discipline_json`.
   pendingYellows: {} as PendingYellows,
@@ -785,17 +798,30 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
     // Envelhecimento (issue #55): +1 ano, evolução/regressão por faixa etária,
     // aposentadoria do veterano que já não rende e promoção da base no lugar
     // dele. Seed por temporada e clube, como o `agingSeed` do backend.
+    const country = club.country.code
     const turn = ageSquadOneSeason(
       club.squad,
       new MulberryRng(season * 1_000 + club.id),
       club.id,
       (slot) => youthPlayerId(season, club.id, slot),
+      contractFor(seasonStartOf(season, country), season, YOUTH_CONTRACT_SEASONS, country),
     )
     retirements.push(...turn.retirements)
+    // Vencimentos (issue #136), depois do envelhecimento, como no backend: o
+    // clube do técnico perde quem venceu (vai ao mercado livre, por zero); a
+    // IA renova sozinha.
+    const contracts = contractTurnover(
+      turn.squad,
+      season - 1,
+      country,
+      clubOwners[club.id] != null,
+      new MulberryRng(season * 7_717 + club.id),
+    )
+    state.market = [...state.market, ...contracts.released.map((p) => ({ player: p, price: 0 }))]
     state.clubs[club.id] = {
       ...club,
       // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-      squad: turn.squad.map((p) => ({
+      squad: contracts.squad.map((p) => ({
         ...p,
         goals: 0,
         yellowCards: 0,

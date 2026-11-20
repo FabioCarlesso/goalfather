@@ -539,6 +539,9 @@ paths:
       description: |
         Devolve um `TransferResult` como union — `Success` traz o clube
         atualizado e o jogador contratado; variantes de erro indicam o motivo.
+        Só dentro da janela de transferência do clube comprador
+        (`TransferWindowClosed` fora dela) e respeitando o limite de registros
+        do jogador (`TransferLimitReached`) — issue #137.
       requestBody:
         required: true
         content:
@@ -561,10 +564,13 @@ paths:
       operationId: sellPlayer
       summary: Vender jogador do elenco
       description: |
-        O clube recebe 8 salários do jogador, e ele vai ao mercado anunciado
-        por 12 salários (`domain/rules/TransferRules`, como no protótipo). O
-        pagamento é sempre menor que o anúncio: comprar e revender o mesmo
-        jogador dá prejuízo, nunca lucro.
+        O clube recebe 60% do valor de mercado do jogador NO CLUBE (issue #135:
+        overall, idade, contrato e força da liga), e ele vai ao mercado
+        anunciado por 125% do valor de referência do mercado
+        (`domain/rules/TransferRules`). O pagamento é sempre menor que o
+        anúncio, de qualquer liga: comprar e revender o mesmo jogador dá
+        prejuízo, nunca lucro. Só dentro da janela de transferência do clube
+        vendedor (`TransferWindowClosed` fora dela, issue #137).
       requestBody:
         required: true
         content:
@@ -1104,6 +1110,36 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # --- #137 Janelas de transferência ---
+  /api/clubs/{id}/transfer-window:
+    get:
+      tags: [Market]
+      operationId: getClubTransferWindow
+      summary: Janela de transferência da federação do clube hoje
+      description: |
+        O selo "Janela aberta até …" / "Abre em …" do mercado e do cabeçalho
+        (issue #137). A janela que vale é a da federação (país) do clube, na
+        data do relógio do jogo (o encaixe corrente). Compra, venda ao mercado,
+        criação e aceite de proposta fora dela devolvem `TransferWindowClosed`.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Situação da janela
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TransferWindowStatus' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Clube inexistente (`CLUB_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  # --- fim #137 ---
 
   # --- #133 Navegação do mundo ---
   /api/competitions:
@@ -1766,6 +1802,7 @@ components:
         - availability
         - nationality
         - suspensions
+        - marketValue
       properties:
         id:         { type: integer, format: int64 }
         name:       { type: string }
@@ -1783,7 +1820,13 @@ components:
             Forma física (issue #54). Titulares perdem 10–25 por rodada (piso
             40) e reservas recuperam. Abaixo de 70 o rendimento do jogador cai
             proporcionalmente — a UI não recalcula isso, só exibe.
-        salary:     { type: integer, format: int64, minimum: 0, description: Salário mensal, em centavos de USD }
+        salary:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Salário mensal, em centavos de USD — o do contrato (issue #136).
+            Zero para o jogador livre do mercado, que não tem contrato.
         age:
           type: integer
           minimum: 15
@@ -1825,6 +1868,23 @@ components:
             Ocupa vaga de estrangeiro no clube dele (issue #130) — calculado
             pelo backend a partir das nacionalidades e do país do clube.
             Presente só no `squad` de um `Club`; ausente no mercado.
+        marketValue:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Valor de mercado em centavos de USD (issue #135), calculado pelo
+            backend a partir do overall, da idade, do contrato restante e da
+            força da liga. No `squad` de um `Club`, é o valor do jogador no
+            clube (com o prêmio ou deságio da liga dele); fora de elenco
+            (mercado, eventos de rodada), é o valor de referência do mercado,
+            sobre o qual sai o preço de anúncio. A venda rápida ao mercado paga
+            uma fração do valor no clube. A UI só exibe — nunca recalcula.
+        contract:
+          $ref: '#/components/schemas/Contract'
+          description: |
+            Contrato em vigor (issue #136) — ausente para o jogador livre
+            (mercado).
 
     Suspension:
       type: object
@@ -2051,7 +2111,9 @@ components:
         price:
           type: integer
           format: int64
-          description: Preço de compra (em centavos de USD)
+          description: |
+            Preço de compra (em centavos de USD). Para quem foi anunciado pelo
+            mercado, 125% do `player.marketValue` de referência (issue #135).
 
     TransferResult:
       description: |
@@ -2063,6 +2125,8 @@ components:
         - $ref: '#/components/schemas/SquadFull'
         - $ref: '#/components/schemas/PlayerNotAvailable'
         - $ref: '#/components/schemas/TransferConflict'
+        - $ref: '#/components/schemas/TransferWindowClosed'
+        - $ref: '#/components/schemas/TransferLimitReached'
       discriminator:
         propertyName: type
         mapping:
@@ -2071,6 +2135,8 @@ components:
           SquadFull:          '#/components/schemas/SquadFull'
           PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
           Conflict:           '#/components/schemas/TransferConflict'
+          TransferWindowClosed: '#/components/schemas/TransferWindowClosed'
+          TransferLimitReached: '#/components/schemas/TransferLimitReached'
 
     TransferSuccess:
       type: object
@@ -2228,13 +2294,16 @@ components:
 
     ExpiryReason:
       type: string
-      enum: [DEADLINE, PLAYER_TRANSFERRED, MANAGER_LEFT]
+      enum: [DEADLINE, PLAYER_TRANSFERRED, MANAGER_LEFT, WINDOW_CLOSED]
       description: |
         `DEADLINE` — o prazo em rodadas venceu sem resposta.
         `PLAYER_TRANSFERRED` — o jogador deixou o elenco do vendedor: outra
         proposta por ele foi aceita, ou ele foi vendido ao mercado/se aposentou.
         `MANAGER_LEFT` — o técnico de um dos dois clubes foi demitido: a
         negociação era dele, e o clube (agora da IA) não a herda.
+        `WINDOW_CLOSED` — a janela de transferência do comprador fechou (ou
+        virou só doméstica, com vendedor de outro país) com a proposta
+        pendente (issue #137).
 
     SquadViolation:
       type: string
@@ -2250,9 +2319,10 @@ components:
         `switch (result.type)` exaustivo. Posse (403) e existência (404) NÃO
         estão aqui: viram status HTTP.
 
-        `InsufficientFunds`, `SquadFull`, `PlayerNotAvailable` e `Conflict`
-        reusam os schemas do `TransferResult` do mercado: mesmo significado,
-        mesma forma.
+        `InsufficientFunds`, `SquadFull`, `PlayerNotAvailable`, `Conflict`,
+        `TransferWindowClosed` e `TransferLimitReached` reusam os schemas do
+        `TransferResult` do mercado: mesmo significado, mesma forma. A janela
+        é a do COMPRADOR, na criação e no aceite.
       oneOf:
         - $ref: '#/components/schemas/OfferSuccess'
         - $ref: '#/components/schemas/InvalidOfferAmount'
@@ -2267,6 +2337,8 @@ components:
         - $ref: '#/components/schemas/OfferExpired'
         - $ref: '#/components/schemas/RoundInProgress'
         - $ref: '#/components/schemas/TransferConflict'
+        - $ref: '#/components/schemas/TransferWindowClosed'
+        - $ref: '#/components/schemas/TransferLimitReached'
       discriminator:
         propertyName: type
         mapping:
@@ -2283,6 +2355,8 @@ components:
           OfferExpired:       '#/components/schemas/OfferExpired'
           RoundInProgress:    '#/components/schemas/RoundInProgress'
           Conflict:           '#/components/schemas/TransferConflict'
+          TransferWindowClosed: '#/components/schemas/TransferWindowClosed'
+          TransferLimitReached: '#/components/schemas/TransferLimitReached'
 
     OfferSuccess:
       description: Comando aplicado — `offer` traz o estado novo da proposta.
@@ -3747,6 +3821,76 @@ components:
           additionalProperties: true
           description: Dados extras dependentes do código de erro
 
+    # --- #137 Janelas de transferência ---
+    TransferWindowClosed:
+      description: |
+        A janela de transferência do clube está fechada (issue #137): a do
+        comprador na compra e nas propostas, a do vendedor na venda ao
+        mercado. Também sai na janela SÓ DOMÉSTICA quando o vendedor é de
+        outro país — aí `nextOpens` é a próxima janela internacional.
+        `nextOpens` ausente: a federação não tem calendário de janelas.
+      type: object
+      required: [type]
+      properties:
+        type:      { type: string, enum: [TransferWindowClosed] }
+        nextOpens: { type: string, format: date, description: Próxima abertura (ISO-8601) }
+
+    TransferLimitReached:
+      description: |
+        O jogador já esgotou o limite simplificado de registros (issue #137):
+        um por janela e dois por temporada. Registro = entrar num clube
+        (compra no mercado ou proposta aceita).
+      type: object
+      required: [type, playerId, limit]
+      properties:
+        type:     { type: string, enum: [TransferLimitReached] }
+        playerId: { type: integer, format: int64 }
+        limit:    { $ref: '#/components/schemas/RegistrationLimit' }
+
+    RegistrationLimit:
+      type: string
+      enum: [ONE_PER_WINDOW, TWO_PER_SEASON]
+      description: |
+        `ONE_PER_WINDOW` — o jogador já foi registrado nesta janela.
+        `TWO_PER_SEASON` — já foram dois registros na temporada do comprador
+        (ano civil no Brasil; de junho a maio na UEFA).
+
+    TransferWindowScope:
+      type: string
+      enum: [DOMESTIC_ONLY, INTERNATIONAL]
+      description: |
+        `DOMESTIC_ONLY` — só transferências entre clubes da própria federação
+        (a CBF abre uma em março). `INTERNATIONAL` — qualquer transferência.
+
+    TransferWindowStatus:
+      description: |
+        Mapeia `sealed interface WindowStatus` do domínio (issue #137).
+        Discriminado por `type` — no TS, `switch (status.type)` exaustivo.
+      oneOf:
+        - $ref: '#/components/schemas/OpenTransferWindow'
+        - $ref: '#/components/schemas/ClosedTransferWindow'
+      discriminator:
+        propertyName: type
+        mapping:
+          Open:   '#/components/schemas/OpenTransferWindow'
+          Closed: '#/components/schemas/ClosedTransferWindow'
+
+    OpenTransferWindow:
+      type: object
+      required: [type, closes, scope]
+      properties:
+        type:   { type: string, enum: [Open] }
+        closes: { type: string, format: date, description: Último dia da janela (inclusivo) }
+        scope:  { $ref: '#/components/schemas/TransferWindowScope' }
+
+    ClosedTransferWindow:
+      type: object
+      required: [type]
+      properties:
+        type:      { type: string, enum: [Closed] }
+        nextOpens: { type: string, format: date, description: 'Próxima abertura; ausente se a federação não tem calendário' }
+    # --- fim #137 ---
+
     # --- #134 Seleções ---
     InternationalDutyStatus:
       type: object
@@ -3894,3 +4038,35 @@ components:
           type: array
           description: Ranking de seleções — só quem já jogou aparece
           items: { $ref: '#/components/schemas/NationalTableRow' }
+
+    # --- #136 ---
+    Contract:
+      type: object
+      description: |
+        Contrato em vigor do jogador (issue #136). O vínculo é com o clube
+        dono do elenco; o salário fica em `Player.salary`. Dura de 1 a 5
+        temporadas (no máximo 3 para menor de 18) e termina sempre no fim de
+        temporada da liga do clube — 31/12 no Brasil, 31/05 nas ligas
+        europeias. Ao vencer, na virada daquela liga, o jogador sai livre.
+      required: [start, end, finalSeason]
+      properties:
+        start:
+          type: string
+          format: date
+          example: '2026-01-01'
+        end:
+          type: string
+          format: date
+          description: Último dia do contrato — um fim de temporada da liga do clube
+          example: '2028-12-31'
+        releaseClause:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Cláusula de rescisão, em centavos de USD — ausente quando não há
+        finalSeason:
+          type: boolean
+          description: |
+            `true` quando o contrato está na última temporada (vence na próxima
+            virada da liga do clube). Calculado pelo backend a partir da data
+            do jogo — a UI só destaca.

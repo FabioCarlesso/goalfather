@@ -38,7 +38,9 @@ test.describe('Offers flow', () => {
       const club = (await (await fetch(`/api/clubs/${sellerId}`, {
         headers: { Authorization: `Bearer ${rival.token}` },
       })).json()) as { squad: { id: number; position: string }[] }
-      const target = club.squad.find((p) => p.position !== 'GK')!
+      // Do elenco ORIGINAL (o último de linha): o recém-comprado do mercado já
+      // foi registrado nesta janela e esbarraria no limite de 1 por janela (#137).
+      const target = club.squad.filter((p) => p.position !== 'GK').at(-1)!
       const res = await fetch('/api/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${rival.token}` },

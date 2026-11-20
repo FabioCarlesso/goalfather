@@ -28,6 +28,13 @@ enum class ExpiryReason {
      * começou (revisão do PR #94).
      */
     MANAGER_LEFT,
+
+    /**
+     * A janela de transferência do comprador fechou com a proposta pendente
+     * (issue #137) — ou virou só doméstica, com vendedor de outro país. O
+     * aceite já não poderia registrar o jogador.
+     */
+    WINDOW_CLOSED,
 }
 
 /**

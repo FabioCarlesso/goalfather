@@ -1,4 +1,5 @@
 import { formatMoney } from '../domain/formatters'
+import { registrationLimitMessage, windowClosedMessage } from '../domain/transferWindow'
 import type { TransferResult } from '../domain/types'
 
 interface Feedback {
@@ -39,6 +40,19 @@ function feedbackOf(result: TransferResult): Feedback {
         color: 'border-amber-700/50 bg-amber-900/20 text-amber-200',
         title: 'Clube alterado ao mesmo tempo',
         body: 'Outra operação mexeu no clube agora há pouco; nada foi aplicado. Tente de novo.',
+      }
+    // Janelas de transferência (issue #137): a venda ao mercado também espera a janela.
+    case 'TransferWindowClosed':
+      return {
+        color: 'border-amber-700/50 bg-amber-900/20 text-amber-200',
+        title: 'Janela fechada',
+        body: windowClosedMessage(result.nextOpens),
+      }
+    case 'TransferLimitReached':
+      return {
+        color: 'border-amber-700/50 bg-amber-900/20 text-amber-200',
+        title: 'Limite de transferências',
+        body: registrationLimitMessage(result.limit),
       }
   }
 }

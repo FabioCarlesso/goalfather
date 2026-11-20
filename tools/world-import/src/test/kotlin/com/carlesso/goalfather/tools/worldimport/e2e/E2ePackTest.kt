@@ -4,12 +4,16 @@ import com.carlesso.goalfather.adapter.out.worlddata.FileWorldDataProvider
 import com.carlesso.goalfather.application.port.out.PackLoadResult
 import com.carlesso.goalfather.domain.model.CompetitionFormat
 import com.carlesso.goalfather.domain.model.CompetitionId
+import com.carlesso.goalfather.domain.model.CountryCode
 import com.carlesso.goalfather.domain.model.world.ClubProfile
 import com.carlesso.goalfather.domain.model.world.WorldClubId
 import com.carlesso.goalfather.domain.model.world.WorldPack
+import com.carlesso.goalfather.domain.rules.WindowStatus
+import com.carlesso.goalfather.domain.rules.windowStatus
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.LocalDate
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.readText
@@ -72,7 +76,29 @@ class E2ePackTest {
         assertEquals(listOf(1, 2, 2, 1), format.stages.map { it.legs.matches })
         // Elencos copiados, não regerados.
         e2e.clubs.forEach { club -> assertEquals(full.club(club.id), club) }
-        assertEquals(full.calendars, e2e.calendars)
+        // Datas FIFA copiadas; janelas recortadas e ajustadas (issue #137).
+        assertEquals(full.calendars.map { it.year to it.fifaWindows }, e2e.calendars.map { it.year to it.fifaWindows })
+    }
+
+    @Test
+    fun `calendario do e2e abre o Brasil e fecha a Inglaterra na data inicial (issue 137)`() = runTest {
+        val full = load(fullDir)
+        val e2e = load(e2eDir)
+        val start = LocalDate.of(2026, 1, 4) // 2026-W01-WEEKEND, o 1º encaixe do mundo
+        val windows = e2e.calendars.flatMap { it.transferWindows }
+
+        assertIs<WindowStatus.Open>(windowStatus(CountryCode("BRA"), start, windows))
+        assertEquals(WindowStatus.Closed(LocalDate.of(2026, 6, 15)), windowStatus(CountryCode("ENG"), start, windows))
+        // No pack completo, o dado real: a CBF só abre no dia 5.
+        val real = full.calendars.flatMap { it.transferWindows }
+        assertEquals(WindowStatus.Closed(LocalDate.of(2026, 1, 5)), windowStatus(CountryCode("BRA"), start, real))
+        // Só as federações com competição no recorte.
+        assertEquals(setOf("BRA", "ENG"), windows.mapTo(HashSet()) { it.country.code.value })
+        // Fora do ano de início, cópia fiel.
+        assertEquals(
+            full.calendar(2027)?.transferWindows?.filter { it.country.code.value in setOf("BRA", "ENG") },
+            e2e.calendar(2027)?.transferWindows,
+        )
     }
 
     @OptIn(ExperimentalPathApi::class)

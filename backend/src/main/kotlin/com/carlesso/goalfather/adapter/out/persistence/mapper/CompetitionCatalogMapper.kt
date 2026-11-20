@@ -12,6 +12,7 @@ import com.carlesso.goalfather.domain.model.KnockoutStage
 import com.carlesso.goalfather.domain.model.Legs
 import com.carlesso.goalfather.domain.model.SeasonSpan
 import com.carlesso.goalfather.domain.model.Tiebreaker
+import com.carlesso.goalfather.domain.model.world.LeagueStrength
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -52,6 +53,7 @@ fun GameCompetition.toEntity(order: Int): CompetitionCatalogEntity = Competition
     yellowsForSuspension = competition.discipline.yellowsForSuspension,
     matchesPerRedCard = competition.discipline.matchesPerRedCard,
     resetsYellowsAtKnockout = competition.discipline.resetsYellowsAtKnockout,
+    leagueStrength = strength?.value,
 )
 
 /**
@@ -78,6 +80,7 @@ fun CompetitionCatalogEntity.toDomain(): GameCompetition = GameCompetition(
     },
     span = SeasonSpan.valueOf(seasonSpan),
     pausesOnFifaWindows = pausesOnFifaWindows,
+    strength = leagueStrength?.let(::LeagueStrength),
 )
 
 private val catalogJson = Json { ignoreUnknownKeys = true }

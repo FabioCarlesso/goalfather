@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.domain.model
 
+import com.carlesso.goalfather.domain.model.world.LeagueStrength
+
 /**
  * Uma competição do mundo DO SAVE (issue #131): o formato e as regras
  * ([competition]) + onde e quando ela se joga. É o que substitui o catálogo
@@ -26,6 +28,12 @@ data class GameCompetition(
     val kind: CompetitionKind,
     val span: SeasonSpan,
     val pausesOnFifaWindows: Boolean,
+    /**
+     * Força da liga (dado do pack, issue #135): o multiplicador de liga do
+     * valor de mercado. `null` em copa e continental, que não têm força
+     * própria, e em save anterior à issue (vale a referência do mercado).
+     */
+    val strength: LeagueStrength? = null,
 ) {
     val id: CompetitionId get() = competition.id
 

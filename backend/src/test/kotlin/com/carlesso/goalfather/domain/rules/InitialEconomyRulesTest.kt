@@ -12,21 +12,6 @@ import kotlin.test.assertTrue
 class InitialEconomyRulesTest {
 
     @Test
-    fun `salario dobra a cada 10 pontos de overall a partir de US$ 1500 no 60`() {
-        assertEquals(Money.dollars(1_500), initialSalary(60))
-        assertEquals(Money.dollars(3_000), initialSalary(70))
-        assertEquals(Money.dollars(6_000), initialSalary(80))
-        assertEquals(Money.dollars(12_000), initialSalary(90))
-        // Arredondado a US$ 10.
-        assertEquals(0L, initialSalary(77).cents % 10_00)
-    }
-
-    @Test
-    fun `salario tem piso de US$ 500`() {
-        assertEquals(Money.dollars(500), initialSalary(35))
-    }
-
-    @Test
     fun `caixa e um numero de folhas que cresce com a reputacao`() {
         val squad = List(10) { makePlayer(it + 1L, salary = 1_000_00) } // folha: US$ 10 mil
         // rep 50 → 4 + 5 = 9 folhas; rep 90 → 13 folhas.

@@ -5,6 +5,8 @@
 import type { components } from '../api/generated'
 
 export type Player        = components['schemas']['Player']
+// Contrato do vínculo (issue #136)
+export type Contract      = components['schemas']['Contract']
 export type Availability  = components['schemas']['Availability']
 export type Club          = components['schemas']['Club']
 // País e nacionalidade (issue #123)
@@ -83,6 +85,11 @@ export type ExpiryReason        = components['schemas']['ExpiryReason']
 export type SquadViolation      = components['schemas']['SquadViolation']
 export type TransferOfferResult = components['schemas']['TransferOfferResult']
 export type CreateOfferRequest  = components['schemas']['CreateOfferRequest']
+
+// --- #137 Janelas de transferência ---
+export type TransferWindowStatus = components['schemas']['TransferWindowStatus']
+export type TransferWindowScope  = components['schemas']['TransferWindowScope']
+export type RegistrationLimit    = components['schemas']['RegistrationLimit']
 
 // Auth (issue #18) + seleção de clube (issue #19)
 export type AuthUser        = components['schemas']['AuthUser']

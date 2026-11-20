@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.application.seed.dsl
 
+import com.carlesso.goalfather.test.testContract
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Countries
@@ -125,7 +126,8 @@ class PlayerBuilder(private val id: Long, private val name: String) {
         passing = passing ?: overall,
         defending = defending ?: overall,
         stamina = stamina,
-        salary = salary.cents,
+        // Contrato de teste (issue #136): a DSL só declara o salário.
+        employment = testContract(salary.cents),
         age = age,
         nationality = nationality,
         secondNationality = secondNationality,

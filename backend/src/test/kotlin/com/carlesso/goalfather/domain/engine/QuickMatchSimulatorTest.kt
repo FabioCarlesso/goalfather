@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.domain.engine
 
+import com.carlesso.goalfather.test.testContract
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.matchStats
 import com.carlesso.goalfather.domain.model.ClubId
@@ -38,7 +39,7 @@ class QuickMatchSimulatorTest {
         shooting = overall,
         passing = overall,
         defending = overall,
-        salary = 10_000.cents,
+        employment = testContract(10_000.cents),
         age = 25,
     )
 

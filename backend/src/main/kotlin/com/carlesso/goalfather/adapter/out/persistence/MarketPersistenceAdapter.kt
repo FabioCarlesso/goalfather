@@ -49,7 +49,7 @@ class MarketPersistenceAdapter(
             // cria a entry de mercado.
             val player = playerRepo.findById(entry.player.id.value).orElse(null)
             if (player != null) {
-                player.clubId = null
+                player.releaseFromClub()
                 playerRepo.save(player)
             }
             marketRepo.save(MarketEntryEntity(playerId = entry.player.id.value, price = entry.price.cents))

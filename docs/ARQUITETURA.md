@@ -1621,6 +1621,174 @@ o `save` precisa comparar com a versão **da leitura do use case**:
   #132 também toca). O relógio ainda não anda sozinho nos encaixes sem técnico
   humano (pendência conhecida).
 
+
+### Fase 9 — Mercado de transferências (épico #148)
+
+#### 9.1 Valor de mercado — issue #135
+
+`marketValue(player, employment, leagueStrength, today): Money`
+(`domain/rules/ValuationRules.kt`), função pura em USD, é o produto de quatro
+fatores independentes:
+
+| Fator | Regra | Calibração |
+|---|---|---|
+| Overall | exponencial: `US$ 25 mil × 2^((ovr − 70) / 4)` | 60 ≈ US$ 4,4 mil, 80 ≈ US$ 141 mil, 90 ≈ US$ 800 mil |
+| Idade | 1 dos 24 aos 27; `0,93^anos` antes, `0,82^anos` depois | 18 ≈ 0,65; 30 ≈ 0,55; 33 ≈ 0,30 |
+| Contrato restante | linear 0,15 (vence hoje) → 0,70 (1 ano) → 1 (3 anos ou mais) | `Employment.FreeAgent` vale **zero** de taxa |
+| Liga | `2^((força − 70) / 16)`, preso em 0,5..1,8 | Premier (78) ≈ 1,41×, Série B (62) ≈ 0,71× |
+
+Arredondado a US$ 10, piso de US$ 100 para quem tem contrato. As constantes
+são nossas, sem copiar fonte, e a escala é a da **economia do jogo**, não a do
+futebol real (decisão na integração da onda 6): caixa, bilheteria e salários
+do jogo são ~100× menores que os reais, e valores na escala real deixavam um
+titular impagável e uma venda valendo vários caixas do clube. O formato da
+curva é o que importa; trocar de escala é mexer só na base da curva e, junto,
+no divisor do salário (`VALUE_PER_MONTHLY_SALARY`, 9.2).
+
+- **Força da liga persistida:** `GameCompetition.strength` (nulo em copa e
+  continental), gravado do pack no catálogo do save (migration
+  `V25__league_strength.sql`, coluna `competition_catalog.league_strength`).
+  `List<GameCompetition>.leagueStrengthOf(club)` cai na força de referência
+  (70) para clube sem liga ou save anterior.
+- **Preços derivados do valor** (`TransferRules`): a venda rápida paga **60%**
+  do valor do jogador **no clube** (`squadMarketValue`: contrato e liga dele); o
+  anúncio cobra **125%** do valor de **referência** do mercado
+  (`marketReferenceValue`: contrato pleno, liga 70). O mercado é global, então o
+  anúncio não carrega o prêmio de liga de quem vendeu. O anti-arbitragem é
+  estrutural: `60% × 1,8 (teto da liga) = 108% < 125%` — comprar e revender
+  perde em qualquer liga, idade, overall ou contrato (teste de propriedade em
+  `TransferRulesTest`). O mercado inicial (livres gerados) usa o mesmo preço.
+- **Contrato:** o deságio por contrato restante lê `player.employment` (9.2);
+  o "hoje" é a data do encaixe corrente (`LeagueRepository.today()`,
+  extension no port, que cai em 01/01 do ano do mundo num save sem rodada).
+- **API:** `Player.marketValue` (centavos, obrigatório) no contrato e no
+  `PlayerDto`: no `squad` de um clube, o valor no clube; fora de elenco
+  (mercado, eventos), o de referência. A UI só exibe — no elenco, no modal de
+  venda e no mercado. O mock (`src/mocks/engine.ts`) espelha a curva.
+
+#### 9.2 Contratos com término, vencimento e jogador livre — issue #136
+
+- **Vínculo no tipo.** `Player.employment: Employment` substitui o `salary`
+  solto. `Employment` é `sealed`: `UnderContract(clubId, salary, start, end,
+  releaseClause?)` ou `FreeAgent` — um livre com salário não compila. O
+  `clubId` fica dentro do contrato porque o contrato é do VÍNCULO: trocar de
+  clube é trocar de contrato. `Player.salary` continua existindo como
+  propriedade DERIVADA (`contract?.salary ?: ZERO`), e é ela que a folha
+  salarial soma — a folha lê o contrato sem saber disso.
+- **Regras puras em `domain/rules/ContractRules.kt`.** Duração de 1 a 5
+  temporadas, no máximo 3 para menor de 18 (`signContract` devolve
+  `ContractResult.Rejected(InvalidDuration)`, erro como valor). A temporada
+  corrente conta como a primeira, e o término cai sempre no fim de temporada
+  da liga do clube: a janela sai da confederação do país (`contractSpanOf`,
+  a mesma regra do `span` das ligas no seed) — 31/12 no Brasil, 31/05 na
+  Europa.
+- **Salário derivado do valor.** `pricedFor` monta o contrato, pergunta a
+  `marketValue(player, contrato, força, hoje)` quanto o jogador vale e fixa o
+  salário mensal = valor / `VALUE_PER_MONTHLY_SALARY` (= 20, piso de US$ 500):
+  um 80 no auge ganha ~US$ 7 mil, um 70 ~US$ 1,25 mil — a escala da economia
+  do jogo de antes da onda. O divisor acompanha a curva do valor (9.1). O
+  `initialSalary` por overall saiu.
+- **Mundo inicial.** Todo jogador de elenco do pack nasce com contrato
+  assinado em 01/01 do ano do mundo, com duração sorteada pela idade
+  (`typicalContractSeasons`, seed pelo id do pack: jovem longo, veterano
+  curto). Os 16 livres do mercado são `FreeAgent`, anunciados pelo valor de
+  referência (9.1). Quem sobe da base
+  já sobe com contrato de 3 temporadas.
+- **Vencimento na virada DA LIGA do clube.** `contractTurnover(club,
+  endedSeason)` roda dentro de `startNextSeasonClubs`, que só é chamada na
+  virada do país do clube (e dos clubes sem liga da confederação que hospeda
+  a continental). Por isso dezembro no Brasil não toca contrato europeu. Vence
+  quem termina até o fim daquela temporada. Clube de técnico humano: o
+  jogador vira `FreeAgent`, sai do elenco e vai ao mercado por **preço zero**
+  (livre, sem taxa). O pool de livres de verdade é a #139, e ele substitui
+  esse destino. Clube da IA: renova sozinho pelo mesmo salário, com duração
+  típica da idade. É provisório até a IA ativa (#143): sem isso os elencos da
+  IA, que não compram, encolheriam a cada virada.
+- **Mudança de clube.** Comprar do mercado assina um contrato novo
+  (`DEFAULT_SIGNING_SEASONS` = 3, salário pelo valor na liga do comprador,
+  lida do catálogo do save). A
+  proposta aceita entre técnicos transfere o contrato (`transferredTo`): o
+  comprador assume salário e cláusula, e o término é realinhado à janela da
+  liga dele. Vender ao mercado libera o jogador (`released()`). Termos
+  negociados e renovação ficam para a #138.
+- **Persistência e save.** A migration `V23__player_contracts.sql` cria
+  `contract_start`, `contract_end` e `release_clause` em `players`, que ficam
+  nulas para o livre (mesma postura da V22 com a convocação). O backfill dá
+  contrato padrão a todo jogador com clube: 3 temporadas a partir da temporada
+  corrente do país (a maior das tabelas dele), terminando no fim de temporada
+  da liga, com o salário que ele já tinha. O livre fica com salário zero. O
+  mapper monta o `sealed` a partir de `club_id`: sem clube é livre. Ao sair do
+  elenco, a linha perde o vínculo inteiro (`PlayerEntity.releaseFromClub`).
+  **Estado serializado:** o `lineup_json` guarda jogadores inteiros. Uma
+  escalação gravada antes da issue não tem `employment` (campo sem default de
+  propósito). `decodeLineup` (`ClubMapper`) abre a árvore JSON e põe
+  `FreeAgent` em quem não tem o campo. Isso é seguro porque a escalação é só
+  uma foto: `startingLineup()` reidrata pelo id a partir do `squad`. A próxima
+  gravação já escreve o formato novo.
+- **API e UI.** `Player.contract` (schema `Contract`: `start`, `end`,
+  `releaseClause?`, `finalSeason`) fica ausente para o livre, e `salary` é o do
+  contrato. `finalSeason` é a regra `isInFinalSeason(hoje)` calculada no
+  backend com a data do jogo (`LeagueRepository.today()`). A UI só destaca
+  (`ContractInfo`: salário, "até dd/mm/aaaa", badge "ÚLTIMO ANO") no elenco da
+  Dashboard e na página do clube. O mercado mostra "livre · sem contrato", e a
+  ordenação por salário saiu (todo livre tem salário zero).
+
+#### 9.3 Janelas de transferência — issue #137
+
+  O mercado abre e fecha pela federação (o país) do clube **comprador**, na
+  data do relógio do jogo (o dia do encaixe corrente). Na venda rápida ao
+  mercado não há comprador: vale a janela do vendedor.
+
+  **Domínio puro** (`domain/rules/TransferWindowRules.kt`):
+  `windowStatus(federação, data, janelas): WindowStatus`, com
+  `sealed WindowStatus { Open(closes, scope); Closed(nextOpens) }`, e
+  `registrationBlocker(...)`, que devolve um `sealed TransferBlock`
+  (`WindowClosed(nextOpens)` / `LimitReached(limit)`) ou `null`. Cada serviço
+  traduz o bloqueio para o seu resultado com uma extension (`toTransferResult`,
+  `toOfferRejection`), num `when` exaustivo: os erros de negócio novos são
+  `TransferResult.TransferWindowClosed`/`TransferLimitReached` e as variantes
+  homônimas de `OfferResult.Rejection`. `TransferWindow` ganhou
+  `scope: TransferWindowScope` (`DOMESTIC_ONLY` | `INTERNATIONAL`). Granularidade
+  de **dia**, não de semana: as bordas reais caem no meio da semana (a CBF fecha
+  numa terça e abre a doméstica na quarta), e por semana as duas se sobreporiam.
+
+  **Janela só doméstica:** recusa transferência entre países (vendedor de outro
+  país) com `TransferWindowClosed` apontando a próxima abertura
+  **internacional**; aceita dentro do país. Compra no mercado não tem país de
+  origem e passa (a transferência internacional de verdade é a #142).
+
+  **Limite simplificado:** 1 registro por jogador por janela e 2 por temporada
+  de registro do comprador (ano civil no Brasil; 1º/jun–31/mai na UEFA, porque
+  a janela de verão abre antes do 1º jogo). Registro = o jogador entrar num
+  clube (compra ou proposta aceita), gravado em `player_registrations` (V24).
+  A venda ao mercado não registra.
+
+  **Onde a guarda entra:** `TransferWindowGuard` (aplicação) junta janelas do
+  save, registros e a data e é consultado por compra, venda rápida, criação e
+  aceite de proposta, como guarda adicional antes de mexer em caixa e elenco.
+  O relógio é injetado como `suspend () -> LocalDate?` (um tipo de função no
+  lugar de uma interface de um método); `TransferWindowGuard.UNRESTRICTED` (sem
+  relógio, nada bloqueia) é o default dos serviços montados à mão nos testes.
+  Na virada do encaixe, um efeito secundário novo (`offer_windows`, depois do
+  prazo das propostas) expira as pendentes por `ExpiryReason.WINDOW_CLOSED`
+  quando a janela do comprador fecha, ou vira só doméstica com vendedor de
+  fora.
+
+  **Dados:** janelas reais de 2026 e 2027 no pack (ver `docs/WORLD_DATA.md`,
+  "Janelas de transferência"), gravadas no save com o mundo (`transfer_windows`,
+  V24) e copiadas do pack para um save antigo no boot. Ano sem dado repete o
+  último ano conhecido da federação. O recorte do E2E ajusta as janelas do ano
+  de início para ter, na data inicial, o Brasil aberto e a Inglaterra fechada.
+
+  **API/UI:** `GET /api/clubs/{id}/transfer-window` (`TransferWindowStatus`) e
+  o selo "Janela aberta até …" / "Mercado fechado · abre em …" no Mercado e no
+  relógio do cabeçalho; os erros novos têm mensagem nos toasts de compra,
+  venda e proposta.
+
+  **Cortes:** registros gravados depois do `save` do clube, fora da mesma
+  transação (uma falha entre os dois deixaria de contar um registro). Sem
+  regra de jogador livre fora da janela. Migration numerada **V24**.
+
 ---
 
 ## 9. Stack consolidada

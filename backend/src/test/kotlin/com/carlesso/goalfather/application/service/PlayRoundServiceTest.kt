@@ -1,5 +1,8 @@
 package com.carlesso.goalfather.application.service
 
+import java.time.LocalDate
+import com.carlesso.goalfather.domain.model.Money
+import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.test.InMemoryCatalogRepository
 import com.carlesso.goalfather.test.leagueMatch
 import com.carlesso.goalfather.test.testStandings
@@ -12,6 +15,9 @@ import com.carlesso.goalfather.application.port.out.PlayerRepository
 import com.carlesso.goalfather.application.port.out.RoundReadinessRepository
 import com.carlesso.goalfather.application.port.out.SeasonHistoryRepository
 import com.carlesso.goalfather.application.port.out.TransferOfferRepository
+import com.carlesso.goalfather.application.port.out.PlayerRegistrationRepository
+import com.carlesso.goalfather.application.port.out.TransferWindowRepository
+import com.carlesso.goalfather.domain.model.world.TransferWindow
 import com.carlesso.goalfather.domain.event.MatchEvent
 import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.Availability
@@ -868,6 +874,75 @@ class PlayRoundServiceTest {
     }
 
     @Test
+    fun `contrato vencido vira livre na virada da liga do clube e nao na de outra (issue 136)`() = runTest {
+        // Virada do BRASIL (temporada 2026, termina em 31/12/2026).
+        fun contract(club: Long, end: LocalDate) = Employment.UnderContract(
+            clubId = ClubId(club),
+            salary = 10_000_00.cents,
+            start = LocalDate.of(2024, 1, 1),
+            end = end,
+        )
+        val endOfSeason = LocalDate.of(2026, 12, 31)
+        // Técnico humano: quem vence sai livre; quem tem mais um ano fica.
+        val human = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80, ownerId = 7).let { c ->
+            c.copy(
+                squad = c.squad +
+                    makePlayer(50, overall = 70).copy(employment = contract(1, endOfSeason)) +
+                    makePlayer(51, overall = 70).copy(employment = contract(1, endOfSeason.plusYears(1))),
+            )
+        }
+        // IA: renova sozinha (provisório até #143), sem perder ninguém.
+        val ai = awayClub.copy(squad = awayClub.squad + makePlayer(60, overall = 70).copy(employment = contract(2, endOfSeason)))
+        // Clube inglês, fora da liga que virou: um contrato que terminaria "antes"
+        // da data da virada brasileira continua intocado — a Europa vira em maio.
+        val english = makeClub(id = 3, name = "London FC", squadSize = 11).let { c ->
+            c.copy(
+                country = Countries.ENGLAND,
+                squad = c.squad + makePlayer(70, overall = 70).copy(employment = contract(3, LocalDate.of(2026, 5, 31))),
+            )
+        }
+        val lastRound = Round(
+            matchday = md(1),
+            season = 2026,
+            status = RoundStatus.InProgress,
+            matches = listOf(leagueMatch(1001, ClubId(1), ClubId(2), "Home FC", "Away FC")),
+        )
+        coEvery { leagueRepo.findRound(md(1)) } returns lastRound
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(ClubId(1)) } returns human
+        coEvery { clubRepo.findById(ClubId(2)) } returns ai
+        coEvery { clubRepo.findAll() } returns listOf(human, ai, english)
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val savedClubs = mutableListOf<Club>()
+        coEvery { clubRepo.save(capture(savedClubs)) } answers { ClubSaveResult.Saved(firstArg()) }
+
+        val events = service.stream(md(1)).toList()
+        assertTrue(events.any { it is RoundEvent.SeasonFinished }, "temporada deveria encerrar")
+
+        val humanAfter = savedClubs.last { it.id == ClubId(1) }
+        assertTrue(humanAfter.squad.none { it.id == PlayerId(50) }, "contrato vencido sai do elenco")
+        assertEquals(endOfSeason.plusYears(1), humanAfter.squad.single { it.id == PlayerId(51) }.contract?.end)
+        // Livre e sem taxa: vai ao mercado por zero, sem contrato.
+        coVerify {
+            marketRepo.add(match { it.player.id == PlayerId(50) && it.player.isFreeAgent && it.price == Money.ZERO })
+        }
+
+        val renewed = assertNotNull(savedClubs.last { it.id == ClubId(2) }.squad.single { it.id == PlayerId(60) }.contract)
+        assertTrue(renewed.end.isAfter(endOfSeason), "a IA renova quem venceu")
+        // Renovado até um fim de temporada brasileiro (31/12), começando na seguinte.
+        assertEquals(12 to 31, renewed.end.monthValue to renewed.end.dayOfMonth)
+        assertEquals(LocalDate.of(2027, 1, 1), renewed.start)
+        assertEquals(10_000_00.cents, renewed.salary)
+
+        // A virada do Brasil não toca o clube inglês: o contrato segue lá.
+        val englishAfter = savedClubs.lastOrNull { it.id == ClubId(3) } ?: english
+        assertEquals(LocalDate.of(2026, 5, 31), englishAfter.squad.single { it.id == PlayerId(70) }.contract?.end)
+        coVerify(exactly = 0) { marketRepo.add(match { it.player.id == PlayerId(70) || it.player.id == PlayerId(60) }) }
+    }
+
+    @Test
     fun `SeasonFinished conta quem se aposentou e quem subiu da base (issue 55)`() = runTest {
         val veteran = makePlayer(99, overall = 55, age = 38)
         val base = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
@@ -1062,6 +1137,50 @@ class PlayRoundServiceTest {
             leagueRepo.saveRound(any())
             offerRepo.findPending()
         }
+    }
+
+    @Test
+    fun `janela do comprador fechada na virada expira as pendentes por WINDOW_CLOSED (issue 137)`() = runTest {
+        coEvery { leagueRepo.findRound(md(1)) } returns round
+        coEvery { leagueRepo.currentStandings() } returns listOf(standings)
+        coEvery { clubRepo.findById(any()) } returns homeClub
+        coEvery { clubRepo.findAll() } returns listOf(homeClub, awayClub)
+        coEvery { clubRepo.save(any()) } answers { ClubSaveResult.Saved(firstArg()) }
+        coEvery { leagueRepo.saveRound(any()) } just Runs
+        coEvery { leagueRepo.finishRound(any()) } returns true
+        coEvery { leagueRepo.saveStandings(any()) } just Runs
+        val offer = TransferOffer(
+            id = OfferId(1),
+            buyerClubId = ClubId(1),
+            buyerClubName = "Home FC",
+            sellerClubId = ClubId(2),
+            sellerClubName = "Away FC",
+            playerId = PlayerId(5),
+            playerName = "Alvo",
+            amount = 100_000_00.cents,
+            slotsLeft = 3,
+        )
+        coEvery { offerRepo.findPending() } returns listOf(offer)
+        val saved = mutableListOf<TransferOffer>()
+        coEvery { offerRepo.saveIfPending(capture(saved)) } returns true
+        // Janela do Brasil já fechada na data do relógio (o encaixe seguinte).
+        val window = TransferWindow(homeClub.country, LocalDate.of(2026, 1, 5), LocalDate.of(2026, 3, 3))
+        val guard = TransferWindowGuard(
+            object : TransferWindowRepository {
+                override suspend fun findAll() = listOf(window)
+            },
+            PlayerRegistrationRepository.NONE,
+        ) { LocalDate.of(2026, 3, 4) }
+        val withWindows = PlayRoundService(
+            clubRepo, leagueRepo, readinessRepo, marketRepo, playerRepo, historyRepo, cupRepo, claimRepo, offerRepo,
+            InMemoryCatalogRepository(),
+            transferWindows = guard,
+        )
+
+        withWindows.stream(md(1)).toList()
+
+        // O prazo andou (1ª gravação) e a janela fechada a expirou (2ª).
+        assertEquals(OfferStatus.Expired(ExpiryReason.WINDOW_CLOSED), saved.last().status)
     }
 
     @Test

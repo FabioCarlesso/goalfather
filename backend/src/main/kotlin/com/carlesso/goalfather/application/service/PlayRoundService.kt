@@ -50,6 +50,7 @@ import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Formation
 import com.carlesso.goalfather.domain.model.Lineup
+import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.PenaltyScore
@@ -68,6 +69,8 @@ import com.carlesso.goalfather.domain.rules.AgingOutcome
 import com.carlesso.goalfather.domain.rules.ageOneSeason
 import com.carlesso.goalfather.domain.rules.afterRound
 import com.carlesso.goalfather.domain.rules.ageSquadForSeason
+import com.carlesso.goalfather.domain.rules.contractSpan
+import com.carlesso.goalfather.domain.rules.contractTurnover
 import com.carlesso.goalfather.domain.rules.applyPromotionRelegation
 import com.carlesso.goalfather.domain.rules.applyRoundFitness
 import com.carlesso.goalfather.domain.rules.applyRoundToStandings
@@ -202,6 +205,9 @@ class PlayRoundService(
     // Datas FIFA (issue #134): convocações e jogos de seleção a cada virada
     // de encaixe. Default sem seleções para os testes montados à mão.
     private val nationalTeams: NationalTeamClock = NationalTeamClock.NONE,
+    // Janelas de transferência (issue #137): a proposta pendente morre quando
+    // a janela do comprador fecha. Default sem relógio: não expira nada.
+    private val transferWindows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : PlayRoundUseCase {
 
     private val simulationTimer: Timer = meterRegistry.timer(GoalfatherMetrics.ROUND_SIMULATION)
@@ -533,6 +539,9 @@ class PlayRoundService(
         // rodada `Finished` sem sucessora — a liga travaria por causa de uma
         // proposta. Aqui, no pior caso, o prazo anda na rodada seguinte.
         secondaryEffect("offer_deadlines") { advanceOfferDeadlines() }
+        // Janela fechada (issue #137): o relógio já está no próximo encaixe
+        // (agendado acima), e a janela do comprador é lida na data dele.
+        secondaryEffect("offer_windows") { expireOffersOutsideWindow() }
 
         // RoundFinished é sempre o último evento do stream (sinal de "rodada
         // encerrada"); os SeasonFinished, quando há, vêm logo antes dele —
@@ -826,6 +835,18 @@ class PlayRoundService(
     }
 
     /**
+     * Expira por `WINDOW_CLOSED` as propostas pendentes cuja janela do
+     * comprador fechou (issue #137). A regra é da guarda/domínio; aqui só se
+     * lê e grava — condicional ao status, como o prazo acima.
+     */
+    private suspend fun expireOffersOutsideWindow() {
+        val pending = offerRepo.findPending()
+        if (pending.isEmpty()) return
+        val clubs = clubRepo.findAll().associateBy { it.id }
+        transferWindows.closedByWindow(pending, clubs).forEach { offerRepo.saveIfPending(it) }
+    }
+
+    /**
      * Sorteia e grava as copas nacionais da temporada [season] de um país
      * (issues #61/#131), entre os clubes das ligas dele. Copa que o motor não
      * comporta não é sorteada — o país joga só as ligas. Seed por copa +
@@ -854,6 +875,14 @@ class PlayRoundService(
      * evolução. O aposentado sai do `squad` (e da folha, que é somada dele) e é
      * APAGADO do banco: mantê-lo com `club_id = null` o deixaria indistinguível
      * de um agente livre.
+     *
+     * Contratos (issue #136): DEPOIS do envelhecimento (o aposentado não tem o
+     * que vencer, e o garoto da base já sobe com contrato novo), vencem os que
+     * terminam no fim da temporada [nextSeason] − 1 DESTE clube — esta função
+     * só roda na virada do país dele, então a virada do Brasil nunca toca um
+     * contrato europeu. Ver `contractTurnover` para quem sai livre e quem a IA
+     * renova. O livre sai do elenco e vai ao mercado por preço zero (sem taxa);
+     * o pool de livres de verdade é a #139.
      */
     private suspend fun startNextSeasonClubs(
         nextSeason: Int,
@@ -862,6 +891,7 @@ class PlayRoundService(
     ): SeasonTurnover {
         val clubs = mutableListOf<Club>()
         val retirements = mutableListOf<Retirement>()
+        val released = mutableListOf<Player>()
 
         for (club in clubsAtSeasonEnd) {
             // Envelhecimento roda sobre o clube que estiver no banco NA HORA de
@@ -870,12 +900,15 @@ class PlayRoundService(
             // temporada + clube, então a releitura não muda o sorteio — e só as
             // aposentadorias da tentativa que gravou entram no resultado.
             var turnRetirements = emptyList<Retirement>()
+            var turnReleased = emptyList<Player>()
             val updated = saveReapplying(club) { current ->
-                val turn = ageSquadForSeason(current.squad, current.id, nextSeason)
+                val turn = ageSquadForSeason(current.squad, current.id, nextSeason, current.contractSpan)
                 turnRetirements = turn.retirements
+                val contracts = contractTurnover(current.copy(squad = turn.squad), endedSeason = nextSeason - 1)
+                turnReleased = contracts.released
 
                 // Pré-temporada: elenco volta inteiro e descansado (issue #54).
-                val reset = turn.squad.map {
+                val reset = contracts.squad.map {
                     it.copy(
                         goals = 0,
                         yellowCards = 0,
@@ -893,12 +926,16 @@ class PlayRoundService(
                 )
             }
             retirements += turnRetirements
+            released += turnReleased
             clubs += updated
         }
 
         // Depois do save do clube: enquanto o aposentado ainda constava do
         // elenco, apagá-lo faria o `save` tentar reatribuir uma linha inexistente.
         playerRepo.deleteAll(retirements.map { it.retired.id })
+        // Contrato vencido (issue #136): também depois do save, que já tirou o
+        // jogador do elenco (e do vínculo) no banco. Preço zero = livre, sem taxa.
+        released.forEach { marketRepo.add(MarketEntry(player = it, price = Money.ZERO)) }
         return SeasonTurnover(clubs, retirements)
     }
 

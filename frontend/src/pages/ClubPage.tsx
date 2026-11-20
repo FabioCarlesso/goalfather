@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { ContractInfo } from '../components/ContractInfo'
 import { PageTitle } from '../components/PageTitle'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useClub } from '../api/queries/useClub'
@@ -130,6 +131,9 @@ function SquadList({ squad, action }: { squad: Player[]; action?: (player: Playe
               <span className="mr-1.5"><CountryFlag country={p.nationality} /></span>
               <span className="font-medium text-slate-100">{p.name}</span>
               <span className="ml-2 text-xs text-text-muted">{p.position} · {p.age}a</span>
+              <div className="mt-0.5">
+                <ContractInfo player={p} />
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {p.star && <span className="text-yellow-400" title="Estrela">★</span>}

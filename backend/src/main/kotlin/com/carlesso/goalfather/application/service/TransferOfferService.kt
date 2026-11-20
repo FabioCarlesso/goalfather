@@ -16,6 +16,7 @@ import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.result.OfferResult
 import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_SLOTS
 import com.carlesso.goalfather.domain.rules.offerBlocker
+import com.carlesso.goalfather.domain.rules.transferredTo
 
 /**
  * Implementação de [TransferOfferUseCase] (issue #63). As regras — o que
@@ -27,6 +28,8 @@ class TransferOfferService(
     private val offerRepo: TransferOfferRepository,
     private val clubRepo: ClubRepository,
     private val leagueRepo: LeagueRepository,
+    // Janela do comprador e limite de registros (issue #137).
+    private val windows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : TransferOfferUseCase {
 
     override suspend fun offersOf(clubId: ClubId): List<TransferOffer> = offerRepo.findByClub(clubId)
@@ -46,6 +49,10 @@ class TransferOfferService(
         // sabendo agora que o vendedor não pode abrir mão do goleiro, em vez de
         // descobrir rodadas depois, quando o vendedor tentar aceitar.
         offerBlocker(buyer, seller, playerId, amount)?.let { return it }
+        // Janela do COMPRADOR, com o país do vendedor como origem (issue #137):
+        // a proposta nem nasce se o aceite não poderia registrar o jogador.
+        windows.registrationBlocker(buyer, seller.country.code, playerId)
+            ?.let { return it.toOfferRejection(playerId) }
         // Uma pendente por comprador × jogador (revisão do PR #94). É checagem
         // de leitura: dois cliques simultâneos ainda podem gravar duas — o que
         // não corrompe nada (o aceite de uma expira a outra como rival).
@@ -95,9 +102,8 @@ class TransferOfferService(
         // finalização da rodada e a transferência se pisem (a rodada relê e
         // reaplica, issue #89); o que a guarda evita é o caso comum, o técnico
         // aceitando com a rodada já rolando na tela dele.
-        leagueRepo.findLatest()
-            ?.takeIf { it.status == RoundStatus.InProgress }
-            ?.let { return OfferResult.RoundInProgress(it.matchday) }
+        val latest = leagueRepo.findLatest()
+        latest?.takeIf { it.status == RoundStatus.InProgress }?.let { return OfferResult.RoundInProgress(it.matchday) }
 
         val buyer = clubRepo.findById(offer.buyerClubId) ?: return OfferResult.ClubNotFound(offer.buyerClubId)
         when (val blocker = offerBlocker(buyer, seller, offer.playerId, offer.amount)) {
@@ -111,7 +117,17 @@ class TransferOfferService(
             // a proposta segue pendente e o vendedor pode tentar de novo.
             else -> return blocker
         }
+        // Janela e limite de registros (issue #137). A proposta segue pendente:
+        // a virada do encaixe é quem a expira quando a janela fecha.
+        windows.registrationBlocker(buyer, seller.country.code, offer.playerId)
+            ?.let { return it.toOfferRejection(offer.playerId) }
+
+        // Trocar de clube é trocar de contrato (issue #136): o comprador assume
+        // os termos (salário, cláusula), com o vínculo e o término na liga dele.
+        // A negociação de termos pessoais é a #138. Sem rodada (save vazio), o
+        // novo vínculo começa onde o antigo começou.
         val player = seller.squad.first { it.id == offer.playerId }
+            .let { it.transferredTo(buyer, today = latest?.matchday?.date ?: it.contract?.start) }
 
         // Quem disputava o mesmo jogador expira junto, na mesma transação.
         // `mapNotNull`: a transição devolve `null` para quem já não estava
@@ -133,7 +149,10 @@ class TransferOfferService(
             rivals = rivals,
         )
         return when (completion) {
-            TransferCompletion.Completed -> OfferResult.Success(accepted)
+            TransferCompletion.Completed -> {
+                windows.recordRegistration(player.id, buyer.id)
+                OfferResult.Success(accepted)
+            }
             // Recusada/retirada/expirada entre a leitura e o commit: relê para
             // contar ao vendedor o que de fato aconteceu com ela.
             TransferCompletion.OfferNoLongerPending -> current(offerId)
