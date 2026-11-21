@@ -1835,10 +1835,12 @@ elenco nem catálogo. `current` é o clube atual (`null` para o livre); igual ao
   `TalksCoolingDown`, `PlayerNotInSquad`, `Conflict`). O contrato novo
   substitui o antigo e a duração recomeça hoje; o clube é regravado sob o lock
   otimista com `retryOnConflict`. Não depende de janela de transferência.
-  **Esfriamento:** oferta abaixo de 75% do pedido é ofensiva — o jogador não
-  ouve outra proposta de renovação daquele clube por 4 semanas do jogo
-  (`renewalCooldown`); recusa honesta, perto do pedido ou só pela duração, não
-  esfria.
+  **Esfriamento:** oferta abaixo de 75% do pedido E abaixo do salário atual é
+  ofensiva — o jogador não ouve outra proposta de renovação daquele clube por
+  4 semanas do jogo (`renewalCooldown`). Manter o que ele ganha nunca ofende
+  (o pedido de um veterano sobe com a idade, e "renovar pelo mesmo", que é o
+  valor sugerido na tela, esfriava a conversa logo na primeira tentativa);
+  recusa honesta, perto do pedido ou só pela duração, não esfria.
 - **Persistência:** migration `V26__contract_negotiation.sql` — colunas
   `contract_salary`, `contract_years` e `contract_release_clause` em
   `transfer_offers` (nulas numa proposta anterior, que segue transferindo o

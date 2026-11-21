@@ -753,7 +753,7 @@ export const handlers = [
     const stature = statureOf(club)
     const refusal = playerResponseOf(player, offer, stature, stature)
     if (refusal) {
-      const until = renewalCooldownOf(offer, refusal, today())
+      const until = renewalCooldownOf(offer, refusal, player.salary, today())
       if (until) state.contractTalks[talksKey] = until
       return HttpResponse.json(refused(playerId, refusal, until) satisfies RenewalResult)
     }

@@ -1186,8 +1186,17 @@ export function playerResponseOf(
   return null
 }
 
-/** Esfriamento da renovação: oferta abaixo de 75% do pedido → 4 semanas sem conversa. */
-export function renewalCooldownOf(offer: ContractOffer, refusal: Refusal, today: string): string | undefined {
+/**
+ * Esfriamento da renovação: oferta abaixo de 75% do pedido E abaixo do salário
+ * atual → 4 semanas sem conversa. Manter o que ele ganha nunca ofende.
+ */
+export function renewalCooldownOf(
+  offer: ContractOffer,
+  refusal: Refusal,
+  currentSalary: number,
+  today: string,
+): string | undefined {
+  if (offer.salary >= currentSalary) return undefined
   if (offer.salary * 100 >= refusal.demandedSalary * OFFENSIVE_OFFER_PERCENT) return undefined
   const until = new Date(`${today}T00:00:00Z`)
   until.setUTCDate(until.getUTCDate() + RENEWAL_COOLDOWN_DAYS)

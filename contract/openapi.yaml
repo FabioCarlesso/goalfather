@@ -1164,8 +1164,8 @@ paths:
         Aceitando (`Renewed`), o contrato novo SUBSTITUI o antigo e a duração
         recomeça na data do jogo. Na renovação ele não aceita ganhar menos do
         que já ganha. Recusando (`PlayerRefused`), diz o motivo e o salário que
-        aceitaria; uma oferta abaixo de 75% do pedido é ofensiva e esfria a
-        conversa por 4 semanas do jogo (`cooldownUntil`) — até lá, nova
+        aceitaria; uma oferta abaixo de 75% do pedido e abaixo do salário atual
+        é ofensiva e esfria a conversa por 4 semanas do jogo (`cooldownUntil`) — até lá, nova
         proposta volta `TalksCoolingDown`. Não depende de janela de
         transferência. Só o dono do clube renova.
       parameters:
@@ -4191,7 +4191,7 @@ components:
         resposta é determinística e explica o porquê: `demandedSalary` é o
         salário que fecharia o negócio com uma duração em
         `minYears..maxYears`. `cooldownUntil` só existe na renovação, quando a
-        oferta foi ofensiva (menos de 75% do pedido): até essa data (exclusive)
+        oferta foi ofensiva (menos de 75% do pedido e menos do que ele ganha): até essa data (exclusive)
         o jogador não ouve nova proposta.
       type: object
       required: [type, playerId, reason, demandedSalary, minYears, maxYears]

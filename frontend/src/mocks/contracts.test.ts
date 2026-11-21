@@ -92,8 +92,10 @@ describe('termos pessoais do mock', () => {
   it('renovação não aceita redução e oferta ofensiva esfria 4 semanas', () => {
     expect(salaryDemandOf({ ...p, salary: 999_000_00 }, ref, ref)).toBe(999_000_00)
     const refusal = { reason: 'LOW_SALARY' as const, demandedSalary: 4_000_00, minYears: 1, maxYears: 4 }
-    expect(renewalCooldownOf({ salary: 2_960_00, years: 2 }, refusal, '2026-03-10')).toBe('2026-04-07')
-    expect(renewalCooldownOf({ salary: 3_000_00, years: 2 }, refusal, '2026-03-10')).toBeUndefined()
+    expect(renewalCooldownOf({ salary: 2_960_00, years: 2 }, refusal, 3_500_00, '2026-03-10')).toBe('2026-04-07')
+    expect(renewalCooldownOf({ salary: 3_000_00, years: 2 }, refusal, 3_500_00, '2026-03-10')).toBeUndefined()
+    // Mantendo o que ele já ganha, não ofende.
+    expect(renewalCooldownOf({ salary: 2_000_00, years: 2 }, refusal, 2_000_00, '2026-03-10')).toBeUndefined()
   })
 
   it('reputação é a média dos 11 melhores', () => {

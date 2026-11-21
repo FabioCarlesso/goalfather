@@ -156,18 +156,21 @@ class ContractNegotiationRulesTest {
     fun `oferta ofensiva esfria a renovacao por quatro semanas e a honesta nao`() {
         val refusal = PlayerResponse.Refuses(RefusalReason.LOW_SALARY, Money.dollars(4_000), 1..4)
 
-        // 74% do pedido: ofensiva.
-        assertEquals(today.plusWeeks(4), renewalCooldown(ContractOffer(Money.dollars(2_960), 2), refusal, today))
+        val earns = Money.dollars(3_500)
+        // 74% do pedido e abaixo do que ganha: ofensiva.
+        assertEquals(today.plusWeeks(4), renewalCooldown(ContractOffer(Money.dollars(2_960), 2), refusal, earns, today))
         // 75%: no limite, não esfria.
-        assertNull(renewalCooldown(ContractOffer(Money.dollars(3_000), 2), refusal, today))
+        assertNull(renewalCooldown(ContractOffer(Money.dollars(3_000), 2), refusal, earns, today))
         // Recusa só pela duração, com salário cheio: não esfria.
-        assertNull(renewalCooldown(ContractOffer(Money.dollars(4_000), 5), refusal.copy(reason = RefusalReason.TOO_LONG), today))
+        assertNull(renewalCooldown(ContractOffer(Money.dollars(4_000), 5), refusal.copy(reason = RefusalReason.TOO_LONG), earns, today))
+        // Longe do pedido, mas mantendo o que ele já ganha: não ofende (veterano cujo pedido subiu).
+        assertNull(renewalCooldown(ContractOffer(Money.dollars(2_000), 2), refusal, Money.dollars(2_000), today))
     }
 
     @Test
     fun `salario gigante nao estoura a conta do esfriamento`() {
         val refusal = PlayerResponse.Refuses(RefusalReason.TOO_LONG, Money.dollars(4_000), 1..4)
-        assertNull(renewalCooldown(ContractOffer(MAX_SALARY, 5), refusal, today))
+        assertNull(renewalCooldown(ContractOffer(MAX_SALARY, 5), refusal, Money.dollars(3_500), today))
     }
 
     @Test

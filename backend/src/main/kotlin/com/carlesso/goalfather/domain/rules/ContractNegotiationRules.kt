@@ -255,17 +255,28 @@ const val RENEWAL_COOLDOWN_WEEKS: Long = 4
 const val OFFENSIVE_OFFER_PERCENT: Long = 75
 
 /**
- * Esfriamento depois de uma renovação recusada (issue #138): se [offer]
- * pagava menos de [OFFENSIVE_OFFER_PERCENT]% do que ele pedia, o jogador não
- * aceita nova proposta de renovação por [RENEWAL_COOLDOWN_WEEKS] semanas a
- * partir de [today]. Uma recusa "honesta" (perto do pedido, ou só por duração)
- * não esfria: o técnico ajusta e tenta de novo. Devolve até quando, ou `null`.
+ * Esfriamento depois de uma renovação recusada (issue #138): a oferta é
+ * OFENSIVA quando paga menos de [OFFENSIVE_OFFER_PERCENT]% do que ele pedia E
+ * menos do que [currentSalary], o que ele já ganha. Aí o jogador não aceita
+ * nova proposta de renovação por [RENEWAL_COOLDOWN_WEEKS] semanas a partir de
+ * [today]. Manter o salário de hoje nunca ofende, mesmo longe do pedido: sem
+ * isso, o veterano, cujo pedido sobe com a idade, esfriaria com a primeira
+ * oferta "renova pelo mesmo" (achado no teste da PR #160). Uma recusa honesta
+ * (perto do pedido, só pela duração ou pelo salário atual) não esfria: o
+ * técnico ajusta e tenta de novo. Devolve até quando, ou `null`.
  */
-fun renewalCooldown(offer: ContractOffer, refusal: PlayerResponse.Refuses, today: LocalDate): LocalDate? =
-    today.plusWeeks(RENEWAL_COOLDOWN_WEEKS)
+fun renewalCooldown(
+    offer: ContractOffer,
+    refusal: PlayerResponse.Refuses,
+    currentSalary: Money,
+    today: LocalDate,
+): LocalDate? =
+    today.plusWeeks(RENEWAL_COOLDOWN_WEEKS).takeIf {
         // Divide o pedido em vez de multiplicar a oferta: o salário oferecido
         // vem do cliente e, multiplicado, poderia estourar o `Long`.
-        .takeIf { offer.salary.cents < refusal.demandedSalary.cents * OFFENSIVE_OFFER_PERCENT / 100 }
+        offer.salary < currentSalary &&
+            offer.salary.cents < refusal.demandedSalary.cents * OFFENSIVE_OFFER_PERCENT / 100
+    }
 
 /** O jogador ainda está "esfriado" em [today], com esfriamento até [until] (exclusive)? */
 fun isCoolingDown(until: LocalDate?, today: LocalDate): Boolean = until != null && today.isBefore(until)

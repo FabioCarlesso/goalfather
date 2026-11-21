@@ -54,7 +54,7 @@ class RenewContractService(
         when (val response = playerResponse(player, offer, buyer = stature, current = stature)) {
             PlayerResponse.Accepts -> Unit
             is PlayerResponse.Refuses -> {
-                val until = renewalCooldown(offer, response, today)
+                val until = renewalCooldown(offer, response, player.salary, today)
                 until?.let { talks.startCooldown(playerId, clubId, it) }
                 return RenewalResult.PlayerRefused(playerId, response, cooldownUntil = until)
             }
