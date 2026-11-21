@@ -1,4 +1,5 @@
 import { formatMoney } from '../domain/formatters'
+import { refusalMessage } from '../domain/contractOffers'
 import { registrationLimitMessage, windowClosedMessage } from '../domain/transferWindow'
 import type { TransferResult } from '../domain/types'
 
@@ -53,6 +54,14 @@ function feedbackOf(result: TransferResult): Feedback {
         color: 'border-amber-700/50 bg-amber-900/20 text-amber-200',
         title: 'Limite de transferências',
         body: registrationLimitMessage(result.limit),
+      }
+    // Só a compra pergunta ao jogador (issue #138); a venda nunca devolve isto,
+    // mas o `switch` é exaustivo sobre a união inteira.
+    case 'PlayerRefused':
+      return {
+        color: 'border-amber-700/50 bg-amber-900/20 text-amber-200',
+        title: 'Jogador recusou',
+        body: refusalMessage(result),
       }
   }
 }

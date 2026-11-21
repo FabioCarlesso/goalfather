@@ -1,11 +1,21 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.GENEROUS_TERMS
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.TransferCompletion
 import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.ContractOffer
+import com.carlesso.goalfather.domain.model.Money
+import com.carlesso.goalfather.domain.rules.MARKET_REFERENCE_STRENGTH
+import com.carlesso.goalfather.domain.rules.RefusalReason
+import com.carlesso.goalfather.domain.rules.salaryDemand
+import com.carlesso.goalfather.domain.rules.stature
+import java.time.LocalDate
+import kotlin.test.assertNotNull
 import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.OfferStatus
@@ -33,7 +43,7 @@ class TransferOfferServiceTest {
     private val offerRepo: TransferOfferRepository = mockk()
     private val clubRepo: ClubRepository = mockk()
     private val leagueRepo: LeagueRepository = mockk()
-    private val service = TransferOfferService(offerRepo, clubRepo, leagueRepo)
+    private val service = TransferOfferService(offerRepo, clubRepo, leagueRepo, InMemoryCatalogRepository())
 
     private val buyerOwner = 10L
     private val sellerOwner = 20L
@@ -74,7 +84,7 @@ class TransferOfferServiceTest {
         val created = slot<TransferOffer>()
         coEvery { offerRepo.create(capture(created)) } answers { created.captured.copy(id = OfferId(99)) }
 
-        val result = service.create(buyer.id, seller.id, target.id, 400_000_00.cents, requesterId = buyerOwner)
+        val result = service.create(buyer.id, seller.id, target.id, 400_000_00.cents, GENEROUS_TERMS, requesterId = buyerOwner)
 
         assertIs<OfferResult.Success>(result)
         assertEquals(OfferId(99), result.offer.id)
@@ -82,6 +92,24 @@ class TransferOfferServiceTest {
         assertEquals(OFFER_DEADLINE_SLOTS, created.captured.slotsLeft)
         assertEquals(target.name, created.captured.playerName)
         assertEquals("Vendedor", created.captured.sellerClubName)
+        // Os termos aceitos pelo jogador vão junto (issue #138).
+        assertEquals(GENEROUS_TERMS, created.captured.terms)
+    }
+
+    @Test
+    fun `jogador que recusa os termos impede a proposta de nascer (issue 138)`() = runTest {
+        // Vendedor de elenco forte (média 82) e comprador fraco (média 75): degrau para baixo.
+        val strongSeller = seller.copy(squad = (101L..112L).map { makePlayer(it, overall = 82) })
+        stubClubs(buyer, strongSeller)
+        coEvery { offerRepo.findPendingForPlayer(target.id) } returns emptyList()
+        val player = strongSeller.squad[4]
+        val base = salaryDemand(player, buyer.stature(MARKET_REFERENCE_STRENGTH), strongSeller.stature(MARKET_REFERENCE_STRENGTH))
+
+        val result = service.create(buyer.id, strongSeller.id, player.id, 400_000_00.cents, ContractOffer(base, 2), requesterId = buyerOwner)
+
+        val refused = assertIs<OfferResult.PlayerRefused>(result)
+        assertEquals(RefusalReason.WEAKER_CLUB, refused.refusal.reason)
+        coVerify(exactly = 0) { offerRepo.create(any()) }
     }
 
     @Test
@@ -91,7 +119,7 @@ class TransferOfferServiceTest {
         val rival = pending.copy(id = OfferId(8), buyerClubId = ClubId(3))
         coEvery { offerRepo.findPendingForPlayer(target.id) } returns listOf(rival, pending)
 
-        val result = service.create(buyer.id, seller.id, target.id, 500_000_00.cents, requesterId = buyerOwner)
+        val result = service.create(buyer.id, seller.id, target.id, 500_000_00.cents, GENEROUS_TERMS, requesterId = buyerOwner)
 
         assertEquals(OfferResult.OfferAlreadyPending(pending.id), result)
         coVerify(exactly = 0) { offerRepo.create(any()) }
@@ -101,7 +129,7 @@ class TransferOfferServiceTest {
     fun `so o dono do comprador propoe`() = runTest {
         stubClubs(buyer, seller)
 
-        assertEquals(OfferResult.NotOwner, service.create(buyer.id, seller.id, target.id, 400_000_00.cents, requesterId = 999))
+        assertEquals(OfferResult.NotOwner, service.create(buyer.id, seller.id, target.id, 400_000_00.cents, GENEROUS_TERMS, requesterId = 999))
         coVerify(exactly = 0) { offerRepo.create(any()) }
     }
 
@@ -109,7 +137,7 @@ class TransferOfferServiceTest {
     fun `regra de negocio bloqueia a criacao sem gravar nada`() = runTest {
         stubClubs(buyer, seller)
 
-        val result = service.create(buyer.id, seller.id, target.id, 5_000_000_00.cents, requesterId = buyerOwner)
+        val result = service.create(buyer.id, seller.id, target.id, 5_000_000_00.cents, GENEROUS_TERMS, requesterId = buyerOwner)
 
         assertIs<OfferResult.InsufficientFunds>(result)
         coVerify(exactly = 0) { offerRepo.create(any()) }
@@ -121,7 +149,7 @@ class TransferOfferServiceTest {
 
         assertEquals(
             OfferResult.ClubNotFound(ClubId(404)),
-            service.create(ClubId(404), seller.id, target.id, 400_000_00.cents, requesterId = buyerOwner),
+            service.create(ClubId(404), seller.id, target.id, 400_000_00.cents, GENEROUS_TERMS, requesterId = buyerOwner),
         )
     }
 
@@ -152,6 +180,29 @@ class TransferOfferServiceTest {
         // A própria proposta não é rival de si mesma.
         assertEquals(listOf(OfferId(8)), rivalsSlot.captured.map { it.id })
         assertEquals(OfferStatus.Expired(ExpiryReason.PLAYER_TRANSFERRED), rivalsSlot.captured.single().status)
+    }
+
+    @Test
+    fun `aceite assina os termos que o jogador aceitou na proposta (issue 138)`() = runTest {
+        stubClubs(buyer, seller)
+        stubRound(RoundStatus.Scheduled)
+        coEvery { leagueRepo.currentStandings() } returns emptyList()
+        val terms = ContractOffer(Money.dollars(9_000), years = 3, releaseClause = Money.dollars(900_000))
+        val withTerms = pending.copy(terms = terms)
+        coEvery { offerRepo.findById(pending.id) } returns withTerms
+        coEvery { offerRepo.findPendingForPlayer(target.id) } returns listOf(withTerms)
+        val buyerSlot = slot<Club>()
+        coEvery { offerRepo.completeTransfer(any(), any(), capture(buyerSlot), any()) } returns TransferCompletion.Completed
+
+        assertIs<OfferResult.Success>(service.accept(pending.id, requesterId = sellerOwner))
+
+        val contract = assertNotNull(buyerSlot.captured.squad.last().contract)
+        assertEquals(buyer.id, contract.clubId)
+        assertEquals(Money.dollars(9_000), contract.salary)
+        assertEquals(Money.dollars(900_000), contract.releaseClause)
+        // Data do jogo: semana 4 de 2026; 3 temporadas contando a corrente (Brasil).
+        assertEquals(md(4).date, contract.start)
+        assertEquals(LocalDate.of(2028, 12, 31), contract.end)
     }
 
     @Test

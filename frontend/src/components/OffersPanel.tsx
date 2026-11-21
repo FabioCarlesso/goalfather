@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { formatMoney } from '../domain/formatters'
+import { contractOfferSummary } from '../domain/contractOffers'
 import {
   expiryReasonLabel,
   isPendingOffer,
@@ -58,6 +59,7 @@ export function OffersPanel({ offers, clubId, onAction, busyOfferId = null }: Pr
             <strong className="text-slate-100">{o.buyerClubName}</strong> oferece{' '}
             <span className="font-mono text-slate-100">{formatMoney(o.amount)}</span> por{' '}
             <strong className="text-slate-100">{o.playerName}</strong>
+            <ContractTerms offer={o} />
           </>
         )}
         actions={(o) => (
@@ -86,6 +88,7 @@ export function OffersPanel({ offers, clubId, onAction, busyOfferId = null }: Pr
           <>
             <span className="font-mono text-slate-100">{formatMoney(o.amount)}</span> por{' '}
             <strong className="text-slate-100">{o.playerName}</strong> ({o.sellerClubName})
+            <ContractTerms offer={o} />
           </>
         )}
         actions={(o) => (
@@ -180,5 +183,15 @@ function ActionButton({
     >
       {label}
     </button>
+  )
+}
+
+/** Termos que o jogador já aceitou (issue #138) — ausentes em proposta anterior à issue. */
+function ContractTerms({ offer }: { offer: TransferOffer }) {
+  if (!offer.contract) return null
+  return (
+    <span className="block text-xs text-text-muted">
+      Contrato aceito pelo jogador: {contractOfferSummary(offer.contract)}
+    </span>
   )
 }

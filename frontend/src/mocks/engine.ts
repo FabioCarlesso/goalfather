@@ -9,13 +9,16 @@
 import type {
   Availability,
   Contract,
+  ContractOffer,
   Formation,
   Lineup,
   MatchEvent,
   MatchStats,
   Player,
   Position,
+  PlayerRefused,
   Posture,
+  RefusalReason,
   Retirement,
   TeamStats,
   TrainedAttribute,
@@ -1014,8 +1017,7 @@ export const isTicketPriceAllowed = (priceCents: number): boolean =>
 export const CONTRACT_SEASONS_MAX = 5
 export const MAX_MINOR_CONTRACT_SEASONS = 3
 export const ADULT_AGE = 18
-/** Duração do contrato da compra enquanto não há negociação de termos (#138). */
-export const DEFAULT_SIGNING_SEASONS = 3
+
 /** Contrato de quem sobe da base: o máximo permitido ao menor. */
 export const YOUTH_CONTRACT_SEASONS = MAX_MINOR_CONTRACT_SEASONS
 
@@ -1105,3 +1107,89 @@ export function contractTurnover(
  */
 export const initialContractOf = (player: Pick<Player, 'id' | 'age'>, countryCode: string): Contract =>
   contractFor('2026-01-01', 2026, typicalContractSeasons(player.age, new MulberryRng(player.id * 31 + 136)), countryCode)
+
+// ─── Termos pessoais — espelham domain/rules/ContractNegotiationRules.kt (issue #138) ───
+// Mesma forma da regra do backend: exigência = salário do valor (contrato
+// pleno, liga do clube que oferece) × fator de idade × prestígio; o degrau
+// para baixo (clube ou liga muito mais fracos) cobra prêmio. Determinística.
+
+export const WEAKER_CLUB_GAP = 6
+export const WEAKER_CLUB_PREMIUM = 1.5
+export const LOWER_LEAGUE_GAP = 8
+export const LOWER_LEAGUE_PREMIUM = 1.3
+export const RENEWAL_COOLDOWN_DAYS = 28
+export const OFFENSIVE_OFFER_PERCENT = 75
+
+/** O que o jogador enxerga de um clube: quem é, reputação (média dos 11 melhores) e força da liga. */
+export interface ClubStature {
+  clubId: number
+  reputation: number
+  leagueStrength: number
+}
+
+export const squadReputationOf = (squad: Pick<Player, 'overall'>[]): number => {
+  const best = squad.map((p) => p.overall).sort((a, b) => b - a).slice(0, 11)
+  return best.length === 0 ? 0 : Math.round(best.reduce((a, b) => a + b, 0) / best.length)
+}
+
+const roundedSalary = (raw: number): number => Math.max(500_00, Math.round(raw / 10_00) * 10_00)
+
+const salaryAgeFactor = (age: number): number =>
+  age <= 21 ? 0.85 : age < 30 ? 1 : Math.min(1.6, 1 + 0.12 * (age - 29))
+
+const prestigeFactor = (reputation: number): number =>
+  Math.min(1.25, Math.max(0.8, 1 + 0.015 * (70 - reputation)))
+
+/** Durações que o jogador aceita pela idade (dentro do permitido pela FIFA). */
+export function acceptedContractYears(age: number): [number, number] {
+  if (age < ADULT_AGE) return [1, MAX_MINOR_CONTRACT_SEASONS]
+  if (age <= 23) return [2, 5]
+  if (age <= 29) return [1, 4]
+  if (age <= 32) return [2, 4]
+  return [1, 2]
+}
+
+/** O salário pedido, antes do degrau; na renovação, nunca abaixo do atual. */
+export function salaryDemandOf(
+  player: Pick<Player, 'overall' | 'age' | 'salary'>,
+  buyer: ClubStature,
+  current: ClubStature | null,
+): number {
+  const fair = salaryForValueOf(marketValueOf(player, buyer.leagueStrength))
+  const demand = roundedSalary(fair * salaryAgeFactor(player.age) * prestigeFactor(buyer.reputation))
+  return current && current.clubId === buyer.clubId ? Math.max(demand, player.salary) : demand
+}
+
+/** A recusa sem o `type`/`playerId` do contrato — o handler completa. */
+export type Refusal = Pick<PlayerRefused, 'reason' | 'demandedSalary' | 'minYears' | 'maxYears'>
+
+/** `null` = aceita; senão, a recusa com motivo, pedido e faixa de durações. */
+export function playerResponseOf(
+  player: Pick<Player, 'overall' | 'age' | 'salary'>,
+  offer: ContractOffer,
+  buyer: ClubStature,
+  current: ClubStature | null,
+): Refusal | null {
+  const [minYears, maxYears] = acceptedContractYears(player.age)
+  const base = salaryDemandOf(player, buyer, current)
+  const moving = current !== null && current.clubId !== buyer.clubId
+  const weaker = moving && current.reputation - buyer.reputation >= WEAKER_CLUB_GAP
+  const lower = moving && current.leagueStrength - buyer.leagueStrength >= LOWER_LEAGUE_GAP
+  const premium = (weaker ? WEAKER_CLUB_PREMIUM : 1) * (lower ? LOWER_LEAGUE_PREMIUM : 1)
+  const demandedSalary = weaker || lower ? roundedSalary(base * premium) : base
+  const refuse = (reason: RefusalReason): Refusal => ({ reason, demandedSalary, minYears, maxYears })
+
+  if (offer.years < minYears) return refuse('TOO_SHORT')
+  if (offer.years > maxYears) return refuse('TOO_LONG')
+  if (offer.salary < base) return refuse('LOW_SALARY')
+  if (offer.salary < demandedSalary) return refuse(weaker ? 'WEAKER_CLUB' : 'LOWER_LEAGUE')
+  return null
+}
+
+/** Esfriamento da renovação: oferta abaixo de 75% do pedido → 4 semanas sem conversa. */
+export function renewalCooldownOf(offer: ContractOffer, refusal: Refusal, today: string): string | undefined {
+  if (offer.salary * 100 >= refusal.demandedSalary * OFFENSIVE_OFFER_PERCENT) return undefined
+  const until = new Date(`${today}T00:00:00Z`)
+  until.setUTCDate(until.getUTCDate() + RENEWAL_COOLDOWN_DAYS)
+  return until.toISOString().slice(0, 10)
+}

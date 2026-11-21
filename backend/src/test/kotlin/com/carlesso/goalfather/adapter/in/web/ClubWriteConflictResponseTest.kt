@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.`in`.web
 
+import com.carlesso.goalfather.adapter.`in`.web.dto.ContractOfferDto
 import com.carlesso.goalfather.test.InMemoryCatalogRepository
 import com.carlesso.goalfather.adapter.`in`.web.dto.BuyPlayerRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
@@ -93,7 +94,7 @@ class ClubWriteConflictResponseTest {
     fun `compra com conflito no clube sai como variante Conflict do TransferResult`() = runTest {
         val buy: BuyPlayerUseCase = mockk()
         coEvery { clubRepo.findById(clubId) } returns makeClub(ownerId = owner)
-        coEvery { buy.execute(clubId, PlayerId(99)) } returns TransferResult.Conflict(clubId)
+        coEvery { buy.execute(clubId, PlayerId(99), any()) } returns TransferResult.Conflict(clubId)
         val market = MarketController(
             marketRepo = mockk(),
             clubRepo = clubRepo,
@@ -105,7 +106,7 @@ class ClubWriteConflictResponseTest {
             json = json,
         )
 
-        val response = market.buy(BuyPlayerRequest(clubId = 1, playerId = 99), owner)
+        val response = market.buy(BuyPlayerRequest(clubId = 1, playerId = 99, contract = ContractOfferDto(salary = 1_000_00, years = 2)), owner)
 
         assertEquals(200, response.statusCode.value())
         val body = json.parseToJsonElement(assertIs<String>(response.body)).jsonObject

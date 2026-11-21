@@ -1,4 +1,4 @@
-import { expect, myClubId, registerRival, test } from './helpers'
+import { expect, GENEROUS_CONTRACT, myClubId, offerContract, registerRival, test } from './helpers'
 import type { Page } from '@playwright/test'
 
 // Propostas entre técnicos humanos (issue #63). Roda contra MSW (`npm run e2e`)
@@ -20,7 +20,7 @@ async function buyFromMarket(page: Page): Promise<boolean> {
   const buy = page.getByRole('button', { name: 'Comprar' })
   await expect(buy.first().or(page.getByText('Nenhum jogador disponível'))).toBeVisible()
   if ((await buy.count()) === 0) return false
-  await buy.first().click()
+  await offerContract(page, buy.first())
   await expect(page.getByText(/contratado!/)).toBeVisible({ timeout: 10_000 })
   return true
 }
@@ -34,7 +34,7 @@ test.describe('Offers flow', () => {
 
     // O rival propõe por um jogador de linha do elenco do técnico da UI.
     const sellerId = await myClubId(page)
-    const created = await page.evaluate(async ({ rival, sellerId }) => {
+    const created = await page.evaluate(async ({ rival, sellerId, contract }) => {
       const club = (await (await fetch(`/api/clubs/${sellerId}`, {
         headers: { Authorization: `Bearer ${rival.token}` },
       })).json()) as { squad: { id: number; position: string }[] }
@@ -44,10 +44,10 @@ test.describe('Offers flow', () => {
       const res = await fetch('/api/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${rival.token}` },
-        body: JSON.stringify({ buyerClubId: rival.clubId, sellerClubId: sellerId, playerId: target.id, amount: 100_000_00 }),
+        body: JSON.stringify({ buyerClubId: rival.clubId, sellerClubId: sellerId, playerId: target.id, amount: 100_000_00, contract }),
       })
       return ((await res.json()) as { type: string }).type
-    }, { rival: rival!, sellerId })
+    }, { rival: rival!, sellerId, contract: GENEROUS_CONTRACT })
     expect(created).toBe('Success')
 
     // O badge do cabeçalho leva à visão geral, onde ficam as propostas; o elenco
@@ -74,17 +74,17 @@ test.describe('Offers flow', () => {
     test.skip(rival == null, 'nenhum clube livre para o rival (estado já consumido em e2e:real)')
 
     // O rival compra um jogador para poder vender sem ficar abaixo do mínimo.
-    const bought = await page.evaluate(async (rival) => {
+    const bought = await page.evaluate(async ({ rival, contract }) => {
       const auth = { Authorization: `Bearer ${rival.token}` }
       const market = (await (await fetch('/api/market', { headers: auth })).json()) as { player: { id: number } }[]
       if (market.length === 0) return false
       const res = await fetch('/api/market/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...auth },
-        body: JSON.stringify({ clubId: rival.clubId, playerId: market[0]!.player.id }),
+        body: JSON.stringify({ clubId: rival.clubId, playerId: market[0]!.player.id, contract }),
       })
       return ((await res.json()) as { type: string }).type === 'Success'
-    }, rival!)
+    }, { rival: rival!, contract: GENEROUS_CONTRACT })
     test.skip(!bought, 'mercado vazio (estado já consumido em e2e:real)')
 
     // Tabela → clube do rival → proposta por um jogador de linha.
@@ -96,6 +96,9 @@ test.describe('Offers flow', () => {
     const outfield = page.getByRole('listitem').filter({ hasNotText: 'GK ·' })
     await outfield.first().getByRole('button', { name: 'Propor' }).click()
     await page.getByLabel('Valor da proposta (US$)').fill('10000')
+    // Termos pessoais (issue #138): o jogador responde já na criação.
+    await page.getByLabel(/Salário mensal/).fill('1000000')
+    await page.getByLabel('Duração').selectOption('2')
     await page.getByRole('button', { name: 'Enviar proposta' }).click()
     await expect(page.getByText(/Proposta enviada por/)).toBeVisible({ timeout: 10_000 })
 

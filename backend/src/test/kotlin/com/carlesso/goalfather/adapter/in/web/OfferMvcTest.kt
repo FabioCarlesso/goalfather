@@ -86,9 +86,16 @@ class OfferMvcTest {
     private fun get(path: String, token: String): MockHttpServletResponse =
         mockMvc.get(path) { header("Authorization", "Bearer $token") }.andReturn().await()
 
-    private fun createBody(buyer: Manager, seller: Manager, playerN: Long = 5, amount: Long = 300_000_00) =
+    /** Termos generosos por padrão (issue #138): US$ 1 milhão por mês, 2 temporadas. */
+    private fun createBody(
+        buyer: Manager,
+        seller: Manager,
+        playerN: Long = 5,
+        amount: Long = 300_000_00,
+        contract: String = """{"salary":100000000,"years":2}""",
+    ) =
         """{"buyerClubId":${buyer.clubId},"sellerClubId":${seller.clubId},""" +
-            """"playerId":${seller.clubId * 100 + playerN},"amount":$amount}"""
+            """"playerId":${seller.clubId * 100 + playerN},"amount":$amount,"contract":$contract}"""
 
     private fun MockHttpServletResponse.jsonBody(): JsonObject =
         json.parseToJsonElement(contentAsString).jsonObject
@@ -108,6 +115,8 @@ class OfferMvcTest {
         assertEquals("Pending", offer.getValue("status").jsonObject.type())
         assertEquals(3, offer.getValue("slotsLeft").jsonPrimitive.int)
         assertEquals("Mvc FC 971001", offer.getValue("sellerClubName").jsonPrimitive.content)
+        // Os termos aceitos pelo jogador voltam na proposta (issue #138).
+        assertEquals(2, offer.getValue("contract").jsonObject.getValue("years").jsonPrimitive.int)
         val offerId = offer.getValue("id").jsonPrimitive.long
 
         // O vendedor enxerga a proposta recebida na lista do clube.
@@ -130,6 +139,23 @@ class OfferMvcTest {
         val lateBody = late.jsonBody()
         assertEquals("OfferNotPending", lateBody.type())
         assertEquals("Rejected", lateBody.getValue("status").jsonObject.type())
+    }
+
+    @Test
+    fun `termos recusados pelo jogador voltam PlayerRefused e termos malformados sao 400 (issue 138)`() {
+        val seller = manager(971_011)
+        val buyer = manager(971_012)
+
+        val refused = post("/api/offers", buyer.token, createBody(buyer, seller, contract = """{"salary":0,"years":2}"""))
+        assertEquals(200, refused.status)
+        val body = refused.jsonBody()
+        assertEquals("PlayerRefused", body.type())
+        assertEquals("LOW_SALARY", body.getValue("reason").jsonPrimitive.content)
+        assertEquals(1, body.getValue("minYears").jsonPrimitive.int)
+
+        val invalid = post("/api/offers", buyer.token, createBody(buyer, seller, contract = """{"salary":-1,"years":2}"""))
+        assertEquals(400, invalid.status)
+        assertEquals("INVALID_CONTRACT_OFFER", invalid.jsonBody().getValue("code").jsonPrimitive.content)
     }
 
     private fun rejectCount(): Double =

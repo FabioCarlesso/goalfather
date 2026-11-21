@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageTitle } from '../components/PageTitle'
 import { MarketFilterBar } from '../components/MarketFilterBar'
@@ -22,6 +22,12 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { LoadingState } from '../components/ui/LoadingState'
 import { CountryFlag } from '../components/CountryFlag'
+import { ContractOfferModal } from '../components/ContractOfferModal'
+import { MIN_CONTRACT_SALARY_CENTS } from '../domain/contractOffers'
+import type { ContractOffer, MarketEntry, PlayerRefused } from '../domain/types'
+
+/** Oferta inicial ao livre: o piso salarial e 3 temporadas — se não bastar, ele diz o que quer. */
+const INITIAL_OFFER: ContractOffer = { salary: MIN_CONTRACT_SALARY_CENTS, years: 3 }
 
 export function MarketPage() {
   const myClubId = useMyClubId()
@@ -33,6 +39,9 @@ export function MarketPage() {
   // sobre `TransferResult` vive em `transferErrorMessage`, e erro HTTP é tratado
   // pelo `MutationCache` de `main.tsx`. Por isso a página não dispara toast.
   const buy = useBuyPlayer()
+  // Estado local de UI: o livre com o modal de oferta aberto e a última recusa dele (issue #138).
+  const [signing, setSigning] = useState<MarketEntry | null>(null)
+  const [refusal, setRefusal] = useState<PlayerRefused | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = parseMarketFilters(searchParams)
 
@@ -71,6 +80,24 @@ export function MarketPage() {
   }
 
   const visible = applyMarketFilters(market.data, filters)
+
+  const openOffer = (entry: MarketEntry) => {
+    setRefusal(null)
+    setSigning(entry)
+  }
+  const closeOffer = () => setSigning(null)
+  const submitOffer = (entry: MarketEntry, contract: ContractOffer) =>
+    buy.mutate(
+      { clubId: myClubId, playerId: entry.player.id, contract },
+      {
+        onSuccess: (result) => {
+          // Só a recusa do jogador fica no modal (o técnico ajusta a oferta);
+          // os demais desfechos viram toast e fecham — não há o que ajustar aqui.
+          if (result.type === 'PlayerRefused') setRefusal(result)
+          else closeOffer()
+        },
+      },
+    )
 
   return (
     <section>
@@ -136,9 +163,8 @@ export function MarketPage() {
                     )}
                   </div>
                   <Button
-                    onClick={() => buy.mutate({ clubId: myClubId, playerId: entry.player.id })}
+                    onClick={() => openOffer(entry)}
                     disabled={buy.isPending}
-                    loading={buy.isPending && buy.variables?.playerId === entry.player.id}
                     size="sm"
                     aria-label={`Comprar ${entry.player.name}`}
                   >
@@ -149,6 +175,27 @@ export function MarketPage() {
             </ul>
           )}
         </>
+      )}
+
+      {signing && (
+        // `key` por jogador: o formulário do modal recomeça a cada livre.
+        <ContractOfferModal
+          key={signing.player.id}
+          open
+          title={`Contratar ${signing.player.name}`}
+          description={
+            <p>
+              Sem contrato: {signing.player.name} só assina se aceitar o salário e a duração.
+              Taxa ao mercado: <span className="font-mono text-slate-100">{formatMoney(signing.price)}</span>.
+            </p>
+          }
+          initialOffer={INITIAL_OFFER}
+          submitLabel="Oferecer contrato"
+          pending={buy.isPending}
+          refusal={refusal}
+          onSubmit={(offer) => submitOffer(signing, offer)}
+          onClose={closeOffer}
+        />
       )}
     </section>
   )

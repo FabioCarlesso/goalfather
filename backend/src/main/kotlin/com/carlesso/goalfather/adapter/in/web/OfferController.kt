@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.`in`.web
 
 import com.carlesso.goalfather.adapter.`in`.web.dto.CreateOfferRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
+import com.carlesso.goalfather.adapter.`in`.web.dto.INVALID_CONTRACT_OFFER
 import com.carlesso.goalfather.adapter.`in`.web.dto.TransferOfferDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.TransferOfferResultDto
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
@@ -57,16 +58,20 @@ class OfferController(
     suspend fun create(
         @RequestBody req: CreateOfferRequest,
         @AuthenticationPrincipal userId: Long,
-    ): ResponseEntity<Any> = respond(
-        "create",
-        offers.create(
-            buyerClubId = ClubId(req.buyerClubId),
-            sellerClubId = ClubId(req.sellerClubId),
-            playerId = PlayerId(req.playerId),
-            amount = Money(req.amount),
-            requesterId = userId,
-        ),
-    )
+    ): ResponseEntity<Any> {
+        val terms = req.contract.toDomain() ?: return ResponseEntity.badRequest().body(INVALID_CONTRACT_OFFER)
+        return respond(
+            "create",
+            offers.create(
+                buyerClubId = ClubId(req.buyerClubId),
+                sellerClubId = ClubId(req.sellerClubId),
+                playerId = PlayerId(req.playerId),
+                amount = Money(req.amount),
+                terms = terms,
+                requesterId = userId,
+            ),
+        )
+    }
 
     @PostMapping("/api/offers/{id}/accept")
     suspend fun accept(@PathVariable id: Long, @AuthenticationPrincipal userId: Long): ResponseEntity<Any> =

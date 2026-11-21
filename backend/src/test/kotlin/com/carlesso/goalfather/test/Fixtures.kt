@@ -7,6 +7,7 @@ import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.domain.model.Availability
 import com.carlesso.goalfather.domain.model.Club
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.ContractOffer
 import com.carlesso.goalfather.domain.model.Cup
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.GameWeek
@@ -19,6 +20,13 @@ import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.rules.cupMatches
+
+/**
+ * Termos pessoais que qualquer jogador aceita (issue #138): salário de
+ * US$ 1 milhão por mês e 2 temporadas — duração dentro da faixa de toda idade
+ * (`acceptedContractYears`). Para os testes que não são sobre a negociação.
+ */
+internal val GENEROUS_TERMS: ContractOffer = ContractOffer(Money.dollars(1_000_000), years = 2)
 
 /**
  * Construtores compactos de domínio para testes — evita boilerplate

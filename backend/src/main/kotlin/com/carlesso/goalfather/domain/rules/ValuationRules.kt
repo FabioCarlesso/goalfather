@@ -117,8 +117,16 @@ fun marketValue(
  * anúncio não carrega o prêmio de liga de quem vendeu. É essa régua única que
  * fecha a arbitragem entre ligas (ver [LEAGUE_FACTOR_RANGE]).
  */
-fun marketReferenceValue(player: Player): Money =
-    valueOf(player, contractFactor = 1.0, leagueFactor = leagueFactor(MARKET_REFERENCE_STRENGTH))
+fun marketReferenceValue(player: Player): Money = fullContractValue(player, MARKET_REFERENCE_STRENGTH)
+
+/**
+ * Valor de [player] com contrato pleno numa liga de força [leagueStrength]: o
+ * que ele valeria assinando agora um contrato longo ali. É a base da
+ * exigência salarial na negociação de termos (issue #138) — o contrato que
+ * ele tem hoje não entra, porque o que se negocia é o próximo.
+ */
+fun fullContractValue(player: Player, leagueStrength: LeagueStrength): Money =
+    valueOf(player, contractFactor = 1.0, leagueFactor = leagueFactor(leagueStrength))
 
 /**
  * Valor de [player] no elenco de [club]: o contrato dele (`player.employment`,

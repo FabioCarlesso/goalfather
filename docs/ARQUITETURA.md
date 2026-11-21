@@ -1704,13 +1704,12 @@ no divisor do salário (`VALUE_PER_MONTHLY_SALARY`, 9.2).
   esse destino. Clube da IA: renova sozinho pelo mesmo salário, com duração
   típica da idade. É provisório até a IA ativa (#143): sem isso os elencos da
   IA, que não compram, encolheriam a cada virada.
-- **Mudança de clube.** Comprar do mercado assina um contrato novo
-  (`DEFAULT_SIGNING_SEASONS` = 3, salário pelo valor na liga do comprador,
-  lida do catálogo do save). A
-  proposta aceita entre técnicos transfere o contrato (`transferredTo`): o
-  comprador assume salário e cláusula, e o término é realinhado à janela da
-  liga dele. Vender ao mercado libera o jogador (`released()`). Termos
-  negociados e renovação ficam para a #138.
+- **Mudança de clube.** Comprar do mercado e a proposta aceita entre
+  técnicos assinam os termos NEGOCIADOS com o jogador (9.4). Uma proposta
+  gravada antes da #138, sem termos, ainda transfere o contrato
+  (`transferredTo`): o comprador assume salário e cláusula, e o término é
+  realinhado à janela da liga dele. Vender ao mercado libera o jogador
+  (`released()`).
 - **Persistência e save.** A migration `V23__player_contracts.sql` cria
   `contract_start`, `contract_end` e `release_clause` em `players`, que ficam
   nulas para o livre (mesma postura da V22 com a convocação). O backfill dá
@@ -1788,6 +1787,80 @@ no divisor do salário (`VALUE_PER_MONTHLY_SALARY`, 9.2).
   **Cortes:** registros gravados depois do `save` do clube, fora da mesma
   transação (uma falha entre os dois deixaria de contar um registro). Sem
   regra de jogador livre fora da janela. Migration numerada **V24**.
+
+#### 9.4 Termos pessoais e renovação — issue #138
+
+Toda assinatura — contratar um livre do mercado, fechar uma proposta entre
+técnicos ou renovar com o próprio clube — passa por uma oferta de termos
+(`ContractOffer(salary, years, releaseClause?)`) que o jogador aceita ou recusa
+por regra PURA e DETERMINÍSTICA (`domain/rules/ContractNegotiationRules.kt`,
+sem `Random`): a mesma oferta no mesmo estado dá sempre a mesma resposta, e a
+recusa explica o porquê.
+
+`playerResponse(player, offer, buyer, current): PlayerResponse`, com
+`sealed PlayerResponse { Accepts; Refuses(reason, demandedSalary, acceptedYears) }`
+e `RefusalReason` = `LOW_SALARY`, `TOO_SHORT`, `TOO_LONG`, `WEAKER_CLUB`,
+`LOWER_LEAGUE`. Os clubes entram como `ClubStature(clubId, reputation,
+leagueStrength)` — um recorte pequeno do `Club`, para a regra ser testável sem
+elenco nem catálogo. `current` é o clube atual (`null` para o livre); igual ao
+`buyer`, é renovação.
+
+- **Exigência salarial** = `salaryForValue(fullContractValue(jogador, liga do
+  comprador))` (a régua do #135/#136, com contrato pleno: o que se negocia é o
+  próximo contrato) × **idade** (≤ 21: 0,85 — aceita menos para jogar; ≥ 30:
+  +12% por ano até 1,6 — o valor de um veterano despenca, o salário pedido não)
+  × **prestígio** do comprador (`1 + 1,5% × (70 − reputação)`, preso em
+  0,80..1,25). Na renovação ele não aceita ganhar menos do que ganha.
+- **Reputação** = média de overall dos 11 melhores do elenco
+  (`squadReputation`). O save não guarda a `Reputation` do pack — só o seed a
+  usa —, e o elenco é o que o jogador enxerga: o clube que se reforça fica
+  mais atraente.
+- **Degrau para baixo:** saindo de um clube com 6+ pontos a mais de reputação,
+  ele pede **+50%** (`WEAKER_CLUB`); de uma liga 8+ pontos mais forte, **+30%**
+  (`LOWER_LEAGUE`); os dois se multiplicam. Abaixo da exigência-base o motivo é
+  `LOW_SALARY`; entre ela e o prêmio, o do degrau.
+- **Duração aceita pela idade** (dentro do teto da FIFA): < 18 → 1–3; 18–23 →
+  2–5; 24–29 → 1–4; 30–32 → 2–4; 33+ → 1–2. A duração é checada antes do
+  salário. Fora da faixa não é erro de validação: é a resposta dele.
+- **Assinatura.** Aceito, `signAccepted` (aplicação, `ContractSigning.kt`)
+  assina com o salário e a cláusula oferecidos, a partir da data do jogo, na
+  temporada corrente da liga do clube (a mesma conta da 9.2). Na compra, a
+  resposta é pedida ANTES do `claim` do mercado: recusa não tira ninguém dele.
+  Na proposta entre técnicos, o jogador responde já na CRIAÇÃO — recusando, a
+  proposta nem nasce (`OfferResult.PlayerRefused`) — e os termos aceitos ficam
+  gravados na proposta (`TransferOffer.terms`); o aceite do vendedor assina
+  exatamente eles.
+- **Renovação:** `POST /api/clubs/{id}/players/{playerId}/renewal`
+  (`RenewContractService`, `RenewalResult` sealed: `Renewed`, `PlayerRefused`,
+  `TalksCoolingDown`, `PlayerNotInSquad`, `Conflict`). O contrato novo
+  substitui o antigo e a duração recomeça hoje; o clube é regravado sob o lock
+  otimista com `retryOnConflict`. Não depende de janela de transferência.
+  **Esfriamento:** oferta abaixo de 75% do pedido é ofensiva — o jogador não
+  ouve outra proposta de renovação daquele clube por 4 semanas do jogo
+  (`renewalCooldown`); recusa honesta, perto do pedido ou só pela duração, não
+  esfria.
+- **Persistência:** migration `V26__contract_negotiation.sql` — colunas
+  `contract_salary`, `contract_years` e `contract_release_clause` em
+  `transfer_offers` (nulas numa proposta anterior, que segue transferindo o
+  contrato antigo) e a tabela `contract_talks (player_id, club_id,
+  cooldown_until)`, por jogador × clube: trocar de clube zera a conversa.
+- **API e UI.** `contract` (schema `ContractOffer`) passa a ser obrigatório em
+  `BuyPlayerRequest` e `CreateOfferRequest`; termos malformados (salário
+  negativo, cláusula não positiva) são 400 `INVALID_CONTRACT_OFFER`. A recusa é
+  o schema `PlayerRefused` (`reason`, `demandedSalary`, `minYears`,
+  `maxYears` e, só na renovação, `cooldownUntil`), nos três `oneOf`. A UI: o
+  "Comprar" do mercado e o "Renovar" do elenco abrem o `ContractOfferModal`
+  (salário, duração, multa opcional); a proposta pelo jogador do rival ganhou
+  os mesmos campos. A recusa aparece no próprio formulário, com o botão
+  "Oferecer o que ele pede", que só copia os números devolvidos pelo backend.
+  O mock (`src/mocks/engine.ts`) espelha a regra.
+
+  **Cortes:** sem contraproposta do jogador (fica como evolução, como a
+  issue prevê). A taxa do mercado continua a do anúncio (`MarketEntry.price`:
+  zero para quem saiu livre por vencimento, 125% do valor de referência para
+  o pool antigo e os vendidos ao mercado) — o "sem taxa" de verdade para todo
+  livre chega com o pool de livres da #139, junto com a revisão do preço. O
+  salário assinado não é limitado pelo caixa do clube.
 
 ---
 

@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.application.port.`in`
 
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.ContractOffer
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.PlayerId
@@ -14,7 +15,8 @@ import com.carlesso.goalfather.domain.result.OfferResult
  *
  * `requesterId` é o usuário autenticado: cada comando confere se ele é o dono
  * do lado certo da proposta (comprador propõe e retira; vendedor aceita e
- * recusa) e devolve [OfferResult.NotOwner] caso contrário.
+ * recusa) e devolve [OfferResult.NotOwner] caso contrário. A criação leva os
+ * termos pessoais oferecidos ao jogador (issue #138), que responde na hora.
  */
 interface TransferOfferUseCase {
 
@@ -26,6 +28,7 @@ interface TransferOfferUseCase {
         sellerClubId: ClubId,
         playerId: PlayerId,
         amount: Money,
+        terms: ContractOffer,
         requesterId: Long,
     ): OfferResult
 

@@ -1,5 +1,5 @@
 import { test as base } from '@playwright/test'
-import { chooseClub, expect, register, test } from './helpers'
+import { chooseClub, expect, offerContract, register, test } from './helpers'
 
 // Janelas de transferência (issue #137). Rodam contra MSW (`npm run e2e`) e
 // contra o backend Spring (`npm run e2e:real`).
@@ -33,7 +33,7 @@ base('comprar fora da janela é recusado e mostra quando ela abre', async ({ pag
   await expect(cash).toContainText('US$')
   const cashBefore = await cash.textContent()
 
-  await buyButtons.first().click()
+  await offerContract(page, buyButtons.first())
 
   // A recusa é do backend (`TransferWindowClosed`), com a data da próxima abertura.
   await expect(page.getByText('Janela de transferências fechada — abre em 15/06/2026.')).toBeVisible({ timeout: 10_000 })

@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.application.service
 
+import com.carlesso.goalfather.test.GENEROUS_TERMS
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -107,7 +108,7 @@ class TransferWindowGuardTest {
         stubBuy()
         today = day(2026, 4, 1)
 
-        val result = buyService().execute(buyer.id, target.id)
+        val result = buyService().execute(buyer.id, target.id, GENEROUS_TERMS)
 
         assertEquals(TransferResult.TransferWindowClosed(day(2026, 7, 20)), result)
         coVerify(exactly = 0) { marketRepo.claim(any()) }
@@ -119,13 +120,13 @@ class TransferWindowGuardTest {
         stubBuy()
         val service = buyService()
 
-        assertIs<TransferResult.Success>(service.execute(buyer.id, target.id))
+        assertIs<TransferResult.Success>(service.execute(buyer.id, target.id, GENEROUS_TERMS))
         assertEquals(listOf(Triple(target.id, buyer.id, today)), registrations.rows)
 
         // Mesmo jogador de volta ao mercado (venda rápida) e outra compra na janela.
         assertEquals(
             TransferResult.TransferLimitReached(target.id, RegistrationLimit.ONE_PER_WINDOW),
-            service.execute(buyer.id, target.id),
+            service.execute(buyer.id, target.id, GENEROUS_TERMS),
         )
     }
 
@@ -154,7 +155,7 @@ class TransferWindowGuardTest {
     @Test
     fun `na janela so domestica a proposta a clube de outro pais e recusada e a do mesmo pais aceita`() = runTest {
         today = day(2026, 3, 10)
-        val service = TransferOfferService(offerRepo, clubRepo, leagueRepo, guard)
+        val service = TransferOfferService(offerRepo, clubRepo, leagueRepo, InMemoryCatalogRepository(), guard)
         for (club in listOf(buyer, brSeller, enSeller)) coEvery { clubRepo.findById(club.id) } returns club
         coEvery { offerRepo.findPendingForPlayer(any()) } returns emptyList()
         coEvery { offerRepo.create(any()) } answers { firstArg<TransferOffer>().copy(id = OfferId(1)) }
@@ -162,15 +163,15 @@ class TransferWindowGuardTest {
 
         assertEquals(
             OfferResult.TransferWindowClosed(day(2026, 7, 20)),
-            service.create(buyer.id, enSeller.id, player, 400_000_00.cents, requesterId = 10),
+            service.create(buyer.id, enSeller.id, player, 400_000_00.cents, GENEROUS_TERMS, requesterId = 10),
         )
-        assertIs<OfferResult.Success>(service.create(buyer.id, brSeller.id, player, 400_000_00.cents, requesterId = 10))
+        assertIs<OfferResult.Success>(service.create(buyer.id, brSeller.id, player, 400_000_00.cents, GENEROUS_TERMS, requesterId = 10))
     }
 
     @Test
     fun `aceite fora da janela do comprador e recusado e a proposta segue pendente`() = runTest {
         today = day(2026, 4, 1)
-        val service = TransferOfferService(offerRepo, clubRepo, leagueRepo, guard)
+        val service = TransferOfferService(offerRepo, clubRepo, leagueRepo, InMemoryCatalogRepository(), guard)
         for (club in listOf(buyer, brSeller)) coEvery { clubRepo.findById(club.id) } returns club
         val offer = offer(brSeller)
         coEvery { offerRepo.findById(offer.id) } returns offer
@@ -183,7 +184,7 @@ class TransferWindowGuardTest {
 
     @Test
     fun `aceite na janela registra o jogador no comprador`() = runTest {
-        val service = TransferOfferService(offerRepo, clubRepo, leagueRepo, guard)
+        val service = TransferOfferService(offerRepo, clubRepo, leagueRepo, InMemoryCatalogRepository(), guard)
         for (club in listOf(buyer, brSeller)) coEvery { clubRepo.findById(club.id) } returns club
         val offer = offer(brSeller)
         coEvery { offerRepo.findById(offer.id) } returns offer

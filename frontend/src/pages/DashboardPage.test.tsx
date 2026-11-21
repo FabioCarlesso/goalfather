@@ -18,6 +18,7 @@ describe('DashboardPage', () => {
   afterEach(() => {
     if (seedClub) state.clubs[1] = seedClub
     state.market = seedMarket
+    state.contractTalks = {}
     server.events.removeAllListeners()
   })
 
@@ -117,6 +118,37 @@ describe('DashboardPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Dispensar aviso' }))
     expect(screen.queryByText('Venda concluída')).not.toBeInTheDocument()
+  })
+
+  it('renovacao: recusa com pedido, esfriamento depois de oferta ofensiva e renovacao aceita (issue #138)', async () => {
+    const user = userEvent.setup()
+    renderDashboard('/dashboard/elenco')
+    await clubHeading()
+
+    // Renato Silva: 29 anos — 5 temporadas é longo demais para ele, mesmo com salário alto.
+    await user.click(screen.getByRole('button', { name: 'Renovar Renato Silva' }))
+    let dialog = screen.getByRole('dialog', { name: 'Renovar com Renato Silva' })
+    const renatoSalary = within(dialog).getByLabelText(/Salário mensal/)
+    await user.clear(renatoSalary)
+    await user.type(renatoSalary, '1000000')
+    await user.selectOptions(within(dialog).getByLabelText('Duração'), '5')
+    await user.click(within(dialog).getByRole('button', { name: 'Oferecer renovação' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(/contrato longo demais/)
+
+    // Copiar o pedido resolve: duração para dentro da faixa e o salário pedido.
+    await user.click(within(dialog).getByRole('button', { name: 'Oferecer o que ele pede' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Oferecer renovação' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    // Oferta ofensiva a outro jogador: esfria, e o envio fica travado.
+    await user.click(screen.getByRole('button', { name: 'Renovar Marcos Figueiredo' }))
+    dialog = screen.getByRole('dialog', { name: 'Renovar com Marcos Figueiredo' })
+    const salary = within(dialog).getByLabelText(/Salário mensal/)
+    await user.clear(salary)
+    await user.type(salary, '10')
+    await user.click(within(dialog).getByRole('button', { name: 'Oferecer renovação' }))
+    expect(await within(dialog).findByText(/só volta a conversar em/)).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Oferecer renovação' })).toBeDisabled()
   })
 
   it('mostra o painel do departamento médico (issue #54)', async () => {

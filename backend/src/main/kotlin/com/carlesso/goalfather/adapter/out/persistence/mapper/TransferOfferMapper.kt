@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.out.persistence.mapper
 
 import com.carlesso.goalfather.adapter.out.persistence.entity.TransferOfferEntity
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.ContractOffer
 import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
@@ -25,6 +26,7 @@ fun TransferOfferEntity.toDomain(): TransferOffer = TransferOffer(
     amount = Money(amount),
     slotsLeft = slotsLeft,
     status = offerStatusOf(status, expiryReason),
+    terms = termsOf(contractSalary, contractYears, contractReleaseClause),
 )
 
 fun TransferOffer.toEntity(): TransferOfferEntity = TransferOfferEntity(
@@ -40,7 +42,18 @@ fun TransferOffer.toEntity(): TransferOfferEntity = TransferOfferEntity(
     slotsLeft = slotsLeft,
     status = status.column(),
     expiryReason = status.expiryReasonColumn(),
+    contractSalary = terms?.salary?.cents,
+    contractYears = terms?.years,
+    contractReleaseClause = terms?.releaseClause?.cents,
 )
+
+/**
+ * As três colunas dos termos → [ContractOffer] (issue #138). Salário ou
+ * duração nulos = proposta anterior à issue, sem termos. `let` aninhado em vez
+ * de `if (a != null && b != null)`: cada `?.let` já entrega o valor não nulo.
+ */
+private fun termsOf(salary: Long?, years: Int?, releaseClause: Long?): ContractOffer? =
+    salary?.let { s -> years?.let { y -> ContractOffer(Money(s), y, releaseClause?.let(::Money)) } }
 
 /** Texto da coluna `status`. */
 fun OfferStatus.column(): String = when (this) {

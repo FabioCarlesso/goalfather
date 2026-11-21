@@ -17,7 +17,7 @@ import type { TransferResult } from '../domain/types'
 // disparado. Mock (e não Toaster real) porque a store de toasts é global ao módulo
 // e vazaria mensagens de um teste para o outro.
 vi.mock('react-hot-toast', () => ({
-  default: { success: vi.fn(), error: vi.fn() },
+  default: { success: vi.fn(), error: vi.fn(), dismiss: vi.fn() },
 }))
 
 const VIDIGAL = 'Lucas Vidigal'   // AT, OVR 81, 25a, US$ 90 mil, salário 6,4 mil
@@ -45,6 +45,19 @@ const shownNames = () =>
     .map((button) => button.getAttribute('aria-label')?.replace('Comprar ', ''))
 
 const buyButton = (name: string) => screen.getByRole('button', { name: `Comprar ${name}` })
+
+/**
+ * Comprar agora abre a oferta de contrato (issue #138): preenche o salário
+ * (generoso por padrão, para o livre aceitar) e envia.
+ */
+async function offerTo(user: ReturnType<typeof userEvent.setup>, name: string, salaryDollars = 100_000) {
+  await user.click(buyButton(name))
+  const dialog = await screen.findByRole('dialog')
+  const salary = within(dialog).getByLabelText(/Salário mensal/)
+  await user.clear(salary)
+  await user.type(salary, String(salaryDollars))
+  await user.click(within(dialog).getByRole('button', { name: 'Oferecer contrato' }))
+}
 
 const rowOf = (name: string) => {
   const row = buyButton(name).closest('li')
@@ -238,7 +251,7 @@ describe('MarketPage (issue #111)', () => {
       const cash = await screen.findByText(money(160_000_00))
       expect(cash.closest('p')).toHaveTextContent(/^Caixa:/)
 
-      await user.click(buyButton(RAMIRES))
+      await offerTo(user, RAMIRES)
 
       expect(await screen.findByText(money(124_000_00))).toBeInTheDocument()
       await waitFor(() => expect(screen.queryByText(RAMIRES)).not.toBeInTheDocument())
@@ -254,7 +267,7 @@ describe('MarketPage (issue #111)', () => {
       expect(within(rowOf(VIDIGAL)).getByText('acima do seu caixa')).toBeInTheDocument()
 
       expect(buyButton(VIDIGAL)).toBeEnabled()
-      await user.click(buyButton(VIDIGAL))
+      await offerTo(user, VIDIGAL)
 
       await waitFor(() =>
         expect(toast.error).toHaveBeenCalledWith(
@@ -272,11 +285,29 @@ describe('MarketPage (issue #111)', () => {
       renderMarket()
       await screen.findByText(RAMIRES)
 
-      await user.click(buyButton(RAMIRES))
+      await offerTo(user, RAMIRES)
 
       await waitFor(() => expect(toast.success).toHaveBeenCalledWith(`${RAMIRES} contratado!`, { id: 'buy-result' }))
       expect(toast.error).not.toHaveBeenCalled()
       expect(screen.queryByText('Contratação concluída')).not.toBeInTheDocument()
+    })
+
+    it('recusa do livre aparece no modal com o pedido, e oferecer o pedido contrata (issue 138)', async () => {
+      const user = userEvent.setup()
+      renderMarket()
+      await screen.findByText(RAMIRES)
+
+      await offerTo(user, RAMIRES, 500)
+
+      const dialog = screen.getByRole('dialog')
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent(/salário abaixo do que ele pede/)
+      // A recusa não vira toast: o modal já a mostra.
+      expect(toast.error).not.toHaveBeenCalled()
+
+      await user.click(within(dialog).getByRole('button', { name: 'Oferecer o que ele pede' }))
+      await user.click(within(dialog).getByRole('button', { name: 'Oferecer contrato' }))
+
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith(`${RAMIRES} contratado!`, { id: 'buy-result' }))
     })
 
     it.each<[TransferResult['type'], TransferResult, RegExp]>([
@@ -290,7 +321,7 @@ describe('MarketPage (issue #111)', () => {
       renderMarket()
       await screen.findByText(RAMIRES)
 
-      await user.click(buyButton(RAMIRES))
+      await offerTo(user, RAMIRES)
 
       await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1))
       expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(message), { id: 'buy-result' })
@@ -316,7 +347,7 @@ describe('MarketPage (issue #111)', () => {
       renderMarket('/market', queryClient)
       await screen.findByText(RAMIRES)
 
-      await user.click(buyButton(RAMIRES))
+      await offerTo(user, RAMIRES)
 
       await waitFor(() =>
         expect(toast.error).toHaveBeenCalledWith('Erro no servidor. Tente novamente em instantes.'),

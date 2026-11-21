@@ -542,6 +542,11 @@ paths:
         Só dentro da janela de transferência do clube comprador
         (`TransferWindowClosed` fora dela) e respeitando o limite de registros
         do jogador (`TransferLimitReached`) — issue #137.
+
+        O livre só assina se aceitar os termos pessoais de `contract` (issue
+        #138): recusando, volta `PlayerRefused` com o motivo e o que ele pede,
+        e nada muda (caixa, elenco e mercado). Termos malformados (salário
+        negativo, cláusula não positiva) são 400 `INVALID_CONTRACT_OFFER`.
       requestBody:
         required: true
         content:
@@ -635,6 +640,12 @@ paths:
         `TransferOfferResult` no 200. Uma proposta pendente por comprador ×
         jogador: a segunda volta `OfferAlreadyPending` (retire a antiga para
         mudar o valor).
+
+        Termos pessoais (issue #138): o jogador responde aos termos de
+        `contract` já na criação — recusando, volta `PlayerRefused` e a
+        proposta nem nasce. Aceitando, os termos ficam na proposta e o aceite
+        do vendedor assina exatamente esse contrato. Termos malformados são
+        400 `INVALID_CONTRACT_OFFER`.
       requestBody:
         required: true
         content:
@@ -1140,6 +1151,57 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
   # --- fim #137 ---
+
+  # --- #138 Termos pessoais e renovação ---
+  /api/clubs/{id}/players/{playerId}/renewal:
+    post:
+      tags: [Market]
+      operationId: renewContract
+      summary: Oferecer renovação a um jogador do próprio elenco
+      description: |
+        O jogador aceita ou recusa os termos por regra determinística (issue
+        #138): a mesma oferta no mesmo estado dá sempre a mesma resposta.
+        Aceitando (`Renewed`), o contrato novo SUBSTITUI o antigo e a duração
+        recomeça na data do jogo. Na renovação ele não aceita ganhar menos do
+        que já ganha. Recusando (`PlayerRefused`), diz o motivo e o salário que
+        aceitaria; uma oferta abaixo de 75% do pedido é ofensiva e esfria a
+        conversa por 4 semanas do jogo (`cooldownUntil`) — até lá, nova
+        proposta volta `TalksCoolingDown`. Não depende de janela de
+        transferência. Só o dono do clube renova.
+      parameters:
+        - $ref: '#/components/parameters/ClubIdPath'
+        - name: playerId
+          in: path
+          required: true
+          description: ID do jogador do elenco
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContractOffer' }
+      responses:
+        '200':
+          description: Resultado (renovado ou erro de negócio)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RenewalResult' }
+        '400':
+          description: Corpo malformado ou termos inválidos (`INVALID_CONTRACT_OFFER`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: O usuário não é dono do clube (`FORBIDDEN`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Clube inexistente (`CLUB_NOT_FOUND`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  # --- fim #138 ---
 
   # --- #133 Navegação do mundo ---
   /api/competitions:
@@ -2090,10 +2152,11 @@ components:
 
     BuyPlayerRequest:
       type: object
-      required: [clubId, playerId]
+      required: [clubId, playerId, contract]
       properties:
         clubId:   { type: integer, format: int64 }
         playerId: { type: integer, format: int64 }
+        contract: { $ref: '#/components/schemas/ContractOffer' }
 
     SellPlayerRequest:
       type: object
@@ -2127,6 +2190,7 @@ components:
         - $ref: '#/components/schemas/TransferConflict'
         - $ref: '#/components/schemas/TransferWindowClosed'
         - $ref: '#/components/schemas/TransferLimitReached'
+        - $ref: '#/components/schemas/PlayerRefused'
       discriminator:
         propertyName: type
         mapping:
@@ -2137,6 +2201,7 @@ components:
           Conflict:           '#/components/schemas/TransferConflict'
           TransferWindowClosed: '#/components/schemas/TransferWindowClosed'
           TransferLimitReached: '#/components/schemas/TransferLimitReached'
+          PlayerRefused:      '#/components/schemas/PlayerRefused'
 
     TransferSuccess:
       type: object
@@ -2183,7 +2248,7 @@ components:
     # ─── Offers (propostas entre técnicos, issue #63) ─────────────────────
     CreateOfferRequest:
       type: object
-      required: [buyerClubId, sellerClubId, playerId, amount]
+      required: [buyerClubId, sellerClubId, playerId, amount, contract]
       properties:
         buyerClubId:  { type: integer, format: int64, description: Clube de quem propõe (o do usuário) }
         sellerClubId: { type: integer, format: int64, description: Clube dono do jogador }
@@ -2192,6 +2257,8 @@ components:
           type: integer
           format: int64
           description: Valor oferecido, em centavos de USD (mínimo US$ 200 — `InvalidAmount` abaixo disso)
+        contract:
+          $ref: '#/components/schemas/ContractOffer'
 
     TransferOffer:
       description: |
@@ -2226,6 +2293,8 @@ components:
             Encaixes jogados até a proposta expirar sem resposta (issue #125;
             anda a cada encaixe encerrado — semanas sem jogo não contam).
         status: { $ref: '#/components/schemas/OfferStatus' }
+        contract:
+          $ref: '#/components/schemas/ContractOffer'
       # Exemplo explícito: o Swagger UI não monta um a partir do `oneOf` do
       # `status` e mostrava `"status": {}` (revisão do PR #94).
       example:
@@ -2239,6 +2308,7 @@ components:
         amount: 50000000
         slotsLeft: 3
         status: { type: Pending }
+        contract: { salary: 300000, years: 3 }
 
     OfferStatus:
       description: |
@@ -2339,6 +2409,7 @@ components:
         - $ref: '#/components/schemas/TransferConflict'
         - $ref: '#/components/schemas/TransferWindowClosed'
         - $ref: '#/components/schemas/TransferLimitReached'
+        - $ref: '#/components/schemas/PlayerRefused'
       discriminator:
         propertyName: type
         mapping:
@@ -2357,6 +2428,7 @@ components:
           Conflict:           '#/components/schemas/TransferConflict'
           TransferWindowClosed: '#/components/schemas/TransferWindowClosed'
           TransferLimitReached: '#/components/schemas/TransferLimitReached'
+          PlayerRefused:      '#/components/schemas/PlayerRefused'
 
     OfferSuccess:
       description: Comando aplicado — `offer` traz o estado novo da proposta.
@@ -4070,3 +4142,100 @@ components:
             `true` quando o contrato está na última temporada (vence na próxima
             virada da liga do clube). Calculado pelo backend a partir da data
             do jogo — a UI só destaca.
+
+    # --- #138 ---
+    ContractOffer:
+      type: object
+      description: |
+        Termos pessoais oferecidos ao jogador (issue #138) — na compra de um
+        livre, na proposta entre técnicos e na renovação. Na `TransferOffer`,
+        são os termos que o jogador JÁ aceitou (ausentes numa proposta
+        anterior à issue). Uma duração fora do que o jogador topa não é erro de
+        validação: é a resposta dele (`TOO_SHORT`/`TOO_LONG`).
+      required: [salary, years]
+      properties:
+        salary:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Salário mensal oferecido, em centavos de USD
+        years:
+          type: integer
+          description: |
+            Duração em temporadas — a corrente conta como a primeira, e o
+            contrato termina no fim de temporada da liga do clube.
+          example: 3
+        releaseClause:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Cláusula de rescisão, em centavos de USD — opcional
+
+    RefusalReason:
+      type: string
+      enum: [LOW_SALARY, TOO_SHORT, TOO_LONG, WEAKER_CLUB, LOWER_LEAGUE]
+      description: |
+        `LOW_SALARY` — salário abaixo do que ele pede.
+        `TOO_SHORT` / `TOO_LONG` — duração fora de `minYears..maxYears`.
+        `WEAKER_CLUB` — o clube que oferece é muito mais fraco que o dele, e o
+        salário não cobre o prêmio por descer (+50%).
+        `LOWER_LEAGUE` — a liga é muito mais fraca que a dele, e o salário não
+        cobre o prêmio por descer (+30%).
+
+    PlayerRefused:
+      description: |
+        O jogador recusou os termos (issue #138) — nada foi aplicado. A
+        resposta é determinística e explica o porquê: `demandedSalary` é o
+        salário que fecharia o negócio com uma duração em
+        `minYears..maxYears`. `cooldownUntil` só existe na renovação, quando a
+        oferta foi ofensiva (menos de 75% do pedido): até essa data (exclusive)
+        o jogador não ouve nova proposta.
+      type: object
+      required: [type, playerId, reason, demandedSalary, minYears, maxYears]
+      properties:
+        type:           { type: string, enum: [PlayerRefused] }
+        playerId:       { type: integer, format: int64 }
+        reason:         { $ref: '#/components/schemas/RefusalReason' }
+        demandedSalary: { type: integer, format: int64, description: Salário mensal pedido, em centavos de USD }
+        minYears:       { type: integer, description: Menor duração que ele aceita, em temporadas }
+        maxYears:       { type: integer, description: Maior duração que ele aceita, em temporadas }
+        cooldownUntil:  { type: string, format: date }
+
+    RenewalResult:
+      description: |
+        Resultado da renovação (issue #138). Discriminado por `type` — o
+        frontend usa `switch (result.type)` exaustivo. Posse (403), existência
+        do clube (404) e termos malformados (400) viram status HTTP.
+      oneOf:
+        - $ref: '#/components/schemas/ContractRenewed'
+        - $ref: '#/components/schemas/PlayerRefused'
+        - $ref: '#/components/schemas/TalksCoolingDown'
+        - $ref: '#/components/schemas/PlayerNotAvailable'
+        - $ref: '#/components/schemas/TransferConflict'
+      discriminator:
+        propertyName: type
+        mapping:
+          Renewed:            '#/components/schemas/ContractRenewed'
+          PlayerRefused:      '#/components/schemas/PlayerRefused'
+          TalksCoolingDown:   '#/components/schemas/TalksCoolingDown'
+          PlayerNotAvailable: '#/components/schemas/PlayerNotAvailable'
+          Conflict:           '#/components/schemas/TransferConflict'
+
+    ContractRenewed:
+      description: Contrato novo assinado — `player` traz o contrato e o salário novos.
+      type: object
+      required: [type, player]
+      properties:
+        type:   { type: string, enum: [Renewed] }
+        player: { $ref: '#/components/schemas/Player' }
+
+    TalksCoolingDown:
+      description: |
+        O jogador ainda está "esfriado" por uma oferta ofensiva anterior e não
+        ouve proposta de renovação antes de `until` (exclusive).
+      type: object
+      required: [type, playerId, until]
+      properties:
+        type:     { type: string, enum: [TalksCoolingDown] }
+        playerId: { type: integer, format: int64 }
+        until:    { type: string, format: date }

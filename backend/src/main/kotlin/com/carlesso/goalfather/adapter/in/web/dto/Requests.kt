@@ -50,7 +50,12 @@ data class TrainingFocusRequest(val focus: TrainingFocus)
 data class TicketPriceRequest(val ticketPriceCents: Long)
 
 @Serializable
-data class BuyPlayerRequest(val clubId: Long, val playerId: Long)
+data class BuyPlayerRequest(
+    val clubId: Long,
+    val playerId: Long,
+    /** Termos pessoais oferecidos ao livre (issue #138): sem o "sim" dele, não há compra. */
+    val contract: ContractOfferDto,
+)
 
 @Serializable
 data class SellPlayerRequest(val clubId: Long, val playerId: Long)

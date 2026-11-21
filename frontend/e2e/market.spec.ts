@@ -1,4 +1,4 @@
-import { expect, test } from './helpers'
+import { expect, offerContract, test } from './helpers'
 
 // Fluxos de mercado (issue #12): comprar (em /market) e vender (em /dashboard).
 // Rodam contra MSW (`npm run e2e`) e contra o backend Spring (`npm run e2e:real`).
@@ -22,7 +22,7 @@ test.describe('Market flow', () => {
     await expect(cash).toContainText('US$')
     const cashBefore = await cash.textContent()
 
-    await buyButtons.first().click()
+    await offerContract(page, buyButtons.first())
 
     // Sucesso de negócio: toast disparado pelo useBuyPlayer.
     await expect(page.getByText(/contratado!/)).toBeVisible({ timeout: 10_000 })
@@ -48,7 +48,7 @@ test.describe('Market flow', () => {
       const count = await buyButtons.count()
       if (count <= 1) break
       const cashBefore = (await cash.textContent()) ?? ''
-      await buyButtons.first().click()
+      await offerContract(page, buyButtons.first())
       // Ou a lista encolhe (compra feita) ou o backend recusa por elenco cheio.
       await expect
         .poll(async () => (await squadFull.isVisible()) || (await buyButtons.count()) === count - 1, { timeout: 10_000 })
@@ -60,7 +60,7 @@ test.describe('Market flow', () => {
 
     const button = overCash.first().getByRole('button', { name: 'Comprar' })
     await expect(button).toBeEnabled()
-    await button.click()
+    await offerContract(page, button)
 
     await expect(page.getByText(/^Caixa insuficiente/)).toBeVisible({ timeout: 10_000 })
     await expect(overCash.first()).toBeVisible()

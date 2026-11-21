@@ -6,7 +6,10 @@ import { useClub } from '../api/queries/useClub'
 import { useCreateOffer, MIN_OFFER_CENTS } from '../api/queries/useOffers'
 import { useMyClubId } from '../auth/useMyClubId'
 import { CURRENCY_SYMBOL, formatMoney } from '../domain/formatters'
-import type { Club, Player } from '../domain/types'
+import type { Club, ContractOffer, Player, PlayerRefused } from '../domain/types'
+import { ContractTermsFields } from '../components/ContractTermsFields'
+import { PlayerRefusalNotice } from '../components/PlayerRefusalNotice'
+import { MIN_CONTRACT_SALARY_CENTS, offerMeetingRefusal } from '../domain/contractOffers'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
@@ -51,19 +54,42 @@ export function ClubPage() {
   )
 }
 
-/** Elenco + formulário de proposta pelo jogador escolhido. */
+/** Termos iniciais ao jogador: o salário que ele já ganha e 3 temporadas. */
+const initialTermsFor = (player: Player): ContractOffer => ({
+  salary: Math.max(player.salary, MIN_CONTRACT_SALARY_CENTS),
+  years: 3,
+})
+
+/**
+ * Elenco + formulário de proposta pelo jogador escolhido. A proposta tem duas
+ * partes (issue #138): o valor ao clube e os termos pessoais ao jogador, que
+ * responde na hora — recusando, a proposta nem nasce.
+ */
 function OfferForm({ seller, myClubId }: { seller: Club; myClubId: number }) {
   const create = useCreateOffer(myClubId)
   const [selected, setSelected] = useState<Player | null>(null)
   const [reais, setReais] = useState(MIN_OFFER_CENTS / 100)
+  const [terms, setTerms] = useState<ContractOffer>({ salary: MIN_CONTRACT_SALARY_CENTS, years: 3 })
+  const [refusal, setRefusal] = useState<PlayerRefused | null>(null)
 
   const valid = Number.isInteger(reais) && reais * 100 >= MIN_OFFER_CENTS
+
+  const select = (player: Player) => {
+    setSelected(player)
+    setTerms(initialTermsFor(player))
+    setRefusal(null)
+  }
 
   const submit = () => {
     if (!selected || !valid) return
     create.mutate(
-      { buyerClubId: myClubId, sellerClubId: seller.id, playerId: selected.id, amount: reais * 100 },
-      { onSuccess: (result) => { if (result.type === 'Success') setSelected(null) } },
+      { buyerClubId: myClubId, sellerClubId: seller.id, playerId: selected.id, amount: reais * 100, contract: terms },
+      {
+        onSuccess: (result) => {
+          if (result.type === 'Success') setSelected(null)
+          else if (result.type === 'PlayerRefused') setRefusal(result)
+        },
+      },
     )
   }
 
@@ -74,7 +100,8 @@ function OfferForm({ seller, myClubId }: { seller: Club; myClubId: number }) {
           <h2 className="text-lg font-semibold text-slate-100">Proposta por {selected.name}</h2>
           <p className="text-sm text-slate-400">
             O {seller.name} tem algumas rodadas para responder. Se aceitar, o
-            valor sai do seu caixa e o jogador entra no seu elenco na hora.
+            valor sai do seu caixa e o jogador entra no seu elenco na hora,
+            com o contrato abaixo — que ele precisa aceitar antes.
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-sm text-slate-400">
@@ -101,6 +128,13 @@ function OfferForm({ seller, myClubId }: { seller: Club; myClubId: number }) {
           {!valid && (
             <p className="text-xs text-amber-300">A proposta mínima é de {formatMoney(MIN_OFFER_CENTS)}.</p>
           )}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-slate-200">Contrato oferecido ao jogador</h3>
+            <ContractTermsFields value={terms} onChange={setTerms} />
+          </div>
+          {refusal && (
+            <PlayerRefusalNotice refusal={refusal} onMeetDemand={() => setTerms(offerMeetingRefusal(terms, refusal))} />
+          )}
         </div>
       )}
 
@@ -108,7 +142,7 @@ function OfferForm({ seller, myClubId }: { seller: Club; myClubId: number }) {
         squad={seller.squad}
         action={(p) => (
           <button
-            onClick={() => setSelected(p)}
+            onClick={() => select(p)}
             aria-pressed={selected?.id === p.id}
             className="rounded-md border border-slate-700 hover:border-emerald-600 hover:text-emerald-300 px-2 py-1 text-xs text-slate-400 transition-colors"
           >
