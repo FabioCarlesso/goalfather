@@ -4159,6 +4159,9 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
+          # Exemplo explícito: sem ele o Swagger UI sugere o `maximum` (US$ 100
+          # milhões/mês), e um "Execute" desavisado assinaria esse salário.
+          example: 300000
           description: |
             Salário mensal oferecido, em centavos de USD. Acima do teto de
             US$ 100 milhões é 400 `INVALID_CONTRACT_OFFER`.
@@ -4172,6 +4175,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          example: 50000000
           description: Cláusula de rescisão, em centavos de USD — opcional
 
     RefusalReason:
