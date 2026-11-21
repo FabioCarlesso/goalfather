@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.adapter.`in`.web.dto
 
 import com.carlesso.goalfather.domain.model.ContractOffer
+import com.carlesso.goalfather.domain.model.MAX_SALARY
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.rules.PlayerResponse
 import com.carlesso.goalfather.domain.rules.RefusalReason
@@ -25,12 +26,12 @@ data class ContractOfferDto(
 ) {
     /**
      * Para o domínio, ou `null` quando o pedido não faz sentido (salário
-     * negativo, cláusula não positiva) — o controller responde 400 sem deixar
+     * negativo ou acima do teto [MAX_SALARY], cláusula não positiva) — o controller responde 400 sem deixar
      * o `require` do [ContractOffer] virar um 500. A duração não é validada
      * aqui: fora do que o jogador topa, é a RESPOSTA dele (`TOO_SHORT`/`TOO_LONG`).
      */
     fun toDomain(): ContractOffer? =
-        if (salary < 0 || (releaseClause != null && releaseClause <= 0)) null
+        if (salary !in 0..MAX_SALARY.cents || (releaseClause != null && releaseClause <= 0)) null
         else ContractOffer(Money(salary), years, releaseClause?.let(::Money))
 }
 
@@ -40,7 +41,7 @@ fun ContractOffer.toDto(): ContractOfferDto =
 /** Corpo do 400 de termos inválidos — o mesmo nas três rotas. */
 val INVALID_CONTRACT_OFFER: ErrorResponse = ErrorResponse(
     code = "INVALID_CONTRACT_OFFER",
-    message = "Termos inválidos: salário não pode ser negativo e a cláusula, se houver, deve ser positiva",
+    message = "Termos inválidos: salário entre zero e US$ 100 milhões e cláusula, se houver, positiva",
 )
 
 /**

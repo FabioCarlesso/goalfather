@@ -2,6 +2,7 @@ package com.carlesso.goalfather.domain.rules
 
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.ContractOffer
+import com.carlesso.goalfather.domain.model.MAX_SALARY
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.domain.model.world.LeagueStrength
@@ -161,6 +162,12 @@ class ContractNegotiationRulesTest {
         assertNull(renewalCooldown(ContractOffer(Money.dollars(3_000), 2), refusal, today))
         // Recusa só pela duração, com salário cheio: não esfria.
         assertNull(renewalCooldown(ContractOffer(Money.dollars(4_000), 5), refusal.copy(reason = RefusalReason.TOO_LONG), today))
+    }
+
+    @Test
+    fun `salario gigante nao estoura a conta do esfriamento`() {
+        val refusal = PlayerResponse.Refuses(RefusalReason.TOO_LONG, Money.dollars(4_000), 1..4)
+        assertNull(renewalCooldown(ContractOffer(MAX_SALARY, 5), refusal, today))
     }
 
     @Test

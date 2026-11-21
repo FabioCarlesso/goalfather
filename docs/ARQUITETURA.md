@@ -1846,7 +1846,8 @@ elenco nem catálogo. `current` é o clube atual (`null` para o livre); igual ao
   cooldown_until)`, por jogador × clube: trocar de clube zera a conversa.
 - **API e UI.** `contract` (schema `ContractOffer`) passa a ser obrigatório em
   `BuyPlayerRequest` e `CreateOfferRequest`; termos malformados (salário
-  negativo, cláusula não positiva) são 400 `INVALID_CONTRACT_OFFER`. A recusa é
+  negativo ou acima do teto de US$ 100 milhões, que protege a soma da folha;
+  cláusula não positiva) são 400 `INVALID_CONTRACT_OFFER`. A recusa é
   o schema `PlayerRefused` (`reason`, `demandedSalary`, `minYears`,
   `maxYears` e, só na renovação, `cooldownUntil`), nos três `oneOf`. A UI: o
   "Comprar" do mercado e o "Renovar" do elenco abrem o `ContractOfferModal`

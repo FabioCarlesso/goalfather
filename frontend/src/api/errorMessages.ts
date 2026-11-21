@@ -25,7 +25,7 @@ const MESSAGES: Record<string, string> = {
   CLUB_WRITE_CONFLICT: 'O clube foi alterado por outra operação ao mesmo tempo. Confira os dados e tente de novo.',
   OFFER_NOT_FOUND: 'Proposta não encontrada.',
   // Termos pessoais malformados (issue #138).
-  INVALID_CONTRACT_OFFER: 'Termos inválidos — o salário não pode ser negativo e a multa, se houver, precisa ser positiva.',
+  INVALID_CONTRACT_OFFER: 'Termos inválidos — salário entre zero e US$ 100 milhões e multa, se houver, positiva.',
   FORBIDDEN: 'Você não é dono do clube desta operação.',
   NOT_FOUND: 'Recurso não encontrado.',
   MALFORMED_REQUEST: 'Requisição inválida — os dados enviados não puderam ser lidos.',

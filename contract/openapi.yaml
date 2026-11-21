@@ -4158,7 +4158,10 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Salário mensal oferecido, em centavos de USD
+          maximum: 10000000000
+          description: |
+            Salário mensal oferecido, em centavos de USD. Acima do teto de
+            US$ 100 milhões é 400 `INVALID_CONTRACT_OFFER`.
         years:
           type: integer
           description: |

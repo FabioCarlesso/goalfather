@@ -263,7 +263,9 @@ const val OFFENSIVE_OFFER_PERCENT: Long = 75
  */
 fun renewalCooldown(offer: ContractOffer, refusal: PlayerResponse.Refuses, today: LocalDate): LocalDate? =
     today.plusWeeks(RENEWAL_COOLDOWN_WEEKS)
-        .takeIf { offer.salary.cents * 100 < refusal.demandedSalary.cents * OFFENSIVE_OFFER_PERCENT }
+        // Divide o pedido em vez de multiplicar a oferta: o salário oferecido
+        // vem do cliente e, multiplicado, poderia estourar o `Long`.
+        .takeIf { offer.salary.cents < refusal.demandedSalary.cents * OFFENSIVE_OFFER_PERCENT / 100 }
 
 /** O jogador ainda está "esfriado" em [today], com esfriamento até [until] (exclusive)? */
 fun isCoolingDown(until: LocalDate?, today: LocalDate): Boolean = until != null && today.isBefore(until)

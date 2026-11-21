@@ -108,6 +108,9 @@ class ContractMvcTest {
         assertEquals(400, invalid.status)
         assertEquals("INVALID_CONTRACT_OFFER", invalid.jsonBody().getValue("code").jsonPrimitive.content)
 
+        // Salário acima do teto (US$ 100 milhões): 400, sem chegar à folha.
+        assertEquals(400, renew(token, clubId, clubId * 100 + 5, """{"salary":${Long.MAX_VALUE},"years":2}""").status)
+
         assertEquals(403, renew(otherToken, clubId, clubId * 100 + 5, """{"salary":100,"years":2}""").status)
 
         val missing = renew(token, clubId, 1, """{"salary":100,"years":2}""")

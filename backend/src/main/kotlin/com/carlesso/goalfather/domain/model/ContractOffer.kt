@@ -20,6 +20,16 @@ data class ContractOffer(
 ) {
     init {
         require(!salary.isNegative) { "salário negativo: $salary" }
+        require(salary <= MAX_SALARY) { "salário acima do teto: $salary" }
         require(releaseClause == null || releaseClause.isPositive) { "cláusula de rescisão deve ser positiva: $releaseClause" }
     }
 }
+
+/**
+ * Teto do salário mensal oferecível: US$ 100 milhões — muito acima de qualquer
+ * exigência do jogo. Existe para a folha (soma dos salários de um elenco, em
+ * `Long` de centavos) nunca estourar na virada do encaixe por um número
+ * absurdo vindo do cliente. Como `companion` seria verboso aqui, é uma
+ * constante de topo no mesmo arquivo — o idioma Kotlin para "estático".
+ */
+val MAX_SALARY: Money = Money.dollars(100_000_000)
