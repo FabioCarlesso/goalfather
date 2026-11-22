@@ -199,14 +199,45 @@ jobs:
   #   #67 — o backend subia com profile `prod` sem JWT_SECRET e o JwtSecretGuard
   #         abortava o boot. Buildar não bastava: só `up` pega isso, daí o
   #         `--wait` (falha se algum container não ficar healthy) + smoke test.
+  #
+  # Cache de camadas (PR #160): sem ele, todo run baixava do zero as dependências
+  # do Gradle dentro do `docker build`, e o Maven Central às vezes devolve 429
+  # para os IPs compartilhados dos runners. O build agora passa pelo bake, que
+  # lê/grava as camadas no cache do GitHub Actions (`type=gha`). `mode=max`
+  # é o que importa: guarda também as camadas do estágio `build`, onde fica o
+  # `gradle dependencies`, que só é refeito quando os arquivos do Gradle mudam.
+  # Um escopo por imagem, senão uma sobrescreve o cache da outra.
   docker-stack:
     name: Docker (stack completo)
     runs-on: ubuntu-latest
+    env:
+      # Fixa o nome do projeto compose para as tags abaixo baterem com as
+      # imagens que o `compose up` procura (`<projeto>-<serviço>`).
+      COMPOSE_PROJECT_NAME: goalfather
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - name: Buildar imagens (com cache do GitHub Actions)
+        uses: docker/bake-action@v6
+        with:
+          # Contexto local (o checkout), não o Git remoto: os contextos
+          # nomeados do compose (`contract`, `world`) são caminhos relativos.
+          source: .
+          files: docker-compose.yml
+          targets: backend,frontend
+          load: true
+          # `ignore-error`: falha ao GRAVAR o cache não derruba o job.
+          set: |
+            backend.tags=goalfather-backend:latest
+            backend.cache-from=type=gha,scope=backend
+            backend.cache-to=type=gha,scope=backend,mode=max,ignore-error=true
+            frontend.tags=goalfather-frontend:latest
+            frontend.cache-from=type=gha,scope=frontend
+            frontend.cache-to=type=gha,scope=frontend,mode=max,ignore-error=true
       - name: Subir o stack
-        run: docker compose up --build --wait --wait-timeout 180
+        # `--no-build`: usa as imagens do passo anterior; se a tag não bater,
+        # falha aqui em vez de buildar de novo sem cache.
+        run: docker compose up --no-build --wait --wait-timeout 180
       - name: Smoke test — backend e frontend respondendo
         run: |
           curl -fsS http://localhost:8081/actuator/health | grep -q '"status":"UP"'
