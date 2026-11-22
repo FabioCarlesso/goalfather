@@ -2,10 +2,12 @@ package com.carlesso.goalfather.application.service
 
 import com.carlesso.goalfather.application.port.`in`.TransferOfferUseCase
 import com.carlesso.goalfather.application.port.out.ClubRepository
+import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.TransferCompletion
 import com.carlesso.goalfather.application.port.out.TransferOfferRepository
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.ContractOffer
 import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.OfferId
@@ -15,7 +17,11 @@ import com.carlesso.goalfather.domain.model.RoundStatus
 import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.result.OfferResult
 import com.carlesso.goalfather.domain.rules.OFFER_DEADLINE_SLOTS
+import com.carlesso.goalfather.domain.rules.PlayerResponse
+import com.carlesso.goalfather.domain.rules.leagueStrengthOf
 import com.carlesso.goalfather.domain.rules.offerBlocker
+import com.carlesso.goalfather.domain.rules.playerResponse
+import com.carlesso.goalfather.domain.rules.stature
 import com.carlesso.goalfather.domain.rules.transferredTo
 
 /**
@@ -28,6 +34,9 @@ class TransferOfferService(
     private val offerRepo: TransferOfferRepository,
     private val clubRepo: ClubRepository,
     private val leagueRepo: LeagueRepository,
+    // Força das ligas do comprador e do vendedor (issue #138): pesam na
+    // exigência salarial e no degrau para baixo dos termos pessoais.
+    private val catalogRepo: CompetitionCatalogRepository,
     // Janela do comprador e limite de registros (issue #137).
     private val windows: TransferWindowGuard = TransferWindowGuard.UNRESTRICTED,
 ) : TransferOfferUseCase {
@@ -39,6 +48,7 @@ class TransferOfferService(
         sellerClubId: ClubId,
         playerId: PlayerId,
         amount: Money,
+        terms: ContractOffer,
         requesterId: Long,
     ): OfferResult {
         val buyer = clubRepo.findById(buyerClubId) ?: return OfferResult.ClubNotFound(buyerClubId)
@@ -62,6 +72,19 @@ class TransferOfferService(
         // `offerBlocker` garante que o jogador está no elenco do vendedor.
         val player = seller.squad.first { it.id == playerId }
 
+        // Termos pessoais (issue #138): o jogador responde já na criação, por
+        // regra determinística — a proposta só nasce com o "sim" dele, e o
+        // aceite do vendedor assina exatamente esses termos. Sair de um clube
+        // (ou de uma liga) muito mais forte cobra o degrau.
+        val catalog = catalogRepo.findAll()
+        val response = playerResponse(
+            player,
+            terms,
+            buyer = buyer.stature(catalog.leagueStrengthOf(buyer)),
+            current = seller.stature(catalog.leagueStrengthOf(seller)),
+        )
+        if (response is PlayerResponse.Refuses) return OfferResult.PlayerRefused(player.id, response)
+
         val offer = offerRepo.create(
             TransferOffer(
                 id = NEW_OFFER,
@@ -73,6 +96,7 @@ class TransferOfferService(
                 playerName = player.name,
                 amount = amount,
                 slotsLeft = OFFER_DEADLINE_SLOTS,
+                terms = terms,
             ),
         )
         return OfferResult.Success(offer)
@@ -122,12 +146,14 @@ class TransferOfferService(
         windows.registrationBlocker(buyer, seller.country.code, offer.playerId)
             ?.let { return it.toOfferRejection(offer.playerId) }
 
-        // Trocar de clube é trocar de contrato (issue #136): o comprador assume
-        // os termos (salário, cláusula), com o vínculo e o término na liga dele.
-        // A negociação de termos pessoais é a #138. Sem rodada (save vazio), o
-        // novo vínculo começa onde o antigo começou.
-        val player = seller.squad.first { it.id == offer.playerId }
-            .let { it.transferredTo(buyer, today = latest?.matchday?.date ?: it.contract?.start) }
+        // Trocar de clube é trocar de contrato: assina os termos que o jogador
+        // aceitou na proposta (issue #138), a partir da data do jogo. Proposta
+        // gravada antes da issue (sem termos) mantém o comportamento da #136: o
+        // comprador assume o contrato antigo, realinhado à liga dele.
+        val selling = seller.squad.first { it.id == offer.playerId }
+        val player = offer.terms
+            ?.let { leagueRepo.signAccepted(selling, buyer, it, leagueRepo.today()) }
+            ?: selling.transferredTo(buyer, today = latest?.matchday?.date ?: selling.contract?.start)
 
         // Quem disputava o mesmo jogador expira junto, na mesma transação.
         // `mapNotNull`: a transição devolve `null` para quem já não estava

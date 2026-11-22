@@ -2,6 +2,7 @@ package com.carlesso.goalfather.adapter.`in`.web
 
 import com.carlesso.goalfather.adapter.`in`.web.dto.BuyPlayerRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.ErrorResponse
+import com.carlesso.goalfather.adapter.`in`.web.dto.INVALID_CONTRACT_OFFER
 import com.carlesso.goalfather.adapter.`in`.web.dto.SellPlayerRequest
 import com.carlesso.goalfather.adapter.`in`.web.dto.toDto
 import com.carlesso.goalfather.application.metrics.GoalfatherMetrics
@@ -57,7 +58,8 @@ class MarketController(
         @AuthenticationPrincipal userId: Long,
     ): ResponseEntity<Any> {
         ownershipError(req.clubId, userId)?.let { return it }
-        val result = buyUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId))
+        val offer = req.contract.toDomain() ?: return ResponseEntity.badRequest().body(INVALID_CONTRACT_OFFER)
+        val result = buyUseCase.execute(ClubId(req.clubId), PlayerId(req.playerId), offer)
         // Conta a compra dimensionada pelo desfecho (issue #44). `conflict` cobre
         // o `PlayerNotAvailable` — na prática, a perda do lock otimista do mercado
         // (#21) quando dois donos disputam o mesmo jogador.
@@ -77,6 +79,8 @@ class MarketController(
             // Janela e limite de registros (issue #137).
             is TransferResult.TransferWindowClosed -> "window_closed"
             is TransferResult.TransferLimitReached -> "limit_reached"
+            // Termos pessoais recusados pelo livre (issue #138).
+            is TransferResult.PlayerRefused -> "player_refused"
         }
         meterRegistry.counter(GoalfatherMetrics.MARKET_TRANSFERS, GoalfatherMetrics.TAG_RESULT, outcome)
             .increment()

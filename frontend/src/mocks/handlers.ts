@@ -59,12 +59,14 @@ import {
   salePayoutOf,
   marketListingPriceOf,
   contractFor,
-  DEFAULT_SIGNING_SEASONS,
   isInFinalSeason,
   marketValueOf,
-  maxContractSeasons,
   releasedPlayer,
-  salaryForValueOf,
+  playerResponseOf,
+  renewalCooldownOf,
+  squadReputationOf,
+  type ClubStature,
+  type Refusal,
   type SquadMember,
   type TeamTactics,
 } from './engine'
@@ -95,6 +97,9 @@ import type {
   TransferOfferResult,
   StreamSpeed,
   Player,
+  ContractOffer,
+  PlayerRefused,
+  RenewalResult,
 } from '../domain/types'
 import { isStreamSpeed } from '../domain/streamSpeed'
 import { WS_CLOSE_NOT_STARTED, WS_REASON_NOT_STARTED } from '../api/wsProtocol'
@@ -309,6 +314,31 @@ function recordRegistration(playerId: number): void {
 }
 
 const registrationsOf = (playerId: number): string[] => state.registrations[playerId] ?? []
+
+// --- #138 Termos pessoais ---
+/** O que o jogador enxerga do clube na negociação (espelha `Club.stature`). */
+const statureOf = (club: StoredClub): ClubStature => ({
+  clubId: club.id,
+  reputation: squadReputationOf(club.squad),
+  leagueStrength: leagueOf(club.id).strength,
+})
+
+const refused = (playerId: number, refusal: Refusal, cooldownUntil?: string): PlayerRefused => ({
+  type: 'PlayerRefused',
+  playerId,
+  ...refusal,
+  ...(cooldownUntil ? { cooldownUntil } : {}),
+})
+
+/** O jogador com o contrato aceito assinado com [club] a partir de hoje, na temporada corrente. */
+const signedWith = (player: Player, club: StoredClub, offer: ContractOffer): Player => ({
+  ...player,
+  salary: offer.salary,
+  contract: {
+    ...contractFor(today(), state.currentRound.season, offer.years, club.country.code),
+    ...(offer.releaseClause ? { releaseClause: offer.releaseClause } : {}),
+  },
+})
 
 export const handlers = [
 
@@ -647,20 +677,12 @@ export const handlers = [
       const result: TransferResult = { type: 'SquadFull', maxSize: 25 }
       return HttpResponse.json(result)
     }
+    // Termos pessoais (issue #138): o livre não tem clube atual, então sem degrau.
+    const refusal = playerResponseOf(entry.player, body.contract, statureOf(club), null)
+    if (refusal) return HttpResponse.json(refused(body.playerId, refusal) satisfies TransferResult)
 
-    // Livre do mercado → contratado (issue #136): contrato padrão contando a
-    // temporada corrente; o salário sai do valor dele na liga do clube (#135).
-    const { date } = state.currentRound.matchday
-    const signed: Player = {
-      ...entry.player,
-      salary: salaryForValueOf(marketValueOf(entry.player, leagueOf(club.id).strength)),
-      contract: contractFor(
-        date,
-        state.currentRound.season,
-        Math.min(DEFAULT_SIGNING_SEASONS, maxContractSeasons(entry.player.age)),
-        club.country.code,
-      ),
-    }
+    // Livre do mercado → contratado com os termos que ele aceitou.
+    const signed = signedWith(entry.player, club, body.contract)
     const updatedClub: StoredClub = {
       ...club,
       cash: club.cash - entry.price,
@@ -710,6 +732,38 @@ export const handlers = [
     )
   }),
 
+  // ─── renewContract (issue #138) ───────────────────────────────────────
+  // Espelha `RenewContractService`: esfriamento, resposta do jogador (sem
+  // degrau, piso no salário atual) e o contrato novo recomeçando hoje.
+  http.post('/api/clubs/:id/players/:playerId/renewal', async ({ params, request }) => {
+    await delay(SIMULATED_LATENCY_MS)
+    const club = loadClub(Number(params.id))
+    if (!club) return HttpResponse.json(notFound(`Clube ${params.id} não encontrado`), { status: 404 })
+    if (club.ownerId !== requesterOf(request)) return HttpResponse.json(forbidden(), { status: 403 })
+    const offer = (await request.json()) as ContractOffer
+    const playerId = Number(params.playerId)
+    const player = club.squad.find((p) => p.id === playerId)
+    if (!player) return HttpResponse.json({ type: 'PlayerNotAvailable', playerId } satisfies RenewalResult)
+
+    const talksKey = `${playerId}:${club.id}`
+    const coolingUntil = state.contractTalks[talksKey]
+    if (coolingUntil && today() < coolingUntil) {
+      return HttpResponse.json({ type: 'TalksCoolingDown', playerId, until: coolingUntil } satisfies RenewalResult)
+    }
+    const stature = statureOf(club)
+    const refusal = playerResponseOf(player, offer, stature, stature)
+    if (refusal) {
+      const until = renewalCooldownOf(offer, refusal, player.salary, today())
+      if (until) state.contractTalks[talksKey] = until
+      return HttpResponse.json(refused(playerId, refusal, until) satisfies RenewalResult)
+    }
+    const renewed = signedWith(player, club, offer)
+    const updated: StoredClub = { ...club, squad: club.squad.map((p) => (p.id === playerId ? renewed : p)) }
+    state.clubs[club.id] = updated
+    const response = toClubResponse(updated).squad.find((p) => p.id === playerId)!
+    return HttpResponse.json({ type: 'Renewed', player: response } satisfies RenewalResult)
+  }),
+
   // ─── listClubOffers (issue #63) ───────────────────────────────────────
   http.get('/api/clubs/:id/offers', async ({ params, request }) => {
     await delay(SIMULATED_LATENCY_MS)
@@ -742,6 +796,9 @@ export const handlers = [
     }
 
     const player = seller.squad.find((p) => p.id === body.playerId)!
+    // Termos pessoais (issue #138): o jogador responde já na criação.
+    const refusal = playerResponseOf(player, body.contract, statureOf(buyer), statureOf(seller))
+    if (refusal) return HttpResponse.json(refused(player.id, refusal) satisfies TransferOfferResult)
     const offer: TransferOffer = {
       id: state.nextOfferId++,
       buyerClubId: buyer.id,
@@ -753,6 +810,7 @@ export const handlers = [
       amount: body.amount,
       slotsLeft: OFFER_DEADLINE_SLOTS,
       status: { type: 'Pending' },
+      contract: body.contract,
     }
     state.offers = [offer, ...state.offers]
     return HttpResponse.json({ type: 'Success', offer } satisfies TransferOfferResult)
@@ -787,7 +845,9 @@ export const handlers = [
     const windowBlock = registrationBlocker(buyer.country, seller.country.code, today(), offer.playerId, registrationsOf(offer.playerId))
     if (windowBlock) return HttpResponse.json(windowBlock satisfies TransferOfferResult)
 
-    const player = seller.squad.find((p) => p.id === offer.playerId)!
+    // Assina os termos que o jogador aceitou na proposta (issue #138).
+    const selling = seller.squad.find((p) => p.id === offer.playerId)!
+    const player = offer.contract ? signedWith(selling, buyer, offer.contract) : selling
     state.clubs[seller.id] = {
       ...seller,
       cash: seller.cash + offer.amount,

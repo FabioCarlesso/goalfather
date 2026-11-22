@@ -93,6 +93,11 @@ sealed interface OfferStatus {
  * "jogar". Contador em vez de "encaixe de vencimento" porque a proposta não
  * precisa saber do calendário para expirar.
  *
+ * [terms] são os termos pessoais que o jogador JÁ aceitou do comprador (issue
+ * #138): o acordo entre clubes só se completa com eles, e o aceite assina
+ * exatamente esse contrato. `null` só em proposta gravada antes da issue —
+ * essa transfere o contrato antigo, como era (`transferredTo`).
+ *
  * Valores em centavos, como todo dinheiro do contrato. Sem `@Serializable`: a
  * API fala por um DTO (`TransferOfferDto`); só o [OfferStatus] cruza a
  * fronteira como está, porque a forma JSON dele já é a do contrato.
@@ -108,6 +113,7 @@ data class TransferOffer(
     val amount: Money,
     val slotsLeft: Int,
     val status: OfferStatus = OfferStatus.Pending,
+    val terms: ContractOffer? = null,
 ) {
     init {
         require(amount.isPositive) { "amount deve ser positivo: $amount" }

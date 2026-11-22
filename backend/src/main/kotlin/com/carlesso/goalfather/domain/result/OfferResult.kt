@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.OfferId
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.TransferOffer
+import com.carlesso.goalfather.domain.rules.PlayerResponse
 import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.SquadViolation
 import java.time.LocalDate
@@ -99,4 +100,11 @@ sealed interface OfferResult {
 
     /** O jogador já esgotou o limite de registros da janela ou da temporada (issue #137). */
     data class TransferLimitReached(val playerId: PlayerId, val limit: RegistrationLimit) : Rejection
+
+    /**
+     * O jogador recusou os termos pessoais do comprador (issue #138): a
+     * proposta nem nasce — acordo entre clubes sem o "sim" do jogador não
+     * transfere ninguém.
+     */
+    data class PlayerRefused(val playerId: PlayerId, val refusal: PlayerResponse.Refuses) : Rejection
 }

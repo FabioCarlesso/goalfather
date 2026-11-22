@@ -6,7 +6,11 @@ import {
   contractTurnover,
   isInFinalSeason,
   maxContractSeasons,
+  playerResponseOf,
   releasedPlayer,
+  renewalCooldownOf,
+  salaryDemandOf,
+  squadReputationOf,
   seasonEndOf,
   typicalContractSeasons,
 } from './engine'
@@ -61,5 +65,41 @@ describe('contratos do mock', () => {
 
   it('jogador liberado perde o campo contract', () => {
     expect(releasedPlayer(player(1, '2026-12-31'))).not.toHaveProperty('contract')
+  })
+})
+
+// Espelho de domain/rules/ContractNegotiationRules.kt (issue #138).
+describe('termos pessoais do mock', () => {
+  const ref = { clubId: 1, reputation: 70, leagueStrength: 70 }
+  const p = player(1, '2027-12-31', 25)
+
+  it('exigência na referência é o salário do valor, e abaixo dela é LOW_SALARY', () => {
+    const demand = salaryDemandOf(p, ref, null)
+    expect(playerResponseOf(p, { salary: demand - 10_00, years: 3 }, ref, null)).toMatchObject({ reason: 'LOW_SALARY', demandedSalary: demand, minYears: 1, maxYears: 4 })
+    expect(playerResponseOf(p, { salary: demand, years: 3 }, ref, null)).toBeNull()
+    expect(playerResponseOf(p, { salary: demand * 10, years: 5 }, ref, null)?.reason).toBe('TOO_LONG')
+  })
+
+  it('descer para clube muito mais fraco cobra +50%', () => {
+    const strong = { clubId: 2, reputation: 80, leagueStrength: 70 }
+    const weak = { clubId: 1, reputation: 74, leagueStrength: 70 }
+    const base = salaryDemandOf(p, weak, strong)
+    const refusal = playerResponseOf(p, { salary: base, years: 2 }, weak, strong)
+    expect(refusal?.reason).toBe('WEAKER_CLUB')
+    expect(playerResponseOf(p, { salary: refusal!.demandedSalary, years: 2 }, weak, strong)).toBeNull()
+  })
+
+  it('renovação não aceita redução e oferta ofensiva esfria 4 semanas', () => {
+    expect(salaryDemandOf({ ...p, salary: 999_000_00 }, ref, ref)).toBe(999_000_00)
+    const refusal = { reason: 'LOW_SALARY' as const, demandedSalary: 4_000_00, minYears: 1, maxYears: 4 }
+    expect(renewalCooldownOf({ salary: 2_960_00, years: 2 }, refusal, 3_500_00, '2026-03-10')).toBe('2026-04-07')
+    expect(renewalCooldownOf({ salary: 3_000_00, years: 2 }, refusal, 3_500_00, '2026-03-10')).toBeUndefined()
+    // Mantendo o que ele já ganha, não ofende.
+    expect(renewalCooldownOf({ salary: 2_000_00, years: 2 }, refusal, 2_000_00, '2026-03-10')).toBeUndefined()
+  })
+
+  it('reputação é a média dos 11 melhores', () => {
+    expect(squadReputationOf([{ overall: 60 }, { overall: 70 }])).toBe(65)
+    expect(squadReputationOf([])).toBe(0)
   })
 })

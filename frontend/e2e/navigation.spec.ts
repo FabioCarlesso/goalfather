@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, myClubId, registerRival, startRound, test } from './helpers'
+import { expect, GENEROUS_CONTRACT, myClubId, registerRival, startRound, test } from './helpers'
 
 // Navegação responsiva (issue #106): barra horizontal a partir de `lg` (1024px),
 // botão de menu abaixo disso, e nenhuma rolagem horizontal da página.
@@ -20,7 +20,7 @@ async function receivePendingOffer(page: Page) {
   const rival = await registerRival(page)
   expect(rival, 'clube livre para o rival').not.toBeNull()
   const sellerId = await myClubId(page)
-  const result = await page.evaluate(async ({ rival, sellerId }) => {
+  const result = await page.evaluate(async ({ rival, sellerId, contract }) => {
     const json = { 'Content-Type': 'application/json' }
     const mine = { Authorization: `Bearer ${localStorage.getItem('gf:token')}` }
     const theirs = { Authorization: `Bearer ${rival!.token}` }
@@ -28,7 +28,7 @@ async function receivePendingOffer(page: Page) {
     await fetch('/api/market/buy', {
       method: 'POST',
       headers: { ...json, ...mine },
-      body: JSON.stringify({ clubId: sellerId, playerId: market[0]!.player.id }),
+      body: JSON.stringify({ clubId: sellerId, playerId: market[0]!.player.id, contract }),
     })
     const club = (await (await fetch(`/api/clubs/${sellerId}`, { headers: theirs })).json()) as
       { squad: { id: number; position: string }[] }
@@ -36,10 +36,10 @@ async function receivePendingOffer(page: Page) {
     const res = await fetch('/api/offers', {
       method: 'POST',
       headers: { ...json, ...theirs },
-      body: JSON.stringify({ buyerClubId: rival!.clubId, sellerClubId: sellerId, playerId: target.id, amount: 100_000_00 }),
+      body: JSON.stringify({ buyerClubId: rival!.clubId, sellerClubId: sellerId, playerId: target.id, amount: 100_000_00, contract }),
     })
     return ((await res.json()) as { type: string }).type
-  }, { rival, sellerId })
+  }, { rival, sellerId, contract: GENEROUS_CONTRACT })
   expect(result).toBe('Success')
 }
 

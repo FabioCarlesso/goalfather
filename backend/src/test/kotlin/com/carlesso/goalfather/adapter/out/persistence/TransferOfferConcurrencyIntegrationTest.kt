@@ -1,5 +1,7 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.test.InMemoryCatalogRepository
+import com.carlesso.goalfather.test.GENEROUS_TERMS
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.ClubSaveResult
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -45,8 +47,11 @@ class TransferOfferConcurrencyIntegrationTest {
     @Autowired private lateinit var clubRepo: ClubRepository
     @Autowired private lateinit var offerRepo: TransferOfferRepository
 
-    private val noRound: LeagueRepository = mockk { coEvery { findLatest() } returns null }
-    private val service by lazy { TransferOfferService(offerRepo, clubRepo, noRound) }
+    private val noRound: LeagueRepository = mockk {
+        coEvery { findLatest() } returns null
+        coEvery { currentStandings() } returns emptyList()
+    }
+    private val service by lazy { TransferOfferService(offerRepo, clubRepo, noRound, InMemoryCatalogRepository()) }
 
     /**
      * Clube humano (dono = [id]) com caixa de sobra e 12 jogadores — um goleiro
@@ -73,7 +78,7 @@ class TransferOfferConcurrencyIntegrationTest {
     private fun Club.lineMember(n: Long): Player = squad.first { it.id.value == id.value * 100 + n }
 
     private fun offer(buyer: Club, seller: Club, player: Player, amount: Long) = runBlocking {
-        val result = service.create(buyer.id, seller.id, player.id, amount.cents, requesterId = buyer.ownerId!!)
+        val result = service.create(buyer.id, seller.id, player.id, amount.cents, GENEROUS_TERMS, requesterId = buyer.ownerId!!)
         assertIs<OfferResult.Success>(result).offer
     }
 

@@ -1,5 +1,6 @@
 package com.carlesso.goalfather.adapter.out.persistence
 
+import com.carlesso.goalfather.test.GENEROUS_TERMS
 import com.carlesso.goalfather.adapter.out.persistence.entity.MarketEntryEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PlayerEntity
 import com.carlesso.goalfather.adapter.out.persistence.entity.PositionEnum
@@ -70,7 +71,7 @@ class MarketConcurrencyIntegrationTest {
         val buyer = newBuyerClub(950_010)
         val target = newMarketPlayer(950_011, price = 200_000_00)
 
-        val result = buyUseCase.execute(buyer, target)
+        val result = buyUseCase.execute(buyer, target, GENEROUS_TERMS)
 
         assertIs<TransferResult.Success>(result)
         assertNull(marketRepo.findEntry(target), "jogador deve sair do mercado")
@@ -90,7 +91,7 @@ class MarketConcurrencyIntegrationTest {
         for (buyer in listOf(buyerA, buyerB)) {
             pool.submit {
                 start.await()
-                results.add(runBlocking { buyUseCase.execute(buyer, target) })
+                results.add(runBlocking { buyUseCase.execute(buyer, target, GENEROUS_TERMS) })
             }
         }
         start.countDown()

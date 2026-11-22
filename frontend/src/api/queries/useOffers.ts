@@ -50,6 +50,10 @@ function useOfferResultHandler(clubId: number) {
       // Aceite mexe em caixa e elenco; os demais comandos só na proposta —
       // recarregar o clube sempre é barato e evita um caso esquecido.
       qc.invalidateQueries({ queryKey: clubKey(clubId) })
+    } else if (result.type === 'PlayerRefused') {
+      // A recusa do jogador (issue #138) aparece no formulário da proposta,
+      // com o pedido dele — um toast repetiria o texto.
+      return
     } else {
       toast.error(offerErrorMessage(result, role))
       if (result.type === 'Conflict') qc.invalidateQueries({ queryKey: clubKey(clubId) })

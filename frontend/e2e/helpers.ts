@@ -143,3 +143,19 @@ export const test = base.extend({
 })
 
 export { expect }
+
+/** Termos generosos que qualquer jogador aceita (issue #138): US$ 1 milhão por mês, 2 temporadas. */
+export const GENEROUS_CONTRACT = { salary: 1_000_000_00, years: 2 } as const
+
+/**
+ * Compra pela UI (issue #138): o botão "Comprar" abre a oferta de contrato;
+ * preenche um salário que o livre aceita e envia. O desfecho (toast) fica com
+ * quem chamou.
+ */
+export async function offerContract(page: Page, buyButton: ReturnType<Page['getByRole']>): Promise<void> {
+  await buyButton.click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(/Salário mensal/).fill('1000000')
+  await dialog.getByLabel('Duração').selectOption('2')
+  await dialog.getByRole('button', { name: 'Oferecer contrato' }).click()
+}

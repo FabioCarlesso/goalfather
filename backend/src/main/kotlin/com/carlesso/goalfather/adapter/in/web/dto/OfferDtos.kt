@@ -4,6 +4,7 @@ import com.carlesso.goalfather.domain.model.ExpiryReason
 import com.carlesso.goalfather.domain.model.OfferStatus
 import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.result.OfferResult
+import com.carlesso.goalfather.domain.rules.RefusalReason
 import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.SquadViolation
 import kotlinx.serialization.SerialName
@@ -19,13 +20,17 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  * a do contrato (o `sealed` sai com o `type` discriminador).
  */
 
-/** Proposta nova. Sem defaults: cada campo é uma decisão explícita do comprador. */
+/**
+ * Proposta nova. Sem defaults: cada campo é uma decisão explícita do comprador
+ * — inclusive os termos pessoais oferecidos ao jogador (issue #138).
+ */
 @Serializable
 data class CreateOfferRequest(
     val buyerClubId: Long,
     val sellerClubId: Long,
     val playerId: Long,
     val amount: Long,
+    val contract: ContractOfferDto,
 )
 
 @Serializable
@@ -40,6 +45,8 @@ data class TransferOfferDto(
     val amount: Long,
     val slotsLeft: Int,
     val status: OfferStatus,
+    /** Termos que o jogador aceitou (issue #138) — ausentes em proposta anterior à issue. */
+    val contract: ContractOfferDto? = null,
 )
 
 /**
@@ -114,6 +121,17 @@ sealed interface TransferOfferResultDto {
     @Serializable
     @SerialName("TransferLimitReached")
     data class TransferLimitReached(val playerId: Long, val limit: RegistrationLimit) : TransferOfferResultDto
+
+    /** O jogador recusou os termos do comprador (issue #138) — mesmo schema do mercado. */
+    @Serializable
+    @SerialName("PlayerRefused")
+    data class PlayerRefused(
+        val playerId: Long,
+        val reason: RefusalReason,
+        val demandedSalary: Long,
+        val minYears: Int,
+        val maxYears: Int,
+    ) : TransferOfferResultDto
 }
 
 fun TransferOffer.toDto(): TransferOfferDto = TransferOfferDto(
@@ -127,6 +145,7 @@ fun TransferOffer.toDto(): TransferOfferDto = TransferOfferDto(
     amount = amount.cents,
     slotsLeft = slotsLeft,
     status = status,
+    contract = terms?.toDto(),
 )
 
 /**
@@ -149,4 +168,11 @@ fun OfferResult.Rejection.toDto(): TransferOfferResultDto = when (this) {
     is OfferResult.Conflict -> TransferOfferResultDto.Conflict(clubId.value)
     is OfferResult.TransferWindowClosed -> TransferOfferResultDto.TransferWindowClosed(nextOpens?.toString())
     is OfferResult.TransferLimitReached -> TransferOfferResultDto.TransferLimitReached(playerId.value, limit)
+    is OfferResult.PlayerRefused -> TransferOfferResultDto.PlayerRefused(
+        playerId.value,
+        refusal.reason,
+        refusal.demandedSalary.cents,
+        refusal.minYears,
+        refusal.maxYears,
+    )
 }

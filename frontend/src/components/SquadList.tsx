@@ -14,10 +14,12 @@ interface Props {
   sellingPlayerId: number | null
   /** Trava todos os botões de venda (há uma venda em andamento). */
   sellDisabled: boolean
+  /** Abre a oferta de renovação do jogador (issue #138). */
+  onRenew: (player: Player) => void
 }
 
-/** Elenco do próprio clube na Dashboard: forma física, lesão, estatísticas, contrato (issue #136) e venda. */
-export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Props) {
+/** Elenco do próprio clube na Dashboard: forma física, lesão, estatísticas, contrato (issue #136), renovação (#138) e venda. */
+export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled, onRenew }: Props) {
   return (
     <div>
       <h2 className="text-xl font-semibold text-slate-100 mb-3">Elenco</h2>
@@ -48,6 +50,14 @@ export function SquadList({ squad, onSell, sellingPlayerId, sellDisabled }: Prop
               </span>
               {p.star && <span className="text-yellow-400" title="Estrela">★</span>}
               <span className="text-slate-300 font-mono w-8 text-right">{p.overall}</span>
+              <button
+                type="button"
+                onClick={() => onRenew(p)}
+                aria-label={`Renovar ${p.name}`}
+                className="rounded-md border border-slate-700 hover:border-emerald-600 hover:text-emerald-300 px-2 py-1 text-xs text-slate-400 transition-colors"
+              >
+                Renovar
+              </button>
               <button
                 type="button"
                 onClick={() => onSell(p)}

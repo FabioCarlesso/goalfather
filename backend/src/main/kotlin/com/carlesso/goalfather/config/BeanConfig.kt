@@ -5,6 +5,7 @@ import com.carlesso.goalfather.application.port.`in`.CalendarUseCase
 import com.carlesso.goalfather.application.port.`in`.ContinentalUseCase
 import com.carlesso.goalfather.application.port.`in`.CompetitionQueryUseCase
 import com.carlesso.goalfather.application.port.`in`.BuyPlayerUseCase
+import com.carlesso.goalfather.application.port.`in`.RenewContractUseCase
 import com.carlesso.goalfather.application.port.`in`.ClaimClubUseCase
 import com.carlesso.goalfather.application.port.`in`.ExpandStadiumUseCase
 import com.carlesso.goalfather.application.port.`in`.LoginUseCase
@@ -25,6 +26,7 @@ import com.carlesso.goalfather.application.port.`in`.WorldOnboardingUseCase
 import com.carlesso.goalfather.application.port.out.ClubClaimRepository
 import com.carlesso.goalfather.application.port.out.ClubRepository
 import com.carlesso.goalfather.application.port.out.CompetitionCatalogRepository
+import com.carlesso.goalfather.application.port.out.ContractTalksRepository
 import com.carlesso.goalfather.application.port.out.ContinentalRepository
 import com.carlesso.goalfather.application.port.out.CupRepository
 import com.carlesso.goalfather.application.port.out.LeagueRepository
@@ -39,6 +41,7 @@ import com.carlesso.goalfather.application.port.out.TransferWindowRepository
 import com.carlesso.goalfather.application.port.out.UserRepository
 import com.carlesso.goalfather.application.service.BoardService
 import com.carlesso.goalfather.application.service.BuyPlayerService
+import com.carlesso.goalfather.application.service.RenewContractService
 import com.carlesso.goalfather.application.service.CalendarService
 import com.carlesso.goalfather.application.service.ContinentalService
 import com.carlesso.goalfather.application.service.ClaimClubService
@@ -219,8 +222,18 @@ class BeanConfig {
         offerRepo: TransferOfferRepository,
         clubRepo: ClubRepository,
         leagueRepo: LeagueRepository,
+        catalogRepo: CompetitionCatalogRepository,
         windows: TransferWindowGuard,
-    ): TransferOfferUseCase = TransferOfferService(offerRepo, clubRepo, leagueRepo, windows)
+    ): TransferOfferUseCase = TransferOfferService(offerRepo, clubRepo, leagueRepo, catalogRepo, windows)
+
+    /** Renovação de contrato com o jogador do próprio elenco (issue #138). */
+    @Bean
+    fun renewContractUseCase(
+        clubRepo: ClubRepository,
+        leagueRepo: LeagueRepository,
+        catalogRepo: CompetitionCatalogRepository,
+        talks: ContractTalksRepository,
+    ): RenewContractUseCase = RenewContractService(clubRepo, leagueRepo, catalogRepo, talks)
 
     /** Painel da diretoria: meta da temporada e confiança no técnico (issue #62). */
     @Bean

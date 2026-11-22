@@ -91,6 +91,12 @@ export type TransferWindowStatus = components['schemas']['TransferWindowStatus']
 export type TransferWindowScope  = components['schemas']['TransferWindowScope']
 export type RegistrationLimit    = components['schemas']['RegistrationLimit']
 
+// --- #138 Termos pessoais e renovação ---
+export type ContractOffer  = components['schemas']['ContractOffer']
+export type RefusalReason  = components['schemas']['RefusalReason']
+export type PlayerRefused  = components['schemas']['PlayerRefused']
+export type RenewalResult  = components['schemas']['RenewalResult']
+
 // Auth (issue #18) + seleção de clube (issue #19)
 export type AuthUser        = components['schemas']['AuthUser']
 export type AuthResponse    = components['schemas']['AuthResponse']

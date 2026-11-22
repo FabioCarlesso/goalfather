@@ -527,6 +527,9 @@ export const state = {
   // Registros de jogador por id (issue #137): as datas em que ele entrou num
   // clube — o que o limite de "1 por janela, 2 por temporada" conta.
   registrations: {} as Record<number, string[]>,
+  // Esfriamento da renovação (issue #138): `${playerId}:${clubId}` → até quando
+  // (exclusive) o jogador não ouve nova proposta daquele clube.
+  contractTalks: {} as Record<string, string>,
   // Amarelos pendentes por jogador e competição (issue #130) — o contrato não
   // os expõe, então o mock guarda à parte, como o backend no `discipline_json`.
   pendingYellows: {} as PendingYellows,

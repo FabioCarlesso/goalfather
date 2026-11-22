@@ -119,12 +119,6 @@ fun typicalContractSeasons(age: Int, rng: Random): Int {
     return band.random(rng).coerceIn(allowed.first, allowed.last)
 }
 
-/**
- * Duração de um contrato assinado pelo técnico (compra no mercado) enquanto
- * não há negociação de termos (#138): 3 temporadas, que cabem em qualquer idade.
- */
-const val DEFAULT_SIGNING_SEASONS: Int = 3
-
 // ─── Salário a partir do valor ─────────────────────────────────────────────
 
 /**
@@ -140,10 +134,11 @@ const val VALUE_PER_MONTHLY_SALARY: Long = 20
 val MIN_CONTRACT_SALARY: Money = Money.dollars(500)
 
 /** Salário de quem vale [value], arredondado a US$ 10 e com piso. */
-fun salaryForValue(value: Money): Money {
-    val raw = value.cents.toDouble() / VALUE_PER_MONTHLY_SALARY
-    return Money((raw / SALARY_STEP_CENTS).roundToLong() * SALARY_STEP_CENTS).coerceAtLeast(MIN_CONTRACT_SALARY)
-}
+fun salaryForValue(value: Money): Money = roundedSalary(value.cents.toDouble() / VALUE_PER_MONTHLY_SALARY)
+
+/** [rawCents] arredondado a US$ 10, com o piso [MIN_CONTRACT_SALARY]. */
+internal fun roundedSalary(rawCents: Double): Money =
+    Money((rawCents / SALARY_STEP_CENTS).roundToLong() * SALARY_STEP_CENTS).coerceAtLeast(MIN_CONTRACT_SALARY)
 
 private const val SALARY_STEP_CENTS: Long = 10_00
 
@@ -208,7 +203,8 @@ data class ContractTurnover(
  *
  * - **Clube de técnico humano:** o contrato vencido vira [Employment.FreeAgent]
  *   e o jogador sai do elenco (sem taxa: quem quiser, contrata de graça). A
- *   renovação negociada, com exigência do jogador, é a #138.
+ *   renovação, com exigência do jogador (#138), é antes do vencimento: o
+ *   técnico oferece termos pela tela do elenco (`RenewContractService`).
  * - **Clube da IA:** renova sozinho, pelo mesmo salário, por uma duração
  *   típica da idade ([typicalContractSeasons]). Provisório até a IA ativa
  *   (#143): sem isso os elencos da IA, que não compram ninguém, encolheriam a

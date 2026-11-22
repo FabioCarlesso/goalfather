@@ -15,6 +15,7 @@ import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.model.leagueOf
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
+import com.carlesso.goalfather.domain.rules.RefusalReason
 import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.competitionOf
 import com.carlesso.goalfather.domain.rules.isForeignAt
@@ -220,6 +221,17 @@ sealed interface TransferResultDto {
     @Serializable
     @SerialName("TransferLimitReached")
     data class TransferLimitReached(val playerId: Long, val limit: RegistrationLimit) : TransferResultDto
+
+    /** O jogador recusou os termos pessoais (issue #138) — schema `PlayerRefused`. */
+    @Serializable
+    @SerialName("PlayerRefused")
+    data class PlayerRefused(
+        val playerId: Long,
+        val reason: RefusalReason,
+        val demandedSalary: Long,
+        val minYears: Int,
+        val maxYears: Int,
+    ) : TransferResultDto
 }
 
 // ─── Mapeamento domínio → DTO ─────────────────────────────────────────────
@@ -349,4 +361,12 @@ fun TransferResult.toDto(competitions: List<GameCompetition> = emptyList(), toda
 
     is TransferResult.TransferLimitReached ->
         TransferResultDto.TransferLimitReached(playerId = playerId.value, limit = limit)
+
+    is TransferResult.PlayerRefused -> TransferResultDto.PlayerRefused(
+        playerId = playerId.value,
+        reason = refusal.reason,
+        demandedSalary = refusal.demandedSalary.cents,
+        minYears = refusal.minYears,
+        maxYears = refusal.maxYears,
+    )
 }

@@ -24,6 +24,10 @@ export function useBuyPlayer() {
         toast.success(`${result.player.name} contratado!`, { id: BUY_RESULT_TOAST })
         qc.invalidateQueries({ queryKey: clubKey(vars.clubId) })
         qc.invalidateQueries({ queryKey: marketKey })
+      } else if (result.type === 'PlayerRefused') {
+        // A recusa do jogador (issue #138) aparece no modal da oferta, com o
+        // pedido dele — um toast por cima só repetiria o texto.
+        toast.dismiss(BUY_RESULT_TOAST)
       } else {
         toast.error(transferErrorMessage(result), { id: BUY_RESULT_TOAST })
         // Lock otimista do clube (issue #89): nada foi aplicado, mas o clube em

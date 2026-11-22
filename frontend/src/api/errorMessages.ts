@@ -8,6 +8,7 @@ import { MIN_STADIUM_EXPANSION_SEATS } from './queries/useExpandStadium'
 import type { TransferOfferResult, TransferResult } from '../domain/types'
 import { offerStatusLabel, expiryReasonLabel } from '../domain/offers'
 import { registrationLimitMessage, windowClosedMessage } from '../domain/transferWindow'
+import { refusalMessage } from '../domain/contractOffers'
 
 /** Mensagens por `code` estável do ErrorResponse (não pela mensagem livre). */
 const MESSAGES: Record<string, string> = {
@@ -23,6 +24,8 @@ const MESSAGES: Record<string, string> = {
   // Lock otimista do clube (issue #89): nada foi aplicado.
   CLUB_WRITE_CONFLICT: 'O clube foi alterado por outra operação ao mesmo tempo. Confira os dados e tente de novo.',
   OFFER_NOT_FOUND: 'Proposta não encontrada.',
+  // Termos pessoais malformados (issue #138).
+  INVALID_CONTRACT_OFFER: 'Termos inválidos — salário entre zero e US$ 100 milhões e multa, se houver, positiva.',
   FORBIDDEN: 'Você não é dono do clube desta operação.',
   NOT_FOUND: 'Recurso não encontrado.',
   MALFORMED_REQUEST: 'Requisição inválida — os dados enviados não puderam ser lidos.',
@@ -78,6 +81,9 @@ export function transferErrorMessage(result: Exclude<TransferResult, { type: 'Su
       return windowClosedMessage(result.nextOpens)
     case 'TransferLimitReached':
       return registrationLimitMessage(result.limit)
+    // Termos pessoais recusados (issue #138).
+    case 'PlayerRefused':
+      return refusalMessage(result)
   }
 }
 
@@ -143,5 +149,7 @@ export function offerErrorMessage(
         : windowClosedMessage(result.nextOpens)
     case 'TransferLimitReached':
       return registrationLimitMessage(result.limit)
+    case 'PlayerRefused':
+      return refusalMessage(result)
   }
 }

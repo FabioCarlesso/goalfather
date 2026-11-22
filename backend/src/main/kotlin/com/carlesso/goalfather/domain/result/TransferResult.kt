@@ -5,6 +5,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.rules.PlayerResponse
 import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.serialization.LocalDateSerializer
 import kotlinx.serialization.SerialName
@@ -63,4 +64,13 @@ sealed interface TransferResult {
     @Serializable
     @SerialName("TransferLimitReached")
     data class TransferLimitReached(val playerId: PlayerId, val limit: RegistrationLimit) : TransferResult
+
+    /**
+     * O jogador recusou os termos pessoais oferecidos na compra (issue #138):
+     * nada foi aplicado — caixa, elenco e mercado ficam como estavam. A recusa
+     * traz o motivo e o que ele aceitaria.
+     */
+    @Serializable
+    @SerialName("PlayerRefused")
+    data class PlayerRefused(val playerId: PlayerId, val refusal: PlayerResponse.Refuses) : TransferResult
 }

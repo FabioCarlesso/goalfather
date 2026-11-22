@@ -56,6 +56,17 @@ class TransferOfferEntity(
 
     @Column(name = "expiry_reason", length = 24)
     var expiryReason: String? = null,
+
+    // Termos pessoais aceitos pelo jogador (issue #138, V26). Nulos em
+    // proposta anterior à issue.
+    @Column(name = "contract_salary")
+    var contractSalary: Long? = null,
+
+    @Column(name = "contract_years")
+    var contractYears: Int? = null,
+
+    @Column(name = "contract_release_clause")
+    var contractReleaseClause: Long? = null,
 ) {
     companion object {
         /** Único status com saída — a condição de todo UPDATE de transição. */
