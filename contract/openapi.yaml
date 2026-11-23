@@ -508,26 +508,74 @@ paths:
     get:
       tags: [Market]
       operationId: listMarket
-      summary: Jogadores disponíveis no mercado
+      summary: Buscar no pool de jogadores livres
+      description: |
+        O pool de livres do mundo (issue #139): quem teve o contrato vencido,
+        quem a IA dispensou, quem foi vendido na venda rápida e o mercado
+        inicial. Filtros, ordenação e paginação são do servidor — o pool tem
+        centenas de jogadores. Parâmetro inválido é 400 `INVALID_MARKET_QUERY`.
       parameters:
         - name: position
           in: query
           required: false
           description: Filtra por posição
           schema: { $ref: '#/components/schemas/Position' }
+        - name: nationality
+          in: query
+          required: false
+          description: Código FIFA da nacionalidade (ex. `BRA`)
+          schema: { type: string, pattern: '^[A-Z]{3}$', example: BRA }
+        - name: minAge
+          in: query
+          required: false
+          schema: { type: integer, minimum: 15, maximum: 50 }
+        - name: maxAge
+          in: query
+          required: false
+          schema: { type: integer, minimum: 15, maximum: 50 }
+        - name: minValue
+          in: query
+          required: false
+          description: Valor de mercado mínimo (centavos de USD)
+          schema: { type: integer, format: int64, minimum: 0 }
+        - name: maxValue
+          in: query
+          required: false
+          description: Valor de mercado máximo (centavos de USD)
+          schema: { type: integer, format: int64, minimum: 0 }
         - name: maxPrice
           in: query
           required: false
-          description: Preço máximo de compra
-          schema: { type: integer, minimum: 0 }
+          description: Taxa de compra máxima (centavos de USD)
+          schema: { type: integer, format: int64, minimum: 0 }
+        - name: q
+          in: query
+          required: false
+          description: Trecho do nome, sem diferenciar maiúsculas nem acentos
+          schema: { type: string }
+        - name: sort
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/MarketSort'
+        - name: dir
+          in: query
+          required: false
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
       responses:
         '200':
-          description: Lista de jogadores disponíveis
+          description: Uma página do pool, já filtrada e ordenada
           content:
             application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/MarketEntry' }
+              schema: { $ref: '#/components/schemas/MarketPage' }
         '400':
           $ref: '#/components/responses/BadRequest'
 
@@ -2175,8 +2223,35 @@ components:
           type: integer
           format: int64
           description: |
-            Preço de compra (em centavos de USD). Para quem foi anunciado pelo
-            mercado, 125% do `player.marketValue` de referência (issue #135).
+            Taxa de compra (em centavos de USD). Zero para o livre do pool —
+            contrato vencido, dispensado pela IA ou do mercado inicial (issue
+            #139). Só quem foi vendido na venda rápida tem taxa: 125% do
+            `player.marketValue` de referência (issue #135), para vender e
+            recontratar não dar lucro.
+
+    MarketPage:
+      description: |
+        Uma página da busca no pool de livres (issue #139). `page` começa em 0;
+        `totalPages` é ao menos 1 (a página 0 de uma busca vazia existe, sem
+        itens).
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MarketEntry' }
+        page:       { type: integer, minimum: 0 }
+        size:       { type: integer, minimum: 1, maximum: 100 }
+        totalItems: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 1 }
+
+    MarketSort:
+      description: |
+        Critério de ordenação da busca do mercado. `value` é o valor de
+        mercado de referência (`player.marketValue`). Empate cai no nome e
+        depois no id, sempre crescentes.
+      type: string
+      enum: [price, value, overall, age]
 
     TransferResult:
       description: |
@@ -3236,7 +3311,7 @@ components:
         (promoção/rebaixamento aplicados, rodada 1 + tabelas zeradas) antes
         de emitir.
       type: object
-      required: [type, season, champion, standings, retirements, boardReviews]
+      required: [type, season, champion, standings, retirements, youthPromotions, boardReviews]
       properties:
         type:     { type: string, enum: [SeasonFinished] }
         season:   { type: integer, description: Ano da temporada encerrada }
@@ -3251,6 +3326,13 @@ components:
             Aposentadorias da virada (issue #55), de TODOS os clubes — cabe ao
             cliente filtrar o que interessa ao técnico.
           items: { $ref: '#/components/schemas/Retirement' }
+        youthPromotions:
+          type: array
+          description: |
+            Garotos que subiram da base na virada (issue #139): de 2 a 4 por
+            clube, com nome e nacionalidade do país do clube, de TODOS os
+            clubes — cabe ao cliente filtrar o do técnico.
+          items: { $ref: '#/components/schemas/YouthPromotion' }
         cupChampion:
           $ref: '#/components/schemas/CupClub'
           description: |
@@ -3267,15 +3349,22 @@ components:
 
     Retirement:
       description: |
-        Um jogador pendurou as chuteiras na virada de temporada e a base do
-        clube assumiu a vaga (issue #55). A reposição é 1:1 — elenco que só
-        encolhe acabaria em time incompleto.
+        Um jogador pendurou as chuteiras na virada de temporada (issue #55).
+        Desde a #139 a base não repõe 1:1: os garotos vêm à parte, em
+        `YouthPromotion`.
       type: object
-      required: [clubId, retired, promoted]
+      required: [clubId, retired]
       properties:
-        clubId:   { type: integer, format: int64 }
-        retired:  { $ref: '#/components/schemas/Player' }
-        promoted: { $ref: '#/components/schemas/Player' }
+        clubId:  { type: integer, format: int64 }
+        retired: { $ref: '#/components/schemas/Player' }
+
+    YouthPromotion:
+      description: Um garoto que subiu da base ao elenco na virada de temporada (issue #139).
+      type: object
+      required: [clubId, player]
+      properties:
+        clubId: { type: integer, format: int64 }
+        player: { $ref: '#/components/schemas/Player' }
 
     RoundFinance:
       description: |

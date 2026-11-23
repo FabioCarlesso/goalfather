@@ -13,10 +13,14 @@ import {
   YOUNG_MAX_AGE,
   YOUTH_AGE_MAX,
   YOUTH_AGE_MIN,
+  YOUTH_INTAKE_MAX,
+  YOUTH_INTAKE_MIN,
   YOUTH_SALARY_CENTS,
   ageBandOf,
   ageSquadOneSeason,
+  youthIntake,
 } from './engine'
+import { WORLD_COUNTRIES, mockPlayerName } from './world'
 import type { Player } from '../domain/types'
 
 const guy = (
@@ -43,6 +47,9 @@ const guy = (
   availability: { type: 'Available' }, suspensions: [],
   star: overall >= 82,
 })
+
+const BRAZIL = WORLD_COUNTRIES.BRA
+const NAME = (rng: MulberryRng) => mockPlayerName(BRAZIL, rng)
 
 /** Sorteios repetidos: as asserções de faixa são propriedades, não um caso. */
 const seeds = Array.from({ length: 200 }, (_, i) => i + 1)
@@ -107,7 +114,7 @@ describe('idade e aposentadoria', () => {
     expect(squad.map((p) => p.age)).toEqual([21, 29])
   })
 
-  it('veterano de overall baixo sai do elenco e a base assume a vaga', () => {
+  it('veterano de overall baixo sai do elenco sem reposição 1:1 (issue 139)', () => {
     const squad = [
       guy(1, 25, 80, 30_000_00),
       guy(2, 38, RETIREMENT_MAX_OVERALL - 15, 12_000_00, 'GK'), // aposenta
@@ -116,17 +123,25 @@ describe('idade e aposentadoria', () => {
 
     const turn = ageSquadOneSeason(squad, new MulberryRng(9))
 
-    // O elenco NÃO encolhe: quem sai é reposto na mesma posição.
-    expect(turn.squad).toHaveLength(3)
-    expect(turn.squad.map((p) => p.id)).not.toContain(2)
-    expect(turn.retirements).toHaveLength(1)
-    const [retirement] = turn.retirements
-    expect(retirement!.retired.id).toBe(2)
-    expect(retirement!.promoted.position).toBe('GK')
-    expect(retirement!.promoted.age).toBeGreaterThanOrEqual(YOUTH_AGE_MIN)
-    expect(retirement!.promoted.age).toBeLessThanOrEqual(YOUTH_AGE_MAX)
-    expect(retirement!.promoted.salary).toBe(YOUTH_SALARY_CENTS)
-    expect(retirement!.promoted.overall).toBeLessThan(retirement!.retired.overall)
+    expect(turn.squad.map((p) => p.id)).toEqual([1, 3])
+    expect(turn.retirements.map((r) => r.retired.id)).toEqual([2])
+  })
+
+  it('a base sobe de 2 a 4 garotos na posição mais carente (issue 139)', () => {
+    const squad = Array.from({ length: 11 }, (_, i) => guy(i + 1, 25, 70))
+    for (const seed of seeds) {
+      const youths = youthIntake(squad, new MulberryRng(seed), (slot) => 900 + slot, undefined, BRAZIL, NAME)
+      expect(youths.length).toBeGreaterThanOrEqual(YOUTH_INTAKE_MIN)
+      expect(youths.length).toBeLessThanOrEqual(YOUTH_INTAKE_MAX)
+      for (const y of youths) {
+        expect(y.age).toBeGreaterThanOrEqual(YOUTH_AGE_MIN)
+        expect(y.age).toBeLessThanOrEqual(YOUTH_AGE_MAX)
+        expect(y.salary).toBe(YOUTH_SALARY_CENTS)
+        expect(y.position).not.toBe('MF') // 11 meias: o garoto vem de outra posição
+      }
+    }
+    // Clube humano cheio não recebe ninguém.
+    expect(youthIntake(squad, new MulberryRng(1), (s) => s, undefined, BRAZIL, NAME, 11)).toEqual([])
   })
 
   it('veterano que ainda rende segue jogando', () => {
@@ -145,14 +160,17 @@ describe('idade e aposentadoria', () => {
   })
 
   it('vinte temporadas seguidas não esvaziam o elenco', () => {
-    // Regressão do achado da review: sem promoção da base, um elenco todo da
-    // mesma idade zerava por volta da décima primeira temporada.
+    // Regressão do achado da review: sem a base, um elenco todo da mesma idade
+    // zerava por volta da décima primeira temporada. Desde a #139 a base sobe
+    // de 2 a 4 garotos por ano, haja aposentadoria ou não.
     let squad = Array.from({ length: 11 }, (_, i) => guy(i + 1, 25, 70))
 
     for (let season = 2026; season <= 2045; season++) {
-      squad = ageSquadOneSeason(squad, new MulberryRng(season), 1, (slot) => season * 1_000 + slot).squad
-      expect(squad).toHaveLength(11)
+      const aged = ageSquadOneSeason(squad, new MulberryRng(season), 1).squad
+      squad = [...aged, ...youthIntake(aged, new MulberryRng(season + 7), (slot) => season * 1_000 + slot, undefined, BRAZIL, NAME)]
+      expect(squad.length).toBeGreaterThanOrEqual(11)
     }
+    expect(squad.some((p) => p.id <= 11)).toBe(false)
   })
 })
 

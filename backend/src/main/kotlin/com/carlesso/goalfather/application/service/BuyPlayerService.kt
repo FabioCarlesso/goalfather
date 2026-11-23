@@ -8,7 +8,6 @@ import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.ContractOffer
-import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.domain.rules.MAX_SQUAD_SIZE
@@ -87,7 +86,7 @@ class BuyPlayerService(
 
         // O clube pode ter mudado desde a leitura (issue #89) — ex.: a virada da
         // rodada creditou bilheteria. Aí o `save` não grava nada, mas o jogador
-        // JÁ saiu do mercado no claim acima: devolvê-lo com o mesmo preço é a
+        // JÁ saiu do mercado no claim acima: devolvê-lo como estava é a
         // compensação que impede o jogador de sumir (fora do mercado e fora de
         // qualquer elenco). Sem retry automático: o débito é sobre o caixa que
         // o técnico viu, então a decisão de tentar de novo volta para ele.
@@ -97,7 +96,9 @@ class BuyPlayerService(
                 TransferResult.Success(club = saved.club, player = signed)
             }
             is ClubSaveResult.Conflict -> {
-                marketRepo.add(MarketEntry(player = entry.player, price = entry.price))
+                // A entrada original, com preço E temporadas sem clube (issue
+                // #139): recriá-la zeraria o contador da aposentadoria no pool.
+                marketRepo.add(entry)
                 TransferResult.Conflict(saved.clubId)
             }
         }

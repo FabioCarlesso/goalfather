@@ -382,6 +382,7 @@ Critério de "swap pronto" de um endpoint: o teste E2E (Playwright) da tela pass
 **Mundo do pack no modo real (issue #131):** o backend do profile `e2e` monta o mundo a partir do pack reduzido `data/world/e2e/v1` (Série A e Série B com 6 clubes cada, Copa do Brasil com esses 12, Premier League com 4), e o mundo dos mocks (`src/mocks/world.ts`) tem a mesma forma, com os mesmos nomes de clubes e ligas. Elencos, atributos, salários e preços são GERADOS pelo backend e não batem com os do mock, por isso as specs leem nomes e valores da tela em vez de fixá-los. Duas diferenças de dado que as specs toleram:
 - o calendário real intercala rodadas de liga entre as fases da copa numa ordem que o mock não reproduz (`cup.spec` joga os encaixes até chegar à fase que quer afirmar);
 - o elenco real nasce perto do limite de 25 jogadores, então o `market.spec` trata "Elenco cheio" como fim das compras.
+- os livres do pool real saem sem taxa (issue #139), então o teste "comprar acima do caixa" do `market.spec` se pula no modo real: só os 4 livres do mock têm preço.
 
 Duas armadilhas de ambiente: a porta do Vite precisa estar em `app.cors.allowed-origins` do backend (padrão `localhost:5173`; um `E2E_PORT` diferente faz todo cadastro falhar com 403). E, se o Node resolver `localhost` para IPv6 e o Spring escutar só em IPv4, aponte o proxy com `E2E_BACKEND_URL=http://127.0.0.1:8080`.
 

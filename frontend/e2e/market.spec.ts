@@ -21,14 +21,16 @@ test.describe('Market flow', () => {
     const cash = page.getByText(/^Caixa:/)
     await expect(cash).toContainText('US$')
     const cashBefore = await cash.textContent()
+    // Livre do pool sai sem taxa (issue #139): aí o caixa não muda na compra.
+    const free = (await page.getByRole('list', { name: 'Jogadores à venda' }).getByRole('listitem').first().textContent())?.includes('sem taxa')
 
     await offerContract(page, buyButtons.first())
 
     // Sucesso de negócio: toast disparado pelo useBuyPlayer.
     await expect(page.getByText(/contratado!/)).toBeVisible({ timeout: 10_000 })
-    // O jogador comprado sai da lista do mercado e o caixa do topo é debitado.
+    // O jogador comprado sai da lista do mercado e, se tinha taxa, o caixa do topo é debitado.
     await expect(buyButtons).toHaveCount(before - 1)
-    await expect(cash).not.toHaveText(cashBefore ?? '')
+    if (!free) await expect(cash).not.toHaveText(cashBefore ?? '')
   })
 
   test('comprar acima do caixa continua possível e a recusa vem do backend', async ({ page }) => {
@@ -37,6 +39,9 @@ test.describe('Market flow', () => {
     await expect(buyButtons.first().or(page.getByText('Nenhum jogador disponível'))).toBeVisible()
     const cash = page.getByText(/^Caixa:/)
     await expect(cash).toContainText('US$')
+    // Sem ninguém com taxa (o pool real sai de graça, issue #139), nada fica acima do caixa.
+    const priced = page.getByRole('list', { name: 'Jogadores à venda' }).getByRole('listitem').filter({ hasNotText: 'sem taxa' })
+    test.skip((await priced.count()) === 0, 'todos os livres saem sem taxa')
 
     // Gasta o caixa nos mais baratos (ordem padrão) até alguém ficar caro demais.
     // Espera lista e caixa atualizarem antes de reavaliar, senão compraria a mais.
@@ -48,13 +53,14 @@ test.describe('Market flow', () => {
       const count = await buyButtons.count()
       if (count <= 1) break
       const cashBefore = (await cash.textContent()) ?? ''
+      const free = (await page.getByRole('list', { name: 'Jogadores à venda' }).getByRole('listitem').first().textContent())?.includes('sem taxa')
       await offerContract(page, buyButtons.first())
       // Ou a lista encolhe (compra feita) ou o backend recusa por elenco cheio.
       await expect
         .poll(async () => (await squadFull.isVisible()) || (await buyButtons.count()) === count - 1, { timeout: 10_000 })
         .toBe(true)
       if (await squadFull.isVisible()) break
-      await expect(cash).not.toHaveText(cashBefore)
+      if (!free) await expect(cash).not.toHaveText(cashBefore)
     }
     test.skip((await overCash.count()) === 0, 'ninguém acima do caixa com o estado atual do mercado e do elenco')
 

@@ -108,7 +108,7 @@ describe('MarketPage (issue #111)', () => {
 
   describe('ordenação', () => {
     it.each([
-      ['Preço', [RAMIRES, PACHECO, APARICIO, VIDIGAL]],
+      ['Taxa', [RAMIRES, PACHECO, APARICIO, VIDIGAL]],
       ['OVR', [RAMIRES, PACHECO, APARICIO, VIDIGAL]],
       ['Idade', [PACHECO, VIDIGAL, APARICIO, RAMIRES]],
     ])('ordena por %s nos dois sentidos', async (label, ascending) => {
@@ -121,7 +121,8 @@ describe('MarketPage (issue #111)', () => {
 
       await user.click(screen.getByRole('button', { name: 'Ordem: crescente' }))
       await screen.findByRole('button', { name: 'Ordem: decrescente' })
-      expect(shownNames()).toEqual([...ascending].reverse())
+      // A ordem vem do servidor (issue #139): espera a página nova chegar.
+      await waitFor(() => expect(shownNames()).toEqual([...ascending].reverse()))
     })
 
     it('grava ordenação e sentido na URL, omitindo os padrões', async () => {
@@ -211,7 +212,7 @@ describe('MarketPage (issue #111)', () => {
 
       await waitFor(() => expect(search()).toContain('pos=FW'))
       expect(search()).toContain('q=vi')
-      expect(shownNames()).toEqual([VIDIGAL])
+      await waitFor(() => expect(shownNames()).toEqual([VIDIGAL]))
 
       await user.clear(field)
       await waitFor(() => expect(search()).not.toContain('q='))
@@ -234,11 +235,76 @@ describe('MarketPage (issue #111)', () => {
     })
 
     it('mercado vazio mantém a mensagem própria, sem controles', async () => {
-      server.use(http.get('/api/market', () => HttpResponse.json([])))
+      server.use(
+        http.get('/api/market', () => HttpResponse.json({ items: [], page: 0, size: 20, totalItems: 0, totalPages: 1 })),
+      )
       renderMarket()
 
       expect(await screen.findByText('Nenhum jogador disponível no momento.')).toBeInTheDocument()
       expect(screen.queryByLabelText('Buscar por nome')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('busca do servidor (issue #139)', () => {
+    it('nacionalidade, idade e valor viram parâmetros da busca e voltam à 1ª página', async () => {
+      const user = userEvent.setup()
+      const requests: URLSearchParams[] = []
+      server.events.on('request:start', ({ request }) => {
+        const url = new URL(request.url)
+        if (url.pathname === '/api/market') requests.push(url.searchParams)
+      })
+      // Página além do fim: a busca vem vazia, e a tela oferece limpar os filtros.
+      renderMarket('/market?p=2')
+      await screen.findByText('Nenhum jogador encontrado.')
+      expect(requests.at(-1)?.get('page')).toBe('1')
+
+      await user.selectOptions(screen.getByLabelText('Idade'), 'Até 21')
+      await waitFor(() => expect(search()).toBe('?age=sub21'))
+      await user.selectOptions(screen.getByLabelText('Valor de mercado'), 'Acima de US$ 250 mil')
+      await waitFor(() => expect(search()).toBe('?age=sub21&val=acima250k'))
+
+      const last = requests.at(-1)
+      expect(last?.get('maxAge')).toBe('21')
+      expect(last?.get('minValue')).toBe(String(250_000_00))
+      expect(last?.get('page')).toBe('0')
+      expect(await screen.findByText('Nenhum jogador encontrado.')).toBeInTheDocument()
+      server.events.removeAllListeners()
+    })
+
+    it('filtra pela nacionalidade escolhida entre os países do mundo', async () => {
+      const user = userEvent.setup()
+      renderMarket()
+      await screen.findByText(VIDIGAL)
+
+      const nationality = screen.getByLabelText('Nacionalidade')
+      await waitFor(() => expect(within(nationality).getByRole('option', { name: 'Inglaterra' })).toBeInTheDocument())
+      await user.selectOptions(nationality, 'Inglaterra')
+
+      await waitFor(() => expect(search()).toBe('?nat=ENG'))
+      expect(await screen.findByText('Nenhum jogador encontrado.')).toBeInTheDocument()
+    })
+
+    it('navega entre as páginas que o servidor devolve', async () => {
+      const user = userEvent.setup()
+      const pages = [
+        { items: state.market.slice(0, 2), page: 0, size: 2, totalItems: 4, totalPages: 2 },
+        { items: state.market.slice(2, 4), page: 1, size: 2, totalItems: 4, totalPages: 2 },
+      ]
+      server.use(
+        http.get('/api/market', ({ request }) => {
+          const page = Number(new URL(request.url).searchParams.get('page'))
+          return HttpResponse.json(pages[page])
+        }),
+      )
+      renderMarket()
+
+      expect(await screen.findByText('Página 1 de 2 · 4 jogadores')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+      await user.click(screen.getByRole('button', { name: 'Próxima' }))
+
+      expect(await screen.findByText('Página 2 de 2 · 4 jogadores')).toBeInTheDocument()
+      expect(search()).toBe('?p=2')
+      expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
     })
   })
 

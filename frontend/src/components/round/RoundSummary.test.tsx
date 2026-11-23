@@ -73,16 +73,12 @@ function seasonEnd(boardReview: BoardReview): SeasonFinishedEvent {
     champion: row(1, 3, 'Líder', 40),
     standings: [table],
     retirements: [
-      {
-        clubId: MY_CLUB,
-        retired: { id: 50, name: 'Veterano', age: 37, overall: 60 },
-        promoted: { id: 51, name: 'Garoto', age: 17, overall: 55 },
-      },
-      {
-        clubId: 9,
-        retired: { id: 60, name: 'De outro clube', age: 36, overall: 58 },
-        promoted: { id: 61, name: 'Outro garoto', age: 17, overall: 50 },
-      },
+      { clubId: MY_CLUB, retired: { id: 50, name: 'Veterano', age: 37, overall: 60 } },
+      { clubId: 9, retired: { id: 60, name: 'De outro clube', age: 36, overall: 58 } },
+    ],
+    youthPromotions: [
+      { clubId: MY_CLUB, player: { id: 51, name: 'Garoto', age: 17, overall: 55 } },
+      { clubId: 9, player: { id: 61, name: 'Outro garoto', age: 16, overall: 50 } },
     ],
     boardReviews: [boardReview],
   } as SeasonFinishedEvent
@@ -171,13 +167,16 @@ describe('RoundSummary (issue #112)', () => {
     expect(screen.queryByRole('list', { name: 'Três primeiros da liga' })).not.toBeInTheDocument()
   })
 
-  it('fim de temporada: campeão, veredito da diretoria e aposentadorias do clube', () => {
+  it('fim de temporada: campeão, veredito da diretoria, aposentadorias e base do clube', () => {
     renderSummary({ outcome: { ...outcome, season: seasonEnd(review({ type: 'TargetMet', bonusCents: 100_000_00 })) } })
 
     expect(screen.getByText('Líder é o campeão!')).toBeInTheDocument()
     expect(screen.getByTestId('board-review')).toHaveTextContent(/Meta cumprida/)
     expect(screen.getByText('Veterano')).toBeInTheDocument()
     expect(screen.queryByText('De outro clube')).not.toBeInTheDocument()
+    // Base (issue #139): só os garotos do clube do técnico.
+    expect(screen.getByRole('list', { name: 'Garotos da base' })).toHaveTextContent('Garoto (17a, OVR 55)')
+    expect(screen.queryByText(/Outro garoto/)).not.toBeInTheDocument()
     // Sem demissão, o veredito fica depois do resultado da partida.
     const order = within(screen.getByTestId('round-summary'))
       .getAllByRole('heading', { level: 3 })

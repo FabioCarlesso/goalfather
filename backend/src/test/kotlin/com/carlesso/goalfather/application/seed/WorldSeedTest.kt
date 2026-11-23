@@ -20,8 +20,7 @@ import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.domain.rules.squadMarketValue
 import java.time.LocalDate
 import com.carlesso.goalfather.domain.rules.TICKET_PRICE_RANGE
-import com.carlesso.goalfather.domain.rules.marketListingPrice
-import com.carlesso.goalfather.domain.rules.marketReferenceValue
+import com.carlesso.goalfather.domain.model.Money
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
 import kotlin.test.Test
@@ -202,12 +201,12 @@ class WorldSeedTest {
     }
 
     @Test
-    fun `mercado inicial tem livres gerados com preco de tabela`() {
+    fun `mercado inicial tem livres gerados sem taxa`() {
         assertEquals(16, world.market.size)
         world.market.forEach { entry ->
-            // Livre de verdade (issue #136), anunciado pelo valor de referência (#135).
+            // Livre de verdade (issue #136): sai sem taxa (issue #139).
             assertEquals(Employment.FreeAgent, entry.player.employment)
-            assertEquals(marketListingPrice(marketReferenceValue(entry.player)), entry.price)
+            assertEquals(Money.ZERO, entry.price)
             assertTrue(entry.player.age in 20..32)
         }
         assertEquals(setOf(Position.GK, Position.CB, Position.MF, Position.FW), world.market.map { it.player.position }.toSet())

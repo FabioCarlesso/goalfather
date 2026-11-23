@@ -14,9 +14,14 @@ import com.carlesso.goalfather.application.port.out.LeagueRepository
 import com.carlesso.goalfather.application.port.out.MarketRepository
 import com.carlesso.goalfather.application.service.today
 import com.carlesso.goalfather.domain.model.ClubId
+import com.carlesso.goalfather.domain.model.CountryCode
+import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.PlayerId
 import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.result.TransferResult
+import com.carlesso.goalfather.domain.rules.MarketFilter
+import com.carlesso.goalfather.domain.rules.MarketSort
+import com.carlesso.goalfather.domain.rules.search
 import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.serialization.json.Json
 import org.springframework.http.ResponseEntity
@@ -46,11 +51,54 @@ class MarketController(
     private val json: Json,
 ) {
 
+    /**
+     * Busca no pool de livres (issue #139): filtros, ordenação e paginação no
+     * servidor — o pool tem centenas de jogadores, e filtrar só a página
+     * carregada mentiria para o técnico. A regra (o que casa, em que ordem)
+     * é a função pura `search` do domínio; aqui só se traduz a query string.
+     */
     @GetMapping
     suspend fun listMarket(
         @RequestParam(required = false) position: Position?,
+        @RequestParam(required = false) nationality: String?,
+        @RequestParam(required = false) minAge: Int?,
+        @RequestParam(required = false) maxAge: Int?,
+        @RequestParam(required = false) minValue: Long?,
+        @RequestParam(required = false) maxValue: Long?,
         @RequestParam(required = false) maxPrice: Long?,
-    ) = marketRepo.findAll(position, maxPrice).map { it.toDto() }
+        @RequestParam(required = false) q: String?,
+        @RequestParam(required = false, defaultValue = "price") sort: String,
+        @RequestParam(required = false, defaultValue = "asc") dir: String,
+        @RequestParam(required = false, defaultValue = "0") page: Int,
+        @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
+    ): ResponseEntity<Any> {
+        val marketSort = MARKET_SORTS[sort] ?: return invalidQuery("sort deve ser um de ${MARKET_SORTS.keys}: '$sort'")
+        if (dir != "asc" && dir != "desc") return invalidQuery("dir deve ser asc ou desc: '$dir'")
+        if (page < 0) return invalidQuery("page não pode ser negativa: $page")
+        if (size !in 1..MAX_PAGE_SIZE) return invalidQuery("size deve estar em 1..$MAX_PAGE_SIZE: $size")
+        if (listOfNotNull(minValue, maxValue, maxPrice).any { it < 0 }) return invalidQuery("valores e preço não podem ser negativos")
+        // `runCatching` transforma o `require` do value class num resultado:
+        // código malformado vira 400, não 500.
+        val country = nationality?.let { code ->
+            runCatching { CountryCode(code) }.getOrNull() ?: return invalidQuery("nationality deve ser um código FIFA de 3 letras: '$code'")
+        }
+        val filter = MarketFilter(
+            position = position,
+            nationality = country,
+            minAge = minAge,
+            maxAge = maxAge,
+            minValue = minValue?.let(::Money),
+            maxValue = maxValue?.let(::Money),
+            maxPrice = maxPrice?.let(::Money),
+            query = q,
+            sort = marketSort,
+            descending = dir == "desc",
+        )
+        return json.okJson(marketRepo.findAll().search(filter, page, size).toDto())
+    }
+
+    private fun invalidQuery(message: String): ResponseEntity<Any> =
+        ResponseEntity.badRequest().body(ErrorResponse(code = "INVALID_MARKET_QUERY", message = message))
 
     @PostMapping("/buy")
     suspend fun buy(
@@ -107,5 +155,18 @@ class MarketController(
         } else {
             null
         }
+    }
+
+    private companion object {
+        const val DEFAULT_PAGE_SIZE = 20
+        const val MAX_PAGE_SIZE = 100
+
+        /** O valor do contrato (`MarketSort` no YAML) → o critério do domínio. */
+        val MARKET_SORTS = mapOf(
+            "price" to MarketSort.PRICE,
+            "value" to MarketSort.VALUE,
+            "overall" to MarketSort.OVERALL,
+            "age" to MarketSort.AGE,
+        )
     }
 }

@@ -37,8 +37,6 @@ import com.carlesso.goalfather.domain.rules.PlayerAttributes
 import com.carlesso.goalfather.domain.rules.WorldStart
 import com.carlesso.goalfather.domain.rules.initialCash
 import com.carlesso.goalfather.domain.rules.initialTicketPrice
-import com.carlesso.goalfather.domain.rules.marketListingPrice
-import com.carlesso.goalfather.domain.rules.marketReferenceValue
 import com.carlesso.goalfather.domain.rules.pricedFor
 import com.carlesso.goalfather.domain.rules.signContract
 import com.carlesso.goalfather.domain.rules.signed
@@ -365,8 +363,9 @@ private val MARKET_CLUB = ClubId(0)
  * GERADOS — o pack só tem jogadores com clube, e a tela de mercado não pode
  * nascer vazia. Nomes do gerador da #88 (brasileiros), nacionalidade do país
  * da primeira liga do catálogo (o Brasil no MVP), atributos do
- * [AttributeGenerator] na força dessa liga com reputação mediana, idade de 20
- * a 32 e preço de tabela ([marketListingPrice]). Seed fixa por vaga.
+ * [AttributeGenerator] na força dessa liga com reputação mediana e idade de 20
+ * a 32. Seed fixa por vaga. Sem taxa (issue #139): livre de verdade, como os
+ * que o vencimento de contrato solta no pool.
  */
 private fun freeAgents(
     year: Int,
@@ -385,10 +384,9 @@ private fun freeAgents(
         val player = AttributeGenerator(random)
             .generate(position, age, strength, Reputation.AVERAGE)
             .toPlayer(PlayerId(slot.toLong()), names[index], position, age, country, secondNationality = null)
-        // Livre de verdade (issue #136), anunciado pelo valor de referência do
-        // mercado (issue #135): contrato pleno, liga de referência — a mesma
-        // régua do anúncio de um jogador vendido.
-        MarketEntry(player = player, price = marketListingPrice(marketReferenceValue(player)))
+        // Livre de verdade (issue #136): sai sem taxa (issue #139). Quem paga
+        // preço de anúncio é só o jogador vendido na venda rápida.
+        MarketEntry(player = player, price = Money.ZERO)
     }
 }
 

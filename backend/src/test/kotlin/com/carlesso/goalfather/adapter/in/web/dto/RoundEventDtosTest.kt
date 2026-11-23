@@ -12,6 +12,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Division
 import com.carlesso.goalfather.domain.model.Retirement
+import com.carlesso.goalfather.domain.model.YouthPromotion
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
@@ -64,17 +65,15 @@ class RoundEventDtosTest {
 
     // Veterano craque (star = true) e garoto da base (star = false): o par
     // prova que `star` é materializado, não um default constante.
-    private val retirement = Retirement(
-        clubId = ClubId(1),
-        retired = makePlayer(10, overall = 88, age = 37),
-        promoted = makePlayer(11, overall = 55, age = 18),
-    )
+    private val retirement = Retirement(clubId = ClubId(1), retired = makePlayer(10, overall = 88, age = 37))
+    private val youth = YouthPromotion(clubId = ClubId(1), player = makePlayer(11, overall = 55, age = 17))
 
     private val seasonFinished = RoundEvent.SeasonFinished(
         season = 2026,
         champion = row,
         standings = listOf(standings),
         retirements = listOf(retirement),
+        youthPromotions = listOf(youth),
         cupChampion = CupClub(ClubId(3), "Gama"),
         boardReviews = listOf(
             BoardReview(
@@ -91,9 +90,11 @@ class RoundEventDtosTest {
     fun `SeasonFinished emite star nos jogadores das aposentadorias`() {
         val retirementJson = encode(seasonFinished).getValue("retirements").jsonArray.single().jsonObject
 
-        assertEquals(setOf("clubId", "retired", "promoted"), retirementJson.keys)
+        assertEquals(setOf("clubId", "retired"), retirementJson.keys)
         assertEquals("true", retirementJson.getValue("retired").jsonObject.string("star"))
-        assertEquals("false", retirementJson.getValue("promoted").jsonObject.string("star"))
+        val youthJson = encode(seasonFinished).getValue("youthPromotions").jsonArray.single().jsonObject
+        assertEquals(setOf("clubId", "player"), youthJson.keys)
+        assertEquals("false", youthJson.getValue("player").jsonObject.string("star"))
     }
 
     @Test
@@ -102,7 +103,7 @@ class RoundEventDtosTest {
 
         assertEquals("SeasonFinished", encoded.string("type"))
         assertEquals(
-            setOf("type", "season", "champion", "standings", "retirements", "cupChampion", "boardReviews"),
+            setOf("type", "season", "champion", "standings", "retirements", "youthPromotions", "cupChampion", "boardReviews"),
             encoded.keys,
         )
         assertEquals(setOf("id", "name"), encoded.getValue("cupChampion").jsonObject.keys)
@@ -246,7 +247,8 @@ class RoundEventDtosTest {
         val trainingEvents = encode(roundFinished).getValue("training").jsonArray.single().jsonObject
             .getValue("events").jsonArray.map { it.jsonObject }
 
-        val players = listOf(retirementJson.getValue("retired"), retirementJson.getValue("promoted"))
+        val youthJson = encode(seasonFinished).getValue("youthPromotions").jsonArray.single().jsonObject
+        val players = listOf(retirementJson.getValue("retired"), youthJson.getValue("player"))
             .map { it.jsonObject } + trainingEvents.map { it.getValue("player").jsonObject }
 
         for (player in players) {

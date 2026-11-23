@@ -15,6 +15,7 @@ import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.model.leagueOf
 import com.carlesso.goalfather.domain.result.TransferResult
 import com.carlesso.goalfather.domain.rules.DEFAULT_TICKET_PRICE_CENTS
+import com.carlesso.goalfather.domain.rules.MarketPage
 import com.carlesso.goalfather.domain.rules.RefusalReason
 import com.carlesso.goalfather.domain.rules.RegistrationLimit
 import com.carlesso.goalfather.domain.rules.competitionOf
@@ -335,6 +336,24 @@ fun Club.toDto(competitions: List<GameCompetition> = emptyList(), today: LocalDa
 }
 
 fun MarketEntry.toDto(): MarketEntryDto = MarketEntryDto(player = player.toDto(), price = price.cents)
+
+/** Uma página da busca do mercado (issue #139) — espelha `MarketPage` do contrato. */
+@Serializable
+data class MarketPageDto(
+    val items: List<MarketEntryDto>,
+    val page: Int,
+    val size: Int,
+    val totalItems: Int,
+    val totalPages: Int,
+)
+
+fun MarketPage.toDto(): MarketPageDto = MarketPageDto(
+    items = items.map { it.toDto() },
+    page = page,
+    size = size,
+    totalItems = totalItems,
+    totalPages = totalPages,
+)
 
 /**
  * `when` exaustivo sobre o sealed de domínio — variante nova em

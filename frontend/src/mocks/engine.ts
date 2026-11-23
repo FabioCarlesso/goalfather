@@ -718,11 +718,13 @@ export type AgeBand = keyof typeof AGE_BAND_DELTA
 export const ageBandOf = (age: number): AgeBand =>
   age <= YOUNG_MAX_AGE ? 'YOUNG' : age <= PEAK_MAX_AGE ? 'PEAK' : 'VETERAN'
 
-export const YOUTH_AGE_MIN = 17
-export const YOUTH_AGE_MAX = 19
-export const YOUTH_OVERALL_GAP_MIN = 8
-export const YOUTH_OVERALL_GAP_MAX = 18
-export const YOUTH_MIN_OVERALL = 40
+// Base (issue #139): de 2 a 4 garotos de 16 a 18 anos por clube e temporada.
+export const YOUTH_INTAKE_MIN = 2
+export const YOUTH_INTAKE_MAX = 4
+export const YOUTH_AGE_MIN = 16
+export const YOUTH_AGE_MAX = 18
+/** Idade do auge em que o potencial do garoto é medido (`POTENTIAL_AGE` no backend). */
+export const POTENTIAL_AGE = 24
 export const YOUTH_SALARY_CENTS = 600_00
 
 const shift = (value: number, delta: number): number => Math.min(99, Math.max(0, value + delta))
@@ -735,64 +737,27 @@ const drawInt = (rng: MulberryRng, min: number, max: number): number =>
   min + Math.floor(rng.next() * (max - min + 1))
 
 /**
- * Envelhece o elenco UMA temporada e promove a base no lugar de quem se
- * aposentou. A reposição é 1:1 (mesma regra do backend): elenco que só encolhe
- * acabaria em time incompleto.
+ * Envelhece o elenco UMA temporada e tira quem se aposentou. Desde a issue
+ * #139 a base não repõe 1:1: os garotos sobem à parte, em `youthIntake`, e a
+ * IA segura o tamanho do elenco dispensando quem vence (`contractTurnover`).
  *
  * O backend modela o desfecho de cada jogador num `sealed interface
  * AgingOutcome` (evoluiu/estagnou/regrediu/aposentou); aqui o mock só precisa
  * do elenco resultante e da lista de aposentadorias.
- *
- * `youthId` gera o id do garoto promovido — no backend a fórmula é
- * `youthPlayerId(clube, temporada, vaga)`; o mock tem um clube só.
  */
 export function ageSquadOneSeason(
   squad: Player[],
   rng: MulberryRng,
   clubId = 1,
-  youthId: (slot: number) => number = (slot) => 900_000 + slot,
-  // Contrato de quem sobe da base (issue #136); sem ele, o garoto sobe sem.
-  youthContract?: Contract,
 ): { squad: Player[]; retirements: Retirement[] } {
   const next: Player[] = []
   const retirements: Retirement[] = []
-
-  const promote = (retired: Player): Player => {
-    const slot = retirements.length + 1
-    const overall = Math.max(
-      YOUTH_MIN_OVERALL,
-      Math.min(99, retired.overall - drawInt(rng, YOUTH_OVERALL_GAP_MIN, YOUTH_OVERALL_GAP_MAX)),
-    )
-    // O contrato do aposentado não passa para o garoto: ele sobe com o dele.
-    const base: Player = { ...retired }
-    delete base.contract
-    return {
-      ...base,
-      ...(youthContract ? { contract: youthContract } : {}),
-      id: youthId(slot),
-      name: `Cria da base ${slot}`,
-      overall,
-      pace: overall,
-      shooting: overall,
-      passing: overall,
-      defending: overall,
-      salary: YOUTH_SALARY_CENTS,
-      age: drawInt(rng, YOUTH_AGE_MIN, YOUTH_AGE_MAX),
-      goals: 0,
-      yellowCards: 0,
-      redCards: 0,
-      star: overall >= 82,
-    }
-  }
 
   for (const p of squad) {
     // Quem já bateu o teto de carreira sai sem sortear delta nenhum — mas ganha
     // o ano, como no backend, para o extrato mostrar a idade em que parou.
     if (p.age >= FORCED_RETIREMENT_AGE) {
-      const retired = { ...p, age: Math.min(50, p.age + 1) }
-      const promoted = promote(retired)
-      next.push(promoted)
-      retirements.push({ clubId, retired, promoted })
+      retirements.push({ clubId, retired: { ...p, age: Math.min(50, p.age + 1) } })
       continue
     }
 
@@ -809,16 +774,73 @@ export function ageSquadOneSeason(
       defending: shift(p.defending, delta),
     }
 
-    if (retires(aged)) {
-      const promoted = promote(aged)
-      next.push(promoted)
-      retirements.push({ clubId, retired: aged, promoted })
-    } else {
-      next.push(aged)
-    }
+    if (retires(aged)) retirements.push({ clubId, retired: aged })
+    else next.push(aged)
   }
 
   return { squad: next, retirements }
+}
+
+/** Proporção ideal de cada posição no elenco (`IDEAL_SQUAD_SHARE` no backend). */
+const IDEAL_SQUAD_SHARE: Record<Position, number> = { GK: 3 / 25, CB: 8 / 25, MF: 8 / 25, FW: 6 / 25 }
+
+/** A posição de maior déficit, contando quem vai entrar (empate: goleiro primeiro). */
+export function neediestPosition(squad: readonly Pick<Player, 'position'>[]): Position {
+  const size = squad.length + 1
+  const deficit = (position: Position) =>
+    IDEAL_SQUAD_SHARE[position] * size - squad.filter((p) => p.position === position).length
+  return (['GK', 'CB', 'MF', 'FW'] as const).reduce((best, p) => (deficit(p) > deficit(best) ? p : best))
+}
+
+/**
+ * Garotos da base de UM clube na virada (issue #139), espelho simplificado de
+ * `youthIntake` do backend: de 2 a 4, na posição mais carente, com o overall do
+ * potencial (média dos 11 melhores) menos o que o envelhecimento ainda vai
+ * devolver (+1 por ano até os 24). O nome vem de [nameFor] (as listas por país
+ * de `mocks/world.ts`, que importa deste módulo e por isso entra por parâmetro).
+ */
+export function youthIntake(
+  squad: Player[],
+  rng: MulberryRng,
+  idFor: (slot: number) => number,
+  contract: Contract | undefined,
+  nationality: Player['nationality'],
+  nameFor: (rng: MulberryRng) => string,
+  maxSquadSize?: number,
+): Player[] {
+  const drawn = drawInt(rng, YOUTH_INTAKE_MIN, YOUTH_INTAKE_MAX)
+  const count = maxSquadSize === undefined ? drawn : Math.min(drawn, Math.max(0, maxSquadSize - squad.length))
+  const best = squad.map((p) => p.overall).sort((a, b) => b - a).slice(0, 11)
+  const potential = best.length === 0 ? 50 : Math.round(best.reduce((a, b) => a + b, 0) / best.length)
+  const youths: Player[] = []
+  for (let slot = 1; slot <= count; slot++) {
+    const age = drawInt(rng, YOUTH_AGE_MIN, YOUTH_AGE_MAX)
+    const overall = Math.max(30, Math.min(99, potential - (POTENTIAL_AGE - age) + drawInt(rng, -4, 4)))
+    const name = nameFor(rng)
+    youths.push({
+      id: idFor(slot),
+      name,
+      position: neediestPosition([...squad, ...youths]),
+      overall,
+      pace: overall,
+      shooting: overall,
+      passing: overall,
+      defending: overall,
+      stamina: 100,
+      salary: YOUTH_SALARY_CENTS,
+      age,
+      goals: 0,
+      yellowCards: 0,
+      redCards: 0,
+      availability: { type: 'Available' },
+      suspensions: [],
+      star: overall >= 82,
+      marketValue: 0,
+      nationality,
+      ...(contract ? { contract } : {}),
+    })
+  }
+  return youths
 }
 
 /** Sessão do departamento médico — espelha `applyMedicalTreatment` do backend. */
@@ -1077,6 +1099,10 @@ export const salaryForValueOf = (value: number): number =>
 /**
  * Vencimentos na virada da temporada [endedSeason] de um clube: o humano perde
  * quem venceu (sai livre); a IA renova pelo mesmo salário (provisório, #143).
+ * Com `targetSize` (issue #139), a IA só renova até o elenco caber nele e
+ * libera o excedente — os de pior overall projetado primeiro (o jovem soma o
+ * que falta até os 24; o trintão perde 1 por ano passado dos 30), sem deixar
+ * posição abaixo do mínimo.
  */
 export function contractTurnover(
   squad: Player[],
@@ -1084,21 +1110,48 @@ export function contractTurnover(
   countryCode: string,
   human: boolean,
   rng: MulberryRng,
+  targetSize?: number,
 ): { squad: Player[]; released: Player[] } {
   const seasonEnd = seasonEndOf(endedSeason, countryCode)
   const expires = (p: Player): boolean => p.contract !== undefined && p.contract.end <= seasonEnd
   if (human) {
     return { squad: squad.filter((p) => !expires(p)), released: squad.filter(expires).map(releasedPlayer) }
   }
+  const leaving = surplus(squad, squad.filter(expires), targetSize === undefined ? 0 : squad.length - targetSize)
   const start = seasonStartOf(endedSeason + 1, countryCode)
   return {
-    squad: squad.map((p) =>
-      expires(p)
-        ? { ...p, contract: contractFor(start, endedSeason + 1, typicalContractSeasons(p.age, rng), countryCode) }
-        : p,
-    ),
-    released: [],
+    squad: squad
+      .filter((p) => !leaving.has(p.id))
+      .map((p) =>
+        expires(p)
+          ? { ...p, contract: contractFor(start, endedSeason + 1, typicalContractSeasons(p.age, rng), countryCode) }
+          : p,
+      ),
+    released: squad.filter((p) => leaving.has(p.id)).map(releasedPlayer),
   }
+}
+
+const MIN_PER_POSITION: Record<Position, number> = { GK: 2, CB: 5, MF: 5, FW: 3 }
+
+const projectedOverall = (p: Pick<Player, 'overall' | 'age'>): number =>
+  p.overall + Math.max(0, POTENTIAL_AGE - p.age) - Math.max(0, p.age - 30)
+
+function surplus(squad: Player[], expiring: Player[], excess: number): Set<number> {
+  const leaving = new Set<number>()
+  if (excess <= 0) return leaving
+  const counts = new Map<Position, number>()
+  for (const p of squad) counts.set(p.position, (counts.get(p.position) ?? 0) + 1)
+  const candidates = expiring.toSorted(
+    (a, b) => projectedOverall(a) - projectedOverall(b) || b.age - a.age || a.id - b.id,
+  )
+  for (const p of candidates) {
+    if (leaving.size === excess) break
+    const left = counts.get(p.position) ?? 0
+    if (left <= MIN_PER_POSITION[p.position]) continue
+    counts.set(p.position, left - 1)
+    leaving.add(p.id)
+  }
+  return leaving
 }
 
 /**

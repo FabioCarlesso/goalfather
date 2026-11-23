@@ -2,11 +2,16 @@ import { useEffect, useRef } from 'react'
 import { Button } from './ui/Button'
 import { POSITION_ABBR, POSITION_LABEL } from '../domain/formations'
 import {
+  isMarketAgeBand,
   isMarketSortKey,
+  isMarketValueBand,
+  MARKET_AGE_BANDS,
   MARKET_POSITIONS,
   MARKET_SORT_OPTIONS,
+  MARKET_VALUE_BANDS,
   type MarketFilterState,
 } from '../domain/marketFilters'
+import type { Country } from '../domain/types'
 
 const FIELD_CLASS =
   'rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100'
@@ -16,10 +21,12 @@ interface MarketFilterBarProps {
   onChange: (patch: Partial<MarketFilterState>) => void
   /** Digitação da busca: o chamador não deve criar uma entrada de histórico por tecla. */
   onQueryChange: (query: string) => void
+  /** Países que dá para escolher na nacionalidade (os do mundo, issue #139). */
+  countries: Country[]
 }
 
-/** Chips de posição, busca e ordenação do Mercado. Apresentação pura. */
-export function MarketFilterBar({ filters, onChange, onQueryChange }: MarketFilterBarProps) {
+/** Chips de posição, filtros, busca e ordenação do Mercado. Apresentação pura. */
+export function MarketFilterBar({ filters, onChange, onQueryChange, countries }: MarketFilterBarProps) {
   return (
     <div className="mb-4 space-y-3">
       <div role="group" aria-label="Filtrar por posição" className="flex flex-wrap gap-2">
@@ -36,6 +43,54 @@ export function MarketFilterBar({ filters, onChange, onQueryChange }: MarketFilt
             {POSITION_ABBR[position]}
           </Chip>
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="text-xs text-slate-400">
+          Nacionalidade
+          <select
+            value={filters.nationality ?? ''}
+            onChange={(e) => onChange({ nationality: e.target.value || null })}
+            className={`mt-1 block ${FIELD_CLASS}`}
+          >
+            <option value="">Todas</option>
+            {countries.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-slate-400">
+          Idade
+          <select
+            value={filters.age ?? ''}
+            onChange={(e) => onChange({ age: isMarketAgeBand(e.target.value) ? e.target.value : null })}
+            className={`mt-1 block ${FIELD_CLASS}`}
+          >
+            <option value="">Todas</option>
+            {MARKET_AGE_BANDS.map(({ key, label }) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-slate-400">
+          Valor de mercado
+          <select
+            value={filters.value ?? ''}
+            onChange={(e) => onChange({ value: isMarketValueBand(e.target.value) ? e.target.value : null })}
+            className={`mt-1 block ${FIELD_CLASS}`}
+          >
+            <option value="">Todos</option>
+            {MARKET_VALUE_BANDS.map(({ key, label }) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">

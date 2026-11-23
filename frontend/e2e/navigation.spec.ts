@@ -24,7 +24,10 @@ async function receivePendingOffer(page: Page) {
     const json = { 'Content-Type': 'application/json' }
     const mine = { Authorization: `Bearer ${localStorage.getItem('gf:token')}` }
     const theirs = { Authorization: `Bearer ${rival!.token}` }
-    const market = (await (await fetch('/api/market', { headers: mine })).json()) as { player: { id: number } }[]
+    // Um goleiro (issue #139): o alvo da proposta é o 1º de linha do elenco, e no
+    // backend real o recém-comprado (id baixo) viria primeiro — já registrado na
+    // janela, a proposta por ele daria `TransferLimitReached`.
+    const market = ((await (await fetch('/api/market?position=GK', { headers: mine })).json()) as { items: { player: { id: number } }[] }).items
     await fetch('/api/market/buy', {
       method: 'POST',
       headers: { ...json, ...mine },

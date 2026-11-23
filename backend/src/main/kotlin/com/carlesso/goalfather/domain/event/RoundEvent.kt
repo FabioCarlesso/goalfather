@@ -3,6 +3,7 @@ package com.carlesso.goalfather.domain.event
 import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.CupClub
 import com.carlesso.goalfather.domain.model.Retirement
+import com.carlesso.goalfather.domain.model.YouthPromotion
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.domain.model.Standings
@@ -62,8 +63,9 @@ sealed interface RoundEvent {
      * aplicados, rodada 1 + tabelas zeradas) antes de emitir.
      *
      * `retirements` conta a outra história da virada (issue #55): quem
-     * pendurou as chuteiras e qual garoto da base assumiu a vaga. Vem de TODOS
-     * os clubes — cabe ao cliente filtrar o que interessa ao técnico.
+     * pendurou as chuteiras. `youthPromotions` (issue #139), os garotos que
+     * subiram da base. Os dois vêm de TODOS os clubes — cabe ao cliente
+     * filtrar o que interessa ao técnico.
      *
      * `cupChampion` (issue #61) é o vencedor da copa mata-mata da temporada
      * que acabou — o mesmo que vai para o histórico. Nulo quando não houve
@@ -78,6 +80,7 @@ sealed interface RoundEvent {
         val champion: StandingRow,
         val standings: List<Standings>,
         val retirements: List<Retirement> = emptyList(),
+        val youthPromotions: List<YouthPromotion> = emptyList(),
         val cupChampion: CupClub? = null,
         val boardReviews: List<BoardReview> = emptyList(),
     ) : RoundEvent

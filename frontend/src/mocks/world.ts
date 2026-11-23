@@ -135,6 +135,17 @@ function balancedDeltas(count: number, rng: MulberryRng): number[] {
 const clamp = (v: number): number => Math.min(99, Math.max(1, v))
 
 /**
+ * Um nome plausível do país (issue #139, base de cada virada): mesmas listas
+ * do elenco sintético. Exportado para o `youthIntake` do engine, que não pode
+ * importar daqui (este módulo já importa do engine).
+ */
+export function mockPlayerName(country: Country, rng: MulberryRng): string {
+  const firsts = FIRST_NAMES[country.code] ?? FIRST_NAMES.BRA!
+  const lasts = LAST_NAMES[country.code] ?? LAST_NAMES.BRA!
+  return `${rng.pick(firsts)} ${rng.pick(lasts)}`
+}
+
+/**
  * Elenco sintético de 11 jogadores de um clube. Ids `clube × 1000 + vaga`;
  * nomes únicos no mundo (`taken` é atualizado aqui). A nacionalidade é a do
  * clube, senão o limite de estrangeiros (issue #130) barraria metade do time.
