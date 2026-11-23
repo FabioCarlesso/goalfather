@@ -175,7 +175,8 @@ class BuyPlayerServiceTest {
         // otimista, sem compensação o jogador sumiria (fora do mercado e de
         // qualquer elenco).
         val target = makePlayer(99, Position.FW, overall = 88)
-        val entry = MarketEntry(player = target, price = 400_000_00.cents)
+        // Com tempo de pool (issue #139): a compensação não pode zerar o contador.
+        val entry = MarketEntry(player = target, price = 400_000_00.cents, seasonsWithoutClub = 1)
         coEvery { clubRepo.findById(ClubId(1)) } returns makeClub(cash = 1_000_000_00)
         coEvery { marketRepo.findEntry(PlayerId(99)) } returns entry
         coEvery { marketRepo.claim(PlayerId(99)) } returns true
