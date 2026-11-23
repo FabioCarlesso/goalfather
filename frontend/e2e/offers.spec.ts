@@ -76,7 +76,9 @@ test.describe('Offers flow', () => {
     // O rival compra um jogador para poder vender sem ficar abaixo do mínimo.
     const bought = await page.evaluate(async ({ rival, contract }) => {
       const auth = { Authorization: `Bearer ${rival.token}` }
-      const market = ((await (await fetch('/api/market', { headers: auth })).json()) as { items: { player: { id: number } }[] }).items
+      // Um goleiro (issue #139): a proposta vai ao 1º de linha do rival, e o
+      // recém-comprado (já registrado na janela) não pode ser ele.
+      const market = ((await (await fetch('/api/market?position=GK', { headers: auth })).json()) as { items: { player: { id: number } }[] }).items
       if (market.length === 0) return false
       const res = await fetch('/api/market/buy', {
         method: 'POST',
