@@ -4,6 +4,7 @@ import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Countries
 import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.Money
+import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.SeasonSpan
 import com.carlesso.goalfather.domain.model.cents
 import com.carlesso.goalfather.test.makeClub
@@ -146,6 +147,58 @@ class ContractRulesTest {
         assertEquals(10_000_00.cents, renewed.salary)
         // Determinístico: a mesma virada renova igual.
         assertEquals(turn, contractTurnover(club, endedSeason = 2026))
+    }
+
+    @Test
+    fun `IA com alvo de tamanho libera o excedente que vence pelo pior projetado (issue 139)`() {
+        val end2026 = LocalDate.of(2026, 12, 31)
+        fun expiring(id: Long, position: Position, overall: Int, age: Int) =
+            makePlayer(id, position = position, overall = overall, age = age, clubId = 2).copy(employment = contract(end2026, club = 2))
+        // 2 GK, 5 CB, 6 MF e 3 FW com contrato longo + 4 que vencem: 20 jogadores, alvo 18.
+        val base = listOf(Position.GK to 2, Position.CB to 5, Position.MF to 6, Position.FW to 3)
+            .flatMap { (position, n) -> List(n) { position } }
+            .mapIndexed { i, position -> makePlayer(100L + i, position = position, overall = 70, clubId = 2) }
+        val club = makeClub(id = 2).copy(
+            squad = base +
+                expiring(1, Position.MF, overall = 60, age = 31) + // projetado 59: renova
+                expiring(2, Position.MF, overall = 58, age = 19) + // projetado 63: renova, ainda vai evoluir
+                expiring(3, Position.CB, overall = 55, age = 33) + // projetado 52: sai (6º zagueiro)
+                expiring(4, Position.GK, overall = 50, age = 35), // projetado 45: sai (3º goleiro)
+        )
+
+        val turn = contractTurnover(club, endedSeason = 2026, targetSize = 18)
+
+        // Os dois piores projetados (o GK de 45 e o CB de 52) saem: tirá-los não
+        // deixa a posição abaixo do mínimo (2 GK, 5 CB).
+        assertEquals(setOf(3L, 4L), turn.released.map { it.id.value }.toSet())
+        assertTrue(turn.released.all { it.isFreeAgent })
+        assertEquals(18, turn.squad.size)
+        assertEquals(setOf(1L, 2L), turn.renewed.map { it.id.value }.toSet(), "quem não sobra renova")
+    }
+
+    @Test
+    fun `IA nao dispensa abaixo do minimo da posicao nem alem do excedente (issue 139)`() {
+        val end2026 = LocalDate.of(2026, 12, 31)
+        // Dois goleiros, os dois vencendo e péssimos: a posição já está no mínimo.
+        val keepers = (1L..2L).map {
+            makePlayer(it, position = Position.GK, overall = 40, age = 34, clubId = 2).copy(employment = contract(end2026, club = 2))
+        }
+        val outfield = (10L..20L).map { makePlayer(it, overall = 70, clubId = 2) }
+        val club = makeClub(id = 2).copy(squad = keepers + outfield)
+
+        val turn = contractTurnover(club, endedSeason = 2026, targetSize = 10)
+
+        assertTrue(turn.released.isEmpty(), "sem goleiro sobrando, ninguém sai")
+        assertEquals(13, turn.squad.size)
+        // Dentro do alvo, a IA renova todo mundo, como antes da #139.
+        assertEquals(2, contractTurnover(club, endedSeason = 2026, targetSize = 13).renewed.size)
+    }
+
+    @Test
+    fun `projecao valoriza o jovem e desconta o veterano`() {
+        assertEquals(66, makePlayer(1, overall = 60, age = 18).projectedOverall())
+        assertEquals(60, makePlayer(1, overall = 60, age = 27).projectedOverall())
+        assertEquals(57, makePlayer(1, overall = 60, age = 33).projectedOverall())
     }
 
     @Test

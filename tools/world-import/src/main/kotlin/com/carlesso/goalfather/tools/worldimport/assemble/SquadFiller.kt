@@ -1,6 +1,7 @@
 package com.carlesso.goalfather.tools.worldimport.assemble
 
 import com.carlesso.goalfather.adapter.out.worlddata.dto.PlayerDto
+import com.carlesso.goalfather.application.seed.dsl.namePoolFor
 import java.time.LocalDate
 import kotlin.random.Random
 

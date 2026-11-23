@@ -2,12 +2,19 @@ package com.carlesso.goalfather.application.port.out
 
 import com.carlesso.goalfather.domain.model.MarketEntry
 import com.carlesso.goalfather.domain.model.PlayerId
-import com.carlesso.goalfather.domain.model.Position
 
 interface MarketRepository {
-    suspend fun findAll(position: Position? = null, maxPrice: Long? = null): List<MarketEntry>
+    /** O pool inteiro. A busca do técnico filtra e pagina em cima dele (`search`). */
+    suspend fun findAll(): List<MarketEntry>
     suspend fun findEntry(playerId: PlayerId): MarketEntry?
     suspend fun add(entry: MarketEntry)
+
+    /**
+     * Regrava preço e temporadas sem clube de entradas que JÁ estão no mercado
+     * (issue #139, envelhecimento do pool). Não mexe no jogador — esse vai por
+     * `PlayerRepository.saveFreeAgents` — e ignora quem já saiu.
+     */
+    suspend fun updateAll(entries: List<MarketEntry>)
 
     /**
      * Remove a entrada do mercado de forma atômica e resolve a corrida de

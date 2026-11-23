@@ -7,6 +7,7 @@ import com.carlesso.goalfather.domain.model.Employment
 import com.carlesso.goalfather.domain.model.Money
 import com.carlesso.goalfather.domain.model.Player
 import com.carlesso.goalfather.domain.model.PlayerId
+import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.SeasonSpan
 import com.carlesso.goalfather.domain.model.world.LeagueStrength
 import java.time.LocalDate
@@ -208,11 +209,15 @@ data class ContractTurnover(
  * - **Clube da IA:** renova sozinho, pelo mesmo salário, por uma duração
  *   típica da idade ([typicalContractSeasons]). Provisório até a IA ativa
  *   (#143): sem isso os elencos da IA, que não compram ninguém, encolheriam a
- *   cada virada até não fechar um time.
+ *   cada virada até não fechar um time. Com [targetSize] (issue #139), renova
+ *   só até o elenco caber nele: a base sobe de 2 a 4 garotos por ano, e o
+ *   excedente sai livre ao mercado — os de pior [projectedOverall] primeiro,
+ *   sem deixar posição abaixo do mínimo ([MIN_PER_POSITION]). É o que segura
+ *   o tamanho do mundo ao longo das temporadas.
  *
  * A seed vem de fora ([renewalSeed]): a mesma virada dá as mesmas renovações.
  */
-fun contractTurnover(club: Club, endedSeason: Int): ContractTurnover {
+fun contractTurnover(club: Club, endedSeason: Int, targetSize: Int? = null): ContractTurnover {
     val span = club.contractSpan
     val seasonEnd = span.end(endedSeason)
     // `partition` divide a lista em duas por um predicado — o par (venceu, segue).
@@ -222,11 +227,61 @@ fun contractTurnover(club: Club, endedSeason: Int): ContractTurnover {
     if (club.ownerId != null) {
         return ContractTurnover(squad = staying, released = expiring.map { it.released() }, renewed = emptyList())
     }
-    val renewed = expiring.map { player -> player.renewedByAi(seasonEnd, endedSeason, span) }
+    val leaving = surplus(club.squad, expiring, excess = targetSize?.let { club.squad.size - it } ?: 0)
+    val renewed = expiring.filterNot { it.id in leaving }.map { player -> player.renewedByAi(seasonEnd, endedSeason, span) }
     val byId = renewed.associateBy { it.id }
     // Mantém a ordem do elenco: só troca o contrato de quem renovou.
-    return ContractTurnover(squad = club.squad.map { byId[it.id] ?: it }, released = emptyList(), renewed = renewed)
+    return ContractTurnover(
+        squad = club.squad.filterNot { it.id in leaving }.map { byId[it.id] ?: it },
+        released = expiring.filter { it.id in leaving }.map { it.released() },
+        renewed = renewed,
+    )
 }
+
+/**
+ * Até [excess] jogadores de [expiring] que a IA deixa sair, os de pior
+ * [projectedOverall] primeiro (desempate: o mais velho, depois o id). Pula
+ * quem deixaria a posição dele abaixo do [MIN_PER_POSITION] no [squad].
+ */
+private fun surplus(squad: List<Player>, expiring: List<Player>, excess: Int): Set<PlayerId> {
+    if (excess <= 0) return emptySet()
+    val counts = squad.groupingBy { it.position }.eachCount().toMutableMap()
+    val leaving = mutableSetOf<PlayerId>()
+    val candidates = expiring.sortedWith(
+        compareBy<Player> { it.projectedOverall() }.thenByDescending { it.age }.thenBy { it.id.value },
+    )
+    for (player in candidates) {
+        if (leaving.size == excess) break
+        val left = counts.getValue(player.position)
+        if (left <= MIN_PER_POSITION.getValue(player.position)) continue
+        counts[player.position] = left - 1
+        leaving += player.id
+    }
+    return leaving
+}
+
+/**
+ * O overall que a IA espera do jogador no auge: o jovem soma +1 por ano que
+ * falta até os 24 (o ganho médio do envelhecimento); o trintão perde 1 por ano
+ * passado dos 30. Sem isso a IA dispensaria todo garoto da base no primeiro
+ * vencimento — ele é sempre o pior do elenco aos 19.
+ */
+internal fun Player.projectedOverall(): Int =
+    overall + (PROJECTION_PEAK_AGE - age).coerceAtLeast(0) - (age - PROJECTION_DECLINE_AGE).coerceAtLeast(0)
+
+private const val PROJECTION_PEAK_AGE: Int = 24
+private const val PROJECTION_DECLINE_AGE: Int = 30
+
+/**
+ * O mínimo de cada posição que a IA mantém ao dispensar: dois goleiros e o
+ * suficiente para fechar e repor um 4-4-2.
+ */
+val MIN_PER_POSITION: Map<Position, Int> = mapOf(
+    Position.GK to 2,
+    Position.CB to 5,
+    Position.MF to 5,
+    Position.FW to 3,
+)
 
 private fun Player.renewedByAi(seasonEnd: LocalDate, endedSeason: Int, span: SeasonSpan): Player {
     // `contract` não é nulo aqui (só vence quem tem contrato): `requireNotNull`

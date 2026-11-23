@@ -24,7 +24,7 @@ async function receivePendingOffer(page: Page) {
     const json = { 'Content-Type': 'application/json' }
     const mine = { Authorization: `Bearer ${localStorage.getItem('gf:token')}` }
     const theirs = { Authorization: `Bearer ${rival!.token}` }
-    const market = (await (await fetch('/api/market', { headers: mine })).json()) as { player: { id: number } }[]
+    const market = ((await (await fetch('/api/market', { headers: mine })).json()) as { items: { player: { id: number } }[] }).items
     await fetch('/api/market/buy', {
       method: 'POST',
       headers: { ...json, ...mine },

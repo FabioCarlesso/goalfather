@@ -154,50 +154,24 @@ fun ageSquadOneSeason(squad: List<Player>, rng: Random): List<AgingOutcome> =
     squad.map { it.ageOneSeason(rng) }
 
 /**
- * Virada de temporada de um elenco: envelhece todo mundo e promove a base no
- * lugar de quem se aposentou.
+ * Virada de temporada de um elenco: envelhece todo mundo e tira quem se
+ * aposentou.
  *
- * **Por que a promoção existe:** sem ela o elenco só encolhe. Como os elencos
- * nascem com 11 jogadores, a primeira aposentadoria já deixaria o time
- * incompleto — e um clube da IA, que não compra ninguém, chegaria a zero em
- * poucas temporadas. A reposição 1:1 mantém o tamanho do elenco estável e é o
- * equivalente barato de uma categoria de base.
+ * Até a #139 a base repunha cada aposentado 1:1 aqui ("Cria da base N"). Agora
+ * a reposição é a entrada anual de garotos (`youthIntake`, de 2 a 4 por clube,
+ * com nome e nacionalidade do país), e o tamanho do elenco é segurado pela
+ * renovação da IA (`contractTurnover`) — então esta função só envelhece.
  *
- * A seed sai de [agingSeed]: mesma temporada + mesmo clube ⇒ mesma virada,
- * inclusive os garotos promovidos. [span] é a janela de temporada do clube
- * (issue #136): o garoto sobe já com contrato, que termina num fim de
- * temporada da liga dele.
+ * A seed sai de [agingSeed]: mesma temporada + mesmo clube ⇒ mesma virada.
  */
-fun ageSquadForSeason(squad: List<Player>, clubId: ClubId, season: Int, span: SeasonSpan): SquadSeasonTurn {
-    val rng = Random(agingSeed(season, clubId))
-    val outcomes = ageSquadOneSeason(squad, rng)
-
-    val next = mutableListOf<Player>()
-    val retirements = mutableListOf<Retirement>()
-    for (outcome in outcomes) {
-        when (outcome) {
-            is AgingOutcome.Retired -> {
-                // O slot é a posição do aposentado na fila de saídas: junto com
-                // clube e temporada é o que torna o id do garoto único.
-                val slot = retirements.size + 1
-                val youth = youthFor(
-                    retired = outcome.player,
-                    id = youthPlayerId(clubId, season, slot),
-                    slot = slot,
-                    rng = rng,
-                    contract = youthContract(clubId, season, span),
-                )
-                next += youth
-                retirements += Retirement(clubId, retired = outcome.player, promoted = youth)
-            }
-
-            is AgingOutcome.Evolved,
-            is AgingOutcome.Steady,
-            is AgingOutcome.Regressed,
-            -> next += outcome.player
-        }
-    }
-    return SquadSeasonTurn(squad = next, retirements = retirements)
+fun ageSquadForSeason(squad: List<Player>, clubId: ClubId, season: Int): SquadSeasonTurn {
+    val outcomes = ageSquadOneSeason(squad, Random(agingSeed(season, clubId)))
+    // `partition` divide em (aposentados, seguem) numa passada só.
+    val (retired, staying) = outcomes.partition { it is AgingOutcome.Retired }
+    return SquadSeasonTurn(
+        squad = staying.map { it.player },
+        retirements = retired.map { Retirement(clubId, retired = it.player) },
+    )
 }
 
 /** Elenco da temporada nova + as aposentadorias que aconteceram no caminho. */
@@ -206,50 +180,16 @@ data class SquadSeasonTurn(
     val retirements: List<Retirement>,
 )
 
-/** Faixa de idade de um garoto que sobe da base. */
-val YOUTH_AGE: IntRange = 17..19
-
-/**
- * O quanto o garoto entra ABAIXO do veterano que substituiu. Ele não repõe o
- * nível de imediato — mas está na faixa que mais evolui (`AgeBand.YOUNG`),
- * então vira aposta de médio prazo em vez de tapa-buraco.
- */
-val YOUTH_OVERALL_GAP: IntRange = 8..18
-
 /** Salário de quem sobe da base (US$ 600) — cabe em qualquer folha. `val`: [Money] não é `const`. */
 val YOUTH_SALARY_CENTS: Money = 600_00.cents
-
-/**
- * Garoto da base que assume a vaga do aposentado: mesma posição, idade de
- * formação e atributos abaixo dos dele.
- *
- * O nome é genérico de propósito — o domínio não conhece o nome do clube, e um
- * gerador de nomes de verdade pluga depois sem tocar na regra.
- */
-private fun youthFor(retired: Player, id: PlayerId, slot: Int, rng: Random, contract: Employment.UnderContract): Player {
-    val overall = (retired.overall - YOUTH_OVERALL_GAP.random(rng))
-        .coerceIn(YOUTH_MIN_OVERALL, Player.OVERALL_RANGE.last)
-    return Player(
-        id = id,
-        name = "Cria da base $slot",
-        position = retired.position,
-        overall = overall,
-        pace = overall,
-        shooting = overall,
-        passing = overall,
-        defending = overall,
-        employment = contract,
-        age = YOUTH_AGE.random(rng),
-    )
-}
 
 /**
  * Primeiro contrato profissional do garoto (issue #136): [YOUTH_CONTRACT_SEASONS]
  * temporadas a partir da [season] que começa, na janela [span] do clube, com o
  * salário de base. 3 temporadas cabem até no limite do menor de 18 — os
- * garotos sobem com 17 a 19 anos.
+ * garotos sobem com 16 a 18 anos (issue #139).
  */
-private fun youthContract(clubId: ClubId, season: Int, span: SeasonSpan): Employment.UnderContract =
+internal fun youthContract(clubId: ClubId, season: Int, span: SeasonSpan): Employment.UnderContract =
     Employment.UnderContract(
         clubId = clubId,
         salary = YOUTH_SALARY_CENTS,
@@ -259,9 +199,6 @@ private fun youthContract(clubId: ClubId, season: Int, span: SeasonSpan): Employ
 
 /** Duração do contrato de quem sobe da base: o máximo permitido ao menor. */
 const val YOUTH_CONTRACT_SEASONS: Int = MAX_MINOR_CONTRACT_SEASONS
-
-/** Piso do garoto: abaixo disto ele não seria jogador de elenco principal. */
-private const val YOUTH_MIN_OVERALL: Int = 40
 
 /**
  * Id do garoto promovido — determinístico, sem consultar o banco.

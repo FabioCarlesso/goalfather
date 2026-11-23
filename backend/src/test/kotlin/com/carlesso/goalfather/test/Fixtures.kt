@@ -19,6 +19,7 @@ import com.carlesso.goalfather.domain.model.Position
 import com.carlesso.goalfather.domain.model.Round
 import com.carlesso.goalfather.domain.model.Slot
 import com.carlesso.goalfather.domain.model.cents
+import com.carlesso.goalfather.domain.rules.NamePool
 import com.carlesso.goalfather.domain.rules.cupMatches
 
 /**
@@ -130,3 +131,12 @@ internal fun farMatchday(n: Int): Matchday = Matchday(GameWeek(2900 + n / 50, n 
  */
 internal fun cupRound(week: Int, season: Int, cup: Cup, clubs: Collection<Club>): Round =
     Round(matchday = md(week), season = season, matches = cupMatches(md(week), cup, clubs))
+
+/**
+ * Nomes de teste para a base (issue #139): "Garoto 1", "Garoto 2"… fora dos já
+ * usados. Os testes de domínio não dependem das listas de nomes do
+ * `application/seed/dsl` — a regra só pede um [NamePool].
+ */
+internal val TEST_NAMES: NamePool = NamePool { _, taken ->
+    generateSequence(1) { it + 1 }.map { "Garoto $it" }.filterNot { it in taken }
+}

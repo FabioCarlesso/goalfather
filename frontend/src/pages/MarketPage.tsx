@@ -11,11 +11,13 @@ import { useMyClubId } from '../auth/useMyClubId'
 import { formatMoney } from '../domain/formatters'
 import { POSITION_ABBR } from '../domain/formations'
 import {
-  applyMarketFilters,
+  DEFAULT_MARKET_FILTERS,
+  hasActiveMarketFilters,
   parseMarketFilters,
   toMarketSearchParams,
   type MarketFilterState,
 } from '../domain/marketFilters'
+import { useWorldCountries } from '../api/queries/useWorldCountries'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -31,7 +33,12 @@ const INITIAL_OFFER: ContractOffer = { salary: MIN_CONTRACT_SALARY_CENTS, years:
 
 export function MarketPage() {
   const myClubId = useMyClubId()
-  const market = useMarket()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filters = parseMarketFilters(searchParams)
+  // Busca do servidor (issue #139): filtros e página viram parâmetros da query.
+  const market = useMarket(filters)
+  // Opções de nacionalidade: os países do mundo. Sem eles, só "Todas".
+  const { data: worldCountries } = useWorldCountries()
   const { data: club } = useClub(myClubId)
   // Janela de transferência do clube (issue #137): comprar fora dela é recusado pelo backend.
   const { data: transferWindow } = useTransferWindow(myClubId)
@@ -42,8 +49,6 @@ export function MarketPage() {
   // Estado local de UI: o livre com o modal de oferta aberto e a última recusa dele (issue #138).
   const [signing, setSigning] = useState<MarketEntry | null>(null)
   const [refusal, setRefusal] = useState<PlayerRefused | null>(null)
-  const [searchParams, setSearchParams] = useSearchParams()
-  const filters = parseMarketFilters(searchParams)
 
   // Última mudança PEDIDA. O router aplica cada navegação numa transição, então
   // `filters` pode estar atrás dela: partir dele apagaria a mudança anterior, como
@@ -73,13 +78,16 @@ export function MarketPage() {
     )
   }
 
+  // Mudar qualquer filtro volta à 1ª página; só a navegação de página a mantém.
   const updateFilters = (patch: Partial<MarketFilterState>, options?: { replace: boolean }) => {
-    const next = { ...requestedFilters.current, ...patch }
+    const next = { ...requestedFilters.current, page: 0, ...patch }
     requestedFilters.current = next
     setSearchParams(toMarketSearchParams(next), options)
   }
 
-  const visible = applyMarketFilters(market.data, filters)
+  const page = market.data
+  const visible = page.items
+  const countries = worldCountries?.map((w) => w.country) ?? []
 
   const openOffer = (entry: MarketEntry) => {
     setRefusal(null)
@@ -111,7 +119,7 @@ export function MarketPage() {
         </p>
       </div>
 
-      {market.data.length === 0 ? (
+      {page.totalItems === 0 && !hasActiveMarketFilters(filters) ? (
         <EmptyState message="Nenhum jogador disponível no momento." />
       ) : (
         <>
@@ -119,6 +127,7 @@ export function MarketPage() {
             filters={filters}
             onChange={updateFilters}
             onQueryChange={(query) => updateFilters({ query }, { replace: true })}
+            countries={countries}
           />
 
           {visible.length === 0 ? (
@@ -127,12 +136,15 @@ export function MarketPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => updateFilters({ position: null, query: '' })}
+                onClick={() =>
+                  updateFilters({ ...DEFAULT_MARKET_FILTERS, sort: filters.sort, dir: filters.dir })
+                }
               >
                 Limpar filtros
               </Button>
             </div>
           ) : (
+            <>
             <ul aria-label="Jogadores à venda" className="space-y-2">
               {visible.map((entry) => (
                 <li
@@ -149,7 +161,10 @@ export function MarketPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-slate-100 font-mono">{formatMoney(entry.price)}</div>
+                    {/* Livre do pool sai sem taxa (issue #139); só o vendido na venda rápida tem. */}
+                    <div className="text-slate-100 font-mono">
+                      {entry.price === 0 ? 'sem taxa' : formatMoney(entry.price)}
+                    </div>
                     {/* Valor de mercado (issue #135): calculado pelo backend, só exibido. */}
                     <div className="text-xs text-text-muted">valor {formatMoney(entry.player.marketValue)}</div>
                     {/* Do mercado só sai livre (issue #136): sem contrato, sem salário —
@@ -173,6 +188,13 @@ export function MarketPage() {
                 </li>
               ))}
             </ul>
+            <MarketPagination
+              page={page.page}
+              totalPages={page.totalPages}
+              totalItems={page.totalItems}
+              onPage={(next) => updateFilters({ page: next })}
+            />
+            </>
           )}
         </>
       )}
@@ -186,7 +208,13 @@ export function MarketPage() {
           description={
             <p>
               Sem contrato: {signing.player.name} só assina se aceitar o salário e a duração.
-              Taxa ao mercado: <span className="font-mono text-slate-100">{formatMoney(signing.price)}</span>.
+              {signing.price === 0 ? (
+                'Sem taxa de transferência.'
+              ) : (
+                <>
+                  Taxa ao mercado: <span className="font-mono text-slate-100">{formatMoney(signing.price)}</span>.
+                </>
+              )}
             </p>
           }
           initialOffer={INITIAL_OFFER}
@@ -198,5 +226,34 @@ export function MarketPage() {
         />
       )}
     </section>
+  )
+}
+
+/** Navegação entre as páginas da busca. Apresentação pura: a página vem do backend. */
+function MarketPagination({
+  page,
+  totalPages,
+  totalItems,
+  onPage,
+}: {
+  page: number
+  totalPages: number
+  totalItems: number
+  onPage: (page: number) => void
+}) {
+  return (
+    <nav aria-label="Paginação do mercado" className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+      <p className="text-text-muted">
+        Página {page + 1} de {totalPages} · {totalItems} {totalItems === 1 ? 'jogador' : 'jogadores'}
+      </p>
+      <div className="flex gap-2">
+        <Button variant="secondary" size="sm" disabled={page === 0} onClick={() => onPage(page - 1)}>
+          Anterior
+        </Button>
+        <Button variant="secondary" size="sm" disabled={page + 1 >= totalPages} onClick={() => onPage(page + 1)}>
+          Próxima
+        </Button>
+      </div>
+    </nav>
   )
 }

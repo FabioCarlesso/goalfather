@@ -6,6 +6,7 @@ import com.carlesso.goalfather.domain.event.RoundEvent
 import com.carlesso.goalfather.domain.model.ClubId
 import com.carlesso.goalfather.domain.model.Matchday
 import com.carlesso.goalfather.domain.model.Retirement
+import com.carlesso.goalfather.domain.model.YouthPromotion
 import com.carlesso.goalfather.domain.model.StandingRow
 import com.carlesso.goalfather.test.makePlayer
 import io.mockk.every
@@ -165,7 +166,8 @@ class RoundWebSocketHandlerTest {
             season = 2026,
             champion = StandingRow(position = 1, clubId = ClubId(1), clubName = "Alfa"),
             standings = emptyList(),
-            retirements = listOf(Retirement(ClubId(1), makePlayer(10, overall = 90), makePlayer(11, overall = 50))),
+            retirements = listOf(Retirement(ClubId(1), makePlayer(10, overall = 90))),
+            youthPromotions = listOf(YouthPromotion(ClubId(1), makePlayer(11, overall = 50))),
         )
         val useCase = object : PlayRoundUseCase {
             override fun stream(matchday: Matchday) = flowOf<RoundEvent>(event)
@@ -180,7 +182,8 @@ class RoundWebSocketHandlerTest {
         assertEquals("SeasonFinished", payload.getValue("type").jsonPrimitive.content)
         val retirement = payload.getValue("retirements").jsonArray.single().jsonObject
         assertEquals("true", retirement.getValue("retired").jsonObject.getValue("star").jsonPrimitive.content)
-        assertEquals("false", retirement.getValue("promoted").jsonObject.getValue("star").jsonPrimitive.content)
+        val youth = payload.getValue("youthPromotions").jsonArray.single().jsonObject
+        assertEquals("false", youth.getValue("player").jsonObject.getValue("star").jsonPrimitive.content)
     }
 
     @Test

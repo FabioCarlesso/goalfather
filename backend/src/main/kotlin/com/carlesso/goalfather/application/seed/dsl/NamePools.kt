@@ -1,25 +1,22 @@
-package com.carlesso.goalfather.tools.worldimport.assemble
+package com.carlesso.goalfather.application.seed.dsl
 
-import com.carlesso.goalfather.application.seed.dsl.playerNames
+import com.carlesso.goalfather.domain.rules.NamePool
 import kotlin.random.Random
 
 /**
- * Nomes plausíveis por país para os jogadores GERADOS que completam elencos
- * curtos (issue #127).
+ * Nomes plausíveis por país para jogadores GERADOS: os que completam elencos
+ * curtos no importador (issue #127) e os jovens da base de cada virada (issue
+ * #139). Mora no backend desde a #139 — o importador compila junto do `main`
+ * e continua usando daqui.
  *
  * O Brasil reusa o gerador de nomes da #88 (`Random.playerNames`, em
- * `application/seed/dsl/SyntheticSquad.kt`). Os outros países usam listas
- * próprias com o MESMO esquema (prenome + sobrenome sorteados, distintos dos
- * já usados no clube). São nomes comuns, não de jogadores reais: a combinação
- * é aleatória.
+ * `SyntheticSquad.kt`). Os outros países usam listas próprias com o MESMO
+ * esquema (prenome + sobrenome sorteados, distintos dos já usados no clube).
+ * São nomes comuns, não de jogadores reais: a combinação é aleatória.
  *
- * `fun interface` é uma interface de um método só que aceita lambda no lugar
- * de uma classe — o equivalente a uma `@FunctionalInterface` do Java.
+ * O contrato [NamePool] é do domínio (a regra da base pede nomes sem saber de
+ * onde vêm); as listas são dado, e ficam aqui.
  */
-fun interface NamePool {
-    /** Fluxo infinito de nomes distintos entre si e fora de [taken]. */
-    fun names(random: Random, taken: Set<String>): Sequence<String>
-}
 
 /** Pool de listas: o mesmo `generateSequence` + `distinct` do gerador da #88. */
 private class ListPool(private val first: List<String>, private val last: List<String>) : NamePool {

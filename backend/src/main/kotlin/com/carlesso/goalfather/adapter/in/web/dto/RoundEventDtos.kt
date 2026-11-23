@@ -8,6 +8,7 @@ import com.carlesso.goalfather.domain.model.BoardObjective
 import com.carlesso.goalfather.domain.model.BoardReview
 import com.carlesso.goalfather.domain.model.BoardVerdict
 import com.carlesso.goalfather.domain.model.Retirement
+import com.carlesso.goalfather.domain.model.YouthPromotion
 import com.carlesso.goalfather.domain.model.RoundFinance
 import com.carlesso.goalfather.domain.model.TrainedAttribute
 import com.carlesso.goalfather.domain.model.TrainingFocus
@@ -45,12 +46,18 @@ data class RoundFinanceDto(
     val cupPrize: Long,
 )
 
-/** O jogador que saiu e o que subiu da base passam pelo `Player.toDto()` — com `star`. */
+/** O jogador que saiu passa pelo `Player.toDto()` — com `star`. */
 @Serializable
 data class RetirementDto(
     val clubId: Long,
     val retired: PlayerDto,
-    val promoted: PlayerDto,
+)
+
+/** Garoto que subiu da base na virada (issue #139). */
+@Serializable
+data class YouthPromotionDto(
+    val clubId: Long,
+    val player: PlayerDto,
 )
 
 /** Espelha o `oneOf` + `discriminator` de `TrainingEvent` no contrato. */
@@ -125,6 +132,7 @@ sealed interface RoundEventDto {
         val champion: StandingRowDto,
         val standings: List<StandingsDto>,
         val retirements: List<RetirementDto>,
+        val youthPromotions: List<YouthPromotionDto>,
         /** Ausente (não `null`) quando não houve campeão de copa — `explicitNulls = false`. */
         val cupChampion: CupClubDto? = null,
         val boardReviews: List<BoardReviewDto>,
@@ -143,8 +151,9 @@ fun RoundFinance.toDto(): RoundFinanceDto = RoundFinanceDto(
     cupPrize = cupPrize.cents,
 )
 
-fun Retirement.toDto(): RetirementDto =
-    RetirementDto(clubId = clubId.value, retired = retired.toDto(), promoted = promoted.toDto())
+fun Retirement.toDto(): RetirementDto = RetirementDto(clubId = clubId.value, retired = retired.toDto())
+
+fun YouthPromotion.toDto(): YouthPromotionDto = YouthPromotionDto(clubId = clubId.value, player = player.toDto())
 
 /** `when` exaustivo, sem `else`: desfecho de treino novo quebra a compilação aqui. */
 fun TrainingEvent.toDto(): TrainingEventDto = when (this) {
@@ -187,6 +196,7 @@ fun RoundEvent.toDto(): RoundEventDto = when (this) {
         champion = champion.toDto(),
         standings = standings.map { it.toDto() },
         retirements = retirements.map { it.toDto() },
+        youthPromotions = youthPromotions.map { it.toDto() },
         cupChampion = cupChampion?.toDto(),
         boardReviews = boardReviews.map { it.toDto() },
     )

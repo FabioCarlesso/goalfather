@@ -129,6 +129,9 @@ interface MarketEntryJpaRepository : JpaRepository<MarketEntryEntity, Long> {
     override fun <S : MarketEntryEntity> save(entity: S): S
 
     @CacheEvict("market", allEntries = true)
+    override fun <S : MarketEntryEntity> saveAll(entities: Iterable<S>): List<S>
+
+    @CacheEvict("market", allEntries = true)
     override fun deleteById(id: Long)
 
     /**

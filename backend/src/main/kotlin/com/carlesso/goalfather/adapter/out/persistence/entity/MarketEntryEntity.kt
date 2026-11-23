@@ -16,6 +16,10 @@ class MarketEntryEntity(
     @Column(name = "price", nullable = false)
     var price: Long = 0,
 
+    /** Viradas sem clube (issue #139): quem passa do limite se aposenta. */
+    @Column(name = "seasons_without_club", nullable = false)
+    var seasonsWithoutClub: Int = 0,
+
     /**
      * Lock otimista (issue #21): o Hibernate inclui `version` no
      * `DELETE ... WHERE player_id = ? AND version = ?`. Duas compras

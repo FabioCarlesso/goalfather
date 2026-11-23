@@ -76,7 +76,7 @@ test.describe('Offers flow', () => {
     // O rival compra um jogador para poder vender sem ficar abaixo do mínimo.
     const bought = await page.evaluate(async ({ rival, contract }) => {
       const auth = { Authorization: `Bearer ${rival.token}` }
-      const market = (await (await fetch('/api/market', { headers: auth })).json()) as { player: { id: number } }[]
+      const market = ((await (await fetch('/api/market', { headers: auth })).json()) as { items: { player: { id: number } }[] }).items
       if (market.length === 0) return false
       const res = await fetch('/api/market/buy', {
         method: 'POST',

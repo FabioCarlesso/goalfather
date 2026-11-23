@@ -44,7 +44,6 @@ import com.carlesso.goalfather.domain.model.Standings
 import com.carlesso.goalfather.domain.model.TrainingFocus
 import com.carlesso.goalfather.domain.model.TransferOffer
 import com.carlesso.goalfather.domain.model.cents
-import com.carlesso.goalfather.domain.model.sumOfMoney
 import com.carlesso.goalfather.domain.rules.BENCH_STAMINA_RECOVERY
 import com.carlesso.goalfather.domain.rules.worldPlan
 import com.carlesso.goalfather.test.COPA_DO_BRASIL
@@ -847,15 +846,13 @@ class PlayRoundServiceTest {
             preSeason.squad.none { it.id == PlayerId(99) },
             "veterano de 38 anos e overall baixo deveria se aposentar",
         )
-        // A base assume a vaga: o elenco não encolhe, e a folha do garoto é
-        // menor que a do veterano que saiu.
-        assertEquals(aging.squad.size, preSeason.squad.size, "a base deveria repor o aposentado")
+        // A base (issue #139) sobe de 2 a 4 garotos, sem par com o aposentado:
+        // o elenco não encolhe. Ninguém vence contrato (os de teste vão até
+        // 2099), então a IA não tem excedente a liberar.
+        val youths = preSeason.squad.size - base.squad.size
+        assertTrue(youths in 2..4, "a base deveria subir de 2 a 4 garotos: $youths")
         assertTrue(
-            preSeason.squad.sumOfMoney { it.salary } < aging.squad.sumOfMoney { it.salary },
-            "a folha deveria cair ao trocar veterano por cria da base",
-        )
-        assertTrue(
-            preSeason.squad.filter { it.id != PlayerId(99) }.all { it.age == 26 || it.age in 17..19 },
+            preSeason.squad.all { it.age == 26 || it.age in 16..18 },
             "todo mundo ganha um ano na virada; quem entrou vem da base",
         )
 
@@ -891,7 +888,7 @@ class PlayRoundServiceTest {
                     makePlayer(51, overall = 70).copy(employment = contract(1, endOfSeason.plusYears(1))),
             )
         }
-        // IA: renova sozinha (provisório até #143), sem perder ninguém.
+        // IA: renova só até o tamanho de antes da virada (issue #139).
         val ai = awayClub.copy(squad = awayClub.squad + makePlayer(60, overall = 70).copy(employment = contract(2, endOfSeason)))
         // Clube inglês, fora da liga que virou: um contrato que terminaria "antes"
         // da data da virada brasileira continua intocado — a Europa vira em maio.
@@ -929,21 +926,23 @@ class PlayRoundServiceTest {
             marketRepo.add(match { it.player.id == PlayerId(50) && it.player.isFreeAgent && it.price == Money.ZERO })
         }
 
-        val renewed = assertNotNull(savedClubs.last { it.id == ClubId(2) }.squad.single { it.id == PlayerId(60) }.contract)
-        assertTrue(renewed.end.isAfter(endOfSeason), "a IA renova quem venceu")
-        // Renovado até um fim de temporada brasileiro (31/12), começando na seguinte.
-        assertEquals(12 to 31, renewed.end.monthValue to renewed.end.dayOfMonth)
-        assertEquals(LocalDate.of(2027, 1, 1), renewed.start)
-        assertEquals(10_000_00.cents, renewed.salary)
+        // A IA (issue #139): a base subiu garotos, e o elenco tenta voltar ao
+        // tamanho de antes da virada liberando quem vence — só o 60 vence.
+        val aiAfter = savedClubs.last { it.id == ClubId(2) }
+        val aiYouths = aiAfter.squad.count { it.age in 16..18 }
+        assertTrue(aiYouths in 2..4, "garotos da base na IA: $aiYouths")
+        assertEquals(ai.squad.size + aiYouths - 1, aiAfter.squad.size, "a IA libera o excedente que vence")
+        assertTrue(aiAfter.squad.none { it.id == PlayerId(60) }, "o excedente que vence sai livre")
+        coVerify { marketRepo.add(match { it.player.id == PlayerId(60) && it.price == Money.ZERO }) }
 
         // A virada do Brasil não toca o clube inglês: o contrato segue lá.
         val englishAfter = savedClubs.lastOrNull { it.id == ClubId(3) } ?: english
         assertEquals(LocalDate.of(2026, 5, 31), englishAfter.squad.single { it.id == PlayerId(70) }.contract?.end)
-        coVerify(exactly = 0) { marketRepo.add(match { it.player.id == PlayerId(70) || it.player.id == PlayerId(60) }) }
+        coVerify(exactly = 0) { marketRepo.add(match { it.player.id == PlayerId(70) }) }
     }
 
     @Test
-    fun `SeasonFinished conta quem se aposentou e quem subiu da base (issue 55)`() = runTest {
+    fun `SeasonFinished conta quem se aposentou e quem subiu da base (issues 55 e 139)`() = runTest {
         val veteran = makePlayer(99, overall = 55, age = 38)
         val base = makeClub(id = 1, name = "Home FC", squadSize = 11, overall = 80)
         val aging = base.copy(squad = base.squad + veteran)
@@ -969,8 +968,10 @@ class PlayRoundServiceTest {
         val retirement = seasonFinished.retirements.single { it.retired.id == PlayerId(99) }
         assertEquals(ClubId(1), retirement.clubId)
         assertEquals(39, retirement.retired.age, "o extrato mostra a idade com que ele parou")
-        assertTrue(retirement.promoted.age in 17..19, "quem entrou vem da base")
-        assertEquals(retirement.retired.position, retirement.promoted.position)
+        // A base (issue #139): de 2 a 4 garotos de 16 a 18 anos, do país do clube.
+        val youths = seasonFinished.youthPromotions.filter { it.clubId == ClubId(1) }.map { it.player }
+        assertTrue(youths.size in 2..4, "garotos da base: ${youths.size}")
+        assertTrue(youths.all { it.age in 16..18 && it.nationality == aging.country }, "garotos: $youths")
 
         // A linha do aposentado sai do banco — deixá-la com `club_id = null` a
         // tornaria indistinguível de um agente livre.
@@ -978,9 +979,10 @@ class PlayRoundServiceTest {
     }
 
     @Test
-    fun `virada de temporada envelhece o mercado e tira o aposentado da lista (issue 55)`() = runTest {
-        // Um anunciado jovem (continua na lista) e um veterano em fim de linha.
-        val prospect = MarketEntry(makePlayer(201, overall = 70, age = 22), price = 100_000_00.cents)
+    fun `virada de temporada aposenta quem passou uma virada inteira no pool (issues 55 e 139)`() = runTest {
+        // Os dois estavam no mercado desde antes desta virada: o jovem sai por
+        // ficar sem clube; o veterano, pela idade.
+        val prospect = MarketEntry(makePlayer(201, overall = 70, age = 22), price = Money.ZERO)
         val fading = MarketEntry(makePlayer(202, overall = 55, age = 39), price = 50_000_00.cents)
         val lastRound = Round(
             matchday = md(1),
@@ -998,20 +1000,17 @@ class PlayRoundServiceTest {
         coEvery { leagueRepo.finishRound(any()) } returns true
         coEvery { leagueRepo.saveStandings(any()) } just Runs
         coEvery { marketRepo.findAll() } returns listOf(prospect, fading)
-        coEvery { marketRepo.claim(PlayerId(202)) } returns true
-        val listed = mutableListOf<List<com.carlesso.goalfather.domain.model.Player>>()
-        coEvery { playerRepo.saveFreeAgents(capture(listed)) } just Runs
+        coEvery { marketRepo.claim(any()) } returns true
 
         service.stream(md(1)).toList()
 
-        // O jovem envelheceu e continua anunciado…
-        val stillListed = listed.flatten().single()
-        assertEquals(PlayerId(201), stillListed.id)
-        assertEquals(23, stillListed.age, "quem está no mercado também ganha um ano")
-
-        // …e o veterano saiu do mercado e do banco.
+        // Os dois saem do mercado (claim atômico, issue #21) e do banco.
+        coVerify { marketRepo.claim(PlayerId(201)) }
         coVerify { marketRepo.claim(PlayerId(202)) }
-        coVerify { playerRepo.deleteAll(match { PlayerId(202) in it }) }
+        coVerify { playerRepo.deleteAll(match { it.containsAll(listOf(PlayerId(201), PlayerId(202))) }) }
+        // Ninguém sobrou para regravar: a regra do contador (StillListed) é
+        // coberta com outros limites em `MarketPoolRulesTest`.
+        coVerify { marketRepo.updateAll(emptyList()) }
     }
 
     @Test

@@ -110,7 +110,10 @@ export function RoundSummary({
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           <ChampionBanner season={season.season} champion={season.champion} cupChampion={season.cupChampion} />
           {!fired && <BoardReviewCard review={review} />}
-          <RetirementsCard retirements={season.retirements.filter((r) => r.clubId === myClubId)} />
+          <RetirementsCard
+            retirements={season.retirements.filter((r) => r.clubId === myClubId)}
+            youthPromotions={season.youthPromotions.filter((y) => y.clubId === myClubId)}
+          />
         </div>
       )}
     </section>

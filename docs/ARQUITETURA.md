@@ -618,12 +618,13 @@ O mundo do jogo vem de um pack versionado em `data/world/v1/`, lido **como se fo
   protege o invariante `age in 15..50` do `Player` de uma carreira infinita. A
   seed é `agingSeed(temporada, clube)`, com o mesmo empacotamento disjunto de
   `fitnessSeed` mais um salt, para que temporada 7 e rodada 7 não sorteiem a
-  mesma sequência. **Reposição pela base:** quem se aposenta é substituído 1:1
+  mesma sequência. **Reposição pela base:** quem se aposenta era substituído 1:1
   por um garoto de 17–19 anos na mesma posição, 8–18 pontos de `overall` abaixo
-  do veterano e salário de R$ 3.000 — sem isso o elenco só encolhe e o clube da
-  IA, que não compra ninguém, chegaria a zero jogador em poucas temporadas. O id
-  do promovido sai de `youthPlayerId(clube, temporada, vaga)`, determinístico e
-  numa faixa disjunta da do seed. As aposentadorias viajam no
+  do veterano — sem isso o elenco só encolhe e o clube da IA, que não compra
+  ninguém, chegaria a zero jogador em poucas temporadas. *Desde a #139 a
+  reposição 1:1 deu lugar à entrada anual de 2 a 4 garotos por clube (ver
+  9.5).* O id do garoto sai de `youthPlayerId(clube, temporada, vaga)`,
+  determinístico e numa faixa disjunta da do seed. As aposentadorias viajam no
   `RoundEvent.SeasonFinished` (`retirements`), então a UI conta a notícia. Quem
   está no mercado também envelhece — com seed própria — e sai da lista ao se
   aposentar; o aposentado é APAGADO do banco pelo novo port `PlayerRepository`,
@@ -985,9 +986,11 @@ Duas correções, ambas baratas:
 O teste `vinte temporadas seguidas nao esvaziam o elenco` (e o gêmeo no mock) é
 a regressão disso.
 
-*Follow-up que segue aberto:* a IA não compra nem vende — a base repõe o número,
-não a qualidade, então um elenco de IA tende a se estabilizar num nível mais
-baixo ao longo de muitas temporadas. Fecha junto do mercado dinâmico.
+*Follow-up:* a IA não compra nem vende — a base repunha o número, não a
+qualidade, então um elenco de IA tendia a se estabilizar num nível mais baixo
+ao longo de muitas temporadas. A #139 trocou a reposição 1:1 pela base anual
+gerada pelo potencial e pôs um teste de 10 temporadas sobre o nível de cada
+liga (9.5); comprar e vender ativamente segue com a IA ativa (#143).
 
 ##### Por que `Availability` e não `injuredForRounds: Int`
 
@@ -1700,10 +1703,11 @@ no divisor do salário (`VALUE_PER_MONTHLY_SALARY`, 9.2).
   a continental). Por isso dezembro no Brasil não toca contrato europeu. Vence
   quem termina até o fim daquela temporada. Clube de técnico humano: o
   jogador vira `FreeAgent`, sai do elenco e vai ao mercado por **preço zero**
-  (livre, sem taxa). O pool de livres de verdade é a #139, e ele substitui
-  esse destino. Clube da IA: renova sozinho pelo mesmo salário, com duração
-  típica da idade. É provisório até a IA ativa (#143): sem isso os elencos da
-  IA, que não compram, encolheriam a cada virada.
+  (livre, sem taxa), o pool de livres (9.5). Clube da IA: renova sozinho
+  pelo mesmo salário, com duração típica da idade — desde a #139 só até o
+  elenco voltar ao tamanho de antes da virada (9.5). É provisório até a IA
+  ativa (#143): sem isso os elencos da IA, que não compram, encolheriam a
+  cada virada.
 - **Mudança de clube.** Comprar do mercado e a proposta aceita entre
   técnicos assinam os termos NEGOCIADOS com o jogador (9.4). Uma proposta
   gravada antes da #138, sem termos, ainda transfere o contrato
@@ -1862,8 +1866,72 @@ elenco nem catálogo. `current` é o clube atual (`null` para o livre); igual ao
   issue prevê). A taxa do mercado continua a do anúncio (`MarketEntry.price`:
   zero para quem saiu livre por vencimento, 125% do valor de referência para
   o pool antigo e os vendidos ao mercado) — o "sem taxa" de verdade para todo
-  livre chega com o pool de livres da #139, junto com a revisão do preço. O
-  salário assinado não é limitado pelo caixa do clube.
+  livre chegou com o pool de livres da #139 (9.5). O salário assinado não é
+  limitado pelo caixa do clube.
+
+#### 9.5 Pool de livres e base anual — issue #139
+
+O mundo precisa durar várias temporadas sem inchar nem enfraquecer. Três
+regras puras seguram isso, e um teste de 10 temporadas confere.
+
+- **Base anual** (`domain/rules/YouthIntakeRules.kt`, `youthIntake`). Na
+  virada do país, cada clube recebe de 2 a 4 garotos de 16 a 18 anos (seed
+  `youthIntakeSeed(temporada, clube)`), substituindo a reposição 1:1 da #55.
+  Posição: a de maior déficit contra a proporção ideal de um elenco de 25
+  (3 GK, 8 CB, 8 MF, 6 FW). Nacionalidade: a do clube. Nome: o `NamePool` do
+  país (`fun interface` no domínio; as listas em
+  `application/seed/dsl/NamePools.kt`, que vieram do importador da #127 e
+  continuam servindo a ele). Contrato: o da base (3 temporadas, US$ 600).
+  Atributos pelo **potencial**: o `AttributeGenerator` (#126) sorteia o
+  jogador aos 24 anos com a força da liga e a reputação derivada do elenco
+  (`reputationOf`: média dos 11 melhores acima da força da liga × 5, a conta
+  do gerador ao contrário), e o garoto nasce `24 − idade` pontos abaixo — o
+  que o envelhecimento (`AgeBand.YOUNG`, +1/ano em média) devolve. Gerar o
+  garoto direto na idade dele, pela curva do gerador (−12 aos 17), derrubava
+  o overall médio das ligas em 5 a 10% em 10 temporadas. O clube de técnico
+  humano só recebe até o teto de 25.
+- **IA com tamanho-alvo** (`contractTurnover(club, endedSeason, targetSize)`).
+  Depois do envelhecimento e da base, a IA renova os contratos que vencem só
+  até o elenco voltar ao tamanho de antes da virada; o excedente sai livre ao
+  pool, os de pior `projectedOverall` primeiro (o jovem soma +1 por ano até os
+  24; o trintão perde 1 por ano passado dos 30 — sem isso a IA dispensaria todo
+  garoto no primeiro vencimento), sem deixar posição abaixo do mínimo
+  (`MIN_PER_POSITION`: 2 GK, 5 CB, 5 MF, 3 FW). Só sai quem vence: se não há
+  contratos vencendo, o elenco cresce naquele ano.
+- **Pool que se aposenta** (`domain/rules/MarketPoolRules.kt`). O
+  envelhecimento do mercado (uma vez por ano, quando o primeiro país abre o
+  ano) agora conta `MarketEntry.seasonsWithoutClub` (V27) e aposenta quem a
+  virada encontra no pool desde a anterior
+  (`FREE_AGENT_IDLE_SEASONS_TO_RETIRE = 1`): o brasileiro dispensado em
+  dezembro teve um ano inteiro; o europeu dispensado em maio, as janelas de
+  verão e de janeiro. Com limite 2 o pool passava de 950 livres em 10 anos;
+  com 1, fica perto de 500. O `ageMarket` passou a rodar ANTES das viradas do
+  encaixe: quem a virada libera já envelheceu no elenco e não pode envelhecer
+  de novo no pool no mesmo dia (acontecia com o vencimento da #136).
+- **Sem taxa.** Livre do pool (vencimento, dispensa da IA, mercado inicial)
+  tem `price = 0`. Só o vendido na venda rápida mantém o preço de anúncio
+  (125% do valor de referência): com taxa zero, vender e recontratar o mesmo
+  jogador daria lucro.
+- **Busca** (`GET /api/market`). O pool tem centenas de jogadores, então
+  filtro, ordenação e paginação são do servidor: `List<MarketEntry>.search(
+  MarketFilter, page, size): MarketPage`, função pura (posição, nacionalidade,
+  faixa de idade, faixa de valor de referência, taxa máxima, trecho do nome sem
+  acento; ordena por taxa, valor, overall ou idade, com desempate por nome e
+  id). O contrato devolve `MarketPage` (`items`, `page`, `size`, `totalItems`,
+  `totalPages`); parâmetro inválido é 400 `INVALID_MARKET_QUERY`. O adapter lê
+  o pool em duas queries (`findAll` + `findAllById`) em vez do N+1 de antes.
+  A UI troca o filtro local da #111 pela busca do servidor, com nacionalidade
+  (países do mundo), faixas de idade e de valor e paginação, tudo na URL.
+- **Evento.** `Retirement` perdeu o `promoted`; os garotos viajam em
+  `SeasonFinished.youthPromotions` e o cartão "Renovação do elenco" mostra as
+  duas listas do clube do técnico.
+- **Teste de longo prazo** (`WorldLongRunTest`, ~25 s): o pack real jogando
+  10 temporadas pelo `PlayRoundService` na simulação rápida, com fakes em
+  memória (inclusive um mercado de verdade). Confere jogadores e overall médio
+  de cada liga a ±10% do inicial, o pool abaixo de 1/4 dos jogadores em
+  elencos e que todo garoto tem a nacionalidade e um sobrenome da lista do
+  país do clube. Na calibração: ligas de 396–451 jogadores variaram +1 a +3%;
+  o overall, de −2% (Série A) a +8% (Série B, que recebe os rebaixados da A).
 
 ---
 

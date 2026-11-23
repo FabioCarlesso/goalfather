@@ -23,6 +23,7 @@ import type {
   Standings,
   TableZone,
   Retirement,
+  YouthPromotion,
   Round,
   RoundMatch,
   RoundStage,
@@ -34,6 +35,7 @@ import {
   marketValueOf,
   contractFor,
   contractTurnover,
+  youthIntake,
   initialContractOf,
   seasonStartOf,
   YOUTH_CONTRACT_SEASONS,
@@ -60,7 +62,7 @@ import {
   type BoardClub,
   type MockBoard,
 } from './board'
-import { expireOffersOf } from './offers'
+import { MAX_SQUAD_SIZE, expireOffersOf } from './offers'
 import {
   WORLD_CLUBS,
   WORLD_COUNTRIES,
@@ -68,6 +70,7 @@ import {
   SQUAD_POSITIONS,
   leagueById,
   seasonLabelOf,
+  mockPlayerName,
   syntheticSquad,
   type MockLeague,
 } from './world'
@@ -788,7 +791,10 @@ const youthPlayerId = (season: number, clubId: number, slot: number): number =>
 // (issue #55), cria tabelas novas (uma por liga) e gera a rodada 1 da
 // próxima temporada. Espelha startNextSeason do backend, mantendo a parity
 // mock ↔ real.
-export function startNewSeason(season: number, finalTables: Standings[]): Retirement[] {
+export function startNewSeason(
+  season: number,
+  finalTables: Standings[],
+): { retirements: Retirement[]; youthPromotions: YouthPromotion[] } {
   // História ANTES do reset (issue #60): o snapshot precisa dos gols da
   // temporada, que o envelhecimento logo abaixo zera. Mesma ordem do backend
   // — é ela que o critério de aceite da issue exige. O campeão da copa
@@ -797,28 +803,39 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
 
   Object.assign(leagueAssignments, applyPromotionRelegation(finalTables))
   const retirements: Retirement[] = []
+  const youthPromotions: YouthPromotion[] = []
+  // Pool de livres (issue #139): quem a virada encontra no mercado desde a
+  // anterior sai de cena — ANTES das dispensas desta virada, como no backend.
+  state.market = []
   for (const club of Object.values(state.clubs)) {
-    // Envelhecimento (issue #55): +1 ano, evolução/regressão por faixa etária,
-    // aposentadoria do veterano que já não rende e promoção da base no lugar
-    // dele. Seed por temporada e clube, como o `agingSeed` do backend.
+    // Envelhecimento (issue #55): +1 ano, evolução/regressão por faixa etária e
+    // aposentadoria do veterano que já não rende. Seed por temporada e clube,
+    // como o `agingSeed` do backend.
     const country = club.country.code
-    const turn = ageSquadOneSeason(
-      club.squad,
-      new MulberryRng(season * 1_000 + club.id),
-      club.id,
+    const human = clubOwners[club.id] != null
+    const turn = ageSquadOneSeason(club.squad, new MulberryRng(season * 1_000 + club.id), club.id)
+    retirements.push(...turn.retirements)
+    // Base (issue #139): de 2 a 4 garotos do país do clube; o humano só até o teto.
+    const youths = youthIntake(
+      turn.squad,
+      new MulberryRng(season * 3_391 + club.id),
       (slot) => youthPlayerId(season, club.id, slot),
       contractFor(seasonStartOf(season, country), season, YOUTH_CONTRACT_SEASONS, country),
+      club.country,
+      (rng) => mockPlayerName(club.country, rng),
+      human ? MAX_SQUAD_SIZE : undefined,
     )
-    retirements.push(...turn.retirements)
-    // Vencimentos (issue #136), depois do envelhecimento, como no backend: o
-    // clube do técnico perde quem venceu (vai ao mercado livre, por zero); a
-    // IA renova sozinha.
+    youthPromotions.push(...youths.map((player) => ({ clubId: club.id, player })))
+    // Vencimentos (issue #136), depois do envelhecimento e da base, como no
+    // backend: o clube do técnico perde quem venceu (vai ao mercado livre, por
+    // zero); a IA renova só até o tamanho de antes da virada.
     const contracts = contractTurnover(
-      turn.squad,
+      [...turn.squad, ...youths],
       season - 1,
       country,
-      clubOwners[club.id] != null,
+      human,
       new MulberryRng(season * 7_717 + club.id),
+      human ? undefined : club.squad.length,
     )
     state.market = [...state.market, ...contracts.released.map((p) => ({ player: p, price: 0 }))]
     state.clubs[club.id] = {
@@ -846,7 +863,7 @@ export function startNewSeason(season: number, finalTables: Standings[]): Retire
   // Metas da temporada nova (issue #62), com o elenco já envelhecido e os
   // clubes já nas ligas novas — mesma ordem do backend.
   state.boards = boardExpectations(season, boardClubs())
-  return retirements
+  return { retirements, youthPromotions }
 }
 
 // ─── Histórico de temporadas (issue #60) ─────────────────────────────────

@@ -83,6 +83,8 @@ import type {
   Calendar,
   Club,
   ErrorResponse,
+  MarketEntry,
+  MarketPage,
   MatchEvent,
   RoundEvent,
   RoundFinance,
@@ -637,18 +639,49 @@ export const handlers = [
   }),
 
   // ─── listMarket ───────────────────────────────────────────────────────
+  // Busca paginada no pool de livres (issue #139), como `search` do backend:
+  // filtros opcionais, ordenação com desempate por nome e id, página a partir de 0.
   http.get('/api/market', async ({ request }) => {
     await delay(SIMULATED_LATENCY_MS)
     const url = new URL(request.url)
-    const position = url.searchParams.get('position')
-    const maxPrice = url.searchParams.get('maxPrice')
-
-    let entries = state.market
-    if (position) entries = entries.filter((e) => e.player.position === position)
-    if (maxPrice) entries = entries.filter((e) => e.price <= Number(maxPrice))
+    const param = (name: string) => url.searchParams.get(name)
+    const num = (name: string) => (param(name) === null ? undefined : Number(param(name)))
+    const sort = param('sort') ?? 'price'
+    const dir = param('dir') ?? 'asc'
+    const page = num('page') ?? 0
+    const size = num('size') ?? 20
+    if (!['price', 'value', 'overall', 'age'].includes(sort) || !['asc', 'desc'].includes(dir) || page < 0 || size < 1 || size > 100) {
+      return HttpResponse.json(
+        { code: 'INVALID_MARKET_QUERY', message: 'parâmetros de busca inválidos' } satisfies ErrorResponse,
+        { status: 400 },
+      )
+    }
+    const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+    const needle = normalize((param('q') ?? '').trim())
+    const [minAge, maxAge, minValue, maxValue, maxPrice] = ['minAge', 'maxAge', 'minValue', 'maxValue', 'maxPrice'].map(num)
 
     // Fora de elenco, o valor de referência do mercado (issue #135).
-    return HttpResponse.json(entries.map((e) => ({ ...e, player: { ...e.player, marketValue: marketValueOf(e.player) } })))
+    const valued = state.market.map((e) => ({ ...e, player: { ...e.player, marketValue: marketValueOf(e.player) } }))
+    const key = (e: MarketEntry): number =>
+      sort === 'value' ? e.player.marketValue : sort === 'overall' ? e.player.overall : sort === 'age' ? e.player.age : e.price
+    const sign = dir === 'asc' ? 1 : -1
+    const matching = valued
+      .filter((e) => !param('position') || e.player.position === param('position'))
+      .filter((e) => !param('nationality') || e.player.nationality.code === param('nationality'))
+      .filter((e) => (minAge === undefined || e.player.age >= minAge) && (maxAge === undefined || e.player.age <= maxAge))
+      .filter((e) => (minValue === undefined || e.player.marketValue >= minValue) && (maxValue === undefined || e.player.marketValue <= maxValue))
+      .filter((e) => maxPrice === undefined || e.price <= maxPrice)
+      .filter((e) => normalize(e.player.name).includes(needle))
+      .toSorted((a, b) => sign * (key(a) - key(b)) || a.player.name.localeCompare(b.player.name) || a.player.id - b.player.id)
+
+    const body: MarketPage = {
+      items: matching.slice(page * size, page * size + size),
+      page,
+      size,
+      totalItems: matching.length,
+      totalPages: Math.max(1, Math.ceil(matching.length / size)),
+    }
+    return HttpResponse.json(body)
   }),
 
   // ─── buyPlayer ────────────────────────────────────────────────────────
@@ -1313,13 +1346,14 @@ export const handlers = [
         const boardReviews = applyBoardTurnover(round.season, finalStandings)
         // A virada roda ANTES do evento: é ela que produz as aposentadorias
         // (issue #55), que viajam junto do campeão.
-        const retirements = startNewSeason(round.season + 1, finalStandings)
+        const { retirements, youthPromotions } = startNewSeason(round.season + 1, finalStandings)
         const seasonFin: RoundEvent = {
           type: 'SeasonFinished',
           season: round.season,
           champion: elite.rows[0]!,
           standings: finalStandings,
           retirements,
+          youthPromotions,
           ...(cupChampion ? { cupChampion } : {}),
           boardReviews,
         }

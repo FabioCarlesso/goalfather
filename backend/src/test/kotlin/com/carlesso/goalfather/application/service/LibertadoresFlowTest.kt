@@ -235,9 +235,10 @@ class LibertadoresFlowTest {
     }
 
     private object EmptyMarket : MarketRepository {
-        override suspend fun findAll(position: Position?, maxPrice: Long?): List<MarketEntry> = emptyList()
+        override suspend fun findAll(): List<MarketEntry> = emptyList()
         override suspend fun findEntry(playerId: PlayerId): MarketEntry? = null
         override suspend fun add(entry: MarketEntry) = Unit
+        override suspend fun updateAll(entries: List<MarketEntry>) = Unit
         override suspend fun claim(playerId: PlayerId): Boolean = false
     }
 
